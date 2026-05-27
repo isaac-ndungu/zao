@@ -83,12 +83,12 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 last_name=serializer.validated_data.get('last_name', ''),
                 password=password,
                 role=UserRole.FARMER,
-                cooperative_id=request.user.cooperative_id,
+                cooperative_id=request.cooperative_id,
             )
             temp_password = password
 
         instance = serializer.save(
-            cooperative_id=request.user.cooperative_id,
+            cooperative_id=request.cooperative_id,
             user=user,
         )
 
@@ -195,7 +195,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 serializer.validated_data.pop('user_id', None)
                 serializer.validated_data.pop('user_email', None)
                 serializer.save(
-                    cooperative_id=request.user.cooperative_id,
+                    cooperative_id=request.cooperative_id,
                 )
                 created += 1
             except Exception as e:
