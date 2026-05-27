@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,6 +42,9 @@ INSTALLED_APPS = [
 
     # Third party
     'rest_framework',
+    'rest_framework_simplejwt',
+    'token_blacklist',
+    'drf_spectacular',
 
 
     # Local apps
@@ -126,3 +130,24 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.openapi.AutoSchema',
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Zapo API',
+    'VERSION': '1.0.0',
+}
