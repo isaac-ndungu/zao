@@ -51,20 +51,18 @@ class DeliveryViewSet(CooperativeScopedViewSet):
     def get_permissions(self):
         if self.action in ('destroy',):
             return [IsAuthenticated(), IsManager()]
-        if self.action in ('create', 'update', 'partial_update', 'sync', 'batches'):
+        if self.action in ('create', 'update', 'partial_update', 'sync'):
             return [IsAuthenticated(), IsManagerOrGrader()]
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action in ('create', 'update', 'partial_update'):
             return DeliveryCreateSerializer
-        if self.action in ('update', 'partial_update'):
-            return DeliveryCreateSerializer
-        if self.action == 'list':
+        if self.action in ('list', 'batches'):
             return DeliveryListSerializer
         if self.action == 'sync':
             return DeliverySyncSerializer
-        if self.action == 'batches':
+        if self.action == 'summary':
             return DeliveryListSerializer
         return DeliveryDetailSerializer
 

@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from apps.farmers.models import Farmer
 from .models import Delivery
 
 
@@ -52,10 +51,14 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
     def validate_farmer(self, value):
         if not value.is_active:
             raise serializers.ValidationError('Farmer is not active.')
+        request = self.context.get('request')
+        if request and value.cooperative_id != request.cooperative_id:
+            raise serializers.ValidationError('Farmer does not belong to your cooperative.')
         return value
 
     def validate(self, attrs):
         product = attrs.get('product_type')
+
         if product == 'MILK' and not attrs.get('volume_litres'):
             raise serializers.ValidationError(
                 {'volume_litres': 'Volume in litres is required for milk deliveries.'}
@@ -64,10 +67,22 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'quantity_kg': 'Quantity in kg is required for this product type.'}
             )
-        if attrs.get('status') == 'REJECTED' and not attrs.get('rejection_reason'):
+
+        status_val = attrs.get('status')
+        if status_val == 'GRADED' and not attrs.get('grade'):
+            raise serializers.ValidationError(
+                {'grade': 'Grade is required when status is GRADED.'}
+            )
+        if status_val == 'REJECTED' and not attrs.get('rejection_reason'):
             raise serializers.ValidationError(
                 {'rejection_reason': 'Rejection reason is required when status is REJECTED.'}
             )
+
+        if status_val == 'ACCEPTED' and attrs.get('grade'):
+            if not attrs.get('quality_metrics'):
+                attrs['quality_metrics'] = {}
+            attrs['quality_metrics']['_accepted_with_grade'] = attrs['grade']
+
         return attrs
 
 
