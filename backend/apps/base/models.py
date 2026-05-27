@@ -3,12 +3,27 @@ from django.db import models
 import uuid
 
 
+class TenantQuerySet(models.QuerySet):
+    def for_cooperative(self, cooperative_id):
+        return self.filter(cooperative_id=cooperative_id)
+
+
+class TenantManager(models.Manager):
+    def get_queryset(self):
+        return TenantQuerySet(self.model, using=self._db)
+
+    def for_cooperative(self, cooperative_id):
+        return self.get_queryset().for_cooperative(cooperative_id)
+
+
 class CooperativeScopedModel(models.Model):
     cooperative = models.ForeignKey(
         'cooperatives.Cooperative',
         on_delete=models.CASCADE,
         related_name='%(class)s_set',
     )
+
+    objects = TenantManager()
 
     class Meta:
         abstract = True
