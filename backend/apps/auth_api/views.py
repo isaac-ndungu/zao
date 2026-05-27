@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +19,7 @@ from apps.base.constants import UserRole
 from .models import TwoFactorOTP
 from .serializers import (
     LoginSerializer,
+    RegisterSerializer,
     RequestOTPSerializer,
     TokenResponseSerializer,
     TwoFAVerifySerializer,
@@ -54,6 +55,7 @@ def _login_response(user):
 class LoginView(APIView):
     authentication_classes = []
     permission_classes = []
+    serializer_class = LoginSerializer
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -74,6 +76,7 @@ class LoginView(APIView):
 class RequestOTPView(APIView):
     authentication_classes = []
     permission_classes = []
+    serializer_class = RequestOTPSerializer
 
     def post(self, request):
         serializer = RequestOTPSerializer(data=request.data)
@@ -105,6 +108,7 @@ class RequestOTPView(APIView):
 class VerifyOTPView(APIView):
     authentication_classes = []
     permission_classes = []
+    serializer_class = TwoFAVerifySerializer
 
     def post(self, request):
         serializer = TwoFAVerifySerializer(data=request.data)
@@ -115,6 +119,7 @@ class VerifyOTPView(APIView):
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = serializers.Serializer
 
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
@@ -129,9 +134,22 @@ class LogoutView(APIView):
         return response
 
 
+class RegisterView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = RegisterSerializer
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return _login_response(user)
+
+
 class TokenRefreshView(APIView):
     authentication_classes = []
     permission_classes = []
+    serializer_class = TokenRefreshSerializer
 
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')

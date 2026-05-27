@@ -93,6 +93,27 @@ class TwoFAVerifySerializer(serializers.Serializer):
         return attrs
 
 
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'phone_number', 'first_name', 'last_name', 'password']
+
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        return value.lower()
+
+    def validate_phone_number(self, value):
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError('A user with this phone number already exists.')
+        return value
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
+
+
 class TokenResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()
