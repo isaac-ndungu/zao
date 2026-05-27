@@ -32,8 +32,11 @@ ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
+AUTH_USER_MODEL = 'auth_api.User'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
+    'apps.auth_api',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
