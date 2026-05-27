@@ -49,6 +49,9 @@ class Cooperative(models.Model):
         related_name='members',
     )
 
+    prefix = models.CharField(max_length=10, blank=True)
+    last_member_sequence = models.PositiveIntegerField(default=0)
+
     class Meta:
         db_table = 'base_cooperative'
         verbose_name = 'Cooperative'

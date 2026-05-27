@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'apps.base',
     'apps.cooperatives',
     'apps.users',
+    'apps.farmers',
 ]
 
 MIDDLEWARE = [
