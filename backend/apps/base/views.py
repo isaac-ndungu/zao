@@ -6,3 +6,8 @@ class CooperativeScopedViewSet(ModelViewSet):
         return self.queryset.filter(
             cooperative_id=self.request.user.cooperative_id
         )
+
+    def perform_create(self, serializer):
+        serializer.save(
+            cooperative_id=self.request.user.cooperative_id
+        )
