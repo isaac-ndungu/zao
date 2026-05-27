@@ -36,6 +36,17 @@ class FarmerViewSet(CooperativeScopedViewSet):
     ]
     ordering = ['first_name']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        for param in ('first_name', 'last_name', 'county', 'sub_county', 'ward', 'village', 'payment_method'):
+            val = self.request.query_params.get(param)
+            if val:
+                qs = qs.filter(**{param: val})
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+        return qs
+
     def get_permissions(self):
         if self.action == 'me':
             return [IsAuthenticated()]
@@ -57,16 +68,16 @@ class FarmerViewSet(CooperativeScopedViewSet):
         serializer.is_valid(raise_exception=True)
 
         user_id = serializer.validated_data.pop('user_id', None)
-        email = serializer.validated_data.pop('email', None)
+        user_email = serializer.validated_data.pop('user_email', None)
         user = None
         temp_password = None
 
         if user_id:
             user = User.objects.get(id=user_id)
-        elif email:
+        elif user_email:
             password = User.objects.make_random_password(length=8)
             user = User.objects.create_user(
-                email=email,
+                email=user_email,
                 phone_number=serializer.validated_data.get('phone_number', ''),
                 first_name=serializer.validated_data.get('first_name', ''),
                 last_name=serializer.validated_data.get('last_name', ''),
@@ -161,6 +172,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 data = {
                     'first_name': row.get('first_name', '').strip(),
                     'last_name': row.get('last_name', '').strip(),
+                    'email': row.get('email', '').strip(),
                     'id_number': row.get('id_number', '').strip(),
                     'phone_number': row.get('phone_number', '').strip(),
                     'mpesa_number': row.get('mpesa_number', '').strip(),
@@ -181,7 +193,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 serializer = FarmerCreateSerializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 serializer.validated_data.pop('user_id', None)
-                serializer.validated_data.pop('email', None)
+                serializer.validated_data.pop('user_email', None)
                 serializer.save(
                     cooperative_id=request.user.cooperative_id,
                 )

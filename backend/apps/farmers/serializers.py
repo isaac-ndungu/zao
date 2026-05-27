@@ -11,7 +11,7 @@ class FarmerListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'member_number', 'first_name', 'last_name',
             'phone_number', 'mpesa_number', 'payment_method',
-            'is_active', 'date_joined',
+            'is_active', 'date_joined', 'email',
         ]
 
 
@@ -39,16 +39,16 @@ class FarmerDetailSerializer(serializers.ModelSerializer):
 
 class FarmerCreateSerializer(serializers.ModelSerializer):
     user_id = serializers.UUIDField(required=False, write_only=True)
-    email = serializers.EmailField(required=False, write_only=True)
+    user_email = serializers.EmailField(required=False, write_only=True)
 
     class Meta:
         model = Farmer
         fields = [
-            'first_name', 'last_name', 'id_number', 'phone_number',
+            'first_name', 'last_name', 'email', 'id_number', 'phone_number',
             'mpesa_number', 'date_of_birth', 'county', 'sub_county',
             'ward', 'village', 'payment_method', 'bank_name',
             'bank_account', 'bank_branch', 'is_active',
-            'user_id', 'email',
+            'user_id', 'user_email',
         ]
 
     def validate_user_id(self, value):
@@ -56,21 +56,21 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('User not found.')
         return value
 
-    def validate_email(self, value):
+    def validate_user_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('A user with this email already exists.')
         return value.lower()
 
     def create(self, validated_data):
         validated_data.pop('user_id', None)
-        validated_data.pop('email', None)
+        validated_data.pop('user_email', None)
         if validated_data.get('id_number'):
             validated_data['id_number'] = encrypt_field(validated_data['id_number'])
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         validated_data.pop('user_id', None)
-        validated_data.pop('email', None)
+        validated_data.pop('user_email', None)
         if 'id_number' in validated_data and validated_data['id_number']:
             validated_data['id_number'] = encrypt_field(validated_data['id_number'])
         return super().update(instance, validated_data)
@@ -80,7 +80,7 @@ class FarmerSelfUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Farmer
         fields = [
-            'phone_number', 'mpesa_number', 'bank_name',
+            'phone_number', 'mpesa_number', 'email', 'bank_name',
             'bank_account', 'bank_branch', 'village',
             'ward', 'sub_county',
         ]
