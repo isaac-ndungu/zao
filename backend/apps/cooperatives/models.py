@@ -51,6 +51,8 @@ class Cooperative(models.Model):
 
     prefix = models.CharField(max_length=10, blank=True)
     last_member_sequence = models.PositiveIntegerField(default=0)
+    last_delivery_date = models.DateField(null=True, blank=True)
+    last_delivery_sequence = models.IntegerField(default=0)
 
     class Meta:
         db_table = 'base_cooperative'
