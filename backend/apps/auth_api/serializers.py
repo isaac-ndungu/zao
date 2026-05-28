@@ -2,6 +2,7 @@ from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.base.utils import normalize_phone
 from .models import User, TwoFactorOTP
 
 
@@ -73,7 +74,6 @@ class TwoFAVerifySerializer(serializers.Serializer):
 
         otp = TwoFactorOTP.objects.filter(
             user=user,
-            otp_code=attrs['otp_code'],
             purpose='LOGIN',
             is_used=False,
             expires_at__gt=timezone.now(),
@@ -83,9 +83,16 @@ class TwoFAVerifySerializer(serializers.Serializer):
             raise serializers.ValidationError('Invalid or expired OTP.')
 
         if otp.attempts >= 5:
+            otp.attempts += 1
+            otp.save(update_fields=['attempts'])
             raise serializers.ValidationError('Too many attempts. Request a new OTP.')
 
         otp.attempts += 1
+
+        if otp.otp_code != attrs['otp_code']:
+            otp.save(update_fields=['attempts'])
+            raise serializers.ValidationError('Invalid or expired OTP.')
+
         otp.is_used = True
         otp.save(update_fields=['attempts', 'is_used'])
 
@@ -106,6 +113,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_phone_number(self, value):
+        value = normalize_phone(value)
         if User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value
