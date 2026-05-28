@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.auth_api.models import User
+from apps.base.utils import normalize_phone
 from apps.cooperatives.models import Cooperative
 
 
@@ -31,6 +32,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_phone_number(self, value):
+        value = normalize_phone(value)
         if User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value
@@ -61,6 +63,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_phone_number(self, value):
+        value = normalize_phone(value)
         if User.objects.filter(phone_number=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value
@@ -97,6 +100,7 @@ class UserSelfUpdateSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_phone_number(self, value):
+        value = normalize_phone(value)
         if User.objects.filter(phone_number=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value
