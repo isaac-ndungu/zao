@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'apps.users',
     'apps.farmers',
     'apps.deliveries',
+    'apps.grading',
 ]
 
 MIDDLEWARE = [
