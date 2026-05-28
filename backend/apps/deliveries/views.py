@@ -122,16 +122,17 @@ class DeliveryViewSet(CooperativeScopedViewSet):
 
         results = []
         sms_deliveries = []
+        raw_deliveries = request.data.get('deliveries', [])
         with transaction.atomic():
-            for delivery_data in serializer.validated_data['deliveries']:
-                create_serializer = DeliveryCreateSerializer(data=delivery_data)
+            for raw_data in raw_deliveries:
+                create_serializer = DeliveryCreateSerializer(data=raw_data, context={'request': request})
                 create_serializer.is_valid(raise_exception=True)
                 coop_id = create_serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
                 instance = create_serializer.save(
                     cooperative_id=coop_id,
                 )
                 results.append({
-                    'local_id': delivery_data.get('local_id'),
+                    'local_id': raw_data.get('local_id'),
                     'id': str(instance.id),
                     'batch_id': instance.batch_id,
                 })

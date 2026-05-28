@@ -1,5 +1,6 @@
 import csv
 import io
+import secrets
 
 from django.db.models import Count
 from rest_framework import status
@@ -76,7 +77,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
         if user_id:
             user = User.objects.get(id=user_id)
         elif user_email:
-            password = User.objects.make_random_password(length=8)
+            password = secrets.token_urlsafe(6)
             user = User.objects.create_user(
                 email=user_email,
                 phone_number=serializer.validated_data.get('phone_number', ''),
