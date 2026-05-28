@@ -49,7 +49,7 @@ class Cooperative(models.Model):
         related_name='members',
     )
 
-    prefix = models.CharField(max_length=10, blank=True)
+    prefix = models.CharField(max_length=10, blank=True, unique=True)
     last_member_sequence = models.PositiveIntegerField(default=0)
     last_delivery_date = models.DateField(null=True, blank=True)
     last_delivery_sequence = models.IntegerField(default=0)

@@ -47,6 +47,7 @@ class UserViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='CREATE',
             new_value={'email': instance.email, 'role': instance.role},
+            cooperative_id=self.request.cooperative_id,
         )
 
     def perform_update(self, serializer):
@@ -58,6 +59,7 @@ class UserViewSet(CooperativeScopedViewSet):
             action='UPDATE',
             previous_value={'email': instance.email, 'role': instance.role},
             new_value=serializer.validated_data,
+            cooperative_id=self.request.cooperative_id,
         )
 
     def perform_destroy(self, instance):
@@ -67,6 +69,7 @@ class UserViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='DELETE',
             previous_value={'email': instance.email, 'role': instance.role},
+            cooperative_id=self.request.cooperative_id,
         )
         instance.delete()
 

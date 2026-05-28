@@ -78,6 +78,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='CREATE',
             new_value={'batch_id': instance.batch_id, 'product_type': instance.product_type},
+            cooperative_id=request.cooperative_id,
         )
         send_delivery_sms.delay(
             phone_number=instance.farmer.phone_number,
@@ -99,6 +100,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             action='UPDATE',
             previous_value={'batch_id': instance.batch_id},
             new_value=serializer.validated_data,
+            cooperative_id=self.request.cooperative_id,
         )
 
     def perform_destroy(self, instance):
@@ -108,6 +110,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='DELETE',
             previous_value={'batch_id': instance.batch_id},
+            cooperative_id=self.request.cooperative_id,
         )
         instance.delete()
 

@@ -59,6 +59,7 @@ class CooperativeViewSet(viewsets.ModelViewSet):
             resource_id=instance.id,
             action='CREATE',
             new_value=serializer.data,
+            cooperative_id=instance.id,
         )
 
     def perform_update(self, serializer):
@@ -71,6 +72,7 @@ class CooperativeViewSet(viewsets.ModelViewSet):
             action='UPDATE',
             previous_value=previous,
             new_value=serializer.data,
+            cooperative_id=instance.id,
         )
 
     def perform_destroy(self, instance):
@@ -80,6 +82,7 @@ class CooperativeViewSet(viewsets.ModelViewSet):
             resource_id=instance.id,
             action='DELETE',
             previous_value={'name': instance.name, 'registration_number': instance.registration_number},
+            cooperative_id=instance.id,
         )
         instance.delete()
 

@@ -101,6 +101,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 'member_number': instance.member_number,
                 'name': f'{instance.first_name} {instance.last_name}',
             },
+            cooperative_id=request.cooperative_id,
         )
 
         response_serializer = FarmerDetailSerializer(
@@ -123,6 +124,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 'member_number': instance.member_number,
             },
             new_value=serializer.validated_data,
+            cooperative_id=self.request.cooperative_id,
         )
 
     def perform_destroy(self, instance):
@@ -135,6 +137,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 'member_number': instance.member_number,
                 'name': f'{instance.first_name} {instance.last_name}',
             },
+            cooperative_id=self.request.cooperative_id,
         )
         instance.delete()
 

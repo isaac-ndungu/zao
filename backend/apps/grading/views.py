@@ -105,6 +105,7 @@ class GradeViewSet(CooperativeScopedViewSet):
                 'grade_letter': instance.grade_letter,
                 'price_per_unit': str(instance.price_per_unit),
             },
+            cooperative_id=request.cooperative_id,
         )
         update_inventory_on_grade.delay(str(instance.id))
         return Response(
@@ -123,6 +124,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             action='UPDATE',
             previous_value={'grade_letter': instance.grade_letter},
             new_value=serializer.validated_data,
+            cooperative_id=self.request.cooperative_id,
         )
 
     def perform_destroy(self, instance):
@@ -132,6 +134,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='DELETE',
             previous_value={'grade_letter': instance.grade_letter},
+            cooperative_id=self.request.cooperative_id,
         )
         instance.delete()
 
@@ -177,6 +180,7 @@ class GradeViewSet(CooperativeScopedViewSet):
                 'price_per_unit': str(grade.price_per_unit),
                 'override_reason': grade.override_reason,
             },
+            cooperative_id=request.cooperative_id,
         )
         update_inventory_on_grade.delay(str(grade.id))
         return Response(GradeDetailSerializer(grade).data)

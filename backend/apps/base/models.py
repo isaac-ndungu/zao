@@ -30,6 +30,12 @@ class CooperativeScopedModel(models.Model):
 
 
 class AuditLog(CooperativeScopedModel):
+    cooperative = models.ForeignKey(
+        'cooperatives.Cooperative',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='audit_logs',
+    )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor = models.ForeignKey(
         get_user_model(), on_delete=models.SET_NULL, null=True, blank=True
