@@ -1,0 +1,1374 @@
+{
+  "_meta": {
+    "base_url": "http://localhost:8000/api",
+    "default_headers": {
+      "Authorization": "Bearer <access_token>",
+      "Content-Type": "application/json"
+    }
+  },
+  "endpoints": {
+
+    "1_auth": {
+      "description": "Authentication endpoints (no auth required except logout)",
+
+      "1.1_register": {
+        "method": "POST",
+        "path": "/api/auth/register/",
+        "auth": "None",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "email":        {"type": "string", "required": true,  "example": "manager@test.com"},
+            "phone_number": {"type": "string", "required": true,  "example": "0712345678"},
+            "first_name":   {"type": "string", "required": true,  "example": "Test"},
+            "last_name":    {"type": "string", "required": true,  "example": "Manager"},
+            "password":     {"type": "string", "required": true,  "example": "Pass123!"}
+          }
+        },
+        "response_201": {
+          "access":  "<jwt_access_token>",
+          "refresh": "<jwt_refresh_token>",
+          "user": {
+            "id":              "<uuid>",
+            "email":           "manager@test.com",
+            "phone_number":    "0712345678",
+            "first_name":      "Test",
+            "last_name":       "Manager",
+            "role":            null,
+            "cooperative_id":  null,
+            "two_fa_enabled":  false
+          }
+        },
+        "notes": "Sets role=null by default. Admin must update role later. Sets refresh_token as HTTP-only cookie."
+      },
+
+      "1.2_login": {
+        "method": "POST",
+        "path": "/api/auth/login/",
+        "auth": "None",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "email":    {"type": "string", "required": true, "example": "manager@test.com", "notes": "Can be email address OR phone number"},
+            "password": {"type": "string", "required": true, "example": "Pass123!"}
+          }
+        },
+        "response_200_no_2fa": {
+          "access":  "<jwt_access_token>",
+          "refresh": "<jwt_refresh_token>",
+          "user": {
+            "id":              "<uuid>",
+            "email":           "manager@test.com",
+            "phone_number":    "0712345678",
+            "first_name":      "Test",
+            "last_name":       "Manager",
+            "role":            "admin",
+            "cooperative_id":  "<uuid>",
+            "two_fa_enabled":  false
+          }
+        },
+        "response_200_2fa_required": {
+          "requires_2fa": true,
+          "login_token":  "<signed_token>"
+        },
+        "notes": "2FA required for roles: manager, accountant, auditor. Sets refresh_token cookie."
+      },
+
+      "1.3_request_otp": {
+        "method": "POST",
+        "path": "/api/auth/2fa/request/",
+        "auth": "None",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "login_token": {"type": "string", "required": true, "example": "<signed_token_from_login>"}
+          }
+        },
+        "response_200": {
+          "detail": "OTP sent to your email."
+        },
+        "notes": "OTP expires in 5 minutes. Token signed with TimestampSigner (max age 180s). OTP sent via email."
+      },
+
+      "1.4_verify_otp": {
+        "method": "POST",
+        "path": "/api/auth/2fa/verify/",
+        "auth": "None",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "login_token": {"type": "string", "required": true, "example": "<signed_token_from_login>"},
+            "otp_code":    {"type": "string", "required": true, "max_length": 6, "example": "123456"}
+          }
+        },
+        "response_200": {
+          "access":  "<jwt_access_token>",
+          "refresh": "<jwt_refresh_token>",
+          "user": {
+            "id":              "<uuid>",
+            "email":           "manager@test.com",
+            "phone_number":    "0712345678",
+            "first_name":      "Test",
+            "last_name":       "Manager",
+            "role":            "manager",
+            "cooperative_id":  "<uuid>",
+            "two_fa_enabled":  false
+          }
+        },
+        "notes": "OTP max 5 attempts. Sets refresh_token cookie. Marks OTP as used."
+      },
+
+      "1.5_refresh": {
+        "method": "POST",
+        "path": "/api/auth/refresh/",
+        "auth": "None (reads refresh token from HTTP-only cookie)",
+        "request": {
+          "content_type": "application/json",
+          "cookies": {
+            "refresh_token": {"type": "string", "required": true, "description": "HTTP-only cookie, path=/api/auth/", "example": "<jwt_refresh_token>"}
+          }
+        },
+        "response_200": {
+          "access":  "<new_jwt_access_token>",
+          "refresh": "<new_jwt_refresh_token>"
+        },
+        "notes": "Reads refresh_token from cookie only. If ROTATE_REFRESH_TOKENS is true, sets new refresh cookie. Returns 401 if cookie missing."
+      },
+
+      "1.6_logout": {
+        "method": "POST",
+        "path": "/api/auth/logout/",
+        "auth": "Bearer token required",
+        "request": {
+          "content_type": "application/json",
+          "cookies": {
+            "refresh_token": {"type": "string", "required": true, "description": "HTTP-only cookie, path=/api/auth/", "example": "<jwt_refresh_token>"}
+          }
+        },
+        "response_200": {
+          "detail": "Logged out."
+        },
+        "notes": "Blacklists refresh token. Deletes refresh_token cookie."
+      }
+    },
+
+    "2_users": {
+      "description": "User management endpoints (cooperative-scoped, requires auth)",
+
+      "2.1_list": {
+        "method": "GET",
+        "path": "/api/users/",
+        "auth": "Bearer — role=admin or manager",
+        "query_params": {
+          "search":   {"type": "string", "required": false, "example": "john", "notes": "Searches first_name, last_name, email, phone_number, role"},
+          "ordering": {"type": "string", "required": false, "example": "-date_joined", "notes": "Fields: first_name, last_name, email, role, date_joined"}
+        },
+        "response_200": {
+          "count": 3,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":              "<uuid>",
+              "email":           "manager@test.com",
+              "phone_number":    "0712000001",
+              "first_name":      "John",
+              "last_name":       "Mwangi",
+              "role":            "manager",
+              "cooperative_id":  "<uuid>",
+              "is_active":       true,
+              "two_fa_enabled":  false,
+              "date_joined":     "2026-05-28T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "2.2_create": {
+        "method": "POST",
+        "path": "/api/users/",
+        "auth": "Bearer — role=admin or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "email":        {"type": "string", "required": true,  "example": "manager@kiambu.co.ke"},
+            "phone_number": {"type": "string", "required": true,  "example": "0712000001"},
+            "first_name":   {"type": "string", "required": true,  "example": "John"},
+            "last_name":    {"type": "string", "required": true,  "example": "Mwangi"},
+            "role":         {"type": "string", "required": true,  "example": "manager", "notes": "One of: admin, manager, accountant, grader, farmer, auditor"},
+            "password":     {"type": "string", "required": true,  "example": "Pass123!"},
+            "is_active":    {"type": "boolean","required": false, "example": true}
+          }
+        },
+        "response_201": {
+          "id":              "<uuid>",
+          "email":           "manager@kiambu.co.ke",
+          "phone_number":    "0712000001",
+          "first_name":      "John",
+          "last_name":       "Mwangi",
+          "role":            "manager",
+          "cooperative_id":  "<uuid>",
+          "is_active":       true,
+          "two_fa_enabled":  false,
+          "date_joined":     "2026-05-28T10:00:00Z"
+        },
+        "notes": "cooperative_id auto-assigned from requesting user's cooperative."
+      },
+
+      "2.3_detail": {
+        "method": "GET",
+        "path": "/api/users/{id}/",
+        "auth": "Bearer — any authenticated user",
+        "response_200": {
+          "id":              "<uuid>",
+          "email":           "manager@kiambu.co.ke",
+          "phone_number":    "0712000001",
+          "first_name":      "John",
+          "last_name":       "Mwangi",
+          "role":            "manager",
+          "cooperative_id":  "<uuid>",
+          "is_active":       true,
+          "two_fa_enabled":  false,
+          "date_joined":     "2026-05-28T10:00:00Z"
+        }
+      },
+
+      "2.4_update": {
+        "method": "PUT",
+        "path": "/api/users/{id}/",
+        "auth": "Bearer — role=admin",
+        "request_all_fields_optional": true,
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "email":          {"type": "string", "required": false, "example": "updated@kiambu.co.ke"},
+            "phone_number":   {"type": "string", "required": false, "example": "0712000099"},
+            "first_name":     {"type": "string", "required": false, "example": "John"},
+            "last_name":      {"type": "string", "required": false, "example": "Kamau"},
+            "role":           {"type": "string", "required": false, "example": "manager"},
+            "password":       {"type": "string", "required": false, "example": "NewPass123!"},
+            "is_active":      {"type": "boolean","required": false, "example": true},
+            "cooperative_id": {"type": "string", "required": false, "example": "<uuid>"}
+          }
+        }
+      },
+
+      "2.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/users/{id}/",
+        "auth": "Bearer — role=admin",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "first_name": {"type": "string", "required": false, "example": "John"},
+            "role":       {"type": "string", "required": false, "example": "manager"}
+          }
+        }
+      },
+
+      "2.6_delete": {
+        "method": "DELETE",
+        "path": "/api/users/{id}/",
+        "auth": "Bearer — role=admin",
+        "response_204": "No content"
+      },
+
+      "2.7_me": {
+        "description": "Get or update current user profile",
+        "methods": [
+          {
+            "method": "GET",
+            "path": "/api/users/me/",
+            "auth": "Bearer — any authenticated",
+            "response_200": {
+              "id":              "<uuid>",
+              "email":           "admin@test.com",
+              "phone_number":    "0711000001",
+              "first_name":      "Admin",
+              "last_name":       "User",
+              "role":            "admin",
+              "cooperative_id":  "<uuid>",
+              "is_active":       true,
+              "two_fa_enabled":  false,
+              "date_joined":     "2026-05-28T10:00:00Z"
+            }
+          },
+          {
+            "method": "PATCH",
+            "path": "/api/users/me/",
+            "auth": "Bearer — any authenticated",
+            "request": {
+              "content_type": "application/json",
+              "body": {
+                "first_name":   {"type": "string", "required": false, "example": "John"},
+                "last_name":    {"type": "string", "required": false, "example": "Kamau"},
+                "phone_number": {"type": "string", "required": false, "example": "0712000002"},
+                "email":        {"type": "string", "required": false, "example": "newemail@test.com"},
+                "password":     {"type": "string", "required": false, "example": "NewPass123!"}
+              }
+            },
+            "notes": "Cannot change own role or cooperative_id via me endpoint."
+          }
+        ]
+      }
+    },
+
+    "3_cooperatives": {
+      "description": "Cooperative management endpoints (public list/detail, admin for mutations)",
+
+      "3.1_list": {
+        "method": "GET",
+        "path": "/api/cooperatives/",
+        "auth": "None (public)",
+        "query_params": {
+          "county":         {"type": "string", "required": false, "example": "Kiambu"},
+          "produce_type":   {"type": "string", "required": false, "example": "DAIRY", "notes": "DAIRY, COFFEE, HONEY"},
+          "payment_model":  {"type": "string", "required": false, "example": "FIXED_PRICE", "notes": "FIXED_PRICE, REVENUE_SHARE"},
+          "sub_county":     {"type": "string", "required": false, "example": "Githunguri"},
+          "is_active":      {"type": "boolean","required": false, "example": true},
+          "is_verified":    {"type": "boolean","required": false, "example": true},
+          "search":         {"type": "string", "required": false, "example": "Kiambu", "notes": "Searches name, registration_number, county, kra_pin"},
+          "ordering":       {"type": "string", "required": false, "example": "name", "notes": "Fields: name, created_at, member_count, county"}
+        },
+        "response_200": {
+          "count": 1,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":                 "<uuid>",
+              "name":               "Kiambu Dairy Farmers Co-op",
+              "registration_number":"CS/2026/001",
+              "county":             "Kiambu",
+              "produce_type":       "DAIRY",
+              "payment_model":      "FIXED_PRICE",
+              "is_active":          true,
+              "is_verified":        false,
+              "member_count":       0
+            }
+          ]
+        }
+      },
+
+      "3.2_create": {
+        "method": "POST",
+        "path": "/api/cooperatives/",
+        "auth": "Bearer — role=admin",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":               {"type": "string",  "required": true,  "example": "Kiambu Dairy Farmers Co-op"},
+            "registration_number":{"type": "string",  "required": true,  "example": "CS/2026/001"},
+            "county":             {"type": "string",  "required": true,  "example": "Kiambu"},
+            "sub_county":         {"type": "string",  "required": false, "example": "Githunguri"},
+            "ward":               {"type": "string",  "required": false, "example": "Githunguri Ward"},
+            "produce_type":       {"type": "string",  "required": true,  "example": "DAIRY", "notes": "DAIRY, COFFEE, HONEY"},
+            "payment_model":      {"type": "string",  "required": true,  "example": "FIXED_PRICE", "notes": "FIXED_PRICE, REVENUE_SHARE"},
+            "levy_percentage":    {"type": "number",  "required": true,  "example": 5.00, "notes": "Must not exceed 100"},
+            "monthly_fee":        {"type": "number",  "required": true,  "example": 100.00},
+            "mpesa_shortcode":    {"type": "string",  "required": false, "example": "247001"},
+            "till_number":        {"type": "string",  "required": false, "example": "123456"},
+            "float_threshold":    {"type": "number",  "required": false, "example": null},
+            "kra_pin":            {"type": "string",  "required": false, "example": "P051234567Z"},
+            "year_established":   {"type": "integer","required": false, "example": 2020},
+            "phone_number":       {"type": "string",  "required": false, "example": "0711000001"},
+            "email":              {"type": "string",  "required": false, "example": "info@kiambudairy.co.ke"},
+            "physical_address":   {"type": "string",  "required": false, "example": "123 Co-op Lane, Githunguri"},
+            "settlement_bank_name":    {"type": "string", "required": false, "example": "Equity Bank"},
+            "settlement_bank_account": {"type": "string", "required": false, "example": "1234567890"},
+            "settlement_bank_branch":  {"type": "string", "required": false, "example": "Githunguri"},
+            "payment_day_of_month":    {"type": "integer","required": false, "example": 15},
+            "parent_union":       {"type": "string",  "required": false, "example": null, "notes": "UUID of parent cooperative"},
+            "prefix":             {"type": "string",  "required": false, "example": "KBD"},
+            "is_active":          {"type": "boolean", "required": false, "example": true},
+            "is_verified":        {"type": "boolean", "required": false, "example": false}
+          }
+        },
+        "response_201": {
+          "id":                   "<uuid>",
+          "name":                 "Kiambu Dairy Farmers Co-op",
+          "registration_number":  "CS/2026/001",
+          "county":               "Kiambu",
+          "sub_county":           "Githunguri",
+          "ward":                 "Githunguri Ward",
+          "produce_type":         "DAIRY",
+          "payment_model":        "FIXED_PRICE",
+          "levy_percentage":      "5.00",
+          "monthly_fee":          "100.00",
+          "mpesa_shortcode":      "247001",
+          "till_number":          "123456",
+          "float_threshold":      null,
+          "kra_pin":              "P051234567Z",
+          "year_established":     2020,
+          "member_count":         0,
+          "phone_number":         "0711000001",
+          "email":                "info@kiambudairy.co.ke",
+          "physical_address":     "123 Co-op Lane, Githunguri",
+          "settlement_bank_name":    "Equity Bank",
+          "settlement_bank_account": "1234567890",
+          "settlement_bank_branch":  "Githunguri",
+          "payment_day_of_month":   15,
+          "parent_union":         null,
+          "prefix":               "KBD",
+          "last_member_sequence": 0,
+          "last_delivery_date":   null,
+          "last_delivery_sequence": 0,
+          "inventory":            {},
+          "is_active":            true,
+          "is_verified":          false,
+          "created_at":           "2026-05-28T10:00:00Z",
+          "updated_at":           "2026-05-28T10:00:00Z"
+        }
+      },
+
+      "3.3_detail": {
+        "method": "GET",
+        "path": "/api/cooperatives/{id}/",
+        "auth": "None (public)",
+        "response_200": {
+          "id":                   "<uuid>",
+          "name":                 "Kiambu Dairy Farmers Co-op",
+          "registration_number":  "CS/2026/001",
+          "county":               "Kiambu",
+          "sub_county":           "Githunguri",
+          "ward":                 "Githunguri Ward",
+          "produce_type":         "DAIRY",
+          "payment_model":        "FIXED_PRICE",
+          "levy_percentage":      "5.00",
+          "monthly_fee":          "100.00",
+          "mpesa_shortcode":      "247001",
+          "till_number":          "123456",
+          "float_threshold":      null,
+          "kra_pin":              "P051234567Z",
+          "year_established":     2020,
+          "member_count":         0,
+          "phone_number":         "0711000001",
+          "email":                "info@kiambudairy.co.ke",
+          "physical_address":     "123 Co-op Lane, Githunguri",
+          "settlement_bank_name":    "Equity Bank",
+          "settlement_bank_account": "1234567890",
+          "settlement_bank_branch":  "Githunguri",
+          "payment_day_of_month":   15,
+          "parent_union":         null,
+          "prefix":               "KBD",
+          "last_member_sequence": 0,
+          "last_delivery_date":   null,
+          "last_delivery_sequence": 0,
+          "inventory":            {},
+          "is_active":            true,
+          "is_verified":          false,
+          "created_at":           "2026-05-28T10:00:00Z",
+          "updated_at":           "2026-05-28T10:00:00Z"
+        }
+      },
+
+      "3.4_update": {
+        "method": "PUT",
+        "path": "/api/cooperatives/{id}/",
+        "auth": "Bearer — role=admin",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":               {"type": "string",  "required": true,  "example": "Kiambu Dairy Farmers Co-op Updated"},
+            "registration_number":{"type": "string",  "required": true,  "example": "CS/2026/001"},
+            "county":             {"type": "string",  "required": true,  "example": "Kiambu"},
+            "sub_county":         {"type": "string",  "required": false, "example": "Githunguri"},
+            "ward":               {"type": "string",  "required": false, "example": "Githunguri Ward"},
+            "produce_type":       {"type": "string",  "required": true,  "example": "DAIRY"},
+            "payment_model":      {"type": "string",  "required": true,  "example": "FIXED_PRICE"},
+            "levy_percentage":    {"type": "number",  "required": true,  "example": 5.00},
+            "monthly_fee":        {"type": "number",  "required": true,  "example": 100.00},
+            "mpesa_shortcode":    {"type": "string",  "required": false, "example": "247001"},
+            "till_number":        {"type": "string",  "required": false, "example": "123456"},
+            "kra_pin":            {"type": "string",  "required": false, "example": "P051234567Z"},
+            "phone_number":       {"type": "string",  "required": false, "example": "0711000001"},
+            "email":              {"type": "string",  "required": false, "example": "info@kiambudairy.co.ke"},
+            "physical_address":   {"type": "string",  "required": false, "example": "123 Co-op Lane, Githunguri"}
+          }
+        }
+      },
+
+      "3.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/cooperatives/{id}/",
+        "auth": "Bearer — role=admin",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":   {"type": "string", "required": false, "example": "Updated Co-op Name"},
+            "county": {"type": "string", "required": false, "example": "Nairobi"}
+          }
+        }
+      },
+
+      "3.6_delete": {
+        "method": "DELETE",
+        "path": "/api/cooperatives/{id}/",
+        "auth": "Bearer — role=admin",
+        "response_204": "No content"
+      },
+
+      "3.7_stats": {
+        "method": "GET",
+        "path": "/api/cooperatives/stats/",
+        "auth": "None (public)",
+        "response_200": {
+          "total":  5,
+          "active": 4,
+          "by_produce_type": [
+            {"produce_type": "DAIRY",  "count": 3},
+            {"produce_type": "COFFEE", "count": 1},
+            {"produce_type": "HONEY",  "count": 1}
+          ],
+          "by_county": [
+            {"county": "Kiambu",  "count": 2},
+            {"county": "Nakuru",  "count": 2},
+            {"county": "Nyeri",   "count": 1}
+          ],
+          "by_verified": [
+            {"is_verified": false, "count": 4},
+            {"is_verified": true,  "count": 1}
+          ]
+        }
+      },
+
+      "3.8_me": {
+        "method": "GET",
+        "path": "/api/cooperatives/me/",
+        "auth": "Bearer token required",
+        "response_200": {
+          "id":                   "<uuid>",
+          "name":                 "Kiambu Dairy Farmers Co-op",
+          "registration_number":  "CS/2026/001",
+          "county":               "Kiambu",
+          "produce_type":         "DAIRY",
+          "payment_model":        "FIXED_PRICE",
+          "is_active":            true,
+          "is_verified":          false,
+          "member_count":         10,
+          "levy_percentage":      "5.00",
+          "monthly_fee":          "100.00",
+          "mpesa_shortcode":      "247001",
+          "till_number":          "123456",
+          "float_threshold":      null,
+          "kra_pin":              "P051234567Z",
+          "year_established":     2020,
+          "phone_number":         "0711000001",
+          "email":                "info@kiambudairy.co.ke",
+          "physical_address":     "123 Co-op Lane, Githunguri",
+          "settlement_bank_name":    "Equity Bank",
+          "settlement_bank_account": "1234567890",
+          "settlement_bank_branch":  "Githunguri",
+          "payment_day_of_month":   15,
+          "parent_union":         null,
+          "prefix":               "KBD",
+          "last_member_sequence": 5,
+          "last_delivery_date":   "2026-05-27",
+          "last_delivery_sequence": 12,
+          "inventory":            {},
+          "created_at":           "2026-05-28T10:00:00Z",
+          "updated_at":           "2026-05-28T10:00:00Z"
+        },
+        "response_404": {
+          "detail": "No cooperative assigned."
+        }
+      },
+
+      "3.9_enums": {
+        "method": "GET",
+        "path": "/api/cooperatives/enums/",
+        "auth": "None (public)",
+        "response_200": {
+          "produce_types":  [["DAIRY", "Dairy"], ["COFFEE", "Coffee"], ["HONEY", "Honey"]],
+          "payment_models": [["FIXED_PRICE", "Fixed Price"], ["REVENUE_SHARE", "Revenue Share"]]
+        }
+      }
+    },
+
+    "4_farmers": {
+      "description": "Farmer management endpoints (cooperative-scoped)",
+
+      "4.1_list": {
+        "method": "GET",
+        "path": "/api/farmers/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "first_name":    {"type": "string",  "required": false, "example": "Grace"},
+          "last_name":     {"type": "string",  "required": false, "example": "Njoki"},
+          "county":        {"type": "string",  "required": false, "example": "Kiambu"},
+          "sub_county":    {"type": "string",  "required": false, "example": "Githunguri"},
+          "ward":          {"type": "string",  "required": false, "example": "Githunguri Ward"},
+          "village":       {"type": "string",  "required": false, "example": "Kamiti"},
+          "payment_method":{"type": "string",  "required": false, "example": "M-PESA", "notes": "M-PESA, BANK, CASH"},
+          "is_active":     {"type": "boolean", "required": false, "example": true},
+          "search":        {"type": "string",  "required": false, "example": "Grace", "notes": "Searches first_name, last_name, member_number, phone_number, mpesa_number"},
+          "ordering":      {"type": "string",  "required": false, "example": "first_name", "notes": "Fields: first_name, last_name, member_number, date_joined, phone_number"}
+        },
+        "response_200": {
+          "count": 2,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":             "<uuid>",
+              "member_number":  "KBD-001",
+              "first_name":     "Grace",
+              "last_name":      "Njoki",
+              "phone_number":   "0713000001",
+              "mpesa_number":   "0713000001",
+              "payment_method": "M-PESA",
+              "is_active":      true,
+              "date_joined":    "2026-05-28T10:00:00Z",
+              "email":          "grace@example.com"
+            }
+          ]
+        }
+      },
+
+      "4.2_create": {
+        "method": "POST",
+        "path": "/api/farmers/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "first_name":    {"type": "string",  "required": true,  "example": "Grace"},
+            "last_name":     {"type": "string",  "required": true,  "example": "Njoki"},
+            "email":         {"type": "string",  "required": false, "example": "grace@example.com"},
+            "id_number":     {"type": "string",  "required": true,  "example": "1234567", "notes": "6-8 digits, encrypted at rest"},
+            "phone_number":  {"type": "string",  "required": true,  "example": "0713000001", "notes": "Kenyan format, e.g. 0712345678 or +254712345678"},
+            "mpesa_number":  {"type": "string",  "required": false, "example": "0713000001", "notes": "Kenyan phone format"},
+            "date_of_birth": {"type": "string",  "required": false, "example": "1990-05-15", "notes": "ISO date YYYY-MM-DD"},
+            "county":        {"type": "string",  "required": true,  "example": "Kiambu", "notes": "Must be from KENYA_COUNTIES list"},
+            "sub_county":    {"type": "string",  "required": false, "example": "Githunguri"},
+            "ward":          {"type": "string",  "required": false, "example": "Githunguri Ward"},
+            "village":       {"type": "string",  "required": false, "example": "Kamiti"},
+            "payment_method":{"type": "string",  "required": true,  "example": "M-PESA", "notes": "M-PESA, BANK, CASH"},
+            "bank_name":     {"type": "string",  "required": false, "example": "Equity Bank", "notes": "Required if payment_method=BANK"},
+            "bank_account":  {"type": "string",  "required": false, "example": "1234567890", "notes": "Required if payment_method=BANK"},
+            "bank_branch":   {"type": "string",  "required": false, "example": "Githunguri"},
+            "is_active":     {"type": "boolean", "required": false, "example": true},
+            "user_id":       {"type": "string",  "required": false, "example": "<existing_user_uuid>", "notes": "Link to existing User for login"},
+            "user_email":    {"type": "string",  "required": false, "example": "jane@test.com", "notes": "Creates User+Farmer in one go. Returns temp_password"},
+            "cooperative_id":{"type": "string",  "required": false, "example": "<uuid>", "notes": "Defaults to requesting user's cooperative"}
+          }
+        },
+        "response_201": {
+          "id":              "<uuid>",
+          "member_number":   "KBD-001",
+          "first_name":      "Grace",
+          "last_name":       "Njoki",
+          "email":           "grace@example.com",
+          "phone_number":    "0713000001",
+          "mpesa_number":    "0713000001",
+          "decrypted_id_number": "1234567",
+          "date_of_birth":   "1990-05-15",
+          "county":          "Kiambu",
+          "sub_county":      "Githunguri",
+          "ward":            "Githunguri Ward",
+          "village":         "Kamiti",
+          "payment_method":  "M-PESA",
+          "bank_name":       "",
+          "bank_account":    "",
+          "bank_branch":     "",
+          "is_active":       true,
+          "cooperative":     "<uuid>",
+          "user":            null,
+          "date_joined":     "2026-05-28T10:00:00Z",
+          "updated_at":      "2026-05-28T10:00:00Z",
+          "temp_password":   "<only_if_user_email_was_provided>"
+        },
+        "notes": "id_number not returned in response (removed in to_representation). decrypted_id_number field available instead."
+      },
+
+      "4.3_detail": {
+        "method": "GET",
+        "path": "/api/farmers/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":              "<uuid>",
+          "member_number":   "KBD-001",
+          "first_name":      "Grace",
+          "last_name":       "Njoki",
+          "email":           "grace@example.com",
+          "phone_number":    "0713000001",
+          "mpesa_number":    "0713000001",
+          "decrypted_id_number": "1234567",
+          "date_of_birth":   "1990-05-15",
+          "county":          "Kiambu",
+          "sub_county":      "Githunguri",
+          "ward":            "Githunguri Ward",
+          "village":         "Kamiti",
+          "payment_method":  "M-PESA",
+          "bank_name":       "",
+          "bank_account":    "",
+          "bank_branch":     "",
+          "is_active":       true,
+          "cooperative":     "<uuid>",
+          "user":            null,
+          "date_joined":     "2026-05-28T10:00:00Z",
+          "updated_at":      "2026-05-28T10:00:00Z"
+        }
+      },
+
+      "4.4_update": {
+        "method": "PUT",
+        "path": "/api/farmers/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "first_name":    {"type": "string",  "required": true,  "example": "Grace"},
+            "last_name":     {"type": "string",  "required": true,  "example": "Njoki"},
+            "email":         {"type": "string",  "required": false, "example": "grace@example.com"},
+            "id_number":     {"type": "string",  "required": true,  "example": "1234567"},
+            "phone_number":  {"type": "string",  "required": true,  "example": "0713000001"},
+            "mpesa_number":  {"type": "string",  "required": false, "example": "0713000001"},
+            "date_of_birth": {"type": "string",  "required": false, "example": "1990-05-15"},
+            "county":        {"type": "string",  "required": true,  "example": "Kiambu"},
+            "sub_county":    {"type": "string",  "required": false, "example": "Githunguri"},
+            "ward":          {"type": "string",  "required": false, "example": "Githunguri Ward"},
+            "village":       {"type": "string",  "required": false, "example": "Kamiti"},
+            "payment_method":{"type": "string",  "required": true,  "example": "M-PESA"},
+            "bank_name":     {"type": "string",  "required": false, "example": "Equity Bank"},
+            "bank_account":  {"type": "string",  "required": false, "example": "1234567890"},
+            "bank_branch":   {"type": "string",  "required": false, "example": "Githunguri"},
+            "is_active":     {"type": "boolean", "required": false, "example": true}
+          }
+        }
+      },
+
+      "4.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/farmers/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "phone_number": {"type": "string", "required": false, "example": "0713000099"},
+            "village":      {"type": "string", "required": false, "example": "New Village"}
+          }
+        }
+      },
+
+      "4.6_delete": {
+        "method": "DELETE",
+        "path": "/api/farmers/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content"
+      },
+
+      "4.7_me": {
+        "methods": [
+          {
+            "method": "GET",
+            "path": "/api/farmers/me/",
+            "auth": "Bearer — farmer (requires user linked to farmer profile)",
+            "response_200": {
+              "id":              "<uuid>",
+              "member_number":   "KBD-001",
+              "first_name":      "Grace",
+              "last_name":       "Njoki",
+              "email":           "grace@example.com",
+              "phone_number":    "0713000001",
+              "mpesa_number":    "0713000001",
+              "decrypted_id_number": "1234567",
+              "date_of_birth":   "1990-05-15",
+              "county":          "Kiambu",
+              "sub_county":      "Githunguri",
+              "ward":            "Githunguri Ward",
+              "village":         "Kamiti",
+              "payment_method":  "M-PESA",
+              "bank_name":       "",
+              "bank_account":    "",
+              "bank_branch":     "",
+              "is_active":       true,
+              "cooperative":     "<uuid>",
+              "user":            "<uuid>",
+              "date_joined":     "2026-05-28T10:00:00Z",
+              "updated_at":      "2026-05-28T10:00:00Z"
+            },
+            "response_404": {
+              "detail": "No farmer profile found."
+            }
+          },
+          {
+            "method": "PATCH",
+            "path": "/api/farmers/me/",
+            "auth": "Bearer — farmer (requires user linked to farmer profile)",
+            "request": {
+              "content_type": "application/json",
+              "body": {
+                "phone_number":  {"type": "string", "required": false, "example": "0713000099"},
+                "mpesa_number":  {"type": "string", "required": false, "example": "0713000099"},
+                "email":         {"type": "string", "required": false, "example": "newemail@example.com"},
+                "bank_name":     {"type": "string", "required": false, "example": "Equity Bank"},
+                "bank_account":  {"type": "string", "required": false, "example": "9876543210"},
+                "bank_branch":   {"type": "string", "required": false, "example": "Nairobi"},
+                "village":       {"type": "string", "required": false, "example": "New Village"},
+                "ward":          {"type": "string", "required": false, "example": "New Ward"},
+                "sub_county":    {"type": "string", "required": false, "example": "New Sub-county"}
+              }
+            }
+          }
+        ]
+      },
+
+      "4.8_import_csv": {
+        "method": "POST",
+        "path": "/api/farmers/import_csv/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "multipart/form-data",
+          "body": {
+            "file": {"type": "file", "required": true, "notes": "CSV file with header row"}
+          }
+        },
+        "csv_format": {
+          "headers": ["first_name", "last_name", "email", "id_number", "phone_number", "mpesa_number", "county", "sub_county", "ward", "village", "payment_method", "bank_name", "bank_account", "bank_branch", "date_of_birth"],
+          "example_row": ["Alice", "Wanjiku", "alice@test.com", "1111111", "0714000001", "0714000001", "Kiambu", "", "", "", "M-PESA", "", "", "", ""]
+        },
+        "response_200": {
+          "created": 2,
+          "errors": []
+        }
+      },
+
+      "4.9_summary": {
+        "method": "GET",
+        "path": "/api/farmers/summary/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "total":  10,
+          "active": 8,
+          "by_payment_method": [
+            {"payment_method": "M-PESA", "count": 5},
+            {"payment_method": "BANK",   "count": 3},
+            {"payment_method": "CASH",   "count": 2}
+          ],
+          "by_county": [
+            {"county": "Kiambu", "count": 6},
+            {"county": "Nakuru", "count": 4}
+          ]
+        }
+      }
+    },
+
+    "5_deliveries": {
+      "description": "Delivery management endpoints (cooperative-scoped)",
+
+      "5.1_list": {
+        "method": "GET",
+        "path": "/api/deliveries/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "product_type": {"type": "string", "required": false, "example": "MILK", "notes": "MILK, COFFEE_CHERRIES, HONEY, OTHER"},
+          "status":       {"type": "string", "required": false, "example": "PENDING", "notes": "PENDING, GRADED, ACCEPTED, REJECTED, PAID"},
+          "shift":        {"type": "string", "required": false, "example": "AM", "notes": "AM, PM"},
+          "grade":        {"type": "string", "required": false, "example": "A"},
+          "farmer":       {"type": "string", "required": false, "example": "<farmer_uuid>"},
+          "date_from":    {"type": "string", "required": false, "example": "2026-01-01", "notes": "ISO date YYYY-MM-DD"},
+          "date_to":      {"type": "string", "required": false, "example": "2026-12-31", "notes": "ISO date YYYY-MM-DD"},
+          "search":       {"type": "string", "required": false, "example": "PRODUCE-20260528", "notes": "Searches batch_id, farmer name, member_number, local_id"},
+          "ordering":     {"type": "string", "required": false, "example": "-date_delivered", "notes": "Fields: date_delivered, batch_id, product_type, status"}
+        },
+        "response_200": {
+          "count": 2,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":             "<uuid>",
+              "batch_id":       "PRODUCE-20260528-001",
+              "farmer_name":    "Grace Njoki",
+              "product_type":   "MILK",
+              "quantity_kg":    null,
+              "volume_litres":  "50.00",
+              "grade":          "",
+              "status":         "PENDING",
+              "date_delivered": "2026-05-28T06:30:00Z",
+              "shift":          "AM"
+            }
+          ]
+        }
+      },
+
+      "5.2_create": {
+        "method": "POST",
+        "path": "/api/deliveries/",
+        "auth": "Bearer — role=manager or grader",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer":          {"type": "string",  "required": true,  "example": "<farmer_uuid>", "notes": "Must be active and in same cooperative"},
+            "product_type":    {"type": "string",  "required": true,  "example": "MILK", "notes": "MILK, COFFEE_CHERRIES, HONEY, OTHER"},
+            "quantity_kg":     {"type": "number",  "required": false, "example": null, "notes": "Required for COFFEE_CHERRIES, HONEY"},
+            "volume_litres":   {"type": "number",  "required": false, "example": 50.00, "notes": "Required for MILK"},
+            "shift":           {"type": "string",  "required": false, "example": "AM", "notes": "AM, PM"},
+            "status":          {"type": "string",  "required": false, "example": "PENDING", "notes": "Default PENDING"},
+            "grade":           {"type": "string",  "required": false, "example": "", "notes": "Required if status=GRADED"},
+            "quality_metrics": {"type": "object",  "required": false, "example": {"temperature": 4.5, "fat_content": 3.2}},
+            "rejection_reason":{"type": "string",  "required": false, "example": "", "notes": "Required if status=REJECTED"},
+            "grader":          {"type": "string",  "required": false, "example": "<user_uuid>"},
+            "is_synced":       {"type": "boolean", "required": false, "example": true},
+            "local_id":        {"type": "string",  "required": false, "example": "", "notes": "For offline sync identification"},
+            "cooperative_id":  {"type": "string",  "required": false, "example": "<uuid>", "notes": "Defaults to requesting user's cooperative"}
+          }
+        },
+        "response_201": {
+          "id":              "<uuid>",
+          "batch_id":        "PRODUCE-20260528-001",
+          "farmer_name":     "Grace Njoki",
+          "grader_name":     null,
+          "farmer":          "<farmer_uuid>",
+          "grader":          null,
+          "product_type":    "MILK",
+          "quantity_kg":     null,
+          "volume_litres":   "50.00",
+          "grade":           "",
+          "quality_metrics": null,
+          "rejection_reason":"",
+          "status":          "PENDING",
+          "shift":           "AM",
+          "is_synced":       true,
+          "local_id":        "",
+          "cooperative":     "<uuid>",
+          "date_delivered":  "2026-05-28T06:30:00Z",
+          "updated_at":      "2026-05-28T06:30:00Z"
+        },
+        "notes": "batch_id auto-generated. Triggers SMS notification to farmer via Celery."
+      },
+
+      "5.3_detail": {
+        "method": "GET",
+        "path": "/api/deliveries/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":              "<uuid>",
+          "batch_id":        "PRODUCE-20260528-001",
+          "farmer_name":     "Grace Njoki",
+          "grader_name":     null,
+          "farmer":          "<farmer_uuid>",
+          "grader":          null,
+          "product_type":    "MILK",
+          "quantity_kg":     null,
+          "volume_litres":   "50.00",
+          "grade":           "",
+          "quality_metrics": null,
+          "rejection_reason":"",
+          "status":          "PENDING",
+          "shift":           "AM",
+          "is_synced":       true,
+          "local_id":        "",
+          "cooperative":     "<uuid>",
+          "date_delivered":  "2026-05-28T06:30:00Z",
+          "updated_at":      "2026-05-28T06:30:00Z"
+        }
+      },
+
+      "5.4_update": {
+        "method": "PUT",
+        "path": "/api/deliveries/{id}/",
+        "auth": "Bearer — role=manager or grader",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer":          {"type": "string",  "required": true,  "example": "<farmer_uuid>"},
+            "product_type":    {"type": "string",  "required": true,  "example": "MILK"},
+            "quantity_kg":     {"type": "number",  "required": false, "example": null},
+            "volume_litres":   {"type": "number",  "required": false, "example": 55.00},
+            "shift":           {"type": "string",  "required": false, "example": "AM"},
+            "status":          {"type": "string",  "required": false, "example": "PENDING"},
+            "grade":           {"type": "string",  "required": false, "example": ""},
+            "quality_metrics": {"type": "object",  "required": false, "example": {"temperature": 4.5}},
+            "rejection_reason":{"type": "string",  "required": false, "example": ""},
+            "grader":          {"type": "string",  "required": false, "example": "<user_uuid>"}
+          }
+        }
+      },
+
+      "5.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/deliveries/{id}/",
+        "auth": "Bearer — role=manager or grader",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "volume_litres": {"type": "number", "required": false, "example": 55.00},
+            "status":        {"type": "string", "required": false, "example": "ACCEPTED"}
+          }
+        }
+      },
+
+      "5.6_delete": {
+        "method": "DELETE",
+        "path": "/api/deliveries/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content"
+      },
+
+      "5.7_sync": {
+        "method": "POST",
+        "path": "/api/deliveries/sync/",
+        "auth": "Bearer — role=manager or grader",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "deliveries": {
+              "type": "array",
+              "required": true,
+              "items": {
+                "farmer":          {"type": "string", "required": true,  "example": "<farmer_uuid>"},
+                "product_type":    {"type": "string", "required": true,  "example": "MILK"},
+                "quantity_kg":     {"type": "number", "required": false, "example": null},
+                "volume_litres":   {"type": "number", "required": false, "example": 25.00},
+                "shift":           {"type": "string", "required": false, "example": "AM"},
+                "status":          {"type": "string", "required": false, "example": "PENDING"},
+                "local_id":        {"type": "string", "required": false, "example": "offline-001", "notes": "Client-side ID for mapping"}
+              }
+            }
+          }
+        },
+        "response_201": {
+          "synced": [
+            {"local_id": "offline-001", "id": "<new_uuid>", "batch_id": "PRODUCE-20260528-001"},
+            {"local_id": "offline-002", "id": "<new_uuid>", "batch_id": "PRODUCE-20260528-002"}
+          ]
+        },
+        "notes": "Atomic transaction. All deliveries created in one go. Sends bulk SMS via Celery."
+      },
+
+      "5.8_batches": {
+        "method": "GET",
+        "path": "/api/deliveries/batches/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "batch_id":  {"type": "string", "required": false, "example": "PRODUCE-20260528-001", "notes": "Returns batch detail with deliveries array"},
+          "date_from": {"type": "string", "required": false, "example": "2026-05-01"},
+          "date_to":   {"type": "string", "required": false, "example": "2026-05-28"}
+        },
+        "response_200_list": {
+          "count": 2,
+          "results": [
+            {
+              "batch_id":           "PRODUCE-20260528-001",
+              "delivery_count":     2,
+              "total_quantity_kg":  100.00,
+              "total_volume_litres":50.00,
+              "date_delivered":     "2026-05-28"
+            }
+          ]
+        },
+        "response_200_detail": {
+          "batch_id":             "PRODUCE-20260528-001",
+          "delivery_count":       2,
+          "total_quantity_kg":    100.00,
+          "total_volume_litres":  50.00,
+          "product_types":        ["MILK", "COFFEE_CHERRIES"],
+          "statuses":             ["PENDING"],
+          "deliveries": [
+            {
+              "id":             "<uuid>",
+              "batch_id":       "PRODUCE-20260528-001",
+              "farmer_name":    "Grace Njoki",
+              "product_type":   "MILK",
+              "quantity_kg":    null,
+              "volume_litres":  "50.00",
+              "grade":          "",
+              "status":         "PENDING",
+              "date_delivered": "2026-05-28T06:30:00Z",
+              "shift":          "AM"
+            }
+          ]
+        },
+        "notes": "Returns paginated list when no batch_id filter. Returns single batch with deliveries when batch_id provided."
+      },
+
+      "5.9_summary": {
+        "method": "GET",
+        "path": "/api/deliveries/summary/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "total": 50,
+          "by_product_type": [
+            {"product_type": "MILK",            "count": 30},
+            {"product_type": "COFFEE_CHERRIES", "count": 15},
+            {"product_type": "HONEY",           "count": 5}
+          ],
+          "by_status": [
+            {"status": "PENDING",  "count": 20},
+            {"status": "GRADED",   "count": 15},
+            {"status": "ACCEPTED", "count": 10},
+            {"status": "REJECTED", "count": 3},
+            {"status": "PAID",     "count": 2}
+          ],
+          "pending_grading": 20
+        }
+      }
+    },
+
+    "6_grading": {
+      "description": "Grade management endpoints (cooperative-scoped)",
+
+      "6.1_list": {
+        "method": "GET",
+        "path": "/api/grades/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "grade_letter": {"type": "string", "required": false, "example": "A", "notes": "A, B, C, PREMIUM, STANDARD"},
+          "delivery":     {"type": "string", "required": false, "example": "<delivery_uuid>"},
+          "search":       {"type": "string", "required": false, "example": "PRODUCE-20260528", "notes": "Searches batch_id, grade_letter, farmer name, member_number"},
+          "ordering":     {"type": "string", "required": false, "example": "-created_at", "notes": "Fields: created_at, grade_letter, price_per_unit"}
+        },
+        "response_200": {
+          "count": 2,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":              "<uuid>",
+              "delivery":        "<delivery_uuid>",
+              "batch_id":        "PRODUCE-20260528-001",
+              "farmer_name":     "Grace Njoki",
+              "grade_letter":    "A",
+              "price_per_unit":  "50.00",
+              "rejection_reason":"",
+              "is_overridden":   false,
+              "overridden_at":   null,
+              "override_reason": "",
+              "created_at":      "2026-05-28T10:00:00Z",
+              "updated_at":      "2026-05-28T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "6.2_create": {
+        "method": "POST",
+        "path": "/api/grades/",
+        "auth": "Bearer — role=grader",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "delivery":        {"type": "string", "required": true,  "example": "<delivery_uuid>", "notes": "Delivery must be PENDING, same cooperative, no existing grade"},
+            "grade_letter":    {"type": "string", "required": false, "example": "A", "notes": "A, B, C, PREMIUM, STANDARD. Cannot set with rejection_reason"},
+            "price_per_unit":  {"type": "number", "required": false, "example": 50.00, "notes": "Decimal. Required if grade_letter set"},
+            "rejection_reason":{"type": "string", "required": false, "example": "", "notes": "Use instead of grade_letter for rejection. Cannot set with grade_letter"},
+            "cooperative_id":  {"type": "string", "required": false, "example": "<uuid>"}
+          }
+        },
+        "response_201": {
+          "id":              "<uuid>",
+          "delivery":        "<delivery_uuid>",
+          "batch_id":        "PRODUCE-20260528-001",
+          "farmer_name":     "Grace Njoki",
+          "product_type":    "MILK",
+          "grade_letter":    "A",
+          "price_per_unit":  "50.00",
+          "rejection_reason":"",
+          "is_overridden":   false,
+          "overridden_by":   null,
+          "overridden_at":   null,
+          "override_reason": "",
+          "cooperative":     "<uuid>",
+          "created_at":      "2026-05-28T10:00:00Z",
+          "updated_at":      "2026-05-28T10:00:00Z"
+        },
+        "notes": "Auto-updates delivery status to GRADED (or REJECTED). Triggers Celery task to update cooperative inventory."
+      },
+
+      "6.3_detail": {
+        "method": "GET",
+        "path": "/api/grades/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":              "<uuid>",
+          "delivery":        "<delivery_uuid>",
+          "batch_id":        "PRODUCE-20260528-001",
+          "farmer_name":     "Grace Njoki",
+          "product_type":    "MILK",
+          "grade_letter":    "A",
+          "price_per_unit":  "50.00",
+          "rejection_reason":"",
+          "is_overridden":   false,
+          "overridden_by":   null,
+          "overridden_at":   null,
+          "override_reason": "",
+          "cooperative":     "<uuid>",
+          "created_at":      "2026-05-28T10:00:00Z",
+          "updated_at":      "2026-05-28T10:00:00Z"
+        }
+      },
+
+      "6.4_update": {
+        "method": "PUT",
+        "path": "/api/grades/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "delivery":        {"type": "string", "required": true,  "example": "<delivery_uuid>"},
+            "grade_letter":    {"type": "string", "required": false, "example": "B"},
+            "price_per_unit":  {"type": "number", "required": false, "example": 45.00},
+            "rejection_reason":{"type": "string", "required": false, "example": ""}
+          }
+        },
+        "notes": "Syncs changes back to delivery (status, grade, rejection_reason)."
+      },
+
+      "6.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/grades/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "grade_letter":   {"type": "string", "required": false, "example": "B"},
+            "price_per_unit": {"type": "number", "required": false, "example": 45.00}
+          }
+        }
+      },
+
+      "6.6_delete": {
+        "method": "DELETE",
+        "path": "/api/grades/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content"
+      },
+
+      "6.7_override": {
+        "methods": [
+          {
+            "method": "POST",
+            "path": "/api/grades/{id}/override/",
+            "auth": "Bearer — role=manager"
+          },
+          {
+            "method": "PATCH",
+            "path": "/api/grades/{id}/override/",
+            "auth": "Bearer — role=manager"
+          }
+        ],
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "grade_letter":    {"type": "string", "required": false, "example": "B", "notes": "Cannot set with rejection_reason"},
+            "price_per_unit":  {"type": "number", "required": false, "example": 45.00},
+            "rejection_reason":{"type": "string", "required": false, "example": "Lab results showed contamination", "notes": "Cannot set with grade_letter"},
+            "override_reason": {"type": "string", "required": true,  "example": "Re-grading confirmed lower quality"}
+          }
+        },
+        "response_200": {
+          "id":              "<uuid>",
+          "delivery":        "<delivery_uuid>",
+          "batch_id":        "PRODUCE-20260528-001",
+          "farmer_name":     "Grace Njoki",
+          "product_type":    "MILK",
+          "grade_letter":    "B",
+          "price_per_unit":  "45.00",
+          "rejection_reason":"",
+          "is_overridden":   true,
+          "overridden_by":   "<manager_user_uuid>",
+          "overridden_at":   "2026-05-28T11:00:00Z",
+          "override_reason": "Re-grading confirmed lower quality",
+          "cooperative":     "<uuid>",
+          "created_at":      "2026-05-28T10:00:00Z",
+          "updated_at":      "2026-05-28T11:00:00Z"
+        },
+        "notes": "override_reason is REQUIRED. Sets is_overridden=true. Syncs delivery status. Triggers Celery inventory update."
+      },
+
+      "6.8_prices": {
+        "methods": [
+          {
+            "method": "GET",
+            "path": "/api/grades/prices/",
+            "auth": "Bearer — any authenticated",
+            "response_200": {
+              "count": 3,
+              "next": null,
+              "previous": null,
+              "results": [
+                {
+                  "id":              "<uuid>",
+                  "grade_letter":    "A",
+                  "price_per_unit":  "50.00",
+                  "effective_from":  "2026-01-01",
+                  "created_at":      "2026-01-01T00:00:00Z"
+                },
+                {
+                  "id":              "<uuid>",
+                  "grade_letter":    "B",
+                  "price_per_unit":  "45.00",
+                  "effective_from":  "2026-01-01",
+                  "created_at":      "2026-01-01T00:00:00Z"
+                },
+                {
+                  "id":              "<uuid>",
+                  "grade_letter":    "C",
+                  "price_per_unit":  "38.00",
+                  "effective_from":  "2026-01-01",
+                  "created_at":      "2026-01-01T00:00:00Z"
+                }
+              ]
+            },
+            "notes": "Ordered by -effective_from. Paginated."
+          },
+          {
+            "method": "POST",
+            "path": "/api/grades/prices/",
+            "auth": "Bearer — role=admin",
+            "request": {
+              "content_type": "application/json",
+              "body": {
+                "grade_letter":   {"type": "string", "required": true, "example": "PREMIUM", "notes": "A, B, C, PREMIUM, STANDARD"},
+                "price_per_unit": {"type": "number", "required": true, "example": 60.00},
+                "effective_from": {"type": "string", "required": true, "example": "2026-06-01", "notes": "ISO date YYYY-MM-DD"}
+              }
+            },
+            "response_201": {
+              "id":              "<uuid>",
+              "grade_letter":    "PREMIUM",
+              "price_per_unit":  "60.00",
+              "effective_from":  "2026-06-01",
+              "created_at":      "2026-06-01T00:00:00Z"
+            },
+            "notes": "unique_together on (grade_letter, effective_from). Cannot create duplicate on same date."
+          }
+        ]
+      }
+    },
+
+    "7_schema_and_admin": {
+      "description": "OpenAPI schema and admin endpoints",
+
+      "7.1_openapi_schema": {
+        "method": "GET",
+        "path": "/api/schema/",
+        "auth": "None",
+        "notes": "OpenAPI JSON schema (drf-spectacular)"
+      },
+
+      "7.2_swagger_ui": {
+        "method": "GET",
+        "path": "/api/docs/",
+        "auth": "None",
+        "notes": "Swagger UI"
+      },
+
+      "7.3_redoc": {
+        "method": "GET",
+        "path": "/api/schema/redoc/",
+        "auth": "None",
+        "notes": "ReDoc UI"
+      },
+
+      "7.4_admin": {
+        "method": "GET",
+        "path": "/admin/",
+        "auth": "Django Admin login",
+        "notes": "Django admin interface"
+      }
+    }
+  }
+}
