@@ -5,6 +5,7 @@ from rest_framework import serializers
 from apps.auth_api.models import User
 from apps.base.constants import KENYA_COUNTIES
 from apps.base.encryption import decrypt_field, encrypt_field
+from apps.base.utils import normalize_phone
 from apps.cooperatives.models import Cooperative
 from apps.farmers.models import Farmer
 
@@ -80,6 +81,7 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_phone_number(self, value):
+        value = normalize_phone(value)
         if not KENYA_PHONE_RE.match(value):
             raise serializers.ValidationError(
                 'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
@@ -87,10 +89,12 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_mpesa_number(self, value):
-        if value and not KENYA_PHONE_RE.match(value):
-            raise serializers.ValidationError(
-                'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
-            )
+        if value:
+            value = normalize_phone(value)
+            if not KENYA_PHONE_RE.match(value):
+                raise serializers.ValidationError(
+                    'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
+                )
         return value
 
     def validate_id_number(self, value):
@@ -128,6 +132,7 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        validated_data.pop('cooperative_id', None)
         validated_data.pop('user_id', None)
         validated_data.pop('user_email', None)
         if 'id_number' in validated_data and validated_data['id_number']:
@@ -146,15 +151,19 @@ class FarmerSelfUpdateSerializer(serializers.ModelSerializer):
         extra_kwargs = {field: {'required': False} for field in fields}
 
     def validate_phone_number(self, value):
-        if value and not KENYA_PHONE_RE.match(value):
-            raise serializers.ValidationError(
-                'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
-            )
+        if value:
+            value = normalize_phone(value)
+            if not KENYA_PHONE_RE.match(value):
+                raise serializers.ValidationError(
+                    'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
+                )
         return value
 
     def validate_mpesa_number(self, value):
-        if value and not KENYA_PHONE_RE.match(value):
-            raise serializers.ValidationError(
-                'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
-            )
+        if value:
+            value = normalize_phone(value)
+            if not KENYA_PHONE_RE.match(value):
+                raise serializers.ValidationError(
+                    'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
+                )
         return value
