@@ -1,13 +1,20 @@
 import logging
-from decimal import Decimal
 
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
 
 
+def _determine_unit(product_type: str, quantity_kg, volume_litres):
+    if product_type == 'MILK':
+        return 'litres', volume_litres or 0
+    return 'kg', quantity_kg or 0
+
+
 @shared_task
 def update_inventory_on_grade(grade_id: str):
+    from apps.inventory.models import Inventory
+
     from .models import Grade
 
     try:
@@ -19,6 +26,20 @@ def update_inventory_on_grade(grade_id: str):
     delivery = grade.delivery
     coop = delivery.cooperative
     product = delivery.product_type
+
+    unit, qty = _determine_unit(product, delivery.quantity_kg, delivery.volume_litres)
+
+    Inventory.objects.update_or_create(
+        batch_id=delivery.batch_id,
+        cooperative=coop,
+        defaults={
+            'product_type': product,
+            'grade': grade.grade_letter,
+            'unit': unit,
+            'quantity_in': qty,
+            'quantity_out': 0,
+        },
+    )
 
     inventory = coop.inventory or {}
     current = inventory.get(product, {})
