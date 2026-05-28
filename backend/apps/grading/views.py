@@ -91,7 +91,8 @@ class GradeViewSet(CooperativeScopedViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        instance = serializer.save(cooperative_id=request.cooperative_id)
+        coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        instance = serializer.save(cooperative_id=coop_id)
 
         update_delivery_from_grade(instance)
 

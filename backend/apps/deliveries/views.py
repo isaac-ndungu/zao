@@ -69,8 +69,9 @@ class DeliveryViewSet(CooperativeScopedViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
         instance = serializer.save(
-            cooperative_id=request.cooperative_id,
+            cooperative_id=coop_id,
         )
         log_audit(
             actor=request.user,
@@ -125,8 +126,9 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             for delivery_data in serializer.validated_data['deliveries']:
                 create_serializer = DeliveryCreateSerializer(data=delivery_data)
                 create_serializer.is_valid(raise_exception=True)
+                coop_id = create_serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
                 instance = create_serializer.save(
-                    cooperative_id=request.cooperative_id,
+                    cooperative_id=coop_id,
                 )
                 results.append({
                     'local_id': delivery_data.get('local_id'),

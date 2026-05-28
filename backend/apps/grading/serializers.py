@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.cooperatives.models import Cooperative
 from .models import Grade, GradePrice
 
 
@@ -56,11 +57,19 @@ class GradeDetailSerializer(serializers.ModelSerializer):
 
 
 class GradeCreateSerializer(serializers.ModelSerializer):
+    cooperative_id = serializers.UUIDField(required=False, write_only=True)
+
     class Meta:
         model = Grade
         fields = [
             'delivery', 'grade_letter', 'price_per_unit', 'rejection_reason',
+            'cooperative_id',
         ]
+
+    def validate_cooperative_id(self, value):
+        if not Cooperative.objects.filter(id=value).exists():
+            raise serializers.ValidationError('Cooperative not found.')
+        return value
 
     def validate_delivery(self, value):
         return validate_delivery_scoped(

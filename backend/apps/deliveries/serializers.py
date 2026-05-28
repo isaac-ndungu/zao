@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.cooperatives.models import Cooperative
 from .models import Delivery
 
 
@@ -39,6 +40,8 @@ class DeliveryDetailSerializer(serializers.ModelSerializer):
 
 
 class DeliveryCreateSerializer(serializers.ModelSerializer):
+    cooperative_id = serializers.UUIDField(required=False, write_only=True)
+
     class Meta:
         model = Delivery
         fields = [
@@ -46,7 +49,16 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
             'quantity_kg', 'volume_litres',
             'grade', 'quality_metrics', 'rejection_reason',
             'status', 'shift', 'is_synced', 'local_id',
+            'cooperative_id',
         ]
+        extra_kwargs = {
+            'farmer': {'required': False},
+        }
+
+    def validate_cooperative_id(self, value):
+        if not Cooperative.objects.filter(id=value).exists():
+            raise serializers.ValidationError('Cooperative not found.')
+        return value
 
     def validate_farmer(self, value):
         if not value.is_active:
@@ -57,6 +69,9 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, attrs):
+        if self.instance is None and not attrs.get('farmer'):
+            raise serializers.ValidationError({'farmer': 'Farmer is required.'})
+
         product = attrs.get('product_type')
 
         if product == 'MILK' and not attrs.get('volume_litres'):

@@ -13,6 +13,7 @@ from .serializers import (
     UserCreateSerializer,
     UserListSerializer,
     UserSelfUpdateSerializer,
+    UserUpdateSerializer,
 )
 
 
@@ -34,7 +35,7 @@ class UserViewSet(CooperativeScopedViewSet):
         if self.action == 'create':
             return UserCreateSerializer
         if self.action in ('update', 'partial_update'):
-            return UserCreateSerializer
+            return UserUpdateSerializer
         return UserListSerializer
 
     def perform_create(self, serializer):

@@ -5,6 +5,7 @@ from rest_framework import serializers
 from apps.auth_api.models import User
 from apps.base.constants import KENYA_COUNTIES
 from apps.base.encryption import decrypt_field, encrypt_field
+from apps.cooperatives.models import Cooperative
 from apps.farmers.models import Farmer
 
 
@@ -47,6 +48,7 @@ class FarmerDetailSerializer(serializers.ModelSerializer):
 class FarmerCreateSerializer(serializers.ModelSerializer):
     user_id = serializers.UUIDField(required=False, write_only=True)
     user_email = serializers.EmailField(required=False, write_only=True)
+    cooperative_id = serializers.UUIDField(required=False, write_only=True)
 
     class Meta:
         model = Farmer
@@ -55,7 +57,7 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
             'mpesa_number', 'date_of_birth', 'county', 'sub_county',
             'ward', 'village', 'payment_method', 'bank_name',
             'bank_account', 'bank_branch', 'is_active',
-            'user_id', 'user_email',
+            'user_id', 'user_email', 'cooperative_id',
         ]
         extra_kwargs = {
             'first_name': {'min_length': 1},
@@ -65,6 +67,11 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
     def validate_user_id(self, value):
         if not User.objects.filter(id=value).exists():
             raise serializers.ValidationError('User not found.')
+        return value
+
+    def validate_cooperative_id(self, value):
+        if not Cooperative.objects.filter(id=value).exists():
+            raise serializers.ValidationError('Cooperative not found.')
         return value
 
     def validate_user_email(self, value):
