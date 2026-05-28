@@ -5,7 +5,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.base.permissions import IsGrader, IsManager, IsManagerOrGrader
+from apps.base.constants import UserRole
+from apps.base.permissions import IsGrader, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
@@ -17,6 +18,28 @@ from .serializers import (
     GradeOverrideSerializer,
     GradePriceSerializer,
 )
+from .tasks import update_inventory_on_grade
+
+
+def update_delivery_from_grade(grade):
+    delivery = grade.delivery
+    updates = {}
+    if grade.rejection_reason:
+        updates['status'] = 'REJECTED'
+        updates['rejection_reason'] = grade.rejection_reason
+    else:
+        updates['status'] = 'GRADED'
+        updates['rejection_reason'] = ''
+    updates['grade'] = grade.grade_letter
+    changed = any(
+        getattr(delivery, field) != value
+        for field, value in updates.items()
+    )
+    if changed:
+        for field, value in updates.items():
+            setattr(delivery, field, value)
+        delivery.save(update_fields=list(updates.keys()))
+    return delivery
 
 
 class GradeViewSet(CooperativeScopedViewSet):
@@ -68,12 +91,9 @@ class GradeViewSet(CooperativeScopedViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
+        instance = serializer.save(cooperative_id=request.cooperative_id)
 
-        delivery = instance.delivery
-        delivery.status = 'GRADED'
-        delivery.grade = instance.grade_letter
-        delivery.save(update_fields=['status', 'grade'])
+        update_delivery_from_grade(instance)
 
         log_audit(
             actor=request.user,
@@ -81,18 +101,21 @@ class GradeViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='CREATE',
             new_value={
-                'batch_id': delivery.batch_id,
+                'batch_id': instance.delivery.batch_id,
                 'grade_letter': instance.grade_letter,
                 'price_per_unit': str(instance.price_per_unit),
             },
         )
+        update_inventory_on_grade.delay(str(instance.id))
         return Response(
             GradeDetailSerializer(instance, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
         )
 
     def perform_update(self, serializer):
+        serializer.validated_data.pop('delivery', None)
         instance = serializer.save()
+        update_delivery_from_grade(instance)
         log_audit(
             actor=self.request.user,
             resource_type='grade',
@@ -141,12 +164,7 @@ class GradeViewSet(CooperativeScopedViewSet):
         )
         grade.save()
 
-        delivery = grade.delivery
-        delivery.grade = grade.grade_letter
-        if grade.rejection_reason:
-            delivery.status = 'REJECTED'
-            delivery.rejection_reason = grade.rejection_reason
-        delivery.save(update_fields=['grade', 'status', 'rejection_reason'])
+        update_delivery_from_grade(grade)
 
         log_audit(
             actor=request.user,
@@ -160,7 +178,7 @@ class GradeViewSet(CooperativeScopedViewSet):
                 'override_reason': grade.override_reason,
             },
         )
-
+        update_inventory_on_grade.delay(str(grade.id))
         return Response(GradeDetailSerializer(grade).data)
 
     @action(detail=False, methods=['get', 'post'])
@@ -175,7 +193,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             return Response(serializer.data)
 
         if request.method == 'POST':
-            if not request.user.is_staff:
+            if request.user.role != UserRole.ADMIN:
                 return Response(
                     {'detail': 'Only admins can create prices.'},
                     status=status.HTTP_403_FORBIDDEN,

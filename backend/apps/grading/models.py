@@ -2,8 +2,10 @@ import uuid
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from apps.base.models import CooperativeScopedModel
 
-class Grade(models.Model):
+
+class Grade(CooperativeScopedModel):
     GRADE_CHOICES = [
         ('A', 'A'),
         ('B', 'B'),
@@ -58,6 +60,7 @@ class GradePrice(models.Model):
         verbose_name = 'Grade Price'
         verbose_name_plural = 'Grade Prices'
         ordering = ['-effective_from']
+        unique_together = [['grade_letter', 'effective_from']]
 
     def __str__(self):
         return f'{self.grade_letter} @ {self.price_per_unit} (from {self.effective_from})'

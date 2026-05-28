@@ -53,6 +53,7 @@ class Cooperative(models.Model):
     last_member_sequence = models.PositiveIntegerField(default=0)
     last_delivery_date = models.DateField(null=True, blank=True)
     last_delivery_sequence = models.IntegerField(default=0)
+    inventory = models.JSONField(default=dict, blank=True)
 
     class Meta:
         db_table = 'base_cooperative'
