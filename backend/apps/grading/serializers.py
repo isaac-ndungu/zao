@@ -65,6 +65,10 @@ class GradeCreateSerializer(serializers.ModelSerializer):
             'delivery', 'grade_letter', 'price_per_unit', 'rejection_reason',
             'cooperative_id',
         ]
+        extra_kwargs = {
+            'grade_letter': {'required': False},
+            'price_per_unit': {'required': False},
+        }
 
     def validate_cooperative_id(self, value):
         if not Cooperative.objects.filter(id=value).exists():
@@ -77,10 +81,21 @@ class GradeCreateSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
-        if attrs.get('grade_letter') and attrs.get('rejection_reason'):
+        has_grade = bool(attrs.get('grade_letter'))
+        has_rejection = bool(attrs.get('rejection_reason'))
+
+        if has_grade and has_rejection:
             raise serializers.ValidationError(
                 'Cannot assign a grade and a rejection reason. '
                 'Use rejection_reason only for rejected deliveries.'
+            )
+        if not has_grade and not has_rejection:
+            raise serializers.ValidationError(
+                'Provide either a grade_letter or a rejection_reason.'
+            )
+        if has_grade and not attrs.get('price_per_unit'):
+            raise serializers.ValidationError(
+                {'price_per_unit': 'Price per unit is required when assigning a grade.'}
             )
         return attrs
 
@@ -91,6 +106,10 @@ class GradeOverrideSerializer(serializers.ModelSerializer):
         fields = [
             'grade_letter', 'price_per_unit', 'rejection_reason', 'override_reason',
         ]
+        extra_kwargs = {
+            'grade_letter': {'required': False},
+            'price_per_unit': {'required': False},
+        }
 
     def validate(self, attrs):
         if not attrs.get('override_reason'):
@@ -100,6 +119,10 @@ class GradeOverrideSerializer(serializers.ModelSerializer):
         if attrs.get('grade_letter') and attrs.get('rejection_reason'):
             raise serializers.ValidationError(
                 'Cannot set a grade letter and a rejection reason together.'
+            )
+        if attrs.get('grade_letter') and not attrs.get('price_per_unit'):
+            raise serializers.ValidationError(
+                {'price_per_unit': 'Price per unit is required when assigning a grade.'}
             )
         return attrs
 

@@ -19,9 +19,10 @@ class Grade(CooperativeScopedModel):
         'deliveries.Delivery', on_delete=models.CASCADE,
         related_name='grade_record',
     )
-    grade_letter = models.CharField(max_length=20, choices=GRADE_CHOICES)
+    grade_letter = models.CharField(max_length=20, choices=GRADE_CHOICES, blank=True)
     price_per_unit = models.DecimalField(
         max_digits=10, decimal_places=2,
+        null=True, blank=True,
         validators=[MinValueValidator(0)],
     )
     rejection_reason = models.TextField(blank=True)
@@ -41,7 +42,9 @@ class Grade(CooperativeScopedModel):
         verbose_name_plural = 'Grades'
 
     def __str__(self):
-        return f'{self.delivery.batch_id} — {self.grade_letter} @ {self.price_per_unit}'
+        if self.grade_letter:
+            return f'{self.delivery.batch_id} — {self.grade_letter} @ {self.price_per_unit}'
+        return f'{self.delivery.batch_id} — REJECTED'
 
 
 class GradePrice(models.Model):
