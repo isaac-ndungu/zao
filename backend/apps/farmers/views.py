@@ -68,7 +68,11 @@ class FarmerViewSet(CooperativeScopedViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        cooperative_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        if getattr(request.user, 'role', None) == 'admin':
+            cooperative_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        else:
+            serializer.validated_data.pop('cooperative_id', None)
+            cooperative_id = request.cooperative_id
         user_id = serializer.validated_data.pop('user_id', None)
         user_email = serializer.validated_data.pop('user_email', None)
         user = None
@@ -197,7 +201,11 @@ class FarmerViewSet(CooperativeScopedViewSet):
 
                 serializer = FarmerCreateSerializer(data=data)
                 serializer.is_valid(raise_exception=True)
-                coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+                if getattr(request.user, 'role', None) == 'admin':
+                    coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+                else:
+                    serializer.validated_data.pop('cooperative_id', None)
+                    coop_id = request.cooperative_id
                 serializer.validated_data.pop('user_id', None)
                 serializer.validated_data.pop('user_email', None)
                 serializer.save(

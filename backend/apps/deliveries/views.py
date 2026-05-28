@@ -69,7 +69,11 @@ class DeliveryViewSet(CooperativeScopedViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        if getattr(request.user, 'role', None) == 'admin':
+            coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        else:
+            serializer.validated_data.pop('cooperative_id', None)
+            coop_id = request.cooperative_id
         instance = serializer.save(
             cooperative_id=coop_id,
         )
@@ -127,7 +131,11 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             for raw_data in raw_deliveries:
                 create_serializer = DeliveryCreateSerializer(data=raw_data, context={'request': request})
                 create_serializer.is_valid(raise_exception=True)
-                coop_id = create_serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+                if getattr(request.user, 'role', None) == 'admin':
+                    coop_id = create_serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+                else:
+                    create_serializer.validated_data.pop('cooperative_id', None)
+                    coop_id = request.cooperative_id
                 instance = create_serializer.save(
                     cooperative_id=coop_id,
                 )

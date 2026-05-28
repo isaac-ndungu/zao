@@ -91,7 +91,11 @@ class GradeViewSet(CooperativeScopedViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        if getattr(request.user, 'role', None) == 'admin':
+            coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+        else:
+            serializer.validated_data.pop('cooperative_id', None)
+            coop_id = request.cooperative_id
         instance = serializer.save(cooperative_id=coop_id)
 
         update_delivery_from_grade(instance)
@@ -118,6 +122,7 @@ class GradeViewSet(CooperativeScopedViewSet):
         serializer.validated_data.pop('delivery', None)
         instance = serializer.save()
         update_delivery_from_grade(instance)
+        update_inventory_on_grade.delay(str(instance.id))
         log_audit(
             actor=self.request.user,
             resource_type='grade',
