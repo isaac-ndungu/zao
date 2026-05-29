@@ -6,6 +6,19 @@
       "Content-Type": "application/json"
     }
   },
+  "_postman_variables": {
+    "base_url":       {"type": "string", "example": "http://localhost:8000/api"},
+    "access_token":   {"type": "string", "example": "<jwt_access_token>"},
+    "user_id":        {"type": "string", "example": "<uuid>"},
+    "cooperative_id": {"type": "string", "example": "<uuid>"},
+    "farmer_id":      {"type": "string", "example": "<uuid>"},
+    "delivery_id":    {"type": "string", "example": "<uuid>"},
+    "grade_id":       {"type": "string", "example": "<uuid>"},
+    "route_id":       {"type": "string", "example": "<uuid>"},
+    "buyer_id":       {"type": "string", "example": "<uuid>"},
+    "sale_id":        {"type": "string", "example": "<uuid>"},
+    "inventory_id":   {"type": "string", "example": "<uuid>"}
+  },
   "endpoints": {
 
     "1_auth": {
@@ -1587,6 +1600,355 @@
         },
         "response_200": "Full route detail (same as retrieve) with updated stops.",
         "notes": "Full replace in a transaction: deletes all existing stops, creates new ones. stop_order must be sequential from 1."
+      }
+    },
+
+    "11_sales": {
+      "description": "Sales, buyer, and payment cycle endpoints (cooperative-scoped)",
+
+      "11.1_buyer_list": {
+        "method": "GET",
+        "path": "/api/buyers/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "search":   {"type": "string", "required": false, "example": "Green Grocers", "notes": "Searches name, contact_person, email, phone_number"},
+          "ordering": {"type": "string", "required": false, "example": "name", "notes": "Fields: name, created_at"}
+        },
+        "response_200": {
+          "count": 1,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":             "<uuid>",
+              "name":           "Green Grocers Ltd",
+              "contact_person": "James Kariuki",
+              "email":          "james@greengrocers.com",
+              "phone_number":   "0722000001",
+              "address":        "123 River Road, Nairobi",
+              "is_active":      true,
+              "cooperative":    "<uuid>",
+              "created_at":     "2026-05-29T08:00:00Z",
+              "updated_at":     "2026-05-29T08:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "11.2_buyer_create": {
+        "method": "POST",
+        "path": "/api/buyers/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":           {"type": "string",  "required": true,  "example": "Green Grocers Ltd"},
+            "contact_person": {"type": "string",  "required": true,  "example": "James Kariuki"},
+            "email":          {"type": "string",  "required": false, "example": "james@greengrocers.com"},
+            "phone_number":   {"type": "string",  "required": true,  "example": "0722000001"},
+            "address":        {"type": "string",  "required": false, "example": "123 River Road, Nairobi"},
+            "is_active":      {"type": "boolean", "required": false, "example": true}
+          }
+        },
+        "response_201": {
+          "id":             "<uuid>",
+          "name":           "Green Grocers Ltd",
+          "contact_person": "James Kariuki",
+          "email":          "james@greengrocers.com",
+          "phone_number":   "0722000001",
+          "address":        "123 River Road, Nairobi",
+          "is_active":      true,
+          "cooperative":    "<uuid>",
+          "created_at":     "2026-05-29T08:00:00Z",
+          "updated_at":     "2026-05-29T08:00:00Z"
+        }
+      },
+
+      "11.3_buyer_detail": {
+        "method": "GET",
+        "path": "/api/buyers/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":             "<uuid>",
+          "name":           "Green Grocers Ltd",
+          "contact_person": "James Kariuki",
+          "email":          "james@greengrocers.com",
+          "phone_number":   "0722000001",
+          "address":        "123 River Road, Nairobi",
+          "is_active":      true,
+          "cooperative":    "<uuid>",
+          "created_at":     "2026-05-29T08:00:00Z",
+          "updated_at":     "2026-05-29T08:00:00Z"
+        }
+      },
+
+      "11.4_buyer_update": {
+        "method": "PUT",
+        "path": "/api/buyers/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":           {"type": "string",  "required": true,  "example": "Green Grocers Ltd Updated"},
+            "contact_person": {"type": "string",  "required": true,  "example": "James Kariuki"},
+            "email":          {"type": "string",  "required": false, "example": "james@greengrocers.com"},
+            "phone_number":   {"type": "string",  "required": true,  "example": "0722000001"},
+            "address":        {"type": "string",  "required": false, "example": "456 River Road, Nairobi"},
+            "is_active":      {"type": "boolean", "required": false, "example": true}
+          }
+        }
+      },
+
+      "11.5_buyer_partial_update": {
+        "method": "PATCH",
+        "path": "/api/buyers/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":    {"type": "string", "required": false, "example": "Green Grocers Ltd Updated"},
+            "address": {"type": "string", "required": false, "example": "456 River Road, Nairobi"}
+          }
+        }
+      },
+
+      "11.6_buyer_delete": {
+        "method": "DELETE",
+        "path": "/api/buyers/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content"
+      },
+
+      "11.7_payment_cycle_list": {
+        "method": "GET",
+        "path": "/api/payment-cycles/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "status":   {"type": "string", "required": false, "example": "OPEN", "notes": "OPEN, CLOSED, PENDING"},
+          "ordering": {"type": "string", "required": false, "example": "-start_date", "notes": "Fields: start_date, end_date, status"}
+        },
+        "response_200": {
+          "count": 1,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":          "<uuid>",
+              "name":        "May 2026 Payment Cycle",
+              "start_date":  "2026-05-01",
+              "end_date":    "2026-05-31",
+              "status":      "OPEN",
+              "cooperative": "<uuid>",
+              "created_at":  "2026-05-01T00:00:00Z",
+              "updated_at":  "2026-05-01T00:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "11.8_payment_cycle_create": {
+        "method": "POST",
+        "path": "/api/payment-cycles/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":       {"type": "string", "required": true,  "example": "May 2026 Payment Cycle"},
+            "start_date": {"type": "string", "required": true,  "example": "2026-05-01", "notes": "ISO date YYYY-MM-DD"},
+            "end_date":   {"type": "string", "required": true,  "example": "2026-05-31", "notes": "ISO date YYYY-MM-DD"},
+            "status":     {"type": "string", "required": false, "example": "OPEN", "notes": "OPEN, CLOSED, PENDING"}
+          }
+        },
+        "response_201": {
+          "id":          "<uuid>",
+          "name":        "May 2026 Payment Cycle",
+          "start_date":  "2026-05-01",
+          "end_date":    "2026-05-31",
+          "status":      "OPEN",
+          "cooperative": "<uuid>",
+          "created_at":  "2026-05-01T00:00:00Z",
+          "updated_at":  "2026-05-01T00:00:00Z"
+        }
+      },
+
+      "11.9_payment_cycle_detail": {
+        "method": "GET",
+        "path": "/api/payment-cycles/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":          "<uuid>",
+          "name":        "May 2026 Payment Cycle",
+          "start_date":  "2026-05-01",
+          "end_date":    "2026-05-31",
+          "status":      "OPEN",
+          "cooperative": "<uuid>",
+          "created_at":  "2026-05-01T00:00:00Z",
+          "updated_at":  "2026-05-01T00:00:00Z"
+        }
+      },
+
+      "11.10_payment_cycle_update": {
+        "method": "PUT",
+        "path": "/api/payment-cycles/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":       {"type": "string", "required": true,  "example": "May 2026 Payment Cycle"},
+            "start_date": {"type": "string", "required": true,  "example": "2026-05-01"},
+            "end_date":   {"type": "string", "required": true,  "example": "2026-05-31"},
+            "status":     {"type": "string", "required": false, "example": "CLOSED"}
+          }
+        }
+      },
+
+      "11.11_payment_cycle_partial_update": {
+        "method": "PATCH",
+        "path": "/api/payment-cycles/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "status": {"type": "string", "required": false, "example": "CLOSED"}
+          }
+        }
+      },
+
+      "11.12_payment_cycle_delete": {
+        "method": "DELETE",
+        "path": "/api/payment-cycles/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_204": "No content"
+      },
+
+      "11.13_sale_list": {
+        "method": "GET",
+        "path": "/api/sales/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "status":    {"type": "string", "required": false, "example": "PENDING", "notes": "PENDING, COMPLETED, CANCELLED"},
+          "buyer":     {"type": "string", "required": false, "example": "<buyer_uuid>"},
+          "date_from": {"type": "string", "required": false, "example": "2026-01-01", "notes": "ISO date YYYY-MM-DD"},
+          "date_to":   {"type": "string", "required": false, "example": "2026-12-31", "notes": "ISO date YYYY-MM-DD"},
+          "search":    {"type": "string", "required": false, "example": "INV-2026", "notes": "Searches batch_id, invoice_number, buyer name"},
+          "ordering":  {"type": "string", "required": false, "example": "-sale_date", "notes": "Fields: sale_date, total_amount, status, created_at"}
+        },
+        "response_200": {
+          "count": 1,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":                "<uuid>",
+              "buyer":             "<uuid>",
+              "buyer_name":        "Green Grocers Ltd",
+              "inventory":         "<uuid>",
+              "batch_id":          "PRODUCE-20260520-001",
+              "product_type":      "coffee",
+              "grade_letter":      "A",
+              "unit":              "kg",
+              "quantity":          "200.00",
+              "price_per_unit":    "50.00",
+              "total_amount":      "10000.00",
+              "status":            "PENDING",
+              "sale_date":         "2026-05-20",
+              "invoice_number":    "INV-2026-001",
+              "notes":             "Bulk purchase",
+              "payment_cycle":     null,
+              "recorded_by":       "<uuid>",
+              "recorded_by_name":  "Isaac Kamau",
+              "cooperative":       "<uuid>",
+              "created_at":        "2026-05-29T12:00:00Z",
+              "updated_at":        "2026-05-29T12:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "11.14_sale_create": {
+        "method": "POST",
+        "path": "/api/sales/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "buyer":          {"type": "string",  "required": true,  "example": "<buyer_uuid>", "notes": "Must be active and in same cooperative"},
+            "inventory":      {"type": "string",  "required": true,  "example": "<inventory_uuid>", "notes": "Inventory item being sold"},
+            "unit":           {"type": "string",  "required": true,  "example": "kg", "notes": "kg, litres, units"},
+            "quantity":       {"type": "number",  "required": true,  "example": 200.00},
+            "price_per_unit": {"type": "number",  "required": true,  "example": 50.00},
+            "sale_date":      {"type": "string",  "required": true,  "example": "2026-05-20", "notes": "ISO date YYYY-MM-DD"},
+            "notes":          {"type": "string",  "required": false, "example": "Bulk purchase"},
+            "payment_cycle":  {"type": "string",  "required": false, "example": null, "notes": "UUID of payment cycle to link to"}
+          }
+        },
+        "response_201": {
+          "id":                "<uuid>",
+          "buyer":             "<uuid>",
+          "buyer_name":        "Green Grocers Ltd",
+          "inventory":         "<uuid>",
+          "batch_id":          "PRODUCE-20260520-001",
+          "product_type":      "coffee",
+          "grade_letter":      "A",
+          "unit":              "kg",
+          "quantity":          "200.00",
+          "price_per_unit":    "50.00",
+          "total_amount":      "10000.00",
+          "status":            "PENDING",
+          "sale_date":         "2026-05-20",
+          "invoice_number":    "INV-2026-001",
+          "notes":             "Bulk purchase",
+          "payment_cycle":     null,
+          "recorded_by":       "<uuid>",
+          "recorded_by_name":  "Isaac Kamau",
+          "cooperative":       "<uuid>",
+          "created_at":        "2026-05-29T12:00:00Z",
+          "updated_at":        "2026-05-29T12:00:00Z"
+        },
+        "notes": "invoice_number auto-generated. total_amount computed as quantity * price_per_unit."
+      },
+
+      "11.15_sale_detail": {
+        "method": "GET",
+        "path": "/api/sales/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":                "<uuid>",
+          "buyer":             "<uuid>",
+          "buyer_name":        "Green Grocers Ltd",
+          "inventory":         "<uuid>",
+          "batch_id":          "PRODUCE-20260520-001",
+          "product_type":      "coffee",
+          "grade_letter":      "A",
+          "unit":              "kg",
+          "quantity":          "200.00",
+          "price_per_unit":    "50.00",
+          "total_amount":      "10000.00",
+          "status":            "PENDING",
+          "sale_date":         "2026-05-20",
+          "invoice_number":    "INV-2026-001",
+          "notes":             "Bulk purchase",
+          "payment_cycle":     null,
+          "recorded_by":       "<uuid>",
+          "recorded_by_name":  "Isaac Kamau",
+          "cooperative":       "<uuid>",
+          "created_at":        "2026-05-29T12:00:00Z",
+          "updated_at":        "2026-05-29T12:00:00Z"
+        }
+      },
+
+      "11.16_sale_partial_update": {
+        "method": "PATCH",
+        "path": "/api/sales/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "status":        {"type": "string", "required": false, "example": "COMPLETED", "notes": "PENDING, COMPLETED, CANCELLED"},
+            "notes":         {"type": "string", "required": false, "example": "Payment received"},
+            "payment_cycle": {"type": "string", "required": false, "example": "<payment_cycle_uuid>"}
+          }
+        }
       }
     }
   }
