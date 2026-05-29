@@ -1,4 +1,5 @@
 from django.db import models, transaction
+from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -155,6 +156,35 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             send_bulk_delivery_sms.delay(sms_deliveries)
 
         return Response({'synced': results}, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def map(self, request):
+        qs = self.get_queryset().annotate(
+            map_latitude=Coalesce('latitude', 'farmer__latitude'),
+            map_longitude=Coalesce('longitude', 'farmer__longitude'),
+        ).filter(
+            map_latitude__isnull=False, map_longitude__isnull=False,
+        )
+        date = request.query_params.get('date')
+        if date:
+            qs = qs.filter(date_delivered__date=date)
+        grade = request.query_params.get('grade')
+        if grade:
+            qs = qs.filter(grade=grade)
+
+        results = []
+        for delivery in qs:
+            results.append({
+                'id': delivery.id,
+                'farmer_id': delivery.farmer_id,
+                'farmer_name': f'{delivery.farmer.first_name} {delivery.farmer.last_name}',
+                'grade': delivery.grade,
+                'status': delivery.status,
+                'latitude': float(delivery.map_latitude),
+                'longitude': float(delivery.map_longitude),
+            })
+
+        return Response(results)
 
     @action(detail=False, methods=['get'])
     def summary(self, request):

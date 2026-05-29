@@ -3,10 +3,10 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.base.models import CooperativeScopedModel
+from apps.base.models import CooperativeScopedModel, LocationMixin
 
 
-class Delivery(CooperativeScopedModel):
+class Delivery(LocationMixin, CooperativeScopedModel):
     PRODUCT_CHOICES = [
         ('MILK', 'Milk'),
         ('COFFEE_CHERRIES', 'Coffee Cherries'),

@@ -3,6 +3,14 @@ from django.db import models
 import uuid
 
 
+class LocationMixin(models.Model):
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
 class TenantQuerySet(models.QuerySet):
     def for_cooperative(self, cooperative_id):
         return self.filter(cooperative_id=cooperative_id)

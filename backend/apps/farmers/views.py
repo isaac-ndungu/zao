@@ -218,6 +218,29 @@ class FarmerViewSet(CooperativeScopedViewSet):
         return Response({'created': created, 'errors': errors})
 
     @action(detail=False, methods=['get'])
+    def map(self, request):
+        qs = self.get_queryset().filter(
+            latitude__isnull=False, longitude__isnull=False,
+        )
+        if request.query_params.get('include_deliveries') == 'true':
+            qs = qs.annotate(delivery_count=Count('deliveries'))
+
+        results = []
+        for farmer in qs:
+            item = {
+                'id': farmer.id,
+                'first_name': farmer.first_name,
+                'last_name': farmer.last_name,
+                'latitude': float(farmer.latitude),
+                'longitude': float(farmer.longitude),
+            }
+            if hasattr(farmer, 'delivery_count'):
+                item['delivery_count'] = farmer.delivery_count
+            results.append(item)
+
+        return Response(results)
+
+    @action(detail=False, methods=['get'])
     def summary(self, request):
         qs = self.get_queryset()
         return Response({

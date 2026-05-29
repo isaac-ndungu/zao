@@ -2,10 +2,10 @@ import uuid
 from django.db import models
 
 from apps.auth_api.models import User
-from apps.base.models import CooperativeScopedModel
+from apps.base.models import CooperativeScopedModel, LocationMixin
 
 
-class Farmer(CooperativeScopedModel):
+class Farmer(LocationMixin, CooperativeScopedModel):
     PAYMENT_METHOD_CHOICES = [
         ('M-PESA', 'M-Pesa'),
         ('BANK', 'Bank Transfer'),
