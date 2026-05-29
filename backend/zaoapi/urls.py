@@ -32,4 +32,5 @@ urlpatterns = [
     path('api/', include('apps.auth_api.urls')),
     path('api/', include('apps.routes.urls')),
     path('api/', include('apps.sales.urls')),
+    path('api/', include('apps.payment_engine.urls')),
 ]

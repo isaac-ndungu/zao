@@ -59,6 +59,7 @@ class AuditLog(CooperativeScopedModel):
             ('OVERRIDE', 'Override'),
             ('LOCK', 'Lock'),
             ('UNLOCK', 'Unlock'),
+            ('RUN', 'Run'),
         ]
     )
     previous_value = models.JSONField(null=True, blank=True)
