@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'apps.grading',
     'apps.inventory',
     'apps.routes',
+    'apps.sales',
 ]
 
 MIDDLEWARE = [

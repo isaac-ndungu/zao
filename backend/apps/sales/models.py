@@ -1,0 +1,80 @@
+import uuid
+from django.db import models
+
+from apps.base.models import CooperativeScopedModel
+
+
+class Buyer(CooperativeScopedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    contact_person = models.CharField(max_length=200, blank=True)
+    phone_number = models.CharField(max_length=30, blank=True)
+    email = models.EmailField(blank=True)
+    kra_pin = models.CharField(max_length=20, blank=True)
+    physical_address = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Buyer'
+        verbose_name_plural = 'Buyers'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class PaymentCycle(CooperativeScopedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_closed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Payment Cycle'
+        verbose_name_plural = 'Payment Cycles'
+        ordering = ['-start_date']
+
+    def __str__(self):
+        return self.name
+
+
+class Sale(CooperativeScopedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    buyer = models.ForeignKey(
+        Buyer, on_delete=models.PROTECT,
+        related_name='sales',
+    )
+    grade = models.ForeignKey(
+        'grading.Grade', on_delete=models.PROTECT,
+        related_name='sales',
+    )
+    inventory = models.ForeignKey(
+        'inventory.Inventory', on_delete=models.PROTECT,
+        related_name='sales',
+    )
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
+    payment_cycle = models.ForeignKey(
+        'PaymentCycle', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='sales',
+    )
+    sale_date = models.DateField(auto_now_add=True)
+    invoice_number = models.CharField(max_length=50, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Sale'
+        verbose_name_plural = 'Sales'
+        ordering = ['-sale_date', '-created_at']
+
+    def __str__(self):
+        return f'{self.invoice_number or "Sale"} — {self.buyer.name} ({self.sale_date})'
