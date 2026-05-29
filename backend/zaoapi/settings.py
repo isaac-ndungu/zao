@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'apps.deliveries',
     'apps.grading',
     'apps.inventory',
+    'apps.routes',
 ]
 
 MIDDLEWARE = [

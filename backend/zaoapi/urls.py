@@ -30,4 +30,5 @@ urlpatterns = [
     path('api/', include('apps.grading.urls')),
     path('api/', include('apps.inventory.urls')),
     path('api/', include('apps.auth_api.urls')),
+    path('api/', include('apps.routes.urls')),
 ]
