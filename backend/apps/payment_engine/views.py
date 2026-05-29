@@ -1,3 +1,5 @@
+from celery.result import AsyncResult
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -8,8 +10,9 @@ from apps.base.permissions import IsAccountantOrManager, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
-from .models import PaymentCycle
+from .models import ComputationWarning, PaymentCycle
 from .serializers import (
+    ComputationWarningSerializer,
     CyclePreviewSerializer,
     PaymentCycleSerializer,
     PaymentCycleStatusSerializer,
@@ -23,7 +26,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
     def get_serializer_class(self):
         if self.action == 'preview':
             return CyclePreviewSerializer
-        if self.action == 'status':
+        if self.action in ('status', 'task_status'):
             return PaymentCycleStatusSerializer
         return PaymentCycleSerializer
 
@@ -64,12 +67,17 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
 
     def perform_destroy(self, instance):
+        if instance.status != 'DRAFT':
+            raise ValidationError(
+                'Only DRAFT cycles can be deleted. '
+                'Computed or locked cycles are permanent financial records.'
+            )
         log_audit(
             actor=self.request.user,
             resource_type='payment_cycle',
             resource_id=instance.id,
             action='DELETE',
-            previous_value={'name': instance.name},
+            previous_value={'name': instance.name, 'status': instance.status},
             cooperative_id=self.request.cooperative_id,
         )
         instance.delete()
@@ -85,6 +93,8 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
             )
 
         task = run_payment_engine.delay(str(cycle.id))
+        PaymentCycle.objects.filter(id=cycle.id).update(celery_task_id=task.id)
+
         log_audit(
             actor=request.user,
             resource_type='payment_cycle',
@@ -156,3 +166,28 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
             cycle, context={'request': request},
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='task-status')
+    def task_status(self, request, pk=None):
+        cycle = self.get_object()
+
+        result = {
+            'task_id': cycle.celery_task_id,
+            'celery_state': None,
+            'cycle_status': cycle.status,
+            'result': None,
+            'warnings': [],
+        }
+
+        if cycle.celery_task_id:
+            task = AsyncResult(cycle.celery_task_id)
+            result['celery_state'] = task.state
+            if task.successful():
+                result['result'] = task.result
+
+        warnings_qs = ComputationWarning.objects.filter(cycle=cycle)
+        result['warnings'] = ComputationWarningSerializer(
+            warnings_qs, many=True,
+        ).data
+
+        return Response(result)

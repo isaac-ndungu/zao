@@ -1,11 +1,10 @@
 import logging
-from decimal import Decimal
 
 from celery import shared_task
 from django.db.models import Sum
 from django.utils import timezone
 
-from .models import FarmerPayment, PaymentCycle
+from .models import ComputationWarning, FarmerPayment, PaymentCycle
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +22,12 @@ def run_payment_engine(self, cycle_id: str):
         return {'error': 'Cycle is locked'}
 
     cycle.status = 'COMPUTING'
-    cycle.save(update_fields=['status'])
+    cycle.celery_task_id = self.request.id
+
+    cycle.save(update_fields=['status', 'celery_task_id'])
 
     cycle.farmer_payments.all().delete()
+    cycle.warnings.all().delete()
 
     cooperative = cycle.cooperative
 
@@ -43,11 +45,22 @@ def run_payment_engine(self, cycle_id: str):
             logger.warning("Cycle %s: no farmer payments generated", cycle_id)
             cycle.status = 'COMPUTED'
             cycle.totals = {}
+            cycle.total_levy = 0
+            cycle.total_cooperative_fee = 0
+            cycle.total_loan_repayments = 0
+            cycle.has_warnings = cycle.warnings.exists()
             cycle.computed_at = timezone.now()
-            cycle.save(update_fields=['status', 'totals', 'computed_at'])
+            cycle.save(update_fields=[
+                'status', 'totals', 'total_levy', 'total_cooperative_fee',
+                'total_loan_repayments', 'has_warnings', 'computed_at',
+            ])
             return {'status': 'COMPUTED', 'cycle_id': cycle_id, 'farmer_count': 0}
 
         active_count = len(farmer_data)
+
+        total_levy = 0.0
+        total_cooperative_fee = 0.0
+        total_loan_repayments = 0.0
 
         for data in farmer_data:
             from .engine import apply_deductions
@@ -72,6 +85,10 @@ def run_payment_engine(self, cycle_id: str):
             }
             fp.save(update_fields=['deductions', 'net_amount', 'computation_log'])
 
+            total_levy += deductions['levy']
+            total_cooperative_fee += deductions['monthly_fee']
+            total_loan_repayments += deductions['loan_repayment']
+
         totals = FarmerPayment.objects.filter(cycle=cycle).aggregate(
             total_gross=Sum('gross_amount'),
             total_net=Sum('net_amount'),
@@ -83,16 +100,30 @@ def run_payment_engine(self, cycle_id: str):
             'total_net': float(totals['total_net'] or 0),
             'farmer_count': active_count,
         }
+        cycle.total_levy = round(total_levy, 2)
+        cycle.total_cooperative_fee = round(total_cooperative_fee, 2)
+        cycle.total_loan_repayments = round(total_loan_repayments, 2)
+        cycle.has_warnings = cycle.warnings.exists()
         cycle.status = 'COMPUTED'
         cycle.computed_at = timezone.now()
-        cycle.save(update_fields=['totals', 'status', 'computed_at'])
+        cycle.save(update_fields=[
+            'totals', 'total_levy', 'total_cooperative_fee',
+            'total_loan_repayments', 'has_warnings', 'status', 'computed_at',
+        ])
 
-        logger.info("Payment engine completed for cycle %s: %d farmers, NET %s",
-                     cycle_id, active_count, cycle.totals['total_net'])
+        logger.info(
+            "Payment engine completed for cycle %s: %d farmers, "
+            "GROSS %s, LEVY %s, NET %s",
+            cycle_id, active_count,
+            cycle.totals['total_gross'],
+            cycle.total_levy,
+            cycle.totals['total_net'],
+        )
         return {
             'status': 'COMPUTED',
             'cycle_id': cycle_id,
             'farmer_count': active_count,
+            'has_warnings': cycle.has_warnings,
         }
 
     except Exception:

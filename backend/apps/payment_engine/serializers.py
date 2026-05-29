@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
 
-from .models import FarmerPayment, PaymentCycle
+from .models import ComputationWarning, FarmerPayment, PaymentCycle
 
 
 class FarmerPaymentPreviewSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class FarmerPaymentPreviewSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'farmer', 'farmer_name', 'member_number',
             'total_quantity', 'grade_breakdown', 'gross_amount',
-            'deductions', 'net_amount', 'computation_log',
+            'deductions', 'net_amount', 'payment_status', 'computation_log',
         ]
         read_only_fields = fields
 
@@ -27,23 +27,17 @@ class FarmerPaymentPreviewSerializer(serializers.ModelSerializer):
 
 class CyclePreviewSerializer(serializers.ModelSerializer):
     farmer_payments = FarmerPaymentPreviewSerializer(many=True, read_only=True)
-    total_gross = serializers.SerializerMethodField()
-    total_net = serializers.SerializerMethodField()
+    warnings = serializers.JSONField(read_only=True, source='warnings.values')
 
     class Meta:
         model = PaymentCycle
         fields = [
             'id', 'name', 'status', 'totals',
-            'total_gross', 'total_net',
+            'total_levy', 'total_cooperative_fee', 'total_loan_repayments',
+            'has_warnings', 'warnings',
             'farmer_payments', 'computed_at', 'locked_at',
         ]
         read_only_fields = fields
-
-    def get_total_gross(self, obj):
-        return obj.totals.get('total_gross', 0) if obj.totals else 0
-
-    def get_total_net(self, obj):
-        return obj.totals.get('total_net', 0) if obj.totals else 0
 
 
 class PaymentCycleSerializer(serializers.ModelSerializer):
@@ -54,6 +48,8 @@ class PaymentCycleSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'start_date', 'end_date',
             'status', 'totals',
+            'total_levy', 'total_cooperative_fee', 'total_loan_repayments',
+            'has_warnings', 'celery_task_id',
             'locked_by', 'locked_at', 'computed_at',
             'cooperative', 'cooperative_id',
             'created_at', 'updated_at',
@@ -62,6 +58,8 @@ class PaymentCycleSerializer(serializers.ModelSerializer):
             'id', 'cooperative', 'locked_by', 'locked_at',
             'computed_at', 'created_at', 'updated_at',
             'status', 'totals',
+            'total_levy', 'total_cooperative_fee', 'total_loan_repayments',
+            'has_warnings', 'celery_task_id',
         ]
 
     def validate_cooperative_id(self, value):
@@ -69,16 +67,37 @@ class PaymentCycleSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Cooperative not found.')
         return value
 
-    def validate_dates(self, start_date, end_date):
-        if start_date > end_date:
-            raise serializers.ValidationError(
-                'Start date must be before or equal to end date.'
-            )
-        return start_date, end_date
-
     def validate(self, attrs):
-        if 'start_date' in attrs and 'end_date' in attrs:
-            self.validate_dates(attrs['start_date'], attrs['end_date'])
+        start = attrs.get('start_date')
+        end = attrs.get('end_date')
+
+        if start and end:
+            if start > end:
+                raise serializers.ValidationError(
+                    'Start date must be before or equal to end date.'
+                )
+
+            request = self.context.get('request')
+            if request:
+                coop_id = getattr(request, 'cooperative_id', None)
+                if coop_id:
+                    overlapping = PaymentCycle.objects.filter(
+                        cooperative_id=coop_id,
+                        start_date__lte=end,
+                        end_date__gte=start,
+                    )
+                    if self.instance:
+                        overlapping = overlapping.exclude(id=self.instance.id)
+
+                    if overlapping.exists():
+                        names = list(
+                            overlapping.values_list('name', flat=True)[:5]
+                        )
+                        raise serializers.ValidationError(
+                            f'Date range overlaps with existing cycle(s): '
+                            f'{", ".join(names)}.'
+                        )
+
         return attrs
 
 
@@ -89,8 +108,19 @@ class PaymentCycleStatusSerializer(serializers.Serializer):
     locked_at = serializers.DateTimeField(read_only=True, allow_null=True)
     locked_by = serializers.SerializerMethodField()
     totals = serializers.JSONField(read_only=True)
+    total_levy = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    total_cooperative_fee = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    total_loan_repayments = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    has_warnings = serializers.BooleanField(read_only=True)
+    celery_task_id = serializers.CharField(read_only=True)
 
     def get_locked_by(self, obj):
         if obj.locked_by:
             return obj.locked_by.get_full_name() or obj.locked_by.email
         return None
+
+
+class ComputationWarningSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComputationWarning
+        fields = ['id', 'severity', 'message', 'delivery_id', 'farmer_id', 'created_at']

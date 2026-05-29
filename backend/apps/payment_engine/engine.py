@@ -6,6 +6,8 @@ from django.db.models import Sum
 from apps.deliveries.models import Delivery
 from apps.sales.models import Sale
 
+from .models import ComputationWarning
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,8 +30,23 @@ def compute_fixed_price(cycle):
     })
 
     for delivery in deliveries:
-        if not hasattr(delivery, 'grade_record'):
+        if not hasattr(delivery, 'grade_record') or not delivery.grade_record:
+            logger.warning(
+                "Delivery %s (farmer %s) has status GRADED but no grade record — skipping",
+                delivery.id, delivery.farmer,
+            )
+            ComputationWarning.objects.create(
+                cycle=cycle,
+                severity='WARNING',
+                message=(
+                    f"Delivery {delivery.batch_id} for {delivery.farmer.first_name} "
+                    f"{delivery.farmer.last_name} is GRADED but has no Grade record."
+                ),
+                delivery_id=delivery.id,
+                farmer_id=delivery.farmer_id,
+            )
             continue
+
         grade = delivery.grade_record
         if not grade.grade_letter or grade.price_per_unit is None:
             logger.warning(
@@ -77,11 +94,19 @@ def compute_revenue_share(cycle):
         date_delivered__date__gte=cycle.start_date,
         date_delivered__date__lte=cycle.end_date,
         status__in=['GRADED', 'ACCEPTED'],
-    ).select_related('farmer')
+    ).select_related('farmer').order_by('farmer_id')
 
     farmer_kg = defaultdict(float)
+    farmer_grades = defaultdict(lambda: defaultdict(float))
+    farmer_map = {}
+
     for delivery in deliveries:
         farmer_kg[delivery.farmer_id] += get_delivery_quantity(delivery)
+        grade = delivery.grade or 'UNGRADED'
+        farmer_grades[delivery.farmer_id][grade] += get_delivery_quantity(delivery)
+
+        if delivery.farmer_id not in farmer_map:
+            farmer_map[delivery.farmer_id] = delivery.farmer
 
     total_kg = sum(farmer_kg.values())
 
@@ -91,12 +116,16 @@ def compute_revenue_share(cycle):
 
     results = []
     for farmer_id, kg in farmer_kg.items():
-        farmer = deliveries.filter(farmer_id=farmer_id).first().farmer
+        farmer = farmer_map[farmer_id]
         gross = (kg / total_kg) * total_revenue
+        grade_breakdown = {
+            grade: round(qty, 2)
+            for grade, qty in farmer_grades[farmer_id].items()
+        }
         results.append({
             'farmer': farmer,
             'total_quantity': round(kg, 2),
-            'grade_breakdown': {},
+            'grade_breakdown': grade_breakdown,
             'gross_amount': round(gross, 2),
         })
 
