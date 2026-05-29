@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
-from .models import Grade, GradePrice
+from .models import Grade, GradeImage, GradePrice
 
 
 def validate_delivery_scoped(value, request, instance=None):
@@ -20,6 +20,24 @@ def validate_delivery_scoped(value, request, instance=None):
             'This delivery already has a grade.'
         )
     return value
+
+
+class GradeImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GradeImage
+        fields = ['id', 'image', 'image_url', 'caption', 'uploaded_by_name', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_by', 'uploaded_at']
+
+    def get_image_url(self, obj):
+        return obj.image.url
+
+    def get_uploaded_by_name(self, obj):
+        if obj.uploaded_by:
+            return obj.uploaded_by.get_full_name() or obj.uploaded_by.email
+        return None
 
 
 class GradeListSerializer(serializers.ModelSerializer):
@@ -43,6 +61,7 @@ class GradeDetailSerializer(serializers.ModelSerializer):
     batch_id = serializers.CharField(source='delivery.batch_id', read_only=True)
     farmer_name = serializers.SerializerMethodField()
     product_type = serializers.CharField(source='delivery.product_type', read_only=True)
+    images = GradeImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Grade

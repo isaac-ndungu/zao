@@ -5,6 +5,22 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
+class GradeImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    image = models.ImageField(upload_to='grades/%Y/%m/%d/')
+    caption = models.CharField(max_length=200, blank=True)
+    uploaded_by = models.ForeignKey(
+        'auth_api.User', on_delete=models.SET_NULL, null=True,
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"GradeImage {self.id}"
+
+
 class Grade(CooperativeScopedModel):
     GRADE_CHOICES = [
         ('A', 'A'),
@@ -34,6 +50,7 @@ class Grade(CooperativeScopedModel):
     )
     overridden_at = models.DateTimeField(null=True, blank=True)
     override_reason = models.TextField(blank=True)
+    images = models.ManyToManyField(GradeImage, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

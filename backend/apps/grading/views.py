@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -10,10 +11,11 @@ from apps.base.permissions import IsGrader, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
-from .models import Grade, GradePrice
+from .models import Grade, GradeImage, GradePrice
 from .serializers import (
     GradeCreateSerializer,
     GradeDetailSerializer,
+    GradeImageSerializer,
     GradeListSerializer,
     GradeOverrideSerializer,
     GradePriceSerializer,
@@ -75,6 +77,12 @@ class GradeViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated()]
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsManager()]
+        if self.action == 'images':
+            if self.request.method == 'POST':
+                return [IsAuthenticated(), IsGrader()]
+            return [IsAuthenticated()]
+        if self.action == 'delete_image':
+            return [IsAuthenticated()]
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -86,6 +94,8 @@ class GradeViewSet(CooperativeScopedViewSet):
             return GradeListSerializer
         if self.action in ('prices',):
             return GradePriceSerializer
+        if self.action in ('images', 'delete_image'):
+            return GradeImageSerializer
         return GradeDetailSerializer
 
     def create(self, request, *args, **kwargs):
@@ -212,3 +222,44 @@ class GradeViewSet(CooperativeScopedViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get', 'post'], url_path='images')
+    def images(self, request, pk=None):
+        grade = self.get_object()
+        if request.method == 'GET':
+            serializer = GradeImageSerializer(
+                grade.images.all(), many=True, context={'request': request},
+            )
+            return Response(serializer.data)
+
+        serializer = GradeImageSerializer(
+            data=request.data, context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        grade_image = serializer.save(uploaded_by=request.user)
+        grade.images.add(grade_image)
+        return Response(
+            GradeImageSerializer(grade_image, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=['delete'], url_path='images/(?P<image_id>[^/.]+)')
+    def delete_image(self, request, pk=None, image_id=None):
+        grade = self.get_object()
+        grade_image = get_object_or_404(GradeImage, id=image_id)
+
+        if grade_image not in grade.images.all():
+            return Response(
+                {'detail': 'Image not found on this grade.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if grade_image.uploaded_by != request.user and request.user.role != UserRole.MANAGER:
+            return Response(
+                {'detail': 'Only the uploader or a manager can delete images.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        grade.images.remove(grade_image)
+        grade_image.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
