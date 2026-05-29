@@ -20,13 +20,9 @@ class PaymentCycleAdmin(admin.ModelAdmin):
 @admin.register(Sale)
 class SaleAdmin(admin.ModelAdmin):
     list_display = [
-        'invoice_number', 'buyer', 'grade_name', 'quantity',
+        'invoice_number', 'buyer', 'grade_letter', 'quantity',
         'total_amount', 'sale_date', 'cooperative',
     ]
-    list_filter = ['sale_date', 'cooperative']
+    list_filter = ['sale_date', 'cooperative', 'status']
     search_fields = ['invoice_number', 'buyer__name']
-    readonly_fields = ['total_amount', 'created_at', 'updated_at']
-
-    def grade_name(self, obj):
-        return obj.grade.grade_letter
-    grade_name.short_description = 'Grade'
+    readonly_fields = ['total_amount', 'product_type', 'grade_letter', 'unit', 'created_at', 'updated_at']
