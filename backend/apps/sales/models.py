@@ -27,24 +27,6 @@ class Buyer(CooperativeScopedModel):
         return self.name
 
 
-class PaymentCycle(CooperativeScopedModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    is_closed = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Payment Cycle'
-        verbose_name_plural = 'Payment Cycles'
-        ordering = ['-start_date']
-
-    def __str__(self):
-        return self.name
-
-
 class Sale(CooperativeScopedModel):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
@@ -63,7 +45,7 @@ class Sale(CooperativeScopedModel):
         related_name='sales',
     )
     payment_cycle = models.ForeignKey(
-        PaymentCycle, on_delete=models.SET_NULL,
+        'payment_engine.PaymentCycle', on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='sales',
     )

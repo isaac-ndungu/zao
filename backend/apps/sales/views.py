@@ -1,14 +1,13 @@
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 
-from apps.base.permissions import IsAccountantOrManager, IsManager
+from apps.base.permissions import IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
-from .models import Buyer, PaymentCycle, Sale
+from .models import Buyer, Sale
 from .serializers import (
     BuyerSerializer,
-    PaymentCycleSerializer,
     SaleCreateSerializer,
     SaleDetailSerializer,
     SaleListSerializer,
@@ -49,48 +48,6 @@ class BuyerViewSet(CooperativeScopedViewSet):
         log_audit(
             actor=self.request.user,
             resource_type='buyer',
-            resource_id=instance.id,
-            action='DELETE',
-            previous_value={'name': instance.name},
-            cooperative_id=self.request.cooperative_id,
-        )
-        instance.delete()
-
-
-class PaymentCycleViewSet(CooperativeScopedViewSet):
-    queryset = PaymentCycle.objects.all()
-    serializer_class = PaymentCycleSerializer
-
-    def get_permissions(self):
-        if self.action in ('create', 'update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsAccountantOrManager()]
-        return [IsAuthenticated()]
-
-    def perform_create(self, serializer):
-        instance = serializer.save(cooperative_id=self.request.cooperative_id)
-        log_audit(
-            actor=self.request.user,
-            resource_type='payment_cycle',
-            resource_id=instance.id,
-            action='CREATE',
-            new_value={'name': instance.name},
-            cooperative_id=self.request.cooperative_id,
-        )
-
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        log_audit(
-            actor=self.request.user,
-            resource_type='payment_cycle',
-            resource_id=instance.id,
-            action='UPDATE',
-            cooperative_id=self.request.cooperative_id,
-        )
-
-    def perform_destroy(self, instance):
-        log_audit(
-            actor=self.request.user,
-            resource_type='payment_cycle',
             resource_id=instance.id,
             action='DELETE',
             previous_value={'name': instance.name},

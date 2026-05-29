@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'apps.inventory',
     'apps.routes',
     'apps.sales',
+    'apps.payment_engine',
 ]
 
 MIDDLEWARE = [

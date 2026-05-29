@@ -2,19 +2,12 @@ from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
 
-from .models import Buyer, PaymentCycle, Sale
+from .models import Buyer, Sale
 
 
 class BuyerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Buyer
-        fields = '__all__'
-        read_only_fields = ['id', 'cooperative', 'created_at', 'updated_at']
-
-
-class PaymentCycleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PaymentCycle
         fields = '__all__'
         read_only_fields = ['id', 'cooperative', 'created_at', 'updated_at']
 
