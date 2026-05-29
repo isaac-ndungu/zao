@@ -25,7 +25,7 @@ class BuyerViewSet(CooperativeScopedViewSet):
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        instance = serializer.save()
+        instance = serializer.save(cooperative_id=self.request.cooperative_id)
         log_audit(
             actor=self.request.user,
             resource_type='buyer',
@@ -67,7 +67,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        instance = serializer.save()
+        instance = serializer.save(cooperative_id=self.request.cooperative_id)
         log_audit(
             actor=self.request.user,
             resource_type='payment_cycle',

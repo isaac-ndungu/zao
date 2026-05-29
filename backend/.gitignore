@@ -34,3 +34,8 @@ Thumbs.db
 
 
 endpoints/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~  
