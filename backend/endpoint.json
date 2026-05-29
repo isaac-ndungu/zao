@@ -1369,6 +1369,225 @@
         "auth": "Django Admin login",
         "notes": "Django admin interface"
       }
+    },
+
+    "8_farmers_map": {
+      "description": "Farmer map endpoints (cooperative-scoped, geolocation)",
+
+      "8.1_map": {
+        "method": "GET",
+        "path": "/api/farmers/map/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "include_deliveries": {"type": "boolean", "required": false, "example": "true", "notes": "If true, includes delivery_count per farmer"}
+        },
+        "response_200": [
+          {
+            "id": "<uuid>",
+            "first_name": "Grace",
+            "last_name": "Njoki",
+            "latitude": -1.283333,
+            "longitude": 36.816667
+          },
+          {
+            "id": "<uuid>",
+            "first_name": "Peter",
+            "last_name": "Kamau",
+            "latitude": -1.292000,
+            "longitude": 36.821000,
+            "delivery_count": 3
+          }
+        ],
+        "notes": "Only returns farmers with non-null lat/lng. Cooperative-scoped. Use ?include_deliveries=true to annotate delivery count."
+      }
+    },
+
+    "9_deliveries_map": {
+      "description": "Delivery map endpoints (cooperative-scoped, geolocation)",
+
+      "9.1_map": {
+        "method": "GET",
+        "path": "/api/deliveries/map/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "date":  {"type": "string", "required": false, "example": "2026-05-28", "notes": "Filter by delivery date (YYYY-MM-DD)"},
+          "grade": {"type": "string", "required": false, "example": "A", "notes": "Filter by grade letter"}
+        },
+        "response_200": [
+          {
+            "id": "<uuid>",
+            "farmer_id": "<uuid>",
+            "farmer_name": "Grace Njoki",
+            "grade": "A",
+            "status": "ACCEPTED",
+            "latitude": -1.283333,
+            "longitude": 36.816667
+          }
+        ],
+        "notes": "Falls back to farmer's lat/lng when delivery lat/lng is null (via Coalesce). Cooperative-scoped. Accepts optional ?date= and ?grade= filters."
+      }
+    },
+
+    "10_routes": {
+      "description": "Collection route endpoints (cooperative-scoped, manager-managed)",
+
+      "10.1_list": {
+        "method": "GET",
+        "path": "/api/routes/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "is_active":   {"type": "boolean", "required": false, "example": true},
+          "day_of_week": {"type": "integer", "required": false, "example": 1, "notes": "0=Mon..6=Sun"}
+        },
+        "response_200": {
+          "count": 1,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id": "<uuid>",
+              "name": "Githunguri Morning Route",
+              "farmer_count": 12,
+              "estimated_distance_km": "45.00",
+              "is_active": true,
+              "day_of_week": 1,
+              "created_at": "2026-05-28T06:00:00Z"
+            }
+          ]
+        },
+        "notes": "farmer_count is annotated via Count of distinct farmers across all stops. Paginated."
+      },
+
+      "10.2_create": {
+        "method": "POST",
+        "path": "/api/routes/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":                 {"type": "string", "required": true,  "example": "Githunguri Morning Route"},
+            "description":          {"type": "string", "required": false, "example": "Covers Kamiti, Githunguri town, and Riara"},
+            "path":                 {"type": "object", "required": false, "example": {"type":"LineString","coordinates":[[36.82,-1.28],[36.83,-1.29],[36.85,-1.30]]}, "notes": "GeoJSON LineString. Must have at least 2 coordinates. Each coordinate is [lng, lat]."},
+            "estimated_distance_km":{"type": "number", "required": false, "example": 45.00},
+            "day_of_week":          {"type": "integer","required": false, "example": 1, "notes": "0=Monday..6=Sunday"},
+            "is_active":            {"type": "boolean","required": false, "example": true}
+          }
+        },
+        "response_201": {
+          "id": "<uuid>",
+          "name": "Githunguri Morning Route",
+          "description": "Covers Kamiti, Githunguri town, and Riara",
+          "path": {"type":"LineString","coordinates":[[36.82,-1.28],[36.83,-1.29],[36.85,-1.30]]},
+          "estimated_distance_km": "45.00",
+          "day_of_week": 1,
+          "is_active": true,
+          "stops": [],
+          "cooperative": "<uuid>",
+          "created_at": "2026-05-28T06:00:00Z",
+          "updated_at": "2026-05-28T06:00:00Z"
+        },
+        "notes": "cooperative_id auto-set from request user. Stops can be added separately via assign-stops."
+      },
+
+      "10.3_detail": {
+        "method": "GET",
+        "path": "/api/routes/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "name": "Githunguri Morning Route",
+          "description": "Covers Kamiti, Githunguri town, and Riara",
+          "path": {"type":"LineString","coordinates":[[36.82,-1.28],[36.83,-1.29],[36.85,-1.30]]},
+          "estimated_distance_km": "45.00",
+          "day_of_week": 1,
+          "is_active": true,
+          "stops": [
+            {
+              "id": "<uuid>",
+              "latitude": -1.283333,
+              "longitude": 36.816667,
+              "stop_order": 1,
+              "estimated_minutes": 15,
+              "farmer_ids": ["<farmer_uuid>"]
+            },
+            {
+              "id": "<uuid>",
+              "latitude": -1.292000,
+              "longitude": 36.821000,
+              "stop_order": 2,
+              "estimated_minutes": 10,
+              "farmer_ids": ["<farmer_uuid>", "<farmer_uuid>"]
+            }
+          ],
+          "cooperative": "<uuid>",
+          "created_at": "2026-05-28T06:00:00Z",
+          "updated_at": "2026-05-28T06:00:00Z"
+        },
+        "notes": "Stops are ordered by stop_order. Farmer_ids are UUIDs of farmers assigned to that stop."
+      },
+
+      "10.4_update": {
+        "method": "PUT",
+        "path": "/api/routes/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name":                 {"type": "string", "required": true,  "example": "Githunguri Morning Route (Updated)"},
+            "description":          {"type": "string", "required": false, "example": "Updated description"},
+            "path":                 {"type": "object", "required": false, "example": {"type":"LineString","coordinates":[[36.82,-1.28],[36.83,-1.29]]}},
+            "estimated_distance_km":{"type": "number", "required": false, "example": 50.00},
+            "day_of_week":          {"type": "integer","required": false, "example": 2},
+            "is_active":            {"type": "boolean","required": false, "example": true}
+          }
+        },
+        "notes": "Stops are NOT updated via PUT/PATCH — use the assign-stops endpoint for stops."
+      },
+
+      "10.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/routes/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "name": {"type": "string", "required": false, "example": "Renamed Route"},
+            "is_active": {"type": "boolean", "required": false, "example": false}
+          }
+        }
+      },
+
+      "10.6_delete": {
+        "method": "DELETE",
+        "path": "/api/routes/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content",
+        "notes": "Cascade-deletes all RouteStop records."
+      },
+
+      "10.7_assign_stops": {
+        "method": "POST",
+        "path": "/api/routes/{id}/assign-stops/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "stops": {
+              "type": "array",
+              "required": true,
+              "items": {
+                "farmer_ids":        {"type": "array",  "required": true,  "example": ["<farmer_uuid>"], "notes": "At least 1 farmer UUID"},
+                "latitude":          {"type": "number", "required": true,  "example": -1.283333},
+                "longitude":         {"type": "number", "required": true,  "example": 36.816667},
+                "stop_order":        {"type": "integer","required": true,  "example": 1, "notes": "Sequential from 1, no gaps or duplicates"},
+                "estimated_minutes": {"type": "integer","required": false, "example": 15}
+              }
+            }
+          }
+        },
+        "response_200": "Full route detail (same as retrieve) with updated stops.",
+        "notes": "Full replace in a transaction: deletes all existing stops, creates new ones. stop_order must be sequential from 1."
+      }
     }
   }
 }
