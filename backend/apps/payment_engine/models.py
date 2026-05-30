@@ -36,6 +36,7 @@ class PaymentCycle(CooperativeScopedModel):
         ('COMPUTING', 'Computing'),
         ('COMPUTED', 'Computed'),
         ('LOCKED', 'Locked'),
+        ('DISBURSED', 'Disbursed'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -96,6 +97,10 @@ class FarmerPayment(CooperativeScopedModel):
         max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING', db_index=True,
     )
     computation_log = models.JSONField(default=dict, blank=True)
+    is_on_hold = models.BooleanField(default=False)
+    hold_reason = models.TextField(blank=True)
+    withholding_tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_subject_to_withholding_tax = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'apps.payment_engine',
     'apps.deductions',
     'apps.loans',
+    'apps.disbursement',
 ]
 
 MIDDLEWARE = [
@@ -141,6 +142,17 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Africa/Nairobi'
+
+# M-Pesa Daraja API
+MPESA_CONSUMER_KEY = config('MPESA_CONSUMER_KEY', default='')
+MPESA_CONSUMER_SECRET = config('MPESA_CONSUMER_SECRET', default='')
+MPESA_PASSKEY = config('MPESA_PASSKEY', default='')
+MPESA_SHORTCODE = config('MPESA_SHORTCODE', default='')
+MPESA_ENVIRONMENT = config('MPESA_ENVIRONMENT', default='sandbox')
+MPESA_B2C_RESULT_URL = config('MPESA_B2C_RESULT_URL', default='')
+MPESA_B2C_TIMEOUT_URL = config('MPESA_B2C_TIMEOUT_URL', default='')
+MPESA_DISBURSEMENT_BLACKOUT_START = config('MPESA_DISBURSEMENT_BLACKOUT_START', default='01:00')
+MPESA_DISBURSEMENT_BLACKOUT_END = config('MPESA_DISBURSEMENT_BLACKOUT_END', default='04:00')
 
 # Celery configuration
 CELERY_BROKER_URL = config('REDIS_URL')

@@ -35,4 +35,7 @@ urlpatterns = [
     path('api/', include('apps.payment_engine.urls')),
     path('api/deductions/', include('apps.deductions.urls')),
     path('api/loans/', include('apps.loans.urls')),
+    path('api/disbursements/', include('apps.disbursement.urls')),
+    # Round 3: path('api/callback/mpesa/result/', ...)
+    # Round 3: path('api/callback/mpesa/timeout/', ...)
 ]
