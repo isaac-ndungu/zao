@@ -10,7 +10,7 @@ from apps.base.permissions import IsAccountantOrManager, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
-from .models import ComputationWarning, PaymentCycle
+from .models import ComputationWarning, FarmerPayment, PaymentCycle
 from .serializers import (
     ComputationWarningSerializer,
     CyclePreviewSerializer,
@@ -35,7 +35,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated(), IsAccountantOrManager()]
         if self.action in ('lock', 'unlock'):
             return [IsAuthenticated(), IsManager()]
-        if self.action == 'run':
+        if self.action in ('run', 'hold', 'release'):
             return [IsAuthenticated(), IsAccountantOrManager()]
         return [IsAuthenticated()]
 
@@ -166,6 +166,92 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
             cycle, context={'request': request},
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def hold(self, request, pk=None):
+        cycle = self.get_object()
+
+        if cycle.status not in ('COMPUTED', 'LOCKED'):
+            return Response(
+                {'detail': 'Only COMPUTED or LOCKED cycles can be modified.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        farmer_payment_id = request.data.get('farmer_payment_id')
+        reason = request.data.get('hold_reason', '')
+
+        if not farmer_payment_id:
+            return Response(
+                {'detail': 'farmer_payment_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            fp = FarmerPayment.objects.get(
+                id=farmer_payment_id, cycle=cycle,
+            )
+        except FarmerPayment.DoesNotExist:
+            return Response(
+                {'detail': 'FarmerPayment not found in this cycle.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        fp.is_on_hold = True
+        fp.hold_reason = reason
+        fp.save(update_fields=['is_on_hold', 'hold_reason'])
+
+        log_audit(
+            actor=request.user,
+            resource_type='farmer_payment',
+            resource_id=fp.id,
+            action='HOLD',
+            new_value={'reason': reason, 'cycle': str(cycle.id)},
+            cooperative_id=self.request.cooperative_id,
+        )
+
+        return Response({'status': 'held', 'farmer_payment_id': str(fp.id)})
+
+    @action(detail=True, methods=['post'])
+    def release(self, request, pk=None):
+        cycle = self.get_object()
+
+        if cycle.status not in ('COMPUTED', 'LOCKED'):
+            return Response(
+                {'detail': 'Only COMPUTED or LOCKED cycles can be modified.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        farmer_payment_id = request.data.get('farmer_payment_id')
+
+        if not farmer_payment_id:
+            return Response(
+                {'detail': 'farmer_payment_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            fp = FarmerPayment.objects.get(
+                id=farmer_payment_id, cycle=cycle,
+            )
+        except FarmerPayment.DoesNotExist:
+            return Response(
+                {'detail': 'FarmerPayment not found in this cycle.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        fp.is_on_hold = False
+        fp.hold_reason = ''
+        fp.save(update_fields=['is_on_hold', 'hold_reason'])
+
+        log_audit(
+            actor=request.user,
+            resource_type='farmer_payment',
+            resource_id=fp.id,
+            action='RELEASE',
+            cooperative_id=self.request.cooperative_id,
+        )
+
+        return Response({'status': 'released', 'farmer_payment_id': str(fp.id)})
 
     @action(detail=True, methods=['get'], url_path='task-status')
     def task_status(self, request, pk=None):

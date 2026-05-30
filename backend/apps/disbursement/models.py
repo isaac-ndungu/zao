@@ -33,8 +33,6 @@ class DisbursementBatch(CooperativeScopedModel):
     total_transactions = models.PositiveIntegerField(default=0)
     successful_count = models.PositiveIntegerField(default=0)
     failed_count = models.PositiveIntegerField(default=0)
-    conversation_id = models.CharField(max_length=100, blank=True, db_index=True)
-    originator_conversation_id = models.CharField(max_length=100, blank=True)
     celery_task_id = models.CharField(max_length=255, blank=True, default='', db_index=True)
     approved_by = models.ForeignKey(
         'auth_api.User', on_delete=models.SET_NULL, null=True, blank=True,

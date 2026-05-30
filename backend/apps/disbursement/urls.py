@@ -1,9 +1,9 @@
-# Round 3: ViewSet + router
-# from rest_framework.routers import DefaultRouter
-# from .views import DisbursementViewSet
-#
-# router = DefaultRouter()
-# router.register('', DisbursementViewSet, basename='disbursement')
-# urlpatterns = router.urls
+from django.urls import path
+from rest_framework.routers import SimpleRouter
 
-urlpatterns = []
+from .views import DisbursementViewSet
+
+router = SimpleRouter()
+router.register('', DisbursementViewSet, basename='disbursement')
+
+urlpatterns = router.urls
