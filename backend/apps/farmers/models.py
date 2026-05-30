@@ -34,6 +34,7 @@ class Farmer(LocationMixin, CooperativeScopedModel):
     bank_account = models.CharField(max_length=30, blank=True)
     bank_branch = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
+    has_active_loan = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
