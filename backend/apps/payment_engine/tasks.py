@@ -73,7 +73,7 @@ def run_payment_engine(self, cycle_id: str):
                 gross_amount=data['gross_amount'],
             )
 
-            deductions, net = apply_deductions(fp, cooperative, active_count)
+            deductions, net = apply_deductions(fp, cooperative, active_count, cycle)
             fp.deductions = deductions
             fp.net_amount = net
             fp.computation_log = {
@@ -88,6 +88,8 @@ def run_payment_engine(self, cycle_id: str):
             total_levy += deductions['levy']
             total_cooperative_fee += deductions['monthly_fee']
             total_loan_repayments += deductions['loan_repayment']
+
+        _create_levy_deductions(cycle, farmer_data)
 
         totals = FarmerPayment.objects.filter(cycle=cycle).aggregate(
             total_gross=Sum('gross_amount'),
@@ -132,3 +134,23 @@ def run_payment_engine(self, cycle_id: str):
         cycle.save(update_fields=['status', 'computed_at'])
         logger.exception("Payment engine failed for cycle %s, reset to DRAFT", cycle_id)
         raise
+
+
+def _create_levy_deductions(cycle, farmer_data):
+    from apps.deductions.models import Deduction
+    Deduction.objects.filter(cycle=cycle, deduction_type='LEVY').delete()
+    levies = []
+    for data in farmer_data:
+        farmer = data['farmer']
+        gross = data['gross_amount']
+        levy_amount = round(gross * (float(cycle.cooperative.levy_percentage) / 100), 2)
+        if levy_amount > 0:
+            levies.append(Deduction(
+                cooperative=cycle.cooperative,
+                farmer=farmer,
+                cycle=cycle,
+                deduction_type='LEVY',
+                amount=levy_amount,
+                notes='Auto-generated levy deduction',
+            ))
+    Deduction.objects.bulk_create(levies)

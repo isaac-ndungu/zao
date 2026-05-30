@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 
+from django.db import models
 from django.db.models import Sum
 
 from apps.deliveries.models import Delivery
@@ -132,11 +133,18 @@ def compute_revenue_share(cycle):
     return results
 
 
-def apply_deductions(farmer_payment, cooperative, active_farmer_count):
+def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle):
     gross = float(farmer_payment.gross_amount)
     levy = gross * (float(cooperative.levy_percentage) / 100)
     monthly_fee_share = float(cooperative.monthly_fee) / active_farmer_count if active_farmer_count > 0 else 0
-    loan_repayment = 0.0
+
+    from apps.deductions.models import Deduction
+    loan_total = Deduction.objects.filter(
+        cycle=cycle,
+        farmer=farmer_payment.farmer,
+        deduction_type='LOAN_REPAYMENT',
+    ).aggregate(total=models.Sum('amount'))['total'] or 0
+    loan_repayment = float(loan_total)
 
     deductions = {
         'levy': round(levy, 2),
