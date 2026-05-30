@@ -3,12 +3,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.base.permissions import IsAccountantOrManager, IsFarmer
+from apps.base.permissions import IsAccountant, IsAccountantOrManager, IsFarmer
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
 from .models import Loan
 from .serializers import (
+    LoanApproveSerializer,
     LoanCreateSerializer,
     LoanDetailSerializer,
     LoanListSerializer,
@@ -30,6 +31,10 @@ class LoanViewSet(CooperativeScopedViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated(), IsFarmer() | IsAccountantOrManager()]
+        if self.action == 'approve':
+            return [IsAuthenticated(), IsAccountantOrManager()]
+        if self.action == 'disburse':
+            return [IsAuthenticated(), IsAccountant()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
@@ -83,11 +88,10 @@ class LoanViewSet(CooperativeScopedViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         loan = self.get_object()
-        if loan.status != 'PENDING':
-            return Response(
-                {'detail': 'Only PENDING loans can be approved.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = LoanApproveSerializer(
+            data=request.data, context={'view': self, 'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
         from django.utils import timezone
         loan.status = 'ACTIVE'
         loan.approved_by = request.user

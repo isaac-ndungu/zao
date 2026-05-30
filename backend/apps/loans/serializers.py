@@ -60,6 +60,14 @@ class LoanDetailSerializer(serializers.ModelSerializer):
         return max(0, obj.number_of_installments - obj.installments_paid)
 
 
+class LoanApproveSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        loan = self.context['view'].get_object()
+        if loan.status != 'PENDING':
+            raise serializers.ValidationError('Only PENDING loans can be approved.')
+        return attrs
+
+
 class LoanCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Loan

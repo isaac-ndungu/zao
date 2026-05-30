@@ -61,7 +61,7 @@ class LoanRepayment(models.Model):
         Loan, on_delete=models.CASCADE, related_name='repayments',
     )
     farmer_payment = models.ForeignKey(
-        'payment_engine.FarmerPayment', on_delete=models.PROTECT,
+        'payment_engine.FarmerPayment', on_delete=models.CASCADE,
         related_name='loan_repayments',
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)

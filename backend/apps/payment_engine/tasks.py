@@ -29,6 +29,9 @@ def run_payment_engine(self, cycle_id: str):
     cycle.farmer_payments.all().delete()
     cycle.warnings.all().delete()
 
+    from apps.deductions.models import Deduction
+    Deduction.objects.filter(cycle=cycle, deduction_type='LOAN_REPAYMENT').delete()
+
     cooperative = cycle.cooperative
 
     try:

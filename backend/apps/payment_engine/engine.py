@@ -138,13 +138,39 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle):
     levy = gross * (float(cooperative.levy_percentage) / 100)
     monthly_fee_share = float(cooperative.monthly_fee) / active_farmer_count if active_farmer_count > 0 else 0
 
-    from apps.deductions.models import Deduction
-    loan_total = Deduction.objects.filter(
-        cycle=cycle,
+    loan_repayment = 0.0
+
+    from apps.loans.models import Loan
+    active_loan = Loan.objects.filter(
         farmer=farmer_payment.farmer,
-        deduction_type='LOAN_REPAYMENT',
-    ).aggregate(total=models.Sum('amount'))['total'] or 0
-    loan_repayment = float(loan_total)
+        status='ACTIVE',
+        installments_paid__lt=models.F('number_of_installments'),
+    ).first()
+
+    if active_loan:
+        loan_repayment = float(active_loan.installment_amount)
+
+        from apps.deductions.models import Deduction
+        Deduction.objects.create(
+            cooperative=cycle.cooperative,
+            farmer=farmer_payment.farmer,
+            cycle=cycle,
+            deduction_type='LOAN_REPAYMENT',
+            amount=active_loan.installment_amount,
+            notes=f'Loan installment {active_loan.installments_paid + 1} of {active_loan.number_of_installments}',
+        )
+
+        from apps.loans.models import LoanRepayment
+        LoanRepayment.objects.create(
+            loan=active_loan,
+            farmer_payment=farmer_payment,
+            amount=active_loan.installment_amount,
+        )
+
+        active_loan.installments_paid += 1
+        if active_loan.installments_paid >= active_loan.number_of_installments:
+            active_loan.status = 'COMPLETED'
+        active_loan.save(update_fields=['installments_paid', 'status'])
 
     deductions = {
         'levy': round(levy, 2),
