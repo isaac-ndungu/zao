@@ -46,7 +46,7 @@ class PaymentCycle(CooperativeScopedModel):
         max_length=20, choices=STATUS_CHOICES, default='DRAFT', db_index=True,
     )
     totals = models.JSONField(default=dict, blank=True)
-    celery_task_id = models.CharField(max_length=255, blank=True, db_index=True)
+    celery_task_id = models.CharField(max_length=255, blank=True, default='', db_index=True)
 
     total_levy = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_cooperative_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)

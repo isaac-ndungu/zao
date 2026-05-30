@@ -22,7 +22,7 @@ def run_payment_engine(self, cycle_id: str):
         return {'error': 'Cycle is locked'}
 
     cycle.status = 'COMPUTING'
-    cycle.celery_task_id = self.request.id
+    cycle.celery_task_id = self.request.id or ''
 
     cycle.save(update_fields=['status', 'celery_task_id'])
 
