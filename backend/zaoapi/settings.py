@@ -161,6 +161,12 @@ CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_BEAT_SCHEDULE = {
+    'reconcile-stuck-disbursements': {
+        'task': 'apps.disbursement.tasks.reconcile_stuck_transactions',
+        'schedule': 900,
+    },
+}
 
 # Email
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')

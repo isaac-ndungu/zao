@@ -79,14 +79,26 @@ def run_payment_engine(self, cycle_id: str):
             deductions, net = apply_deductions(fp, cooperative, active_count, cycle)
             fp.deductions = deductions
             fp.net_amount = net
+
+            from apps.disbursement.utils import compute_withholding_tax
+            tax, is_subject = compute_withholding_tax(
+                str(data['farmer'].id), str(cycle.id),
+            )
+            fp.withholding_tax_amount = tax
+            fp.is_subject_to_withholding_tax = is_subject
+
             fp.computation_log = {
                 'method': cooperative.payment_model,
                 'total_quantity': float(fp.total_quantity),
                 'gross_amount': float(fp.gross_amount),
                 'deductions_applied': deductions,
                 'net_amount': float(net),
+                'withholding_tax': tax,
             }
-            fp.save(update_fields=['deductions', 'net_amount', 'computation_log'])
+            fp.save(update_fields=[
+                'deductions', 'net_amount', 'withholding_tax_amount',
+                'is_subject_to_withholding_tax', 'computation_log',
+            ])
 
             total_levy += deductions['levy']
             total_cooperative_fee += deductions['monthly_fee']
