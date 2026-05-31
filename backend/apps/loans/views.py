@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, OR
 from rest_framework.response import Response
 
 from apps.base.constants import UserRole
-from apps.base.permissions import IsAccountant, IsAccountantOrManager, IsFarmer
+from apps.base.permissions import IsAccountant, IsAccountantOrManager, IsFarmer, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
@@ -14,6 +14,8 @@ from .serializers import (
     LoanCreateSerializer,
     LoanDetailSerializer,
     LoanListSerializer,
+    LoanMarkCompletedSerializer,
+    LoanMarkDefaultedSerializer,
 )
 
 
@@ -36,6 +38,10 @@ class LoanViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated(), IsAccountantOrManager()]
         if self.action == 'disburse':
             return [IsAuthenticated(), IsAccountant()]
+        if self.action == 'mark_completed':
+            return [IsAuthenticated(), IsAccountant()]
+        if self.action == 'mark_defaulted':
+            return [IsAuthenticated(), IsManager()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
@@ -129,6 +135,47 @@ class LoanViewSet(CooperativeScopedViewSet):
             resource_type='loan',
             resource_id=loan.id,
             action='DISBURSE',
+            cooperative_id=self.request.cooperative_id,
+        )
+        serializer = self.get_serializer(loan)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def mark_completed(self, request, pk=None):
+        loan = self.get_object()
+        serializer = LoanMarkCompletedSerializer(
+            data=request.data, context={'view': self, 'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        loan.status = 'COMPLETED'
+        loan.save(update_fields=['status'])
+        log_audit(
+            actor=request.user,
+            resource_type='loan',
+            resource_id=loan.id,
+            action='MARK_COMPLETED',
+            cooperative_id=self.request.cooperative_id,
+        )
+        serializer = self.get_serializer(loan)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def mark_defaulted(self, request, pk=None):
+        loan = self.get_object()
+        serializer = LoanMarkDefaultedSerializer(
+            data=request.data, context={'view': self, 'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data['reason']
+        loan.status = 'DEFAULTED'
+        loan.notes = (loan.notes + '\n' if loan.notes else '') + f'Defaulted: {reason}'
+        loan.save(update_fields=['status', 'notes'])
+        log_audit(
+            actor=request.user,
+            resource_type='loan',
+            resource_id=loan.id,
+            action='MARK_DEFAULTED',
+            new_value={'reason': reason},
             cooperative_id=self.request.cooperative_id,
         )
         serializer = self.get_serializer(loan)

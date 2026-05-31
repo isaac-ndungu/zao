@@ -1,4 +1,5 @@
 from celery.result import AsyncResult
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -36,6 +37,8 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         if self.action in ('lock', 'unlock'):
             return [IsAuthenticated(), IsManager()]
         if self.action in ('run', 'hold', 'release'):
+            return [IsAuthenticated(), IsAccountantOrManager()]
+        if self.action == 'export':
             return [IsAuthenticated(), IsAccountantOrManager()]
         return [IsAuthenticated()]
 
@@ -277,3 +280,38 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         ).data
 
         return Response(result)
+
+    @action(detail=True, methods=['get'])
+    def export(self, request, pk=None):
+        import csv
+        cycle = self.get_object()
+        farmer_payments = FarmerPayment.objects.filter(
+            cycle=cycle,
+        ).select_related('farmer').order_by('farmer__member_number')
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = (
+            f'attachment; filename="cycle_{cycle.name}_payments.csv"'
+        )
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'member_number', 'farmer_name', 'total_quantity_kg',
+            'gross_amount', 'total_deductions', 'withholding_tax_amount',
+            'net_amount', 'payment_method', 'payment_status',
+        ])
+
+        for fp in farmer_payments:
+            writer.writerow([
+                fp.farmer.member_number,
+                f'{fp.farmer.first_name} {fp.farmer.last_name}',
+                fp.total_quantity,
+                fp.gross_amount,
+                fp.deductions,
+                fp.withholding_tax_amount,
+                fp.net_amount,
+                fp.farmer.payment_method,
+                fp.payment_status,
+            ])
+
+        return response

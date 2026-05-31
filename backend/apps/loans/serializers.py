@@ -105,3 +105,26 @@ class LoanCreateSerializer(serializers.ModelSerializer):
                     'You can only create a loan for yourself.'
                 )
         return value
+
+
+class LoanMarkCompletedSerializer(serializers.Serializer):
+    def validate(self, attrs):
+        loan = self.context['view'].get_object()
+        if loan.status != 'ACTIVE':
+            raise serializers.ValidationError('Only ACTIVE loans can be marked as completed.')
+        if loan.installments_paid < loan.number_of_installments:
+            raise serializers.ValidationError(
+                f'Cannot complete loan: only {loan.installments_paid} of '
+                f'{loan.number_of_installments} installments paid.'
+            )
+        return attrs
+
+
+class LoanMarkDefaultedSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=True)
+
+    def validate(self, attrs):
+        loan = self.context['view'].get_object()
+        if loan.status != 'ACTIVE':
+            raise serializers.ValidationError('Only ACTIVE loans can be marked as defaulted.')
+        return attrs
