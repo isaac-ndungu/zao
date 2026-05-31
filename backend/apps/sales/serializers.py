@@ -64,6 +64,7 @@ class SaleCreateSerializer(serializers.ModelSerializer):
         model = Sale
         fields = [
             'buyer', 'inventory',
+            'product_type', 'grade_letter', 'unit',
             'quantity', 'price_per_unit',
             'payment_cycle', 'status', 'sale_date',
             'invoice_number', 'notes',
@@ -96,3 +97,13 @@ class SaleCreateSerializer(serializers.ModelSerializer):
                     f'{float(quantity)} {inventory.unit} requested.'
                 )
         return attrs
+
+    def create(self, validated_data):
+        validated_data['total_amount'] = validated_data['quantity'] * validated_data['price_per_unit']
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        quantity = validated_data.get('quantity', instance.quantity)
+        price_per_unit = validated_data.get('price_per_unit', instance.price_per_unit)
+        validated_data['total_amount'] = quantity * price_per_unit
+        return super().update(instance, validated_data)

@@ -1,8 +1,9 @@
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, OR
 from rest_framework.response import Response
 
+from apps.base.constants import UserRole
 from apps.base.permissions import IsAccountant, IsAccountantOrManager, IsFarmer
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
@@ -30,7 +31,7 @@ class LoanViewSet(CooperativeScopedViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            return [IsAuthenticated(), IsFarmer() | IsAccountantOrManager()]
+            return [IsAuthenticated(), OR(IsFarmer(), IsAccountantOrManager())]
         if self.action == 'approve':
             return [IsAuthenticated(), IsAccountantOrManager()]
         if self.action == 'disburse':
@@ -40,7 +41,7 @@ class LoanViewSet(CooperativeScopedViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
-        if user.role == 'FARMER':
+        if user.role == UserRole.FARMER:
             if hasattr(user, 'farmer_profile'):
                 qs = qs.filter(farmer=user.farmer_profile)
             else:
@@ -56,7 +57,7 @@ class LoanViewSet(CooperativeScopedViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         status_val = 'PENDING'
-        if user.role in ('MANAGER', 'ACCOUNTANT'):
+        if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT):
             status_val = 'ACTIVE'
         instance = serializer.save(
             cooperative_id=self.request.cooperative_id,

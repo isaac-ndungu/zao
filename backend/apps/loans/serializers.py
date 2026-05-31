@@ -53,7 +53,7 @@ class LoanDetailSerializer(serializers.ModelSerializer):
 
     def get_approved_by_name(self, obj):
         if obj.approved_by:
-            return obj.approved_by.get_full_name() or obj.approved_by.email
+            return f'{obj.approved_by.first_name} {obj.approved_by.last_name}'.strip() or obj.approved_by.email
         return None
 
     def get_remaining_installments(self, obj):
