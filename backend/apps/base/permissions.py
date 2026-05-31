@@ -69,6 +69,10 @@ class IsAccountantOrManager(IsInRoles):
     roles = [UserRole.ACCOUNTANT, UserRole.MANAGER]
 
 
+class IsManagerOrAuditor(IsInRoles):
+    roles = [UserRole.ADMIN, UserRole.MANAGER, UserRole.AUDITOR]
+
+
 class IsReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS

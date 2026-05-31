@@ -38,6 +38,7 @@ urlpatterns = [
     path('api/deductions/', include('apps.deductions.urls')),
     path('api/loans/', include('apps.loans.urls')),
     path('api/disbursements/', include('apps.disbursement.urls')),
+    path('api/statements/', include('apps.statements.urls')),
     path('api/callback/mpesa/result/', mpesa_result_callback),
     path('api/callback/mpesa/timeout/', mpesa_timeout_callback),
     path('api/callback/', include(notification_callback_urlpatterns)),

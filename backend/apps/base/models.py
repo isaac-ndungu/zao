@@ -60,11 +60,22 @@ class AuditLog(CooperativeScopedModel):
             ('LOCK', 'Lock'),
             ('UNLOCK', 'Unlock'),
             ('RUN', 'Run'),
+            ('LOGIN', 'Login'),
+            ('DISBURSE', 'Disburse'),
+            ('GRADE', 'Grade'),
+            ('PDF_GENERATED', 'PDF Generated'),
         ]
     )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     previous_value = models.JSONField(null=True, blank=True)
     new_value = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def changes(self):
+        if self.previous_value is None and self.new_value is None:
+            return None
+        return {'previous': self.previous_value, 'new': self.new_value}
 
     class Meta:
         verbose_name = 'Audit Log'

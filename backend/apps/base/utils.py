@@ -37,7 +37,7 @@ def _serialize(value):
     return value
 
 
-def log_audit(actor, resource_type, resource_id, action, previous_value=None, new_value=None, cooperative_id=None):
+def log_audit(actor, resource_type, resource_id, action, previous_value=None, new_value=None, cooperative_id=None, ip_address=None):
     if not cooperative_id and actor:
         cooperative_id = getattr(actor, 'cooperative_id', None)
     return AuditLog.objects.create(
@@ -48,4 +48,5 @@ def log_audit(actor, resource_type, resource_id, action, previous_value=None, ne
         action=action,
         previous_value=_serialize(previous_value),
         new_value=_serialize(new_value),
+        ip_address=ip_address,
     )
