@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'apps.deductions',
     'apps.loans',
     'apps.disbursement',
+    'apps.notifications',
 ]
 
 MIDDLEWARE = [
@@ -166,7 +167,14 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.disbursement.tasks.reconcile_stuck_transactions',
         'schedule': 900,
     },
+    'cleanup-expired-ussd-sessions': {
+        'task': 'apps.notifications.tasks.cleanup_expired_ussd_sessions',
+        'schedule': 3600,
+    },
 }
+
+NOTIFICATIONS_DRY_RUN = config('NOTIFICATIONS_DRY_RUN', default=True, cast=bool)
+AFRICASTALKING_USSD_CODE = config('AFRICASTALKING_USSD_CODE', default='*384*12345#')
 
 # Email
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
