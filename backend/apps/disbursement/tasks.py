@@ -1,12 +1,8 @@
-import json
 import logging
 from datetime import timedelta
 from decimal import Decimal
-from urllib.error import URLError
-from urllib.request import Request, urlopen
 
 from celery import shared_task
-from decouple import config
 from django.utils import timezone
 
 from apps.payment_engine.models import FarmerPayment, PaymentCycle
@@ -332,42 +328,14 @@ def reverse_deductions_on_failure(farmer_id: str, farmer_payment_id: str):
 
 @shared_task
 def send_disbursement_sms(phone_number: str, farmer_name: str, amount: float, farner_payment_id: str = ''):
-    api_key = config('AT_API_KEY', default='')
-    username = config('AT_USERNAME', default='')
-
-    if not api_key or not username:
-        logger.warning(
-            'AT_API_KEY or AT_USERNAME not set. SMS not sent to %s',
-            phone_number,
-        )
-        return
-
     message = (
         f"Dear {farmer_name}, your payment of KES {amount:,.2f} "
         f"has been sent to your M-Pesa. Thank you for partnering with us."
     )
 
-    payload = json.dumps({
-        'username': username,
-        'to': phone_number,
-        'message': message,
-    }).encode('utf-8')
-
-    headers = {
-        'ApiKey': api_key,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    }
-
-    try:
-        req = Request(
-            'https://api.africastalking.com/version1/messaging',
-            data=payload,
-            headers=headers,
-            method='POST',
-        )
-        with urlopen(req, timeout=10) as resp:
-            body = json.loads(resp.read().decode('utf-8'))
-            logger.info('Payment SMS sent to %s: %s', phone_number, body)
-    except URLError as e:
-        logger.error('Failed to send payment SMS to %s: %s', phone_number, e)
+    from apps.notifications.utils import send_sms
+    result = send_sms(phone_number, message)
+    if result['success']:
+        logger.info('Payment SMS sent to %s', phone_number)
+    else:
+        logger.error('Failed to send payment SMS to %s: %s', phone_number, result['error'])
