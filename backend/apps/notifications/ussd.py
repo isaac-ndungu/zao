@@ -1,4 +1,5 @@
 import logging
+import re
 
 from django.utils import timezone
 
@@ -51,7 +52,7 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
     prior = parts[:-1] if text else []
 
     # Input sanitisation
-    if current_input and (len(current_input) > 20 or not current_input.isalnum()):
+    if current_input and (len(current_input) > 20 or not re.match(r'^[a-zA-Z0-9\-]+$', current_input)):
         return _end(session, 'Invalid input. Please try again.')
 
     state = session.current_menu
@@ -74,6 +75,7 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
             return _end(session, 'Invalid member number. Please try again.')
 
         session.farmer = farmer
+        session.save(update_fields=['farmer'])
         return _con(
             session,
             '1. My Deliveries\n2. My Payments\n3. My Profile',

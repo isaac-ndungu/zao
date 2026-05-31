@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from apps.disbursement.callbacks import mpesa_result_callback, mpesa_timeout_callback
+from apps.notifications.urls import api_urlpatterns, callback_urlpatterns as notification_callback_urlpatterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -39,4 +40,6 @@ urlpatterns = [
     path('api/disbursements/', include('apps.disbursement.urls')),
     path('api/callback/mpesa/result/', mpesa_result_callback),
     path('api/callback/mpesa/timeout/', mpesa_timeout_callback),
+    path('api/callback/', include(notification_callback_urlpatterns)),
+    path('api/', include(api_urlpatterns)),
 ]
