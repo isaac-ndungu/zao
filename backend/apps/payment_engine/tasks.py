@@ -1,12 +1,45 @@
 import logging
 
+import redis as redis_module
 from celery import shared_task
+from django.conf import settings
 from django.db.models import Sum
 from django.utils import timezone
 
 from .models import ComputationWarning, FarmerPayment, PaymentCycle
 
 logger = logging.getLogger(__name__)
+
+LOCK_TTL = 1800  # 30 minutes — generous for large cycles
+
+
+def _acquire_cycle_lock(cycle_id: str, task_id: str) -> bool:
+    """Try to acquire a distributed lock for this cycle.
+
+    Returns True if the lock was acquired (caller should proceed),
+    False if another worker is already computing this cycle.
+    """
+    try:
+        client = redis_module.from_url(settings.CELERY_BROKER_URL)
+        lock_key = f'payment_engine:lock:{cycle_id}'
+        # SETNX — only succeeds if key does not exist
+        acquired = client.setnx(lock_key, task_id)
+        if acquired:
+            client.expire(lock_key, LOCK_TTL)
+        client.close()
+        return bool(acquired)
+    except Exception:
+        logger.exception("Failed to acquire Redis lock for cycle %s, proceeding without lock", cycle_id)
+        return True
+
+
+def _release_cycle_lock(cycle_id: str):
+    try:
+        client = redis_module.from_url(settings.CELERY_BROKER_URL)
+        client.delete(f'payment_engine:lock:{cycle_id}')
+        client.close()
+    except Exception:
+        logger.exception("Failed to release Redis lock for cycle %s", cycle_id)
 
 
 @shared_task(bind=True, max_retries=2)
@@ -21,20 +54,27 @@ def run_payment_engine(self, cycle_id: str):
         logger.warning("Cycle %s is locked, skipping", cycle_id)
         return {'error': 'Cycle is locked'}
 
-    cycle.status = 'COMPUTING'
-    cycle.celery_task_id = self.request.id or ''
-
-    cycle.save(update_fields=['status', 'celery_task_id'])
-
-    cycle.farmer_payments.all().delete()
-    cycle.warnings.all().delete()
-
-    from apps.deductions.models import Deduction
-    Deduction.objects.filter(cycle=cycle, deduction_type='LOAN_REPAYMENT').delete()
-
-    cooperative = cycle.cooperative
+    # Distributed lock guard — prevent concurrent computation on the same cycle
+    if not _acquire_cycle_lock(cycle_id, self.request.id or ''):
+        logger.warning(
+            "Cycle %s is already being computed by another worker, skipping",
+            cycle_id,
+        )
+        return {'status': 'SKIPPED', 'cycle_id': cycle_id, 'reason': 'Already computing'}
 
     try:
+        cycle.status = 'COMPUTING'
+        cycle.celery_task_id = self.request.id or ''
+        cycle.save(update_fields=['status', 'celery_task_id'])
+
+        cycle.farmer_payments.all().delete()
+        cycle.warnings.all().delete()
+
+        from apps.deductions.models import Deduction
+        Deduction.objects.filter(cycle=cycle, deduction_type='LOAN_REPAYMENT').delete()
+
+        cooperative = cycle.cooperative
+
         if cooperative.payment_model == 'FIXED_PRICE':
             from .engine import compute_fixed_price
             farmer_data = compute_fixed_price(cycle)
@@ -57,6 +97,7 @@ def run_payment_engine(self, cycle_id: str):
                 'status', 'totals', 'total_levy', 'total_cooperative_fee',
                 'total_loan_repayments', 'has_warnings', 'computed_at',
             ])
+            _release_cycle_lock(cycle_id)
             return {'status': 'COMPUTED', 'cycle_id': cycle_id, 'farmer_count': 0}
 
         active_count = len(farmer_data)
@@ -136,6 +177,8 @@ def run_payment_engine(self, cycle_id: str):
             cycle.total_levy,
             cycle.totals['total_net'],
         )
+
+        _release_cycle_lock(cycle_id)
         return {
             'status': 'COMPUTED',
             'cycle_id': cycle_id,
@@ -144,6 +187,7 @@ def run_payment_engine(self, cycle_id: str):
         }
 
     except Exception:
+        _release_cycle_lock(cycle_id)
         cycle.status = 'DRAFT'
         cycle.computed_at = None
         cycle.save(update_fields=['status', 'computed_at'])

@@ -68,16 +68,17 @@ class DeliveryViewSet(CooperativeScopedViewSet):
         return DeliveryDetailSerializer
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        if getattr(request.user, 'role', None) == 'admin':
-            coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
-        else:
-            serializer.validated_data.pop('cooperative_id', None)
-            coop_id = request.cooperative_id
-        instance = serializer.save(
-            cooperative_id=coop_id,
-        )
+        with transaction.atomic():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            if getattr(request.user, 'role', None) == 'admin':
+                coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+            else:
+                serializer.validated_data.pop('cooperative_id', None)
+                coop_id = request.cooperative_id
+            instance = serializer.save(
+                cooperative_id=coop_id,
+            )
         log_audit(
             actor=request.user,
             resource_type='delivery',
