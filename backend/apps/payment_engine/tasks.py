@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 
 import redis as redis_module
 from celery import shared_task
@@ -108,13 +109,36 @@ def run_payment_engine(self, cycle_id: str):
 
         for data in farmer_data:
             from .engine import apply_deductions
+            farmer = data['farmer']
+            gross = data['gross_amount']
+
+            # Carry forward any amount skipped in previous cycles
+            prev_carried = FarmerPayment.objects.filter(
+                farmer=farmer,
+                carry_forward_reason='BELOW_MINIMUM_THRESHOLD',
+                payment_status='PENDING',
+            ).exclude(cycle=cycle)
+
+            carried_forward_amount = Decimal('0')
+            for prev in prev_carried:
+                carried_forward_amount += prev.carried_forward_amount
+                prev.carry_forward_reason = 'RESOLVED'
+                prev.save(update_fields=['carry_forward_reason'])
+
+            carry_forward_reason = ''
+            if carried_forward_amount > 0:
+                gross += float(carried_forward_amount)
+                carry_forward_reason = 'FROM_PREVIOUS_CYCLE'
+
             fp = FarmerPayment.objects.create(
                 cooperative=cycle.cooperative,
                 cycle=cycle,
-                farmer=data['farmer'],
+                farmer=farmer,
                 total_quantity=data['total_quantity'],
                 grade_breakdown=data['grade_breakdown'],
-                gross_amount=data['gross_amount'],
+                gross_amount=round(gross, 2),
+                carried_forward_amount=carried_forward_amount,
+                carry_forward_reason=carry_forward_reason,
             )
 
             deductions, net = apply_deductions(fp, cooperative, active_count, cycle)

@@ -150,13 +150,9 @@ class DisbursementBatchCreateSerializer(serializers.Serializer):
                 continue
 
             if net < minimum_payout:
-                fp.computation_log = fp.computation_log or {}
-                fp.computation_log['carried_forward'] = net
-                fp.computation_log['carry_forward_reason'] = (
-                    f'Amount KES {net:,.2f} below minimum payout of '
-                    f'KES {minimum_payout:,.2f}'
-                )
-                fp.save(update_fields=['computation_log'])
+                fp.carried_forward_amount = fp.net_amount
+                fp.carry_forward_reason = 'BELOW_MINIMUM_THRESHOLD'
+                fp.save(update_fields=['carried_forward_amount', 'carry_forward_reason'])
                 continue
 
             farmer = fp.farmer
