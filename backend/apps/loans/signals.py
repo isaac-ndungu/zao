@@ -6,7 +6,7 @@ from .models import Loan
 
 def _update_farmer_has_active_loan(loan):
     has_active = Loan.objects.filter(
-        farmer=loan.farmer,
+        farmer_id=loan.farmer_id,
         status='ACTIVE',
         installments_paid__lt=models.F('number_of_installments'),
     ).exists()
@@ -20,7 +20,7 @@ def update_has_active_loan(sender, instance, **kwargs):
     from django.db import models
     from apps.farmers.models import Farmer
     has_active = Loan.objects.filter(
-        farmer=instance.farmer,
+        farmer_id=instance.farmer_id,
         status='ACTIVE',
         installments_paid__lt=models.F('number_of_installments'),
     ).exists()
