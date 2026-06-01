@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Deduction
+from .models import Deduction, FarmInputCredit
 
 
 class DeductionListSerializer(serializers.ModelSerializer):
@@ -63,4 +63,50 @@ class DeductionDetailSerializer(serializers.ModelSerializer):
     def get_created_by_name(self, obj):
         if obj.created_by:
             return obj.created_by.get_full_name() or obj.created_by.email
+        return None
+
+
+class FarmInputCreditListSerializer(serializers.ModelSerializer):
+    farmer_name = serializers.SerializerMethodField()
+    deducted = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FarmInputCredit
+        fields = [
+            'id', 'farmer', 'farmer_name', 'item_description', 'amount',
+            'supplied_date', 'deducted_in_cycle', 'deducted', 'created_at',
+        ]
+
+    def get_farmer_name(self, obj):
+        return f'{obj.farmer.first_name} {obj.farmer.last_name}'
+
+    def get_deducted(self, obj):
+        return obj.deducted_in_cycle_id is not None
+
+
+class FarmInputCreditCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmInputCredit
+        fields = ['farmer', 'item_description', 'amount', 'supplied_date']
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Amount must be greater than 0.')
+        return value
+
+
+class FarmInputCreditDetailSerializer(serializers.ModelSerializer):
+    farmer_name = serializers.SerializerMethodField()
+    deducted_in_cycle_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FarmInputCredit
+        fields = '__all__'
+
+    def get_farmer_name(self, obj):
+        return f'{obj.farmer.first_name} {obj.farmer.last_name}'
+
+    def get_deducted_in_cycle_name(self, obj):
+        if obj.deducted_in_cycle:
+            return obj.deducted_in_cycle.name
         return None

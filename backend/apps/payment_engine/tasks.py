@@ -73,6 +73,7 @@ def run_payment_engine(self, cycle_id: str):
 
         from apps.deductions.models import Deduction
         Deduction.objects.filter(cycle=cycle, deduction_type='LOAN_REPAYMENT').delete()
+        Deduction.objects.filter(cycle=cycle, deduction_type='INPUT_CREDIT').delete()
 
         cooperative = cycle.cooperative
 
@@ -92,11 +93,13 @@ def run_payment_engine(self, cycle_id: str):
             cycle.total_levy = 0
             cycle.total_cooperative_fee = 0
             cycle.total_loan_repayments = 0
+            cycle.total_input_credits = 0
             cycle.has_warnings = cycle.warnings.exists()
             cycle.computed_at = timezone.now()
             cycle.save(update_fields=[
                 'status', 'totals', 'total_levy', 'total_cooperative_fee',
-                'total_loan_repayments', 'has_warnings', 'computed_at',
+                'total_loan_repayments', 'total_input_credits',
+                'has_warnings', 'computed_at',
             ])
             _release_cycle_lock(cycle_id)
             return {'status': 'COMPUTED', 'cycle_id': cycle_id, 'farmer_count': 0}
@@ -106,6 +109,7 @@ def run_payment_engine(self, cycle_id: str):
         total_levy = 0.0
         total_cooperative_fee = 0.0
         total_loan_repayments = 0.0
+        total_input_credits = 0.0
 
         for data in farmer_data:
             from .engine import apply_deductions
@@ -168,6 +172,7 @@ def run_payment_engine(self, cycle_id: str):
             total_levy += deductions['levy']
             total_cooperative_fee += deductions['monthly_fee']
             total_loan_repayments += deductions['loan_repayment']
+            total_input_credits += deductions['input_credit']
 
         _create_levy_deductions(cycle, farmer_data)
 
@@ -185,12 +190,14 @@ def run_payment_engine(self, cycle_id: str):
         cycle.total_levy = round(total_levy, 2)
         cycle.total_cooperative_fee = round(total_cooperative_fee, 2)
         cycle.total_loan_repayments = round(total_loan_repayments, 2)
+        cycle.total_input_credits = round(total_input_credits, 2)
         cycle.has_warnings = cycle.warnings.exists()
         cycle.status = 'COMPUTED'
         cycle.computed_at = timezone.now()
         cycle.save(update_fields=[
             'totals', 'total_levy', 'total_cooperative_fee',
-            'total_loan_repayments', 'has_warnings', 'status', 'computed_at',
+            'total_loan_repayments', 'total_input_credits',
+            'has_warnings', 'status', 'computed_at',
         ])
 
         logger.info(

@@ -181,11 +181,32 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle):
             active_loan.status = 'COMPLETED'
         active_loan.save(update_fields=['installments_paid', 'status'])
 
+    input_credit_total = 0.0
+    from apps.deductions.models import FarmInputCredit as FIC, Deduction as DedModel
+    undeducted = FIC.objects.filter(
+        farmer=farmer_payment.farmer,
+        deducted_in_cycle__isnull=True,
+    )
+    for credit in undeducted:
+        input_credit_total += float(credit.amount)
+        credit.deducted_in_cycle = cycle
+        credit.save(update_fields=['deducted_in_cycle'])
+        DedModel.objects.create(
+            cooperative=cycle.cooperative,
+            farmer=farmer_payment.farmer,
+            cycle=cycle,
+            deduction_type='INPUT_CREDIT',
+            amount=credit.amount,
+            notes=credit.item_description,
+        )
+
     deductions = {
         'levy': round(levy, 2),
         'monthly_fee': round(monthly_fee_share, 2),
         'loan_repayment': loan_repayment,
+        'input_credit': round(input_credit_total, 2),
     }
 
-    net = max(gross - levy - monthly_fee_share - loan_repayment, 0)
+    total_deductions = levy + monthly_fee_share + loan_repayment + input_credit_total
+    net = max(gross - total_deductions, 0)
     return deductions, round(net, 2)

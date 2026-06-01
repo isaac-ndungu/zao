@@ -52,6 +52,7 @@ class PaymentCycle(CooperativeScopedModel):
     total_levy = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_cooperative_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_loan_repayments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_input_credits = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     has_warnings = models.BooleanField(default=False)
     locked_by = models.ForeignKey(
