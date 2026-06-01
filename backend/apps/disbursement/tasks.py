@@ -1,10 +1,14 @@
 import logging
+from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
 
 from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
 from django.utils import timezone
 
+from apps.base.constants import UserRole
 from apps.payment_engine.models import FarmerPayment, PaymentCycle
 
 from .models import DisbursementBatch, DisbursementTransaction
@@ -254,6 +258,7 @@ def reconcile_stuck_transactions():
 
     client = MpesaDarajaClient()
     reconciled = 0
+    stuck_by_coop: dict[str, list[DisbursementTransaction]] = defaultdict(list)
 
     for txn in stuck:
         if not txn.conversation_id:
@@ -262,6 +267,7 @@ def reconcile_stuck_transactions():
             txn.failed_at = timezone.now()
             txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
             reconciled += 1
+            stuck_by_coop[str(txn.batch.cooperative_id)].append(txn)
             continue
 
         try:
@@ -293,6 +299,7 @@ def reconcile_stuck_transactions():
 
         update_batch_summary.delay(str(txn.batch_id))
         reconciled += 1
+        stuck_by_coop[str(txn.batch.cooperative_id)].append(txn)
 
         if txn.status == 'SUCCESS':
             send_disbursement_sms.delay(
@@ -303,7 +310,59 @@ def reconcile_stuck_transactions():
             )
 
     logger.info("Reconciled %d stuck transactions", reconciled)
+
+    if reconciled:
+        _send_stuck_alerts(stuck_by_coop)
+
     return {'reconciled': reconciled}
+
+
+def _send_stuck_alerts(stuck_by_coop: dict[str, list[DisbursementTransaction]]) -> None:
+    from apps.auth_api.models import User
+
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+
+    for coop_id, txns in stuck_by_coop.items():
+        if not txns:
+            continue
+
+        recipient_emails = list(User.objects.filter(
+            role=UserRole.ACCOUNTANT,
+            cooperative_id=coop_id,
+        ).values_list('email', flat=True))
+
+        if not recipient_emails:
+            recipient_emails = list(User.objects.filter(
+                role=UserRole.MANAGER,
+                cooperative_id=coop_id,
+            ).values_list('email', flat=True))
+
+        if not recipient_emails:
+            continue
+
+        details = '\n'.join(
+            f'  • {txn.id} — {txn.recipient_name or "Unknown"} — '
+            f'KES {txn.amount} — {txn.status}'
+            for txn in txns
+        )
+
+        send_mail(
+            f'[ACTION REQUIRED] {len(txns)} Stuck Payment(s) Need Attention',
+            (
+                f'The following {len(txns)} disbursement transaction(s) were found stuck '
+                f'in the reconciliation check and have been processed:\n\n'
+                f'{details}\n\n'
+                f'Please review the disbursement dashboard for full details.'
+            ),
+            from_email,
+            recipient_emails,
+            fail_silently=True,
+        )
+
+        logger.info(
+            'Sent stuck transaction alert for coop %s to %s',
+            coop_id, ', '.join(recipient_emails),
+        )
 
 
 @shared_task
