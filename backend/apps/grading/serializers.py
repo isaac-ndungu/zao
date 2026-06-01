@@ -1,3 +1,4 @@
+from PIL import Image
 from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
@@ -38,6 +39,30 @@ class GradeImageSerializer(serializers.ModelSerializer):
         if obj.uploaded_by:
             return obj.uploaded_by.get_full_name() or obj.uploaded_by.email
         return None
+
+    def validate_image(self, value):
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError('Image size must not exceed 5MB.')
+
+        value.seek(0)
+        try:
+            image = Image.open(value)
+        except Exception:
+            raise serializers.ValidationError('Uploaded file is not a valid image.')
+        finally:
+            value.seek(0)
+
+        if image.format not in ('JPEG', 'PNG'):
+            raise serializers.ValidationError(
+                'Unsupported image format. Only JPEG and PNG images are allowed.'
+            )
+        if image.width < 300 or image.height < 300:
+            raise serializers.ValidationError(
+                f'Image dimensions must be at least 300×300 pixels. '
+                f'Got {image.width}×{image.height}.'
+            )
+
+        return value
 
 
 class GradeListSerializer(serializers.ModelSerializer):
