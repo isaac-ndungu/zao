@@ -21,6 +21,38 @@
   },
   "endpoints": {
 
+    "0_health": {
+      "description": "Service health check (no auth required)",
+
+      "0.1_health_check": {
+        "method": "GET",
+        "path": "/api/health/",
+        "auth": "None",
+        "request": {
+          "content_type": "application/json",
+          "body": {}
+        },
+        "response_200": {
+          "content_type": "application/json",
+          "body": {
+            "status":   {"type": "string", "example": "ok",      "notes": "ok | degraded"},
+            "database": {"type": "string", "example": "ok",      "notes": "ok | unreachable"},
+            "redis":    {"type": "string", "example": "ok",      "notes": "ok | unreachable"},
+            "celery":   {"type": "string", "example": "ok",      "notes": "ok | no workers | unreachable"}
+          }
+        },
+        "response_503": {
+          "content_type": "application/json",
+          "body": {
+            "status":   {"type": "string", "example": "degraded"},
+            "database": {"type": "string", "example": "ok"},
+            "redis":    {"type": "string", "example": "unreachable"},
+            "celery":   {"type": "string", "example": "no workers"}
+          }
+        }
+      }
+    },
+
     "1_auth": {
       "description": "Authentication endpoints (no auth required except logout)",
 
