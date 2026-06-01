@@ -2,6 +2,7 @@ import csv
 import io
 import secrets
 
+from django.db import transaction
 from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import action
@@ -164,58 +165,99 @@ class FarmerViewSet(CooperativeScopedViewSet):
 
         return Response(FarmerDetailSerializer(farmer).data)
 
+    @action(detail=False, methods=['get'])
+    def import_template(self, request):
+        from django.http import HttpResponse
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = (
+            'attachment; filename="farmer_import_template.csv"'
+        )
+        writer = csv.writer(response)
+        writer.writerow([
+            'first_name', 'last_name', 'email', 'id_number',
+            'phone_number', 'mpesa_number', 'date_of_birth',
+            'county', 'sub_county', 'ward', 'village',
+            'payment_method', 'bank_name', 'bank_account', 'bank_branch',
+        ])
+        writer.writerow([
+            'Jane', 'Wanjiku', 'jane.wanjiku@example.com', '12345678',
+            '0712345678', '0712345678', '1990-01-15',
+            'Kiambu', 'Kikuyu', 'Karuna', 'Gitaru',
+            'M-PESA', '', '', '',
+        ])
+        return response
+
     @action(detail=False, methods=['post'])
     def import_csv(self, request):
         file = request.FILES.get('file')
         if not file:
             return Response({'error': 'No file provided.'}, status=400)
 
+        max_size = 5 * 1024 * 1024
+        if file.size > max_size:
+            return Response(
+                {'error': 'File size exceeds 5MB limit.'},
+                status=400,
+            )
+
         decoded = file.read().decode('utf-8')
         reader = csv.DictReader(io.StringIO(decoded))
+        rows = list(reader)
 
-        created = 0
+        if not rows:
+            return Response({'error': 'CSV file is empty.'}, status=400)
+
         errors = []
 
-        for row_num, row in enumerate(reader, start=2):
-            try:
-                data = {
-                    'first_name': row.get('first_name', '').strip(),
-                    'last_name': row.get('last_name', '').strip(),
-                    'email': row.get('email', '').strip(),
-                    'id_number': row.get('id_number', '').strip(),
-                    'phone_number': row.get('phone_number', '').strip(),
-                    'mpesa_number': row.get('mpesa_number', '').strip(),
-                    'county': row.get('county', '').strip(),
-                    'sub_county': row.get('sub_county', '').strip(),
-                    'ward': row.get('ward', '').strip(),
-                    'village': row.get('village', '').strip(),
-                    'payment_method': row.get('payment_method', 'M-PESA').strip(),
-                    'bank_name': row.get('bank_name', '').strip(),
-                    'bank_account': row.get('bank_account', '').strip(),
-                    'bank_branch': row.get('bank_branch', '').strip(),
-                    'is_active': True,
-                }
-                date_of_birth = row.get('date_of_birth', '').strip()
-                if date_of_birth:
-                    data['date_of_birth'] = date_of_birth
+        try:
+            with transaction.atomic():
+                for row_num, row in enumerate(rows, start=2):
+                    try:
+                        data = {
+                            'first_name': row.get('first_name', '').strip(),
+                            'last_name': row.get('last_name', '').strip(),
+                            'email': row.get('email', '').strip(),
+                            'id_number': row.get('id_number', '').strip(),
+                            'phone_number': row.get('phone_number', '').strip(),
+                            'mpesa_number': row.get('mpesa_number', '').strip(),
+                            'county': row.get('county', '').strip(),
+                            'sub_county': row.get('sub_county', '').strip(),
+                            'ward': row.get('ward', '').strip(),
+                            'village': row.get('village', '').strip(),
+                            'payment_method': row.get('payment_method', 'M-PESA').strip(),
+                            'bank_name': row.get('bank_name', '').strip(),
+                            'bank_account': row.get('bank_account', '').strip(),
+                            'bank_branch': row.get('bank_branch', '').strip(),
+                            'is_active': True,
+                        }
+                        date_of_birth = row.get('date_of_birth', '').strip()
+                        if date_of_birth:
+                            data['date_of_birth'] = date_of_birth
 
-                serializer = FarmerCreateSerializer(data=data)
-                serializer.is_valid(raise_exception=True)
-                if getattr(request.user, 'role', None) == 'admin':
-                    coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
-                else:
-                    serializer.validated_data.pop('cooperative_id', None)
-                    coop_id = request.cooperative_id
-                serializer.validated_data.pop('user_id', None)
-                serializer.validated_data.pop('user_email', None)
-                serializer.save(
-                    cooperative_id=coop_id,
-                )
-                created += 1
-            except Exception as e:
-                errors.append({'row': row_num, 'error': str(e)})
+                        serializer = FarmerCreateSerializer(data=data)
+                        serializer.is_valid(raise_exception=True)
+                        if getattr(request.user, 'role', None) == 'admin':
+                            coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+                        else:
+                            serializer.validated_data.pop('cooperative_id', None)
+                            coop_id = request.cooperative_id
+                        serializer.validated_data.pop('user_id', None)
+                        serializer.validated_data.pop('user_email', None)
+                        serializer.save(
+                            cooperative_id=coop_id,
+                        )
+                    except Exception as e:
+                        errors.append({'row': row_num, 'error': str(e)})
 
-        return Response({'created': created, 'errors': errors})
+                if errors:
+                    raise ValueError('rollback')
+        except ValueError:
+            pass
+
+        if errors:
+            return Response({'created': 0, 'errors': errors}, status=400)
+
+        return Response({'created': len(rows), 'errors': errors})
 
     @action(detail=False, methods=['get'])
     def map(self, request):

@@ -2,19 +2,22 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.base.constants import UserRole
-from apps.base.permissions import IsGrader, IsManager
+from apps.base.permissions import IsFarmer, IsGrader, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
-from .models import Grade, GradeImage, GradePrice
+from .models import Grade, GradeImage, GradePrice, FarmerGradeDispute
 from .serializers import (
     GradeCreateSerializer,
     GradeDetailSerializer,
+    GradeDisputeResolveSerializer,
+    GradeDisputeSerializer,
     GradeImageSerializer,
     GradeListSerializer,
     GradeOverrideSerializer,
@@ -83,6 +86,8 @@ class GradeViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated()]
         if self.action == 'delete_image':
             return [IsAuthenticated()]
+        if self.action == 'dispute':
+            return [IsAuthenticated(), IsFarmer()]
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -96,6 +101,8 @@ class GradeViewSet(CooperativeScopedViewSet):
             return GradePriceSerializer
         if self.action in ('images', 'delete_image'):
             return GradeImageSerializer
+        if self.action == 'dispute':
+            return GradeDisputeSerializer
         return GradeDetailSerializer
 
     def create(self, request, *args, **kwargs):
@@ -223,6 +230,34 @@ class GradeViewSet(CooperativeScopedViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post'])
+    def dispute(self, request, pk=None):
+        grade = self.get_object()
+        farmer = getattr(request.user, 'farmer_profile', None)
+        if not farmer or grade.delivery.farmer_id != farmer.id:
+            raise PermissionDenied('You can only dispute your own grades.')
+        serializer = GradeDisputeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dispute = serializer.save(
+            grade=grade,
+            raised_by=request.user,
+        )
+        log_audit(
+            actor=request.user,
+            resource_type='grade_dispute',
+            resource_id=dispute.id,
+            action='CREATE',
+            new_value={
+                'grade': str(grade.id),
+                'reason': dispute.reason,
+            },
+            cooperative_id=request.cooperative_id,
+        )
+        return Response(
+            GradeDisputeSerializer(dispute).data,
+            status=status.HTTP_201_CREATED,
+        )
+
     @action(detail=True, methods=['get', 'post'], url_path='images')
     def images(self, request, pk=None):
         grade = self.get_object()
@@ -263,3 +298,47 @@ class GradeViewSet(CooperativeScopedViewSet):
         grade.images.remove(grade_image)
         grade_image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GradeDisputeViewSet(CooperativeScopedViewSet):
+    queryset = FarmerGradeDispute.objects.all().select_related(
+        'grade', 'raised_by', 'resolved_by',
+    )
+
+    def get_permissions(self):
+        if self.action == 'resolve':
+            return [IsAuthenticated(), IsManager()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.action == 'resolve':
+            return GradeDisputeResolveSerializer
+        return GradeDisputeSerializer
+
+    @action(detail=True, methods=['post'])
+    def resolve(self, request, pk=None):
+        dispute = self.get_object()
+        if dispute.status != 'PENDING':
+            return Response(
+                {'detail': 'Only PENDING disputes can be resolved.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = GradeDisputeResolveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        dispute.status = serializer.validated_data['status']
+        dispute.resolved_by = request.user
+        dispute.resolution_notes = serializer.validated_data.get('resolution_notes', '')
+        dispute.resolved_at = timezone.now()
+        dispute.save(update_fields=['status', 'resolved_by', 'resolution_notes', 'resolved_at'])
+        log_audit(
+            actor=request.user,
+            resource_type='grade_dispute',
+            resource_id=dispute.id,
+            action='RESOLVE',
+            new_value={
+                'status': dispute.status,
+                'resolution_notes': dispute.resolution_notes,
+            },
+            cooperative_id=request.cooperative_id,
+        )
+        return Response(GradeDisputeSerializer(dispute).data)

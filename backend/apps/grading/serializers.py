@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
-from .models import Grade, GradeImage, GradePrice
+from .models import Grade, GradeImage, GradePrice, FarmerGradeDispute
 
 
 def validate_delivery_scoped(value, request, instance=None):
@@ -151,3 +151,15 @@ class GradePriceSerializer(serializers.ModelSerializer):
         model = GradePrice
         fields = ['id', 'grade_letter', 'price_per_unit', 'effective_from', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class GradeDisputeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FarmerGradeDispute
+        fields = ['id', 'reason', 'status', 'created_at']
+        read_only_fields = ['id', 'status', 'created_at']
+
+
+class GradeDisputeResolveSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=['RESOLVED', 'REJECTED'])
+    resolution_notes = serializers.CharField(required=False, allow_blank=True)

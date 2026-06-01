@@ -84,3 +84,38 @@ class GradePrice(models.Model):
 
     def __str__(self):
         return f'{self.grade_letter} @ {self.price_per_unit} (from {self.effective_from})'
+
+
+class FarmerGradeDispute(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('RESOLVED', 'Resolved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    grade = models.ForeignKey(
+        Grade, on_delete=models.CASCADE, related_name='disputes',
+    )
+    raised_by = models.ForeignKey(
+        'auth_api.User', on_delete=models.CASCADE, related_name='grade_disputes',
+    )
+    reason = models.TextField()
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True,
+    )
+    resolved_by = models.ForeignKey(
+        'auth_api.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='resolved_disputes',
+    )
+    resolution_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Grade Dispute'
+        verbose_name_plural = 'Grade Disputes'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Dispute on {self.grade} — {self.status}'
