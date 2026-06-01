@@ -30,3 +30,13 @@ class CooperativeDetailSerializer(serializers.ModelSerializer):
                 'Registration number is required.'
             )
         return value
+
+    def validate_prefix(self, value):
+        qs = Cooperative.objects.filter(prefix__iexact=value.strip())
+        if self.instance:
+            qs = qs.exclude(id=self.instance.id)
+        if qs.exists():
+            raise serializers.ValidationError(
+                f'The prefix "{value}" is already in use by another cooperative.'
+            )
+        return value
