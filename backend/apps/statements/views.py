@@ -1,3 +1,6 @@
+from datetime import date
+
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -8,8 +11,11 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.base.models import AuditLog
 from apps.base.permissions import IsAccountantOrManager, IsFarmer, IsManagerOrAuditor
+from apps.deductions.models import Deduction
+from apps.deliveries.models import Delivery
 from apps.farmers.models import Farmer
-from apps.payment_engine.models import FarmerPayment
+from apps.payment_engine.models import FarmerPayment, PaymentCycle
+from apps.sales.models import Sale
 
 from .pdf_utils import generate_farmer_statement, generate_kra_report, generate_season_report
 from .serializers import AuditLogSerializer
@@ -246,6 +252,148 @@ class KRAReportPDFView(APIView):
 
         download = request.query_params.get('download', '').lower() == 'true'
         return _pdf_response(pdf, filename, download)
+
+
+class AnnualReportView(APIView):
+    permission_classes = [IsAuthenticated, IsAccountantOrManager]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            request.cooperative_id = request.user.cooperative_id
+
+    def get(self, request):
+        year = request.query_params.get('year')
+        if not year:
+            return Response(
+                {'error': 'year query parameter is required (e.g. ?year=2026).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            year = int(year)
+            if year < 1900 or year > 2099:
+                raise ValueError
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'year must be a valid 4-digit year between 1900 and 2099.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cooperative_id = getattr(request, 'cooperative_id', None)
+        role = getattr(request.user, 'role', None)
+        if role == 'admin':
+            cooperative_id = None
+
+        fy_start = date(year, 7, 1)
+        fy_end = date(year + 1, 6, 30)
+
+        cycles = PaymentCycle.objects.filter(
+            end_date__gte=fy_start,
+            end_date__lte=fy_end,
+        )
+        if cooperative_id:
+            cycles = cycles.filter(cooperative_id=cooperative_id)
+
+        farmer_payments = FarmerPayment.objects.filter(
+            cycle__in=cycles,
+        ).select_related('farmer')
+
+        deliveries_qs = Delivery.objects.filter(
+            date_delivered__date__gte=fy_start,
+            date_delivered__date__lte=fy_end,
+        )
+        if cooperative_id:
+            deliveries_qs = deliveries_qs.filter(cooperative_id=cooperative_id)
+
+        produce_by_type = deliveries_qs.values('product_type').annotate(
+            total_kg=Sum('quantity_kg'),
+            total_volume=Sum('volume_litres'),
+            delivery_count=Count('id'),
+        )
+
+        sales_qs = Sale.objects.filter(
+            status='COMPLETED',
+            sale_date__gte=fy_start,
+            sale_date__lte=fy_end,
+        )
+        if cooperative_id:
+            sales_qs = sales_qs.filter(cooperative_id=cooperative_id)
+
+        total_revenue = sales_qs.aggregate(total=Sum('total_amount'))['total'] or 0
+
+        payment_agg = farmer_payments.aggregate(
+            total_gross=Sum('gross_amount'),
+            total_net=Sum('net_amount'),
+            total_withholding_tax=Sum('withholding_tax_amount'),
+        )
+
+        deductions_qs = Deduction.objects.filter(cycle__in=cycles)
+        if cooperative_id:
+            deductions_qs = deductions_qs.filter(cooperative_id=cooperative_id)
+
+        deductions_by_type = deductions_qs.values('deduction_type').annotate(
+            total=Sum('amount'),
+        )
+
+        farmer_summaries_data = farmer_payments.values('farmer').annotate(
+            total_quantity=Sum('total_quantity'),
+            total_gross=Sum('gross_amount'),
+            total_net=Sum('net_amount'),
+            total_withholding_tax=Sum('withholding_tax_amount'),
+            payment_count=Count('id'),
+        )
+
+        farmer_ids = [fs['farmer'] for fs in farmer_summaries_data]
+        farmers_map = {
+            str(f.id): f for f in Farmer.objects.filter(id__in=farmer_ids)
+        }
+
+        farmer_summaries = []
+        for fs in farmer_summaries_data:
+            farmer = farmers_map.get(str(fs['farmer']))
+            farmer_summaries.append({
+                'farmer_id': str(fs['farmer']),
+                'member_number': farmer.member_number if farmer else '',
+                'farmer_name': f'{farmer.first_name} {farmer.last_name}' if farmer else 'Unknown',
+                'total_quantity': float(fs['total_quantity'] or 0),
+                'total_gross': float(fs['total_gross'] or 0),
+                'total_deductions': float(
+                    (fs['total_gross'] or 0) - (fs['total_net'] or 0)
+                ),
+                'total_net': float(fs['total_net'] or 0),
+                'total_withholding_tax': float(fs['total_withholding_tax'] or 0),
+                'payment_count': fs['payment_count'],
+            })
+
+        farmer_summaries.sort(key=lambda x: x['total_gross'], reverse=True)
+
+        return Response({
+            'financial_year': f'{year}/{year + 1}',
+            'period': {
+                'start': fy_start.isoformat(),
+                'end': fy_end.isoformat(),
+            },
+            'summary': {
+                'total_produce_received': {
+                    p['product_type']: {
+                        'total_kg': float(p['total_kg'] or 0),
+                        'total_volume': float(p['total_volume'] or 0),
+                        'delivery_count': p['delivery_count'],
+                    }
+                    for p in produce_by_type
+                },
+                'total_revenue': float(total_revenue),
+                'total_farmer_payments': float(payment_agg['total_net'] or 0),
+                'total_deductions_collected': {
+                    d['deduction_type']: float(d['total'] or 0)
+                    for d in deductions_by_type
+                },
+                'total_withholding_tax_held': float(payment_agg['total_withholding_tax'] or 0),
+                'cycle_count': cycles.count(),
+            },
+            'farmer_summaries': farmer_summaries,
+        })
 
 
 class AuditLogViewSet(ReadOnlyModelViewSet):
