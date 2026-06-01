@@ -18,12 +18,18 @@ from apps.base.constants import UserRole
 
 from .models import TwoFactorOTP
 from .serializers import (
+    LOGIN_TOKEN_SALT,
     LoginSerializer,
     RegisterSerializer,
     RequestOTPSerializer,
     TokenResponseSerializer,
     TwoFAVerifySerializer,
     UserSerializer,
+)
+from .throttles import (
+    LoginRateThrottle,
+    RequestOTPRateThrottle,
+    VerifyOTPRateThrottle,
 )
 
 
@@ -56,6 +62,7 @@ class LoginView(APIView):
     authentication_classes = []
     permission_classes = []
     serializer_class = LoginSerializer
+    throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -63,7 +70,7 @@ class LoginView(APIView):
         user = serializer.validated_data['user']
 
         if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.AUDITOR):
-            signer = TimestampSigner()
+            signer = TimestampSigner(salt=LOGIN_TOKEN_SALT)
             login_token = signer.sign(user.email)
             return Response({
                 'requires_2fa': True,
@@ -77,6 +84,7 @@ class RequestOTPView(APIView):
     authentication_classes = []
     permission_classes = []
     serializer_class = RequestOTPSerializer
+    throttle_classes = [RequestOTPRateThrottle]
 
     def post(self, request):
         serializer = RequestOTPSerializer(data=request.data)
@@ -109,6 +117,7 @@ class VerifyOTPView(APIView):
     authentication_classes = []
     permission_classes = []
     serializer_class = TwoFAVerifySerializer
+    throttle_classes = [VerifyOTPRateThrottle]
 
     def post(self, request):
         serializer = TwoFAVerifySerializer(data=request.data)

@@ -5,6 +5,8 @@ from rest_framework import serializers
 from apps.base.utils import normalize_phone
 from .models import User, TwoFactorOTP
 
+LOGIN_TOKEN_SALT = 'auth-login-token'
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,7 +45,7 @@ class RequestOTPSerializer(serializers.Serializer):
     login_token = serializers.CharField()
 
     def validate(self, attrs):
-        signer = TimestampSigner()
+        signer = TimestampSigner(salt=LOGIN_TOKEN_SALT)
         try:
             email = signer.unsign(attrs['login_token'], max_age=180)
         except BadSignature:
@@ -62,7 +64,7 @@ class TwoFAVerifySerializer(serializers.Serializer):
     otp_code = serializers.CharField(max_length=6)
 
     def validate(self, attrs):
-        signer = TimestampSigner()
+        signer = TimestampSigner(salt=LOGIN_TOKEN_SALT)
         try:
             email = signer.unsign(attrs['login_token'], max_age=180)
         except BadSignature:
