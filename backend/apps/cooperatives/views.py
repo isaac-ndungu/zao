@@ -33,7 +33,7 @@ class CooperativeViewSet(viewsets.ModelViewSet):
         return CooperativeDetailSerializer
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().select_related('parent_union')
         user = self.request.user
 
         if user.is_authenticated and getattr(user, 'role', None) != UserRole.ADMIN:

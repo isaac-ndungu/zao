@@ -54,8 +54,9 @@ class NotificationLogViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = self.queryset.select_related('recipient', 'cooperative')
         if user.is_authenticated and getattr(user, 'role', None) == 'admin':
-            return self.queryset
-        return self.queryset.filter(
+            return qs
+        return qs.filter(
             cooperative_id=self.request.cooperative_id,
         )

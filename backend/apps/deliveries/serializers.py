@@ -1,7 +1,12 @@
+import logging
+
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
 from .models import Delivery
+
+logger = logging.getLogger(__name__)
 
 
 class DeliveryListSerializer(serializers.ModelSerializer):
@@ -49,11 +54,34 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
             'quantity_kg', 'volume_litres',
             'grade', 'quality_metrics', 'rejection_reason',
             'status', 'shift', 'is_synced', 'local_id',
+            'date_delivered',
             'cooperative_id',
         ]
         extra_kwargs = {
             'farmer': {'required': False},
+            'date_delivered': {'required': False},
         }
+
+    def validate_date_delivered(self, value):
+        now = timezone.now()
+        diff = now - value
+        if diff.total_seconds() < 0:
+            logger.warning(
+                "Clock skew detected: device sent future date_delivered=%s, server_now=%s",
+                value.isoformat(), now.isoformat(),
+            )
+            raise serializers.ValidationError(
+                'Delivery date cannot be in the future.'
+            )
+        if diff.days > 7:
+            logger.warning(
+                "Clock skew detected: device sent past date_delivered=%s (%d days ago), server_now=%s",
+                value.isoformat(), diff.days, now.isoformat(),
+            )
+            raise serializers.ValidationError(
+                'Delivery date is outside the acceptable range (max 7 days in the past).'
+            )
+        return value
 
     def validate_cooperative_id(self, value):
         if not Cooperative.objects.filter(id=value).exists():

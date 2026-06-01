@@ -15,7 +15,7 @@ from .serializers import (
 
 
 class BuyerViewSet(CooperativeScopedViewSet):
-    queryset = Buyer.objects.all()
+    queryset = Buyer.objects.all().select_related('cooperative')
     serializer_class = BuyerSerializer
 
     def get_permissions(self):

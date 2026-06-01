@@ -16,7 +16,7 @@ from .serializers import (
 
 
 class InventoryViewSet(ReadOnlyModelViewSet):
-    queryset = Inventory.objects.all()
+    queryset = Inventory.objects.all().select_related('cooperative')
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['batch_id', 'grade', 'product_type']
     ordering_fields = ['batch_id', 'product_type', 'grade', 'created_at']
