@@ -7,12 +7,15 @@ from apps.base.constants import UserRole
 from apps.base.permissions import IsAccountant, IsAccountantOrManager, IsFarmer, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.notifications.models import Notification
 
-from .models import Loan
+from .models import Loan, LoanGuarantor
 from .serializers import (
+    AddGuarantorSerializer,
     LoanApproveSerializer,
     LoanCreateSerializer,
     LoanDetailSerializer,
+    LoanGuarantorSerializer,
     LoanListSerializer,
     LoanMarkCompletedSerializer,
     LoanMarkDefaultedSerializer,
@@ -42,6 +45,8 @@ class LoanViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated(), IsAccountant()]
         if self.action == 'mark_defaulted':
             return [IsAuthenticated(), IsManager()]
+        if self.action in ('add_guarantor', 'remove_guarantor'):
+            return [IsAuthenticated(), IsAccountantOrManager()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
@@ -141,6 +146,67 @@ class LoanViewSet(CooperativeScopedViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
+    def add_guarantor(self, request, pk=None):
+        loan = self.get_object()
+        serializer = AddGuarantorSerializer(
+            data=request.data, context={'view': self, 'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        guarantor = serializer.validated_data['guarantor_id']
+        LoanGuarantor.objects.create(
+            loan=loan,
+            guarantor=guarantor,
+            cooperative=loan.cooperative,
+        )
+        log_audit(
+            actor=request.user,
+            resource_type='loan_guarantor',
+            resource_id=loan.id,
+            action='CREATE',
+            new_value={
+                'guarantor_id': str(guarantor.id),
+                'guarantor_name': f'{guarantor.first_name} {guarantor.last_name}',
+            },
+            cooperative_id=self.request.cooperative_id,
+        )
+        return Response(
+            LoanGuarantorSerializer(loan.guarantors.all(), many=True).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=['post'])
+    def remove_guarantor(self, request, pk=None):
+        loan = self.get_object()
+        if loan.status != 'PENDING':
+            return Response(
+                {'detail': 'Guarantors can only be removed from PENDING loans.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        guarantor_id = request.data.get('guarantor_id')
+        if not guarantor_id:
+            return Response(
+                {'detail': 'guarantor_id is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        deleted, _ = LoanGuarantor.objects.filter(
+            loan=loan, guarantor_id=guarantor_id,
+        ).delete()
+        if not deleted:
+            return Response(
+                {'detail': 'Guarantor not found on this loan.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        log_audit(
+            actor=request.user,
+            resource_type='loan_guarantor',
+            resource_id=loan.id,
+            action='DELETE',
+            new_value={'removed_guarantor_id': str(guarantor_id)},
+            cooperative_id=self.request.cooperative_id,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
     def mark_completed(self, request, pk=None):
         loan = self.get_object()
         serializer = LoanMarkCompletedSerializer(
@@ -178,5 +244,29 @@ class LoanViewSet(CooperativeScopedViewSet):
             new_value={'reason': reason},
             cooperative_id=self.request.cooperative_id,
         )
+        for lg in loan.guarantors.filter(status='ACTIVE').select_related('guarantor'):
+            Notification.objects.create(
+                cooperative=loan.cooperative,
+                recipient=lg.guarantor,
+                channel='IN_APP',
+                notification_type='LOAN_DEFAULTED',
+                content=(
+                    f'The loan (KES {loan.amount_principal}) for '
+                    f'{loan.farmer.first_name} {loan.farmer.last_name} '
+                    f'which you guaranteed has been defaulted. Reason: {reason}'
+                ),
+                status='SENT',
+            )
+            log_audit(
+                actor=request.user,
+                resource_type='guarantor_notification',
+                resource_id=lg.id,
+                action='NOTIFY',
+                new_value={
+                    'guarantor_id': str(lg.guarantor_id),
+                    'reason': reason,
+                },
+                cooperative_id=loan.cooperative_id,
+            )
         serializer = self.get_serializer(loan)
         return Response(serializer.data)

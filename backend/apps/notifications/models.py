@@ -21,6 +21,7 @@ class Notification(CooperativeScopedModel):
         ('GRADE_RESULT', 'Grade Result'),
         ('LOAN_APPROVAL', 'Loan Approval'),
         ('LOAN_DISBURSEMENT', 'Loan Disbursement'),
+        ('LOAN_DEFAULTED', 'Loan Defaulted'),
         ('USSD_SESSION', 'USSD Session'),
         ('GENERAL', 'General'),
     ]

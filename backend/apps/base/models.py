@@ -64,6 +64,7 @@ class AuditLog(CooperativeScopedModel):
             ('DISBURSE', 'Disburse'),
             ('GRADE', 'Grade'),
             ('PDF_GENERATED', 'PDF Generated'),
+            ('NOTIFY', 'Notify'),
         ]
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)

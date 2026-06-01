@@ -75,3 +75,31 @@ class LoanRepayment(models.Model):
 
     def __str__(self):
         return f'{self.loan} — {self.amount}'
+
+
+class LoanGuarantor(CooperativeScopedModel):
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('RELEASED', 'Released'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    loan = models.ForeignKey(
+        Loan, on_delete=models.CASCADE, related_name='guarantors',
+    )
+    guarantor = models.ForeignKey(
+        'farmers.Farmer', on_delete=models.PROTECT,
+        related_name='guaranteed_loans',
+    )
+    agreed_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='ACTIVE',
+    )
+
+    class Meta:
+        verbose_name = 'Loan Guarantor'
+        verbose_name_plural = 'Loan Guarantors'
+        unique_together = ('loan', 'guarantor')
+
+    def __str__(self):
+        return f'{self.guarantor.member_number} → {self.loan} [{self.status}]'

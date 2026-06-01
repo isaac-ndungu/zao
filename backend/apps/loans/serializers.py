@@ -1,6 +1,39 @@
 from rest_framework import serializers
 
-from .models import Loan, LoanRepayment
+from .models import Loan, LoanGuarantor, LoanRepayment
+
+
+class LoanGuarantorSerializer(serializers.ModelSerializer):
+    guarantor_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LoanGuarantor
+        fields = ['id', 'guarantor', 'guarantor_name', 'agreed_at', 'status']
+
+    def get_guarantor_name(self, obj):
+        return f'{obj.guarantor.first_name} {obj.guarantor.last_name}'
+
+
+class AddGuarantorSerializer(serializers.Serializer):
+    guarantor_id = serializers.UUIDField()
+
+    def validate_guarantor_id(self, value):
+        from apps.farmers.models import Farmer
+        farmer = Farmer.objects.filter(id=value).first()
+        if not farmer:
+            raise serializers.ValidationError('Farmer not found.')
+        return farmer
+
+    def validate(self, attrs):
+        guarantor = attrs['guarantor_id']
+        loan = self.context['view'].get_object()
+        if loan.status != 'PENDING':
+            raise serializers.ValidationError('Guarantors can only be added to PENDING loans.')
+        if guarantor.cooperative_id != loan.cooperative_id:
+            raise serializers.ValidationError('Guarantor must belong to the same cooperative.')
+        if LoanGuarantor.objects.filter(loan=loan, guarantor=guarantor).exists():
+            raise serializers.ValidationError('This farmer is already a guarantor on this loan.')
+        return attrs
 
 
 class LoanListSerializer(serializers.ModelSerializer):
@@ -39,6 +72,7 @@ class LoanDetailSerializer(serializers.ModelSerializer):
     farmer_member_number = serializers.SerializerMethodField()
     approved_by_name = serializers.SerializerMethodField()
     repayments = LoanRepaymentSerializer(many=True, read_only=True)
+    guarantors = LoanGuarantorSerializer(many=True, read_only=True)
     remaining_installments = serializers.SerializerMethodField()
 
     class Meta:
@@ -65,6 +99,10 @@ class LoanApproveSerializer(serializers.Serializer):
         loan = self.context['view'].get_object()
         if loan.status != 'PENDING':
             raise serializers.ValidationError('Only PENDING loans can be approved.')
+        if not loan.guarantors.filter(status='ACTIVE').exists():
+            raise serializers.ValidationError(
+                'Loan must have at least one confirmed guarantor before approval.'
+            )
         return attrs
 
 
