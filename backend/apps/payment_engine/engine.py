@@ -113,6 +113,15 @@ def compute_revenue_share(cycle):
 
     if total_kg == 0:
         logger.warning("Cycle %s: no deliveries found for revenue share", cycle.id)
+        ComputationWarning.objects.create(
+            cycle=cycle,
+            severity='WARNING',
+            message=(
+                f"No graded deliveries found for this period "
+                f"({cycle.start_date} to {cycle.end_date}). "
+                f"All farmer payments will be zero."
+            ),
+        )
         return []
 
     results = []
