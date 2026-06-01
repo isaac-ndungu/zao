@@ -8,6 +8,7 @@ from django.utils.text import slugify
 from weasyprint import HTML
 
 from apps.base.utils import log_audit
+from apps.cooperatives.models import Cooperative
 from apps.deliveries.models import Delivery
 from apps.farmers.models import Farmer
 from apps.payment_engine.models import FarmerPayment, PaymentCycle
@@ -119,6 +120,84 @@ def generate_season_report(cycle_id, cooperative_id, request_user):
         resource_id=cycle.id,
         action='PDF_GENERATED',
         new_value={'type': 'season_report', 'filename': filename, 'farmer_count': farmer_count},
+        cooperative_id=cooperative_id,
+        ip_address=getattr(request_user, '_ip_address', None),
+    )
+
+    return pdf, filename, None
+
+
+def generate_kra_report(year, cooperative_id, request_user):
+    cooperative = get_object_or_404(Cooperative, id=cooperative_id)
+
+    farmers_data = (
+        FarmerPayment.objects
+        .filter(
+            cooperative_id=cooperative_id,
+            cycle__end_date__year=year,
+        )
+        .values(
+            'farmer_id',
+            'farmer__member_number',
+            'farmer__first_name',
+            'farmer__last_name',
+            'farmer__id_number',
+        )
+        .annotate(
+            gross_amount=Sum('gross_amount'),
+            withholding_tax_amount=Sum('withholding_tax_amount'),
+            net_amount=Sum('net_amount'),
+        )
+        .order_by('farmer__member_number')
+    )
+
+    farmers = [
+        {
+            'member_number': f['farmer__member_number'],
+            'farmer_name': f'{f["farmer__first_name"]} {f["farmer__last_name"]}',
+            'id_number': f['farmer__id_number'],
+            'gross_amount': float(f['gross_amount'] or 0),
+            'withholding_tax_amount': float(f['withholding_tax_amount'] or 0),
+            'net_amount': float(f['net_amount'] or 0),
+        }
+        for f in farmers_data
+    ]
+
+    totals = FarmerPayment.objects.filter(
+        cooperative_id=cooperative_id,
+        cycle__end_date__year=year,
+    ).aggregate(
+        gross_amount=Sum('gross_amount'),
+        withholding_tax_amount=Sum('withholding_tax_amount'),
+        net_amount=Sum('net_amount'),
+    )
+
+    context = {
+        'cooperative': cooperative,
+        'year': year,
+        'farmers': farmers,
+        'farmer_count': len(farmers),
+        'totals': {
+            'gross_amount': float(totals['gross_amount'] or 0),
+            'withholding_tax_amount': float(totals['withholding_tax_amount'] or 0),
+            'net_amount': float(totals['net_amount'] or 0),
+        },
+        'generated_at': timezone.now(),
+        'generated_by': request_user.get_full_name() or request_user.email,
+    }
+
+    html = render_to_string('statements/kra_report.html', context)
+    pdf = HTML(string=html).write_pdf()
+
+    coop_slug = slugify(cooperative.name)[:8]
+    filename = f'coopchain_kra_report_{coop_slug}_{year}.pdf'
+
+    log_audit(
+        actor=request_user,
+        resource_type='Cooperative',
+        resource_id=cooperative.id,
+        action='PDF_GENERATED',
+        new_value={'type': 'kra_report', 'year': year, 'filename': filename, 'farmer_count': len(farmers)},
         cooperative_id=cooperative_id,
         ip_address=getattr(request_user, '_ip_address', None),
     )

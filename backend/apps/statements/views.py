@@ -11,7 +11,7 @@ from apps.base.permissions import IsAccountantOrManager, IsFarmer, IsManagerOrAu
 from apps.farmers.models import Farmer
 from apps.payment_engine.models import FarmerPayment
 
-from .pdf_utils import generate_farmer_statement, generate_season_report
+from .pdf_utils import generate_farmer_statement, generate_kra_report, generate_season_report
 from .serializers import AuditLogSerializer
 
 
@@ -200,6 +200,48 @@ class SeasonReportPDFView(APIView):
         if error:
             if 'over 200' in error:
                 return Response({'error': error}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
+
+        download = request.query_params.get('download', '').lower() == 'true'
+        return _pdf_response(pdf, filename, download)
+
+
+class KRAReportPDFView(APIView):
+    permission_classes = [IsAuthenticated, IsAccountantOrManager]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            request.cooperative_id = request.user.cooperative_id
+
+    def get(self, request):
+        year = request.query_params.get('year')
+        if not year:
+            return Response(
+                {'error': 'year query parameter is required (e.g. ?year=2026).'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            year = int(year)
+            if year < 1900 or year > 2099:
+                raise ValueError
+        except (ValueError, TypeError):
+            return Response(
+                {'error': 'year must be a valid 4-digit year between 1900 and 2099.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cooperative_id = getattr(request, 'cooperative_id', None)
+        role = getattr(request.user, 'role', None)
+        if role == 'admin':
+            cooperative_id = None
+
+        pdf, filename, error = generate_kra_report(
+            year, cooperative_id, request.user,
+        )
+
+        if error:
             return Response({'error': error}, status=status.HTTP_404_NOT_FOUND)
 
         download = request.query_params.get('download', '').lower() == 'true'
