@@ -1212,9 +1212,11 @@
           "price_per_unit":  "50.00",
           "rejection_reason":"",
           "is_overridden":   false,
+          "is_inventory_updated": false,
           "overridden_by":   null,
           "overridden_at":   null,
           "override_reason": "",
+          "images": [],
           "cooperative":     "<uuid>",
           "created_at":      "2026-05-28T10:00:00Z",
           "updated_at":      "2026-05-28T10:00:00Z"
@@ -1236,9 +1238,11 @@
           "price_per_unit":  "50.00",
           "rejection_reason":"",
           "is_overridden":   false,
+          "is_inventory_updated": false,
           "overridden_by":   null,
           "overridden_at":   null,
           "override_reason": "",
+          "images": [],
           "cooperative":     "<uuid>",
           "created_at":      "2026-05-28T10:00:00Z",
           "updated_at":      "2026-05-28T10:00:00Z"
@@ -1313,9 +1317,11 @@
           "price_per_unit":  "45.00",
           "rejection_reason":"",
           "is_overridden":   true,
+          "is_inventory_updated": false,
           "overridden_by":   "<manager_user_uuid>",
           "overridden_at":   "2026-05-28T11:00:00Z",
           "override_reason": "Re-grading confirmed lower quality",
+          "images": [],
           "cooperative":     "<uuid>",
           "created_at":      "2026-05-28T10:00:00Z",
           "updated_at":      "2026-05-28T11:00:00Z"
@@ -1753,10 +1759,9 @@
 
       "11.7_payment_cycle_list": {
         "method": "GET",
-        "path": "/api/payment-cycles/",
+        "path": "/api/payment-engine/",
         "auth": "Bearer — any authenticated",
         "query_params": {
-          "status":   {"type": "string", "required": false, "example": "OPEN", "notes": "OPEN, CLOSED, PENDING"},
           "ordering": {"type": "string", "required": false, "example": "-start_date", "notes": "Fields: start_date, end_date, status"}
         },
         "response_200": {
@@ -1769,7 +1774,16 @@
               "name":        "May 2026 Payment Cycle",
               "start_date":  "2026-05-01",
               "end_date":    "2026-05-31",
-              "status":      "OPEN",
+              "status":      "DRAFT",
+              "totals":      {},
+              "total_levy":  "0.00",
+              "total_cooperative_fee": "0.00",
+              "total_loan_repayments": "0.00",
+              "has_warnings": false,
+              "celery_task_id": null,
+              "locked_by":   null,
+              "locked_at":   null,
+              "computed_at": null,
               "cooperative": "<uuid>",
               "created_at":  "2026-05-01T00:00:00Z",
               "updated_at":  "2026-05-01T00:00:00Z"
@@ -1780,7 +1794,7 @@
 
       "11.8_payment_cycle_create": {
         "method": "POST",
-        "path": "/api/payment-cycles/",
+        "path": "/api/payment-engine/",
         "auth": "Bearer — role=accountant or manager",
         "request": {
           "content_type": "application/json",
@@ -1788,7 +1802,7 @@
             "name":       {"type": "string", "required": true,  "example": "May 2026 Payment Cycle"},
             "start_date": {"type": "string", "required": true,  "example": "2026-05-01", "notes": "ISO date YYYY-MM-DD"},
             "end_date":   {"type": "string", "required": true,  "example": "2026-05-31", "notes": "ISO date YYYY-MM-DD"},
-            "status":     {"type": "string", "required": false, "example": "OPEN", "notes": "OPEN, CLOSED, PENDING"}
+            "cooperative_id": {"type": "string", "required": false, "example": "<uuid>", "notes": "Admin-only override"}
           }
         },
         "response_201": {
@@ -1796,23 +1810,42 @@
           "name":        "May 2026 Payment Cycle",
           "start_date":  "2026-05-01",
           "end_date":    "2026-05-31",
-          "status":      "OPEN",
+          "status":      "DRAFT",
+          "totals":      {},
+          "total_levy":  "0.00",
+          "total_cooperative_fee": "0.00",
+          "total_loan_repayments": "0.00",
+          "has_warnings": false,
+          "celery_task_id": null,
+          "locked_by":   null,
+          "locked_at":   null,
+          "computed_at": null,
           "cooperative": "<uuid>",
           "created_at":  "2026-05-01T00:00:00Z",
           "updated_at":  "2026-05-01T00:00:00Z"
-        }
+        },
+        "notes": "Validates no overlapping date ranges for same cooperative. Overlapping returns 400 with cycle names."
       },
 
       "11.9_payment_cycle_detail": {
         "method": "GET",
-        "path": "/api/payment-cycles/{id}/",
+        "path": "/api/payment-engine/{id}/",
         "auth": "Bearer — any authenticated",
         "response_200": {
           "id":          "<uuid>",
           "name":        "May 2026 Payment Cycle",
           "start_date":  "2026-05-01",
           "end_date":    "2026-05-31",
-          "status":      "OPEN",
+          "status":      "DRAFT",
+          "totals":      {},
+          "total_levy":  "0.00",
+          "total_cooperative_fee": "0.00",
+          "total_loan_repayments": "0.00",
+          "has_warnings": false,
+          "celery_task_id": null,
+          "locked_by":   null,
+          "locked_at":   null,
+          "computed_at": null,
           "cooperative": "<uuid>",
           "created_at":  "2026-05-01T00:00:00Z",
           "updated_at":  "2026-05-01T00:00:00Z"
@@ -1821,36 +1854,36 @@
 
       "11.10_payment_cycle_update": {
         "method": "PUT",
-        "path": "/api/payment-cycles/{id}/",
+        "path": "/api/payment-engine/{id}/",
         "auth": "Bearer — role=accountant or manager",
         "request": {
           "content_type": "application/json",
           "body": {
-            "name":       {"type": "string", "required": true,  "example": "May 2026 Payment Cycle"},
+            "name":       {"type": "string", "required": true,  "example": "May 2026 Payment Cycle Updated"},
             "start_date": {"type": "string", "required": true,  "example": "2026-05-01"},
-            "end_date":   {"type": "string", "required": true,  "example": "2026-05-31"},
-            "status":     {"type": "string", "required": false, "example": "CLOSED"}
+            "end_date":   {"type": "string", "required": true,  "example": "2026-05-31"}
           }
         }
       },
 
       "11.11_payment_cycle_partial_update": {
         "method": "PATCH",
-        "path": "/api/payment-cycles/{id}/",
+        "path": "/api/payment-engine/{id}/",
         "auth": "Bearer — role=accountant or manager",
         "request": {
           "content_type": "application/json",
           "body": {
-            "status": {"type": "string", "required": false, "example": "CLOSED"}
+            "name": {"type": "string", "required": false, "example": "Renamed Cycle"}
           }
         }
       },
 
       "11.12_payment_cycle_delete": {
         "method": "DELETE",
-        "path": "/api/payment-cycles/{id}/",
+        "path": "/api/payment-engine/{id}/",
         "auth": "Bearer — role=accountant or manager",
-        "response_204": "No content"
+        "response_204": "No content",
+        "notes": "Only DRAFT cycles can be deleted. Returns 400 for COMPUTED/LOCKED cycles."
       },
 
       "11.13_sale_list": {
@@ -1887,6 +1920,7 @@
               "invoice_number":    "INV-2026-001",
               "notes":             "Bulk purchase",
               "payment_cycle":     null,
+              "inventory_updated": false,
               "recorded_by":       "<uuid>",
               "recorded_by_name":  "Isaac Kamau",
               "cooperative":       "<uuid>",
@@ -1906,10 +1940,11 @@
           "body": {
             "buyer":          {"type": "string",  "required": true,  "example": "<buyer_uuid>", "notes": "Must be active and in same cooperative"},
             "inventory":      {"type": "string",  "required": true,  "example": "<inventory_uuid>", "notes": "Inventory item being sold"},
-            "unit":           {"type": "string",  "required": true,  "example": "kg", "notes": "kg, litres, units"},
             "quantity":       {"type": "number",  "required": true,  "example": 200.00},
             "price_per_unit": {"type": "number",  "required": true,  "example": 50.00},
+            "status":         {"type": "string",  "required": false, "example": "PENDING", "notes": "PENDING, COMPLETED, CANCELLED"},
             "sale_date":      {"type": "string",  "required": true,  "example": "2026-05-20", "notes": "ISO date YYYY-MM-DD"},
+            "invoice_number": {"type": "string",  "required": false, "example": "INV-2026-001"},
             "notes":          {"type": "string",  "required": false, "example": "Bulk purchase"},
             "payment_cycle":  {"type": "string",  "required": false, "example": null, "notes": "UUID of payment cycle to link to"}
           }
@@ -1931,13 +1966,14 @@
           "invoice_number":    "INV-2026-001",
           "notes":             "Bulk purchase",
           "payment_cycle":     null,
+          "inventory_updated": false,
           "recorded_by":       "<uuid>",
           "recorded_by_name":  "Isaac Kamau",
           "cooperative":       "<uuid>",
           "created_at":        "2026-05-29T12:00:00Z",
           "updated_at":        "2026-05-29T12:00:00Z"
         },
-        "notes": "invoice_number auto-generated. total_amount computed as quantity * price_per_unit."
+        "notes": "invoice_number auto-generated. total_amount computed as quantity * price_per_unit. Set status=COMPLETED to trigger inventory decrement."
       },
 
       "11.15_sale_detail": {
@@ -1961,6 +1997,7 @@
           "invoice_number":    "INV-2026-001",
           "notes":             "Bulk purchase",
           "payment_cycle":     null,
+          "inventory_updated": false,
           "recorded_by":       "<uuid>",
           "recorded_by_name":  "Isaac Kamau",
           "cooperative":       "<uuid>",
@@ -1980,7 +2017,935 @@
             "notes":         {"type": "string", "required": false, "example": "Payment received"},
             "payment_cycle": {"type": "string", "required": false, "example": "<payment_cycle_uuid>"}
           }
+        },
+        "notes": "Setting status to COMPLETED triggers Celery task to decrement inventory. CANCELLED reverses it."
+      }
+    },
+
+    "12_grade_disputes": {
+      "description": "Grade dispute management endpoints (cooperative-scoped)",
+
+      "12.1_grade_dispute": {
+        "methods": [
+          {
+            "method": "POST",
+            "path": "/api/grades/{id}/dispute/",
+            "auth": "Bearer — role=farmer (must own the delivery)",
+            "notes": "Creates a dispute for a specific grade. Raises PermissionDenied if farmer doesn't own the delivery."
+          }
+        ],
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "reason": {"type": "string", "required": true, "example": "The quality assessment does not match my delivery"}
+          }
+        },
+        "response_201": {
+          "id": "<uuid>",
+          "reason": "The quality assessment does not match my delivery",
+          "status": "PENDING",
+          "created_at": "2026-05-28T12:00:00Z"
         }
+      },
+
+      "12.2_dispute_list": {
+        "method": "GET",
+        "path": "/api/disputes/",
+        "auth": "Bearer — any authenticated",
+        "response_200": "Paginated list of FarmerGradeDispute objects with id, reason, status, created_at. Cooperative-scoped."
+      },
+
+      "12.3_dispute_detail": {
+        "method": "GET",
+        "path": "/api/disputes/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": "FarmerGradeDispute object with id, reason, status, created_at."
+      },
+
+      "12.4_dispute_resolve": {
+        "method": "POST",
+        "path": "/api/disputes/{id}/resolve/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "status":          {"type": "string", "required": true, "example": "RESOLVED", "notes": "RESOLVED or REJECTED"},
+            "resolution_notes":{"type": "string", "required": false, "example": "Re-grading confirmed original grade was correct"}
+          }
+        },
+        "response_200": {
+          "id": "<uuid>",
+          "reason": "Original dispute reason",
+          "status": "RESOLVED",
+          "created_at": "2026-05-28T12:00:00Z"
+        },
+        "notes": "Only PENDING disputes can be resolved. Sets resolved_by and resolved_at automatically."
+      },
+
+      "12.5_grade_images": {
+        "methods": [
+          {
+            "method": "GET",
+            "path": "/api/grades/{id}/images/",
+            "auth": "Bearer — any authenticated",
+            "response_200": [
+              {
+                "id": "<uuid>",
+                "image": "/media/grade_images/photo.jpg",
+                "image_url": "http://localhost:8000/media/grade_images/photo.jpg",
+                "caption": "Close-up of coffee beans",
+                "uploaded_by_name": "Ann Kariuki",
+                "uploaded_at": "2026-05-28T10:30:00Z"
+              }
+            ]
+          },
+          {
+            "method": "POST",
+            "path": "/api/grades/{id}/images/",
+            "auth": "Bearer — role=grader",
+            "request": {
+              "content_type": "multipart/form-data",
+              "body": {
+                "image":   {"type": "file", "required": true, "notes": "JPEG or PNG, max 5MB, min 300x300 pixels"},
+                "caption": {"type": "string", "required": false, "example": "Close-up of coffee beans"}
+              }
+            },
+            "response_201": {
+              "id": "<uuid>",
+              "image": "/media/grade_images/photo.jpg",
+              "image_url": "http://localhost:8000/media/grade_images/photo.jpg",
+              "caption": "Close-up of coffee beans",
+              "uploaded_by_name": "Ann Kariuki",
+              "uploaded_at": "2026-05-28T10:30:00Z"
+            }
+          },
+          {
+            "method": "DELETE",
+            "path": "/api/grades/{id}/images/{image_id}/",
+            "auth": "Bearer — uploader or manager",
+            "response_204": "No content",
+            "notes": "Only the uploader or a manager can delete images."
+          }
+        ]
+      }
+    },
+
+    "13_inventory": {
+      "description": "Inventory management endpoints (cooperative-scoped, read-only)",
+
+      "13.1_list": {
+        "method": "GET",
+        "path": "/api/inventory/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "product_type": {"type": "string", "required": false, "example": "coffee", "notes": "Filter by product type"},
+          "grade":        {"type": "string", "required": false, "example": "A", "notes": "Filter by grade letter"},
+          "batch_id":     {"type": "string", "required": false, "example": "PRODUCE-20260520-001"},
+          "search":       {"type": "string", "required": false, "example": "PRODUCE", "notes": "Searches batch_id, grade, product_type"},
+          "ordering":     {"type": "string", "required": false, "example": "-created_at", "notes": "Fields: batch_id, product_type, grade, created_at"}
+        },
+        "response_200": {
+          "count": 3,
+          "next": null,
+          "previous": null,
+          "results": [
+            {
+              "id":              "<uuid>",
+              "batch_id":        "PRODUCE-20260520-001",
+              "product_type":    "coffee",
+              "grade":           "A",
+              "unit":            "kg",
+              "quantity_in":     "1000.00",
+              "quantity_out":    "200.00",
+              "running_balance": "800.00",
+              "created_at":      "2026-05-20T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "13.2_detail": {
+        "method": "GET",
+        "path": "/api/inventory/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id":              "<uuid>",
+          "batch_id":        "PRODUCE-20260520-001",
+          "product_type":    "coffee",
+          "grade":           "A",
+          "unit":            "kg",
+          "quantity_in":     "1000.00",
+          "quantity_out":    "200.00",
+          "running_balance": "800.00",
+          "cooperative":     "<uuid>",
+          "created_at":      "2026-05-20T10:00:00Z",
+          "updated_at":      "2026-05-29T12:00:00Z"
+        }
+      },
+
+      "13.3_summary": {
+        "method": "GET",
+        "path": "/api/inventory/summary/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "total_records": 3,
+          "total_quantity_in": 2500.0,
+          "total_quantity_out": 500.0,
+          "by_product_type": [
+            {"product_type": "coffee", "records": 2, "qty_in": 2000.0, "qty_out": 400.0},
+            {"product_type": "honey",  "records": 1, "qty_in": 500.0,  "qty_out": 100.0}
+          ],
+          "by_grade": [
+            {"grade": "A", "records": 2, "qty_in": 1800.0, "qty_out": 350.0},
+            {"grade": "B", "records": 1, "qty_in": 700.0,  "qty_out": 150.0}
+          ]
+        }
+      },
+
+      "13.4_alerts": {
+        "methods": [
+          {
+            "method": "GET",
+            "path": "/api/inventory/alerts/",
+            "auth": "Bearer — any authenticated",
+            "query_params": {
+              "threshold":    {"type": "number", "required": false, "example": 100, "notes": "Default 100. Returns items with running_balance < threshold"},
+              "product_type": {"type": "string", "required": false, "example": "coffee"}
+            }
+          },
+          {
+            "method": "POST",
+            "path": "/api/inventory/alerts/",
+            "auth": "Bearer — any authenticated",
+            "request": {
+              "content_type": "application/json",
+              "body": {
+                "threshold":    {"type": "number", "required": false, "example": 100},
+                "product_type": {"type": "string", "required": false, "example": "coffee"}
+              }
+            }
+          }
+        ],
+        "response_200": {
+          "threshold": 100.0,
+          "product_type": "coffee",
+          "count": 1,
+          "results": [
+            {
+              "id": "<uuid>",
+              "batch_id": "PRODUCE-20260520-001",
+              "product_type": "coffee",
+              "grade": "A",
+              "unit": "kg",
+              "quantity_in": 1000.0,
+              "quantity_out": 950.0,
+              "running_balance": 50.0
+            }
+          ]
+        }
+      }
+    },
+
+    "14_payment_engine_actions": {
+      "description": "Payment engine lifecycle actions (cooperative-scoped, on PaymentCycle)",
+
+      "14.1_run": {
+        "method": "POST",
+        "path": "/api/payment-engine/{id}/run/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_200": {
+          "task_id": "<celery_task_uuid>",
+          "status": "started"
+        },
+        "notes": "Triggers async Celery task run_payment_engine. Returns 400 if cycle is LOCKED. Saves celery_task_id on cycle."
+      },
+
+      "14.2_preview": {
+        "method": "GET",
+        "path": "/api/payment-engine/{id}/preview/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "name": "May 2026 Payment Cycle",
+          "status": "COMPUTED",
+          "totals": {},
+          "total_levy": "500.00",
+          "total_cooperative_fee": "200.00",
+          "total_loan_repayments": "300.00",
+          "has_warnings": false,
+          "warnings": [],
+          "farmer_payments": [
+            {
+              "id": "<uuid>",
+              "farmer": "<uuid>",
+              "farmer_name": "Grace Njoki",
+              "member_number": "KBD-001",
+              "total_quantity": "500.00",
+              "grade_breakdown": {"A": {"volume": 300, "price": 50}, "B": {"volume": 200, "price": 45}},
+              "gross_amount": "24000.00",
+              "deductions": {"loan_repayment": 5000.00},
+              "net_amount": "19000.00",
+              "payment_status": "PENDING",
+              "computation_log": {}
+            }
+          ],
+          "computed_at": "2026-06-01T10:00:00Z",
+          "locked_at": null
+        }
+      },
+
+      "14.3_lock": {
+        "method": "POST",
+        "path": "/api/payment-engine/{id}/lock/",
+        "auth": "Bearer — role=manager",
+        "response_200": "Full PaymentCycleSerializer. Returns 400 if not COMPUTED.",
+        "notes": "Sets status=LOCKED, locked_by=current user, locked_at=now. Audits."
+      },
+
+      "14.4_unlock": {
+        "method": "POST",
+        "path": "/api/payment-engine/{id}/unlock/",
+        "auth": "Bearer — role=manager",
+        "response_200": "Full PaymentCycleSerializer. Returns 400 if not LOCKED.",
+        "notes": "Sets status=COMPUTED, clears locked_by/locked_at. Audits."
+      },
+
+      "14.5_status": {
+        "method": "GET",
+        "path": "/api/payment-engine/{id}/status/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "status": "DRAFT",
+          "computed_at": null,
+          "locked_at": null,
+          "locked_by": null,
+          "totals": {},
+          "total_levy": "0.00",
+          "total_cooperative_fee": "0.00",
+          "total_loan_repayments": "0.00",
+          "has_warnings": false,
+          "celery_task_id": null
+        }
+      },
+
+      "14.6_hold": {
+        "method": "POST",
+        "path": "/api/payment-engine/{id}/hold/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer_payment_id": {"type": "string", "required": true, "example": "<farmer_payment_uuid>"},
+            "hold_reason":       {"type": "string", "required": false, "example": "Disputed quality assessment"}
+          }
+        },
+        "response_200": {
+          "status": "held",
+          "farmer_payment_id": "<uuid>"
+        },
+        "notes": "Cycle must be COMPUTED or LOCKED. Sets FarmerPayment.is_on_hold=true. Audits."
+      },
+
+      "14.7_release": {
+        "method": "POST",
+        "path": "/api/payment-engine/{id}/release/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer_payment_id": {"type": "string", "required": true, "example": "<farmer_payment_uuid>"}
+          }
+        },
+        "response_200": {
+          "status": "released",
+          "farmer_payment_id": "<uuid>"
+        },
+        "notes": "Cycle must be COMPUTED or LOCKED. Sets FarmerPayment.is_on_hold=false. Audits."
+      },
+
+      "14.8_task_status": {
+        "method": "GET",
+        "path": "/api/payment-engine/{id}/task-status/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "task_id": "<celery_task_uuid_or_null>",
+          "celery_state": "PENDING",
+          "cycle_status": "COMPUTING",
+          "result": null,
+          "warnings": []
+        },
+        "notes": "Poll Celery AsyncResult for the cycle's computation task. Includes ComputationWarning records."
+      },
+
+      "14.9_export": {
+        "method": "GET",
+        "path": "/api/payment-engine/{id}/export/",
+        "auth": "Bearer — role=accountant or manager",
+        "notes": "CSV download: member_number, farmer_name, total_quantity_kg, gross_amount, total_deductions, withholding_tax_amount, net_amount, payment_method, payment_status. Filename: cycle_{name}_payments.csv."
+      }
+    },
+
+    "15_disbursements": {
+      "description": "Disbursement batch management (cooperative-scoped, accountant/manager workflow)",
+
+      "15.1_list": {
+        "method": "GET",
+        "path": "/api/disbursements/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "count": 1,
+          "results": [
+            {
+              "id": "<uuid>",
+              "payment_cycle": "<uuid>",
+              "payment_cycle_name": "May 2026 Payment Cycle",
+              "status": "PENDING",
+              "command_id": "SalaryPayment",
+              "total_amount": "19000.00",
+              "total_transactions": 5,
+              "successful_count": 0,
+              "failed_count": 0,
+              "transaction_count": 5,
+              "approved_by": null,
+              "approved_at": null,
+              "created_by": "<uuid>",
+              "notes": "",
+              "created_at": "2026-06-01T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "15.2_initiate": {
+        "method": "POST",
+        "path": "/api/disbursements/initiate/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "payment_cycle": {"type": "string", "required": true, "example": "<payment_cycle_uuid>", "notes": "Must be a LOCKED cycle in user's cooperative"},
+            "command_id":    {"type": "string", "required": false, "example": "SalaryPayment", "notes": "BusinessPayment, SalaryPayment, PromotionPayment"},
+            "notes":         {"type": "string", "required": false, "example": "May batch disbursement"}
+          }
+        },
+        "response_201": "DisbursementBatchDetailSerializer with nested transactions array.",
+        "notes": "Creates batch + transactions from cycle FarmerPayments (is_on_hold=false, net_amount>0). Skips farmers below minimum_payout_amount (carried forward). One transaction per farmer."
+      },
+
+      "15.3_detail": {
+        "method": "GET",
+        "path": "/api/disbursements/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "payment_cycle": "<uuid>",
+          "status": "PENDING",
+          "command_id": "SalaryPayment",
+          "total_amount": "19000.00",
+          "total_transactions": 5,
+          "successful_count": 0,
+          "failed_count": 0,
+          "celery_task_id": null,
+          "approved_by": null,
+          "approved_by_name": null,
+          "approved_at": null,
+          "created_by": "<uuid>",
+          "created_by_name": "Isaac Kamau",
+          "notes": "",
+          "transactions": [
+            {
+              "id": "<uuid>",
+              "batch": "<uuid>",
+              "farmer": "<uuid>",
+              "farmer_name": "Grace Njoki",
+              "member_number": "KBD-001",
+              "amount": "5000.00",
+              "payment_method": "M_PESA",
+              "recipient_identifier": "0713000001",
+              "recipient_name": "Grace Njoki",
+              "mpesa_number": "0713000001",
+              "status": "PENDING",
+              "transaction_id": "",
+              "conversation_id": "<uuid>",
+              "result_code": "",
+              "result_desc": "",
+              "failure_reason": "",
+              "retry_count": 0,
+              "withholding_tax_amount": "0.00",
+              "queued_at": null,
+              "sent_at": null,
+              "completed_at": null,
+              "failed_at": null,
+              "created_at": "2026-06-01T10:00:00Z"
+            }
+          ],
+          "created_at": "2026-06-01T10:00:00Z",
+          "updated_at": "2026-06-01T10:00:00Z"
+        }
+      },
+
+      "15.4_approve": {
+        "method": "POST",
+        "path": "/api/disbursements/{id}/approve/",
+        "auth": "Bearer — role=manager",
+        "response_200": "DisbursementBatchDetailSerializer.",
+        "notes": "Batch must be PENDING. Sets approved_by and approved_at. Audits."
+      },
+
+      "15.5_live": {
+        "method": "POST",
+        "path": "/api/disbursements/{id}/live/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_200": {
+          "task_id": "<celery_task_uuid>",
+          "status": "processing"
+        },
+        "notes": "Batch must be PENDING. Triggers Celery task process_batch_disbursements. Saves celery_task_id."
+      },
+
+      "15.6_retry_failed": {
+        "method": "POST",
+        "path": "/api/disbursements/{id}/retry_failed/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_200": {
+          "retried": 3,
+          "status": "PENDING"
+        },
+        "notes": "Resets FAILED transactions to PENDING, clears error fields. Returns 400 if no failed transactions."
+      },
+
+      "15.7_csv": {
+        "method": "GET",
+        "path": "/api/disbursements/{id}/csv/",
+        "auth": "Bearer — role=accountant or manager",
+        "notes": "CSV download of pending BANK transactions for bulk upload. Columns: AccountNumber, BeneficiaryName, Amount, Narration."
+      },
+
+      "15.8_confirm_manual": {
+        "method": "POST",
+        "path": "/api/disbursements/{id}/confirm_manual/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "transaction_ids": {"type": "array", "required": true, "example": ["<uuid1>", "<uuid2>"], "notes": "List of transaction UUIDs"},
+            "notes":           {"type": "string", "required": false, "example": "Bank transfer confirmed via statement"}
+          }
+        },
+        "response_200": {
+          "confirmed": 2,
+          "status": "SUCCESS"
+        },
+        "notes": "Only BANK/CASH transactions. Sets status=SUCCESS, completed_at=now. Updates FarmerPayment to PAID. Triggers update_batch_summary Celery task."
+      },
+
+      "15.9_transactions": {
+        "method": "GET",
+        "path": "/api/disbursements/{id}/transactions/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "status":         {"type": "string", "required": false, "example": "PENDING", "notes": "PENDING, QUEUED, SENT, SUCCESS, FAILED, CANCELLED"},
+          "payment_method": {"type": "string", "required": false, "example": "M_PESA", "notes": "M_PESA, BANK, CASH"}
+        },
+        "response_200": "Paginated list of DisbursementTransactionSerializer objects."
+      }
+    },
+
+    "16_loans": {
+      "description": "Loan management endpoints (cooperative-scoped)",
+      "notes": "Farmers see only own loans. Accountants/managers see all in cooperative. Statuses: PENDING, ACTIVE, COMPLETED, DEFAULTED.",
+
+      "16.1_list": {
+        "method": "GET",
+        "path": "/api/loans/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "farmer": {"type": "string", "required": false, "example": "<farmer_uuid>"},
+          "status": {"type": "string", "required": false, "example": "ACTIVE", "notes": "PENDING, ACTIVE, COMPLETED, DEFAULTED"}
+        },
+        "response_200": {
+          "count": 2,
+          "results": [
+            {
+              "id": "<uuid>",
+              "farmer": "<uuid>",
+              "farmer_name": "Grace Njoki",
+              "farmer_member_number": "KBD-001",
+              "amount_principal": "50000.00",
+              "interest_rate": "5.00",
+              "total_repayable": "52500.00",
+              "installment_amount": "4375.00",
+              "number_of_installments": 12,
+              "installments_paid": 0,
+              "remaining_installments": 12,
+              "status": "PENDING",
+              "approved_at": null,
+              "disbursed_at": null,
+              "created_at": "2026-05-28T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "16.2_create": {
+        "method": "POST",
+        "path": "/api/loans/",
+        "auth": "Bearer — farmer or accountant/manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer":              {"type": "string", "required": true, "example": "<farmer_uuid>", "notes": "Farmers can only create loans for themselves"},
+            "amount_principal":    {"type": "number", "required": true, "example": 50000.00, "notes": "Must be > 0"},
+            "interest_rate":       {"type": "number", "required": true, "example": 5.00, "notes": "Percentage. Cannot be negative."},
+            "number_of_installments": {"type": "integer", "required": true, "example": 12, "notes": "Must be >= 1"},
+            "notes":               {"type": "string", "required": false, "example": "Farm inputs for next season"}
+          }
+        },
+        "response_201": "LoanDetailSerializer. Status set to PENDING (farmer) or ACTIVE (manager/accountant).",
+        "notes": "Auto-calculates total_repayable, installment_amount from principal + interest."
+      },
+
+      "16.3_detail": {
+        "method": "GET",
+        "path": "/api/loans/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": "LoanDetailSerializer (all fields + nested repayments, guarantors)."
+      },
+
+      "16.4_approve": {
+        "method": "POST",
+        "path": "/api/loans/{id}/approve/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_200": "LoanDetailSerializer.",
+        "notes": "Validates: status must be PENDING, must have >=1 ACTIVE guarantor. Sets status=ACTIVE, approved_by, approved_at."
+      },
+
+      "16.5_disburse": {
+        "method": "POST",
+        "path": "/api/loans/{id}/disburse/",
+        "auth": "Bearer — role=accountant",
+        "response_200": "LoanDetailSerializer.",
+        "notes": "Status must be ACTIVE. disburse_at must be null. Sets disbursed_at=now. Returns 400 if conditions not met."
+      },
+
+      "16.6_add_guarantor": {
+        "method": "POST",
+        "path": "/api/loans/{id}/add_guarantor/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "guarantor_id": {"type": "string", "required": true, "example": "<farmer_uuid>", "notes": "Must be existing Farmer in same cooperative, not already a guarantor"}
+          }
+        },
+        "response_201": "List of LoanGuarantorSerializer objects for the loan.",
+        "notes": "Only for PENDING loans. Creates LoanGuarantor record."
+      },
+
+      "16.7_remove_guarantor": {
+        "method": "POST",
+        "path": "/api/loans/{id}/remove_guarantor/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "guarantor_id": {"type": "string", "required": true, "example": "<farmer_uuid>"}
+          }
+        },
+        "response_204": "No content",
+        "notes": "Only for PENDING loans. Returns 404 if guarantor not found."
+      },
+
+      "16.8_mark_completed": {
+        "method": "POST",
+        "path": "/api/loans/{id}/mark_completed/",
+        "auth": "Bearer — role=accountant",
+        "response_200": "LoanDetailSerializer.",
+        "notes": "Status must be ACTIVE. installments_paid must >= number_of_installments. Sets status=COMPLETED."
+      },
+
+      "16.9_mark_defaulted": {
+        "method": "POST",
+        "path": "/api/loans/{id}/mark_defaulted/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "reason": {"type": "string", "required": true, "example": "Missed 3 consecutive payments"}
+          }
+        },
+        "response_200": "LoanDetailSerializer.",
+        "notes": "Status must be ACTIVE. Sets status=DEFAULTED, appends reason to notes. Sends IN_APP notification to ACTIVE guarantors."
+      }
+    },
+
+    "17_deductions": {
+      "description": "Deduction and farm input credit endpoints (cooperative-scoped)",
+
+      "17.1_deduction_list": {
+        "method": "GET",
+        "path": "/api/deductions/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "farmer": {"type": "string", "required": false, "example": "<farmer_uuid>"},
+          "type":   {"type": "string", "required": false, "example": "LOAN_REPAYMENT"},
+          "cycle":  {"type": "string", "required": false, "example": "<payment_cycle_uuid>"}
+        },
+        "response_200": {
+          "count": 2,
+          "results": [
+            {
+              "id": "<uuid>",
+              "farmer": "<uuid>",
+              "farmer_name": "Grace Njoki",
+              "cycle": "<uuid>",
+              "cycle_name": "May 2026 Payment Cycle",
+              "deduction_type": "LOAN_REPAYMENT",
+              "amount": "5000.00",
+              "created_by_name": "Isaac Kamau",
+              "notes": "Monthly loan repayment",
+              "created_at": "2026-05-28T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "17.2_deduction_create": {
+        "method": "POST",
+        "path": "/api/deductions/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer": {"type": "string", "required": true, "example": "<farmer_uuid>"},
+            "cycle":  {"type": "string", "required": true, "example": "<payment_cycle_uuid>", "notes": "Cannot add deductions to LOCKED cycles"},
+            "amount": {"type": "number", "required": true, "example": 5000.00, "notes": "Must be > 0"},
+            "notes":  {"type": "string", "required": false, "example": "Monthly loan repayment"}
+          }
+        },
+        "response_201": "DeductionDetailSerializer.",
+        "notes": "deduction_type auto-set to LOAN_REPAYMENT. Audits."
+      },
+
+      "17.3_farm_input_credit_list": {
+        "method": "GET",
+        "path": "/api/deductions/farm-input-credits/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "farmer":     {"type": "string", "required": false, "example": "<farmer_uuid>"},
+          "undeducted": {"type": "boolean", "required": false, "example": true, "notes": "Filter to credits not yet deducted in a cycle"}
+        },
+        "response_200": {
+          "count": 2,
+          "results": [
+            {
+              "id": "<uuid>",
+              "farmer": "<uuid>",
+              "farmer_name": "Grace Njoki",
+              "item_description": "Fertilizer 50kg bag",
+              "amount": "3000.00",
+              "supplied_date": "2026-05-15",
+              "deducted_in_cycle": null,
+              "deducted": false,
+              "created_at": "2026-05-15T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "17.4_farm_input_credit_create": {
+        "method": "POST",
+        "path": "/api/deductions/farm-input-credits/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer":          {"type": "string", "required": true, "example": "<farmer_uuid>"},
+            "item_description":{"type": "string", "required": true, "example": "Fertilizer 50kg bag"},
+            "amount":          {"type": "number", "required": true, "example": 3000.00, "notes": "Must be > 0"},
+            "supplied_date":   {"type": "string", "required": false, "example": "2026-05-15", "notes": "ISO date YYYY-MM-DD"}
+          }
+        },
+        "response_201": "FarmInputCreditDetailSerializer.",
+        "notes": "Cannot delete if already deducted in a cycle."
+      }
+    },
+
+    "18_statements": {
+      "description": "Statement and report endpoints (cooperative-scoped)",
+
+      "18.1_audit_log_list": {
+        "method": "GET",
+        "path": "/api/statements/audit/",
+        "auth": "Bearer — role=manager or auditor",
+        "query_params": {
+          "resource_type": {"type": "string", "required": false, "example": "payment_cycle", "notes": "Filter by resource type"},
+          "action":        {"type": "string", "required": false, "example": "CREATE", "notes": "Filter by action name"},
+          "resource_id":   {"type": "string", "required": false, "example": "<uuid>"},
+          "search":        {"type": "string", "required": false, "example": "CREATE", "notes": "Searches resource_type, action, actor name, email, resource_id"},
+          "ordering":      {"type": "string", "required": false, "example": "-created_at", "notes": "Fields: created_at, action, resource_type"}
+        },
+        "response_200": {
+          "count": 10,
+          "results": [
+            {
+              "id": "<uuid>",
+              "actor": "<uuid>",
+              "actor_name": "Isaac Kamau",
+              "cooperative": "<uuid>",
+              "cooperative_name": "Kiambu Dairy",
+              "resource_type": "payment_cycle",
+              "resource_id": "<uuid>",
+              "action": "CREATE",
+              "changes": {},
+              "ip_address": "192.168.1.1",
+              "created_at": "2026-05-28T10:00:00Z"
+            }
+          ]
+        }
+      },
+
+      "18.2_statement_pdf": {
+        "method": "GET",
+        "path": "/api/statements/statement/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "farmer_payment_id": {"type": "string", "required": true, "example": "<farmer_payment_uuid>"},
+          "download":          {"type": "boolean", "required": false, "example": true, "notes": "true=attachment, false(default)=inline"}
+        },
+        "notes": "Returns PDF. Farmers can only view their own statement. Staff can view any in cooperative."
+      },
+
+      "18.3_statement_latest": {
+        "method": "GET",
+        "path": "/api/statements/statement/latest/",
+        "auth": "Bearer — role=farmer",
+        "query_params": {
+          "download": {"type": "boolean", "required": false, "example": true}
+        },
+        "notes": "Returns PDF of last PAID FarmerPayment. 404 if no paid statements."
+      },
+
+      "18.4_statement_history": {
+        "method": "GET",
+        "path": "/api/statements/statement/history/",
+        "auth": "Bearer — any authenticated",
+        "query_params": {
+          "farmer_id": {"type": "string", "required": true, "example": "<farmer_uuid>"}
+        },
+        "response_200": {
+          "farmer_id": "<uuid>",
+          "farmer_name": "Grace Njoki",
+          "member_number": "KBD-001",
+          "payments": [
+            {
+              "farmer_payment_id": "<uuid>",
+              "cycle_name": "May 2026 Payment Cycle",
+              "period_start": "2026-05-01",
+              "period_end": "2026-05-31",
+              "gross_amount": 24000.0,
+              "net_amount": 19000.0,
+              "status": "PAID"
+            }
+          ]
+        }
+      },
+
+      "18.5_season_report": {
+        "method": "GET",
+        "path": "/api/statements/report/",
+        "auth": "Bearer — role=accountant or manager",
+        "query_params": {
+          "cycle_id": {"type": "string", "required": true, "example": "<payment_cycle_uuid>"},
+          "download": {"type": "boolean", "required": false, "example": true}
+        },
+        "notes": "Returns PDF season report for a specific payment cycle."
+      },
+
+      "18.6_kra_report": {
+        "method": "GET",
+        "path": "/api/statements/kra-report/",
+        "auth": "Bearer — role=accountant or manager",
+        "query_params": {
+          "year":    {"type": "string", "required": true, "example": "2026", "notes": "4-digit year (1900-2099)"},
+          "download":{"type": "boolean", "required": false, "example": true}
+        },
+        "notes": "Returns PDF withholding tax report for KRA for the given year."
+      },
+
+      "18.7_annual_report": {
+        "method": "GET",
+        "path": "/api/statements/annual-report/",
+        "auth": "Bearer — role=accountant or manager",
+        "query_params": {
+          "year": {"type": "string", "required": true, "example": "2026", "notes": "4-digit year (1900-2099). Financial year = July {year} to June {year+1}"}
+        },
+        "response_200": {
+          "financial_year": "2026/2027",
+          "period": {"start": "2026-07-01", "end": "2027-06-30"},
+          "summary": {
+            "total_produce_received": {"coffee": {"total_kg": 50000.0, "total_volume": 0.0, "delivery_count": 200}},
+            "total_revenue": 5000000.0,
+            "total_farmer_payments": 3500000.0,
+            "total_deductions_collected": {"LOAN_REPAYMENT": 500000.0},
+            "total_withholding_tax_held": 150000.0,
+            "cycle_count": 6
+          },
+          "farmer_summaries": [
+            {
+              "farmer_id": "<uuid>",
+              "member_number": "KBD-001",
+              "farmer_name": "Grace Njoki",
+              "total_quantity": 2000.0,
+              "total_gross": 100000.0,
+              "total_deductions": 15000.0,
+              "total_net": 85000.0,
+              "total_withholding_tax": 5000.0,
+              "payment_count": 6
+            }
+          ]
+        }
+      }
+    },
+
+    "19_notifications": {
+      "description": "Notification log endpoints (cooperative-scoped, staff only)",
+
+      "19.1_list": {
+        "method": "GET",
+        "path": "/api/notifications/",
+        "auth": "Bearer — role=staff",
+        "query_params": {
+          "search": {"type": "string", "required": false, "example": "SMS", "notes": "Searches content, channel, notification_type, status, recipient name/phone"}
+        },
+        "response_200": {
+          "count": 5,
+          "results": [
+            {
+              "id": "<uuid>",
+              "channel": "SMS",
+              "notification_type": "DELIVERY_CONFIRMED",
+              "content": "Your delivery of 50L milk has been received.",
+              "status": "SENT",
+              "retry_count": 0,
+              "external_id": "ATXid_12345",
+              "cost": "0.50",
+              "recipient": "<uuid>",
+              "recipient_name": "Grace Njoki",
+              "recipient_phone": "0713000001",
+              "sent_at": "2026-05-28T06:35:00Z",
+              "created_at": "2026-05-28T06:30:00Z"
+            }
+          ]
+        }
+      },
+
+      "19.2_detail": {
+        "method": "GET",
+        "path": "/api/notifications/<uuid:pk>/",
+        "auth": "Bearer — role=staff",
+        "response_200": "NotificationDetailSerializer (all model fields + recipient_name, recipient_phone)."
       }
     }
   }
