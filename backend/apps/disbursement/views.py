@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 
+from django.db.models import Case, IntegerField, When
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -186,7 +187,15 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         bank_txns = batch.transactions.filter(
             payment_method='BANK', status='PENDING',
-        ).select_related('farmer').order_by('farmer__first_name')
+        ).select_related('farmer').order_by(
+            Case(
+                When(payment_method='M_PESA', then=0),
+                When(payment_method='BANK', then=1),
+                When(payment_method='CASH', then=2),
+                output_field=IntegerField(),
+            ),
+            'farmer__member_number', 'id',
+        )
 
         if not bank_txns.exists():
             return Response(

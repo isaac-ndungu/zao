@@ -1,4 +1,6 @@
 import uuid
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 
 from apps.auth_api.models import User
@@ -37,10 +39,14 @@ class Farmer(LocationMixin, CooperativeScopedModel):
     has_active_loan = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    search_vector = SearchVectorField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Farmer'
         verbose_name_plural = 'Farmers'
+        indexes = [
+            GinIndex(fields=['search_vector']),
+        ]
 
     def __str__(self):
         return f'{self.member_number} — {self.first_name} {self.last_name}'

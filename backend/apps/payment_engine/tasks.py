@@ -9,6 +9,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from apps.deductions.models import Deduction, FarmInputCredit
+from apps.farmers.models import Farmer
 from apps.loans.models import Loan, LoanRepayment
 
 from .models import ComputationWarning, FarmerPayment, PaymentCycle
@@ -107,6 +108,24 @@ def run_payment_engine(self, cycle_id: str):
             ])
             _release_cycle_lock(cycle_id)
             return {'status': 'COMPUTED', 'cycle_id': cycle_id, 'farmer_count': 0}
+
+        # Handle zero-delivery farmers: active members with no deliveries this cycle
+        all_active_ids = set(Farmer.objects.filter(
+            cooperative=cycle.cooperative, is_active=True,
+        ).values_list('id', flat=True))
+
+        present_ids = {d['farmer'].id for d in farmer_data}
+        missing_ids = all_active_ids - present_ids
+
+        if missing_ids:
+            missing_farmers = Farmer.objects.in_bulk(missing_ids)
+            for fid, farmer in missing_farmers.items():
+                farmer_data.append({
+                    'farmer': farmer,
+                    'total_quantity': 0.0,
+                    'grade_breakdown': {},
+                    'gross_amount': 0.0,
+                })
 
         active_count = len(farmer_data)
 

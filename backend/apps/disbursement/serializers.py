@@ -139,7 +139,7 @@ class DisbursementBatchCreateSerializer(serializers.Serializer):
         farmer_payments = FarmerPayment.objects.filter(
             cycle=cycle,
             is_on_hold=False,
-        ).select_related('farmer').order_by('farmer__first_name')
+        ).select_related('farmer').order_by('farmer__member_number', 'id')
 
         txns = []
         minimum_payout = float(cooperative.minimum_payout_amount or 0)

@@ -55,6 +55,8 @@ class Cooperative(models.Model):
     last_delivery_sequence = models.IntegerField(default=0)
     inventory = models.JSONField(default=dict, blank=True)
     minimum_payout_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    revenue_share_by_produce_type = models.BooleanField(default=False)
+    prorate_new_members = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'base_cooperative'

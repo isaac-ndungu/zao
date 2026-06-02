@@ -8,6 +8,7 @@ from django.db.models.functions import Coalesce
 
 from apps.deliveries.models import Delivery
 from apps.farmers.models import Farmer
+from apps.grading.models import GradePrice
 from apps.sales.models import Sale
 
 from .models import ComputationWarning
@@ -42,7 +43,16 @@ def compute_fixed_price(cycle):
             delivery_id=d.id, farmer_id=d.farmer_id,
         )
 
-    # Query 2: aggregate delivery quantities by (farmer_id, grade_letter, price_per_unit)
+    # Step 1: fetch active GradePrice records — one per grade_letter, newest before cycle end
+    all_prices = GradePrice.objects.filter(
+        effective_from__lte=cycle.end_date,
+    ).order_by('grade_letter', '-effective_from')
+    price_map = {}
+    for gp in all_prices:
+        if gp.grade_letter not in price_map:
+            price_map[gp.grade_letter] = float(gp.price_per_unit)
+
+    # Query 2: aggregate delivery quantities by (farmer_id, grade_letter)
     agg = (
         Delivery.objects.filter(
             cooperative_id=cycle.cooperative_id,
@@ -51,9 +61,8 @@ def compute_fixed_price(cycle):
             status__in=['GRADED', 'ACCEPTED'],
             grade_record__isnull=False,
             grade_record__grade_letter__isnull=False,
-            grade_record__price_per_unit__isnull=False,
         )
-        .values('farmer_id', 'grade_record__grade_letter', 'grade_record__price_per_unit')
+        .values('farmer_id', 'grade_record__grade_letter')
         .annotate(
             total_kg=Coalesce(Sum('quantity_kg'), Value(Decimal('0')))
             + Coalesce(Sum('volume_litres'), Value(Decimal('0'))),
@@ -75,7 +84,9 @@ def compute_fixed_price(cycle):
         fid = row['farmer_id']
         grade = row['grade_record__grade_letter']
         kg = float(row['total_kg'])
-        price = float(row['grade_record__price_per_unit'])
+        price = price_map.get(grade)
+        if price is None:
+            continue
         amount = kg * price
         fd = farmer_data[fid]
         fd['farmer'] = farmers[fid]
@@ -100,39 +111,53 @@ def compute_fixed_price(cycle):
 
 
 def compute_revenue_share(cycle):
-    total_revenue = Sale.objects.filter(
-        cooperative_id=cycle.cooperative_id,
-        payment_cycle=cycle,
-        status='COMPLETED',
-    ).aggregate(total=Sum('total_amount'))['total'] or 0
-    total_revenue = float(total_revenue)
+    cooperative = cycle.cooperative
 
-    deliveries = Delivery.objects.filter(
-        cooperative_id=cycle.cooperative_id,
-        date_delivered__date__gte=cycle.start_date,
-        date_delivered__date__lte=cycle.end_date,
-        status__in=['GRADED', 'ACCEPTED'],
-    ).select_related('farmer').order_by('farmer_id')
+    # Aggregate deliveries first — check for existence before touching sales
+    agg = (
+        Delivery.objects.filter(
+            cooperative_id=cycle.cooperative_id,
+            date_delivered__date__gte=cycle.start_date,
+            date_delivered__date__lte=cycle.end_date,
+            status__in=['GRADED', 'ACCEPTED'],
+        )
+        .values('farmer_id', 'product_type', 'grade')
+        .annotate(
+            total_kg=Coalesce(Sum('quantity_kg'), Value(Decimal('0')))
+            + Coalesce(Sum('volume_litres'), Value(Decimal('0'))),
+        )
+    )
 
-    farmer_kg = defaultdict(float)
+    farmer_ids = set(r['farmer_id'] for r in agg)
+    farmers = Farmer.objects.in_bulk(farmer_ids) if farmer_ids else {}
+
+    # Per-farmer aggregates: total kg and breakdowns
+    farmer_total_kg = defaultdict(float)
+    farmer_type_kg = defaultdict(lambda: defaultdict(float))
     farmer_grades = defaultdict(lambda: defaultdict(float))
     farmer_map = {}
 
-    for delivery in deliveries:
-        farmer_kg[delivery.farmer_id] += get_delivery_quantity(delivery)
-        grade = delivery.grade or 'UNGRADED'
-        farmer_grades[delivery.farmer_id][grade] += get_delivery_quantity(delivery)
+    for row in agg:
+        fid = row['farmer_id']
+        ptype = row['product_type']
+        grade = row['grade'] or 'UNGRADED'
+        kg = float(row['total_kg'])
+        farmer_total_kg[fid] += kg
+        farmer_type_kg[fid][ptype] += kg
+        farmer_grades[fid][grade] += kg
+        if fid not in farmer_map:
+            farmer_map[fid] = farmers.get(fid)
 
-        if delivery.farmer_id not in farmer_map:
-            farmer_map[delivery.farmer_id] = delivery.farmer
+    total_kg_by_type = defaultdict(float)
+    for row in agg:
+        total_kg_by_type[row['product_type']] += float(row['total_kg'])
 
-    total_kg = sum(farmer_kg.values())
+    total_kg = sum(farmer_total_kg.values())
 
     if total_kg == 0:
         logger.warning("Cycle %s: no deliveries found for revenue share", cycle.id)
         ComputationWarning.objects.create(
-            cycle=cycle,
-            severity='WARNING',
+            cycle=cycle, severity='WARNING',
             message=(
                 f"No graded deliveries found for this period "
                 f"({cycle.start_date} to {cycle.end_date}). "
@@ -141,10 +166,76 @@ def compute_revenue_share(cycle):
         )
         return []
 
+    # Edge Case 3 — include unlinked sales (sale_date in range, payment_cycle=None)
+    linked = Sale.objects.filter(
+        cooperative_id=cycle.cooperative_id,
+        payment_cycle=cycle,
+        status='COMPLETED',
+    )
+    unlinked = Sale.objects.filter(
+        cooperative_id=cycle.cooperative_id,
+        sale_date__gte=cycle.start_date,
+        sale_date__lte=cycle.end_date,
+        payment_cycle__isnull=True,
+        status='COMPLETED',
+    )
+    sales_by_id = {}
+    for s in list(linked) + list(unlinked):
+        sales_by_id[s.id] = s
+
+    if not sales_by_id:
+        logger.warning("Cycle %s: no sales found for revenue share", cycle.id)
+        ComputationWarning.objects.create(
+            cycle=cycle, severity='WARNING',
+            message=(
+                f"No completed sales found for this period "
+                f"({cycle.start_date} to {cycle.end_date}). "
+                f"All farmer payments will be zero."
+            ),
+        )
+        return []
+
+    # Build revenue pools
+    total_revenue_map = defaultdict(float)
+    for s in sales_by_id.values():
+        total_revenue_map[s.product_type] += float(s.total_amount)
+
+    # Edge Case 1 — single farmer warning
+    if len(farmer_total_kg) == 1:
+        sole_farmer = next(iter(farmer_map.values()))
+        ComputationWarning.objects.create(
+            cycle=cycle, severity='INFO',
+            message=(
+                f"Single farmer ({sole_farmer.first_name} {sole_farmer.last_name}) "
+                f"made all deliveries this cycle — receives 100% of revenue share."
+            ),
+        )
+
     results = []
-    for farmer_id, kg in farmer_kg.items():
+    for farmer_id, kg in farmer_total_kg.items():
         farmer = farmer_map[farmer_id]
-        gross = (kg / total_kg) * total_revenue
+
+        # Edge Case 4 — prorate for new members
+        if cooperative.prorate_new_members and farmer and farmer.date_joined.date() > cycle.start_date:
+            total_days = (cycle.end_date - cycle.start_date).days + 1
+            active_days = (cycle.end_date - farmer.date_joined.date()).days + 1
+            proration = active_days / total_days if total_days > 0 else 1.0
+        else:
+            proration = 1.0
+
+        # Edge Case 2 — split revenue by produce_type when enabled
+        if cooperative.revenue_share_by_produce_type:
+            gross = 0.0
+            for ptype, rev in total_revenue_map.items():
+                type_kg_total = total_kg_by_type.get(ptype, 0)
+                if type_kg_total > 0:
+                    farmer_type_qty = farmer_type_kg[farmer_id].get(ptype, 0)
+                    gross += (farmer_type_qty / type_kg_total) * rev
+        else:
+            gross = (kg / total_kg) * sum(total_revenue_map.values())
+
+        gross *= proration
+
         grade_breakdown = {
             grade: round(qty, 2)
             for grade, qty in farmer_grades[farmer_id].items()

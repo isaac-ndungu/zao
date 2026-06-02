@@ -406,7 +406,7 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
         'actor__email', 'resource_id',
     ]
     ordering_fields = ['created_at', 'action', 'resource_type']
-    ordering = ['-created_at']
+    ordering = ['-created_at', '-id']
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
@@ -420,8 +420,11 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
             qs = qs.filter(cooperative_id=self.request.cooperative_id)
         resource_type = self.request.query_params.get('resource_type')
         action = self.request.query_params.get('action')
+        resource_id = self.request.query_params.get('resource_id')
         if resource_type:
             qs = qs.filter(resource_type=resource_type)
         if action:
             qs = qs.filter(action=action)
+        if resource_id:
+            qs = qs.filter(resource_id=resource_id)
         return qs

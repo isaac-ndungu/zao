@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.indexes import BrinIndex
 from django.db import models
 import uuid
 
@@ -83,6 +84,10 @@ class AuditLog(CooperativeScopedModel):
         verbose_name_plural = 'Audit Logs'
         ordering = ['-created_at']
         default_permissions = ('view',)
+        indexes = [
+            BrinIndex(fields=['created_at']),
+            models.Index(fields=['cooperative', 'resource_type', 'resource_id', 'created_at']),
+        ]
 
     def save(self, *args, **kwargs):
         if not self._state.adding:

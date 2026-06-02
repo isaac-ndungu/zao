@@ -2,11 +2,14 @@ import csv
 import io
 import secrets
 
+from django.contrib.postgres.search import (
+    SearchQuery, SearchRank, SearchVector, TrigramSimilarity,
+)
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -27,11 +30,7 @@ from .serializers import (
 
 class FarmerViewSet(CooperativeScopedViewSet):
     queryset = Farmer.objects.all().select_related('cooperative', 'user')
-    filter_backends = [SearchFilter, OrderingFilter]
-    search_fields = [
-        'first_name', 'last_name', 'member_number',
-        'phone_number', 'mpesa_number',
-    ]
+    filter_backends = [OrderingFilter]
     ordering_fields = [
         'first_name', 'last_name', 'member_number',
         'date_joined', 'phone_number',
@@ -40,6 +39,26 @@ class FarmerViewSet(CooperativeScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        query = self.request.query_params.get('q', '').strip()
+        if query:
+            if len(query) < 3:
+                # 3.6 — short query fallback: icontains
+                qs = qs.filter(
+                    Q(first_name__icontains=query)
+                    | Q(last_name__icontains=query)
+                    | Q(member_number__icontains=query)
+                )
+            else:
+                # 3.1 — full-text search with rank
+                search_vector = SearchVector('first_name', 'last_name', 'member_number')
+                search_query = SearchQuery(query)
+                qs = (
+                    qs.annotate(
+                        rank=SearchRank(search_vector, search_query),
+                        similarity=TrigramSimilarity('last_name', query),
+                    )
+                    .filter(Q(rank__gte=0.1) | Q(similarity__gte=0.3))
+                )
         for param in ('first_name', 'last_name', 'county', 'sub_county', 'ward', 'village', 'payment_method'):
             val = self.request.query_params.get(param)
             if val:
@@ -47,6 +66,13 @@ class FarmerViewSet(CooperativeScopedViewSet):
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
             qs = qs.filter(is_active=is_active.lower() == 'true')
+        return qs
+
+    def filter_queryset(self, qs):
+        qs = super().filter_queryset(qs)
+        query = self.request.query_params.get('q', '').strip()
+        if query and len(query) >= 3:
+            qs = qs.order_by('-rank', '-similarity')
         return qs
 
     def get_permissions(self):

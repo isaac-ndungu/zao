@@ -89,7 +89,7 @@ def generate_season_report(cycle_id, cooperative_id, request_user):
 
     payments = FarmerPayment.objects.filter(
         cycle=cycle,
-    ).select_related('farmer').order_by('farmer__member_number')
+    ).select_related('farmer').order_by('farmer__member_number', 'id')
 
     totals = payments.aggregate(
         total_farmers=Count('id'),

@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'corsheaders',
-
+    'django.contrib.postgres',
 
     # Local apps
     'zaoapi',

@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from celery import shared_task
 from django.conf import settings
+from django.db.models import Case, When
+from django.db.models import IntegerField
 from django.core.mail import send_mail
 from django.utils import timezone
 
@@ -127,7 +129,15 @@ def process_batch_disbursements(self, batch_id: str):
     pending = list(
         DisbursementTransaction.objects.filter(
             batch=batch, status='PENDING', payment_method='M_PESA',
-        ).select_related('farmer').order_by('created_at')
+        ).select_related('farmer').order_by(
+            Case(
+                When(payment_method='M_PESA', then=0),
+                When(payment_method='BANK', then=1),
+                When(payment_method='CASH', then=2),
+                output_field=IntegerField(),
+            ),
+            'created_at', 'id',
+        )
     )
 
     if not pending:

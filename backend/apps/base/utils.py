@@ -1,5 +1,6 @@
 import json
 import re
+from typing import List
 
 from apps.base.models import AuditLog
 
@@ -29,6 +30,15 @@ def normalize_phone_for_sms(phone: str) -> str:
 KENYA_PHONE_RE = re.compile(r'^(?:\+254|0|254)?7\d{8}$')
 
 KENYA_ID_RE = re.compile(r'^\d{6,8}$')
+
+NATURAL_SORT_RE = re.compile(r'(\d+)')
+
+
+def natural_sort_key(value: str) -> list:
+    """Split string into (text, int) parts for natural (human) sorting.
+    E.g. DAIR-2026-10 sorts after DAIR-2026-2.
+    """
+    return [int(p) if p.isdigit() else p for p in NATURAL_SORT_RE.split(value)]
 
 
 def _serialize(value):
