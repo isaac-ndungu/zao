@@ -24,6 +24,7 @@ djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.29.0
 et_xmlfile==2.0.0
 fonttools==4.63.0
+hypothesis==6.155.1
 idna==3.17
 inflection==0.5.1
 jsonschema==4.26.0

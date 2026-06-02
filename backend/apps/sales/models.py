@@ -68,6 +68,7 @@ class Sale(CooperativeScopedModel):
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
 
     status = models.CharField(max_length=20, choices=SaleStatus.choices, default=SaleStatus.PENDING, db_index=True)
+    inventory_updated = models.BooleanField(default=False)
     sale_date = models.DateField(default=date.today, db_index=True)
     invoice_number = models.CharField(max_length=50, blank=True)
     notes = models.TextField(blank=True)

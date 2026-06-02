@@ -56,6 +56,7 @@ class Grade(CooperativeScopedModel):
     )
     overridden_at = models.DateTimeField(null=True, blank=True)
     override_reason = models.TextField(blank=True)
+    is_inventory_updated = models.BooleanField(default=False)
     images = models.ManyToManyField(GradeImage, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

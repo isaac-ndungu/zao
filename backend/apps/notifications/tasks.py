@@ -11,13 +11,18 @@ from .utils import send_sms
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+@shared_task(bind=True, max_retries=3, default_retry_delay=60, soft_time_limit=30, time_limit=60)
 def send_sms_task(self, notification_id: str):
     try:
         notification = Notification.objects.get(id=notification_id)
     except Notification.DoesNotExist:
         logger.error('Notification %s not found', notification_id)
         return {'error': 'Notification not found'}
+
+    # Guard: already sent — skip
+    if notification.status == 'SENT':
+        logger.info('Notification %s already sent, skipping', notification_id)
+        return {'status': 'skipped', 'reason': 'Already sent'}
 
     recipient_phone = notification.recipient.phone_number if notification.recipient else None
     if not recipient_phone:

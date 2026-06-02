@@ -165,14 +165,20 @@ CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
     'reconcile-stuck-disbursements': {
         'task': 'apps.disbursement.tasks.reconcile_stuck_transactions',
-        'schedule': 900,
+        'schedule': crontab(minute='*/15'),
     },
     'cleanup-expired-ussd-sessions': {
         'task': 'apps.notifications.tasks.cleanup_expired_ussd_sessions',
-        'schedule': 3600,
+        'schedule': crontab(hour='2', minute='0'),
+    },
+    'cleanup-expired-otps': {
+        'task': 'apps.auth_api.tasks.cleanup_expired_otps',
+        'schedule': crontab(minute='*/30'),
     },
 }
 

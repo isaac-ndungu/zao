@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from celery import shared_task
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Case, When
 from django.db.models import IntegerField
 from django.core.mail import send_mail
@@ -20,7 +21,13 @@ from .utils.mpesa import MpesaDarajaClient
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+    soft_time_limit=30,
+    time_limit=60,
+)
 def send_single_mpesa_disbursement(
     self,
     transaction_id: str,
@@ -30,73 +37,107 @@ def send_single_mpesa_disbursement(
     command_id: str,
     farmer_name: str,
 ):
+    from celery.exceptions import SoftTimeLimitExceeded
+
     try:
-        txn = DisbursementTransaction.objects.select_related('batch').get(id=transaction_id)
+        # Phase 1: DB writes in transaction with idempotency guards
+        with transaction.atomic():
+            txn = DisbursementTransaction.objects.select_for_update().get(id=transaction_id)
+
+            # Guard 1: Already processed — skip
+            if txn.status not in ('PENDING', 'FAILED'):
+                return {'status': 'skipped', 'reason': f'Already {txn.status}'}
+
+            # Guard 2: Max retries exceeded
+            if txn.retry_count >= 3:
+                txn.status = 'FAILED'
+                txn.failure_reason = 'Max retries exceeded'
+                txn.save(update_fields=['status', 'failure_reason'])
+                return {'status': 'failed', 'reason': 'max_retries'}
+
+            batch = DisbursementBatch.objects.get(id=batch_id)
+
+            try:
+                validate_disbursement_window()
+            except RuntimeError as e:
+                txn.status = 'FAILED'
+                txn.failure_reason = str(e)
+                txn.failed_at = timezone.now()
+                txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
+                return {'error': str(e), 'transaction_id': transaction_id}
+
+            normalized_phone = normalize_mpesa_number(phone_number)
+
+            txn.retry_count += 1
+            txn.status = 'QUEUED'
+            txn.queued_at = timezone.now()
+            txn.recipient_identifier = normalized_phone
+            txn.recipient_name = farmer_name
+            txn.save(update_fields=[
+                'status', 'queued_at', 'recipient_identifier',
+                'recipient_name', 'retry_count',
+            ])
+
+        # Phase 2: M-Pesa API call OUTSIDE transaction
+        client = MpesaDarajaClient()
+        conversation_id = str(txn.id)
+
+        try:
+            response = client.initiate_b2c(
+                amount=amount,
+                phone_number=normalized_phone,
+                conversation_id=conversation_id,
+                command_id=command_id,
+                remarks=f'Coop payment batch {batch_id[:8]}',
+                occasion=farmer_name[:100],
+            )
+        except SoftTimeLimitExceeded:
+            # Task timed out — mark transaction for reconciliation
+            with transaction.atomic():
+                txn = DisbursementTransaction.objects.select_for_update().get(id=transaction_id)
+                txn.status = 'QUEUED'
+                txn.failure_reason = 'Timed out — pending reconciliation'
+                txn.save(update_fields=['status', 'failure_reason'])
+            logger.warning(
+                "B2C timed out for txn %s, left as QUEUED for reconciliation",
+                transaction_id,
+            )
+            return {'status': 'TIMEOUT', 'transaction_id': transaction_id}
+        except Exception as exc:
+            logger.error("Daraja B2C failed for txn %s: %s", transaction_id, exc)
+            with transaction.atomic():
+                txn = DisbursementTransaction.objects.select_for_update().get(id=transaction_id)
+                txn.status = 'FAILED'
+                txn.failure_reason = str(exc)
+                txn.failed_at = timezone.now()
+                txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
+            try:
+                self.retry(exc=exc)
+            except self.MaxRetriesExceededError:
+                logger.error("Max retries exceeded for transaction %s", transaction_id)
+            return {'error': str(exc), 'transaction_id': transaction_id}
+
+        # Phase 3: Update status after successful API call
+        with transaction.atomic():
+            txn = DisbursementTransaction.objects.select_for_update().get(id=transaction_id)
+            txn.status = 'SENT'
+            txn.sent_at = timezone.now()
+            txn.conversation_id = conversation_id
+            txn.transaction_id = response.get('TransactionID', '')
+            txn.originator_conversation_id = response.get('OriginatorConversationID', '')
+            txn.result_code = response.get('ResponseCode', '')
+            txn.result_desc = response.get('ResponseDescription', '')
+            txn.save(update_fields=[
+                'status', 'sent_at', 'conversation_id', 'transaction_id',
+                'originator_conversation_id', 'result_code', 'result_desc',
+            ])
+
     except DisbursementTransaction.DoesNotExist:
         logger.error("Transaction %s not found", transaction_id)
         return {'error': 'Transaction not found'}
-
-    try:
-        batch = DisbursementBatch.objects.get(id=batch_id)
     except DisbursementBatch.DoesNotExist:
         logger.error("Batch %s not found", batch_id)
         return {'error': 'Batch not found'}
-
-    try:
-        validate_disbursement_window()
-    except RuntimeError as e:
-        txn.status = 'FAILED'
-        txn.failure_reason = str(e)
-        txn.failed_at = timezone.now()
-        txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
-        return {'error': str(e), 'transaction_id': transaction_id}
-
-    normalized_phone = normalize_mpesa_number(phone_number)
-
-    txn.status = 'QUEUED'
-    txn.queued_at = timezone.now()
-    txn.recipient_identifier = normalized_phone
-    txn.recipient_name = farmer_name
-    txn.save(update_fields=['status', 'queued_at', 'recipient_identifier', 'recipient_name'])
-
-    client = MpesaDarajaClient()
-    conversation_id = str(txn.id)
-
-    try:
-        response = client.initiate_b2c(
-            amount=amount,
-            phone_number=normalized_phone,
-            conversation_id=conversation_id,
-            command_id=command_id,
-            remarks=f'Coop payment batch {batch_id[:8]}',
-            occasion=farmer_name[:100],
-        )
-    except Exception as exc:
-        logger.error("Daraja B2C failed for txn %s: %s", transaction_id, exc)
-        txn.status = 'FAILED'
-        txn.failure_reason = str(exc)
-        txn.failed_at = timezone.now()
-        txn.retry_count += 1
-        txn.save(update_fields=[
-            'status', 'failure_reason', 'failed_at', 'retry_count',
-        ])
-        try:
-            self.retry(exc=exc)
-        except self.MaxRetriesExceededError:
-            logger.error("Max retries exceeded for transaction %s", transaction_id)
-        return {'error': str(exc), 'transaction_id': transaction_id}
-
-    txn.status = 'SENT'
-    txn.sent_at = timezone.now()
-    txn.conversation_id = conversation_id
-    txn.transaction_id = response.get('TransactionID', '')
-    txn.originator_conversation_id = response.get('OriginatorConversationID', '')
-    txn.result_code = response.get('ResponseCode', '')
-    txn.result_desc = response.get('ResponseDescription', '')
-    txn.save(update_fields=[
-        'status', 'sent_at', 'conversation_id', 'transaction_id',
-        'originator_conversation_id', 'result_code', 'result_desc',
-    ])
 
     logger.info(
         "B2C sent: %s to %s amount %.2f — OriginatorConvID: %s, TransactionID: %s",
@@ -112,13 +153,17 @@ def send_single_mpesa_disbursement(
     }
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, soft_time_limit=120, time_limit=180)
 def process_batch_disbursements(self, batch_id: str):
     try:
         batch = DisbursementBatch.objects.select_related('cooperative').get(id=batch_id)
     except DisbursementBatch.DoesNotExist:
         logger.error("Batch %s not found", batch_id)
         return {'error': 'Batch not found'}
+
+    if batch.status in ('PROCESSING', 'COMPLETED', 'FAILED'):
+        logger.warning("Batch %s is already %s, skipping", batch_id, batch.status)
+        return {'status': 'skipped', 'reason': f'Already {batch.status}'}
 
     try:
         validate_disbursement_window()
