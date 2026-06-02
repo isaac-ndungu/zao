@@ -10,6 +10,7 @@ class UserAdmin(BaseUserAdmin):
         'email', 'phone_number', 'first_name', 'last_name',
         'role', 'cooperative', 'is_staff', 'is_active', 'two_fa_enabled',
     ]
+    list_select_related = ['cooperative']
     list_filter = ['role', 'is_staff', 'is_active']
     search_fields = ['email', 'phone_number', 'first_name', 'last_name']
     ordering = ['email']
@@ -31,5 +32,6 @@ class UserAdmin(BaseUserAdmin):
 @admin.register(TwoFactorOTP)
 class TwoFactorOTPAdmin(admin.ModelAdmin):
     list_display = ['user', 'purpose', 'otp_code', 'expires_at', 'is_used', 'attempts']
+    list_select_related = ['user']
     list_filter = ['purpose', 'is_used']
     readonly_fields = ['otp_code', 'created_at']

@@ -9,6 +9,7 @@ class GradeAdmin(admin.ModelAdmin):
         'delivery', 'grade_letter', 'price_per_unit', 'rejection_reason',
         'is_overridden', 'created_at',
     ]
+    list_select_related = ['delivery']
     list_filter = ['grade_letter', 'is_overridden']
     search_fields = ['delivery__batch_id', 'rejection_reason', 'override_reason']
     readonly_fields = ['is_overridden', 'overridden_at', 'created_at', 'updated_at']

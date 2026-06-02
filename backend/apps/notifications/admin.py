@@ -9,6 +9,7 @@ class NotificationAdmin(admin.ModelAdmin):
         'short_id', 'channel', 'notification_type', 'status',
         'recipient', 'cooperative', 'retry_count', 'sent_at',
     ]
+    list_select_related = ['recipient', 'cooperative']
     list_filter = ['channel', 'notification_type', 'status', 'created_at']
     search_fields = [
         'content', 'external_id', 'error_message',
@@ -28,6 +29,7 @@ class NotificationAdmin(admin.ModelAdmin):
 @admin.register(USSDSession)
 class USSDSessionAdmin(admin.ModelAdmin):
     list_display = ['session_id', 'phone_number', 'farmer', 'current_menu', 'last_activity']
+    list_select_related = ['farmer']
     list_filter = ['current_menu', 'last_activity']
     search_fields = ['session_id', 'phone_number', 'farmer__first_name', 'farmer__last_name']
     readonly_fields = ['session_id', 'phone_number', 'farmer', 'current_menu', 'last_activity']

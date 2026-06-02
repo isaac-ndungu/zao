@@ -142,7 +142,7 @@ def compute_revenue_share(cycle):
     return results
 
 
-def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle):
+def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits=None):
     gross = float(farmer_payment.gross_amount)
     levy = gross * (float(cooperative.levy_percentage) / 100)
     monthly_fee_share = float(cooperative.monthly_fee) / active_farmer_count if active_farmer_count > 0 else 0
@@ -183,10 +183,13 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle):
 
     input_credit_total = 0.0
     from apps.deductions.models import FarmInputCredit as FIC, Deduction as DedModel
-    undeducted = FIC.objects.filter(
-        farmer=farmer_payment.farmer,
-        deducted_in_cycle__isnull=True,
-    )
+    if undeducted_credits is None:
+        undeducted = FIC.objects.filter(
+            farmer=farmer_payment.farmer,
+            deducted_in_cycle__isnull=True,
+        )
+    else:
+        undeducted = undeducted_credits
     for credit in undeducted:
         input_credit_total += float(credit.amount)
         credit.deducted_in_cycle = cycle
