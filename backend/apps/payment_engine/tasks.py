@@ -1,4 +1,5 @@
 import logging
+from collections import defaultdict
 from decimal import Decimal
 
 import redis as redis_module
@@ -6,6 +7,9 @@ from celery import shared_task
 from django.conf import settings
 from django.db.models import Sum
 from django.utils import timezone
+
+from apps.deductions.models import Deduction, FarmInputCredit
+from apps.loans.models import Loan, LoanRepayment
 
 from .models import ComputationWarning, FarmerPayment, PaymentCycle
 
@@ -106,35 +110,61 @@ def run_payment_engine(self, cycle_id: str):
 
         active_count = len(farmer_data)
 
+        # Batch carry-forward and input credit queries — avoid N+1 in the loop
+        farmer_ids = [d['farmer'].id for d in farmer_data]
+        all_carried = FarmerPayment.objects.filter(
+            farmer_id__in=farmer_ids,
+            carry_forward_reason='BELOW_MINIMUM_THRESHOLD',
+            payment_status='PENDING',
+        ).exclude(cycle=cycle)
+        carry_forward_entries = defaultdict(list)
+        for cf in all_carried:
+            carry_forward_entries[cf.farmer_id].append(cf)
+
+        undeducted_credits = FarmInputCredit.objects.filter(
+            farmer_id__in=farmer_ids,
+            deducted_in_cycle__isnull=True,
+        )
+        credits_by_farmer = defaultdict(list)
+        for credit in undeducted_credits:
+            credits_by_farmer[credit.farmer_id].append(credit)
+
+        # Batch withholding tax — 2 queries total instead of 2 per farmer
+        from apps.disbursement.utils import compute_withholding_taxes
+        taxes = compute_withholding_taxes(farmer_ids, cycle)
+
         total_levy = 0.0
         total_cooperative_fee = 0.0
         total_loan_repayments = 0.0
         total_input_credits = 0.0
 
+        # Collect pending objects for bulk operations
+        farmer_payments = []
+        all_loan_deds = []
+        all_loan_repayments = []
+        updated_loans = []
+        all_input_deds = []
+        credits_to_update = []
+        carry_forward_updates = []
+
         for data in farmer_data:
-            from .engine import apply_deductions
+            from .engine import _compute_deductions
             farmer = data['farmer']
             gross = data['gross_amount']
 
             # Carry forward any amount skipped in previous cycles
-            prev_carried = FarmerPayment.objects.filter(
-                farmer=farmer,
-                carry_forward_reason='BELOW_MINIMUM_THRESHOLD',
-                payment_status='PENDING',
-            ).exclude(cycle=cycle)
-
             carried_forward_amount = Decimal('0')
-            for prev in prev_carried:
+            for prev in carry_forward_entries.get(farmer.id, []):
                 carried_forward_amount += prev.carried_forward_amount
                 prev.carry_forward_reason = 'RESOLVED'
-                prev.save(update_fields=['carry_forward_reason'])
+                carry_forward_updates.append(prev)
 
             carry_forward_reason = ''
             if carried_forward_amount > 0:
                 gross += float(carried_forward_amount)
                 carry_forward_reason = 'FROM_PREVIOUS_CYCLE'
 
-            fp = FarmerPayment.objects.create(
+            fp = FarmerPayment(
                 cooperative=cycle.cooperative,
                 cycle=cycle,
                 farmer=farmer,
@@ -145,14 +175,14 @@ def run_payment_engine(self, cycle_id: str):
                 carry_forward_reason=carry_forward_reason,
             )
 
-            deductions, net = apply_deductions(fp, cooperative, active_count, cycle)
+            deductions, net, pending = _compute_deductions(
+                fp, cooperative, active_count, cycle,
+                credits_by_farmer.get(farmer.id, []),
+            )
             fp.deductions = deductions
             fp.net_amount = net
 
-            from apps.disbursement.utils import compute_withholding_tax
-            tax, is_subject = compute_withholding_tax(
-                str(data['farmer'].id), str(cycle.id),
-            )
+            tax, is_subject = taxes.get(farmer.id, (0.0, False))
             fp.withholding_tax_amount = tax
             fp.is_subject_to_withholding_tax = is_subject
 
@@ -164,15 +194,36 @@ def run_payment_engine(self, cycle_id: str):
                 'net_amount': float(net),
                 'withholding_tax': tax,
             }
-            fp.save(update_fields=[
-                'deductions', 'net_amount', 'withholding_tax_amount',
-                'is_subject_to_withholding_tax', 'computation_log',
-            ])
+            farmer_payments.append(fp)
+
+            if pending['loan_repayment_ded']:
+                all_loan_deds.append(pending['loan_repayment_ded'])
+                all_loan_repayments.append(pending['loan_repayment_record'])
+                updated_loans.append(pending['updated_loan'])
+            all_input_deds.extend(pending['input_credit_deds'])
+            credits_to_update.extend(pending['updated_credits'])
 
             total_levy += deductions['levy']
             total_cooperative_fee += deductions['monthly_fee']
             total_loan_repayments += deductions['loan_repayment']
             total_input_credits += deductions['input_credit']
+
+        # Bulk writes
+        for prev in carry_forward_updates:
+            prev.save(update_fields=['carry_forward_reason'])
+        FarmerPayment.objects.bulk_create(farmer_payments)
+        if all_loan_deds:
+            Deduction.objects.bulk_create(all_loan_deds)
+            LoanRepayment.objects.bulk_create(all_loan_repayments)
+            for loan_id, installments, status in updated_loans:
+                Loan.objects.filter(id=loan_id).update(
+                    installments_paid=installments, status=status,
+                )
+        if all_input_deds:
+            Deduction.objects.bulk_create(all_input_deds)
+            for credit in credits_to_update:
+                credit.deducted_in_cycle = cycle
+                credit.save(update_fields=['deducted_in_cycle'])
 
         _create_levy_deductions(cycle, farmer_data)
 

@@ -1,10 +1,13 @@
 import logging
 from collections import defaultdict
+from decimal import Decimal
 
 from django.db import models
-from django.db.models import Sum
+from django.db.models import DecimalField, Sum, Value
+from django.db.models.functions import Coalesce
 
 from apps.deliveries.models import Delivery
+from apps.farmers.models import Farmer
 from apps.sales.models import Sale
 
 from .models import ComputationWarning
@@ -17,54 +20,68 @@ def get_delivery_quantity(delivery):
 
 
 def compute_fixed_price(cycle):
-    deliveries = Delivery.objects.filter(
+    # Query 1: create warnings for GRADED deliveries without a grade record
+    ungraded = Delivery.objects.filter(
         cooperative_id=cycle.cooperative_id,
         date_delivered__date__gte=cycle.start_date,
         date_delivered__date__lte=cycle.end_date,
         status__in=['GRADED', 'ACCEPTED'],
-    ).select_related('grade_record', 'farmer').order_by('farmer_id')
+        grade_record__isnull=True,
+    ).select_related('farmer')
+    for d in ungraded:
+        logger.warning(
+            "Delivery %s (farmer %s) has status GRADED but no grade record — skipping",
+            d.id, d.farmer,
+        )
+        ComputationWarning.objects.create(
+            cycle=cycle, severity='WARNING',
+            message=(
+                f"Delivery {d.batch_id} for {d.farmer.first_name} "
+                f"{d.farmer.last_name} is GRADED but has no Grade record."
+            ),
+            delivery_id=d.id, farmer_id=d.farmer_id,
+        )
 
+    # Query 2: aggregate delivery quantities by (farmer_id, grade_letter, price_per_unit)
+    agg = (
+        Delivery.objects.filter(
+            cooperative_id=cycle.cooperative_id,
+            date_delivered__date__gte=cycle.start_date,
+            date_delivered__date__lte=cycle.end_date,
+            status__in=['GRADED', 'ACCEPTED'],
+            grade_record__isnull=False,
+            grade_record__grade_letter__isnull=False,
+            grade_record__price_per_unit__isnull=False,
+        )
+        .values('farmer_id', 'grade_record__grade_letter', 'grade_record__price_per_unit')
+        .annotate(
+            total_kg=Coalesce(Sum('quantity_kg'), Value(Decimal('0')))
+            + Coalesce(Sum('volume_litres'), Value(Decimal('0'))),
+        )
+    )
+
+    # Query 3: fetch all referenced farmers in one batch
+    farmer_ids = set(r['farmer_id'] for r in agg)
+    farmers = Farmer.objects.in_bulk(farmer_ids) if farmer_ids else {}
+
+    # Pure Python accumulation — no more DB hits
     farmer_data = defaultdict(lambda: {
         'farmer': None,
         'total_quantity': 0.0,
         'grades': defaultdict(lambda: {'kg': 0.0, 'amount': 0.0}),
     })
 
-    for delivery in deliveries:
-        if not hasattr(delivery, 'grade_record') or not delivery.grade_record:
-            logger.warning(
-                "Delivery %s (farmer %s) has status GRADED but no grade record — skipping",
-                delivery.id, delivery.farmer,
-            )
-            ComputationWarning.objects.create(
-                cycle=cycle,
-                severity='WARNING',
-                message=(
-                    f"Delivery {delivery.batch_id} for {delivery.farmer.first_name} "
-                    f"{delivery.farmer.last_name} is GRADED but has no Grade record."
-                ),
-                delivery_id=delivery.id,
-                farmer_id=delivery.farmer_id,
-            )
-            continue
-
-        grade = delivery.grade_record
-        if not grade.grade_letter or grade.price_per_unit is None:
-            logger.warning(
-                "Delivery %s has grade record without grade_letter or price_per_unit, skipping",
-                delivery.id,
-            )
-            continue
-
-        farmer = delivery.farmer
-        kg = get_delivery_quantity(delivery)
-        amount = kg * float(grade.price_per_unit)
-
-        fd = farmer_data[farmer.id]
-        fd['farmer'] = farmer
+    for row in agg:
+        fid = row['farmer_id']
+        grade = row['grade_record__grade_letter']
+        kg = float(row['total_kg'])
+        price = float(row['grade_record__price_per_unit'])
+        amount = kg * price
+        fd = farmer_data[fid]
+        fd['farmer'] = farmers[fid]
         fd['total_quantity'] += kg
-        fd['grades'][grade.grade_letter]['kg'] += kg
-        fd['grades'][grade.grade_letter]['amount'] += amount
+        fd['grades'][grade]['kg'] += kg
+        fd['grades'][grade]['amount'] += amount
 
     results = []
     for fd in farmer_data.values():
@@ -142,12 +159,24 @@ def compute_revenue_share(cycle):
     return results
 
 
-def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits=None):
+def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits=None):
+    """Pure computation of deductions — no DB writes.
+
+    Returns (deductions_dict, net_amount, pending) where pending contains
+    objects the caller should bulk_create/bulk_update.
+    """
     gross = float(farmer_payment.gross_amount)
     levy = gross * (float(cooperative.levy_percentage) / 100)
     monthly_fee_share = float(cooperative.monthly_fee) / active_farmer_count if active_farmer_count > 0 else 0
 
     loan_repayment = 0.0
+    pending = {
+        'loan_repayment_ded': None,
+        'loan_repayment_record': None,
+        'updated_loan': None,
+        'input_credit_deds': [],
+        'updated_credits': [],
+    }
 
     from apps.loans.models import Loan
     active_loan = Loan.objects.filter(
@@ -160,7 +189,7 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, un
         loan_repayment = float(active_loan.installment_amount)
 
         from apps.deductions.models import Deduction
-        Deduction.objects.create(
+        pending['loan_repayment_ded'] = Deduction(
             cooperative=cycle.cooperative,
             farmer=farmer_payment.farmer,
             cycle=cycle,
@@ -170,16 +199,15 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, un
         )
 
         from apps.loans.models import LoanRepayment
-        LoanRepayment.objects.create(
+        pending['loan_repayment_record'] = LoanRepayment(
             loan=active_loan,
             farmer_payment=farmer_payment,
             amount=active_loan.installment_amount,
         )
 
-        active_loan.installments_paid += 1
-        if active_loan.installments_paid >= active_loan.number_of_installments:
-            active_loan.status = 'COMPLETED'
-        active_loan.save(update_fields=['installments_paid', 'status'])
+        new_installments = active_loan.installments_paid + 1
+        new_status = 'COMPLETED' if new_installments >= active_loan.number_of_installments else 'ACTIVE'
+        pending['updated_loan'] = (active_loan.id, new_installments, new_status)
 
     input_credit_total = 0.0
     from apps.deductions.models import FarmInputCredit as FIC, Deduction as DedModel
@@ -192,16 +220,17 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, un
         undeducted = undeducted_credits
     for credit in undeducted:
         input_credit_total += float(credit.amount)
-        credit.deducted_in_cycle = cycle
-        credit.save(update_fields=['deducted_in_cycle'])
-        DedModel.objects.create(
-            cooperative=cycle.cooperative,
-            farmer=farmer_payment.farmer,
-            cycle=cycle,
-            deduction_type='INPUT_CREDIT',
-            amount=credit.amount,
-            notes=credit.item_description,
+        pending['input_credit_deds'].append(
+            DedModel(
+                cooperative=cycle.cooperative,
+                farmer=farmer_payment.farmer,
+                cycle=cycle,
+                deduction_type='INPUT_CREDIT',
+                amount=credit.amount,
+                notes=credit.item_description,
+            )
         )
+        pending['updated_credits'].append(credit)
 
     deductions = {
         'levy': round(levy, 2),
@@ -212,4 +241,28 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, un
 
     total_deductions = levy + monthly_fee_share + loan_repayment + input_credit_total
     net = max(gross - total_deductions, 0)
-    return deductions, round(net, 2)
+    return deductions, round(net, 2), pending
+
+
+def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits=None):
+    """Legacy wrapper — computes and writes. Kept for test backward compatibility."""
+    deductions, net, pending = _compute_deductions(
+        farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits,
+    )
+
+    if pending['loan_repayment_ded']:
+        pending['loan_repayment_ded'].save()
+        pending['loan_repayment_record'].save()
+        loan_id, installments, status = pending['updated_loan']
+        from apps.loans.models import Loan
+        Loan.objects.filter(id=loan_id).update(installments_paid=installments, status=status)
+
+    for credit in pending['updated_credits']:
+        credit.deducted_in_cycle = cycle
+        credit.save(update_fields=['deducted_in_cycle'])
+
+    if pending['input_credit_deds']:
+        from apps.deductions.models import Deduction
+        Deduction.objects.bulk_create(pending['input_credit_deds'])
+
+    return deductions, net

@@ -73,3 +73,43 @@ def compute_withholding_tax(farmer_id: str, cycle_id: str) -> tuple:
         tax = round(current_net * 0.05, 2)
 
     return tax, tax > 0
+
+
+def compute_withholding_taxes(farmer_ids, cycle):
+    """Batch withholding tax for all farmers in two queries total."""
+    today = date.today()
+    fy_start = date(today.year, 7, 1)
+    if today < fy_start:
+        fy_start = date(today.year - 1, 7, 1)
+    fy_end = date(fy_start.year + 1, 6, 30)
+
+    current = dict(
+        FarmerPayment.objects.filter(
+            cycle=cycle, farmer_id__in=farmer_ids,
+        ).values_list('farmer_id', 'net_amount')
+    )
+
+    cumulative = dict(
+        FarmerPayment.objects.filter(
+            farmer_id__in=farmer_ids,
+            cycle__status='DISBURSED',
+            cycle__end_date__gte=fy_start,
+            cycle__end_date__lte=fy_end,
+        ).exclude(cycle=cycle).values('farmer_id').annotate(
+            total=Sum('net_amount'),
+        ).values_list('farmer_id', 'total')
+    )
+
+    threshold = 24000.0
+    result = {}
+    for fid in farmer_ids:
+        cum = float(cumulative.get(fid, 0) or 0)
+        net = float(current.get(fid, 0) or 0)
+        if cum < threshold:
+            above = max((cum + net) - threshold, 0)
+            capped = min(above, net)
+            tax = round(capped * 0.05, 2)
+        else:
+            tax = round(net * 0.05, 2)
+        result[fid] = (tax, tax > 0)
+    return result
