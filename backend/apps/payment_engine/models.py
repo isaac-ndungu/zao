@@ -1,7 +1,10 @@
+from decimal import Decimal
 import uuid
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.base.models import CooperativeScopedModel
+from apps.cooperatives.models import PaymentModel
 
 
 class Severity(models.TextChoices):
@@ -78,6 +81,14 @@ class PaymentCycle(CooperativeScopedModel):
     def __str__(self):
         return f'{self.name} ({self.get_status_display()})'
 
+    def clean(self):
+        if not self.totals:
+            return
+        required = {'total_quantity', 'total_gross', 'total_net', 'farmer_count'}
+        missing = required - set(self.totals.keys())
+        if missing:
+            raise ValidationError({'totals': f'Missing required keys: {", ".join(sorted(missing))}.'})
+
 
 class FarmerPayment(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -114,3 +125,62 @@ class FarmerPayment(CooperativeScopedModel):
 
     def __str__(self):
         return f'{self.farmer} — {self.cycle.name}'
+
+    def clean(self):
+        self._validate_grade_breakdown()
+        self._validate_deductions()
+        self._validate_computation_log()
+
+    def _validate_grade_breakdown(self):
+        if not self.grade_breakdown:
+            return
+        if not isinstance(self.grade_breakdown, dict):
+            raise ValidationError({'grade_breakdown': 'Must be a dict.'})
+        pm = None
+        if self.cycle_id and self.cycle:
+            pm = self.cycle.cooperative.payment_model
+        if pm == PaymentModel.FIXED_PRICE:
+            self._validate_grade_breakdown_fixed_price()
+        elif pm == PaymentModel.REVENUE_SHARE:
+            self._validate_grade_breakdown_revenue_share()
+
+    def _validate_grade_breakdown_fixed_price(self):
+        for grade, data in self.grade_breakdown.items():
+            if not isinstance(data, dict) or 'kg' not in data or 'amount' not in data:
+                raise ValidationError(
+                    {'grade_breakdown': f'Grade "{grade}" must be a dict with kg and amount.'}
+                )
+
+    def _validate_grade_breakdown_revenue_share(self):
+        for grade, qty in self.grade_breakdown.items():
+            if not isinstance(qty, (int, float, Decimal)):
+                raise ValidationError(
+                    {'grade_breakdown': f'Grade "{grade}" must be a numeric quantity.'}
+                )
+
+    def _validate_deductions(self):
+        if not self.deductions:
+            return
+        if not isinstance(self.deductions, dict):
+            raise ValidationError({'deductions': 'Must be a dict.'})
+        required = {'levy', 'monthly_fee', 'loan_repayment', 'input_credit'}
+        missing = required - set(self.deductions.keys())
+        if missing:
+            raise ValidationError(
+                {'deductions': f'Missing required keys: {", ".join(sorted(missing))}.'}
+            )
+
+    def _validate_computation_log(self):
+        if not self.computation_log:
+            return
+        if not isinstance(self.computation_log, dict):
+            raise ValidationError({'computation_log': 'Must be a dict.'})
+        required = {
+            'method', 'total_quantity', 'gross_amount',
+            'deductions_applied', 'net_amount', 'withholding_tax',
+        }
+        missing = required - set(self.computation_log.keys())
+        if missing:
+            raise ValidationError(
+                {'computation_log': f'Missing required keys: {", ".join(sorted(missing))}.'}
+            )

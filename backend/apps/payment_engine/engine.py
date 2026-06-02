@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
+from dataclasses import dataclass, field, asdict
 from decimal import Decimal
+from typing import Optional
 
 from django.db import models
 from django.db.models import DecimalField, Sum, Value
@@ -16,9 +20,66 @@ from .models import ComputationWarning
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Dataclasses for computation results
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _GradeData:
+    kg: float = 0.0
+    amount: float = 0.0
+
+
+@dataclass
+class FarmerData:
+    farmer: Optional[Farmer] = None
+    total_quantity: float = 0.0
+    grades: defaultdict = field(default_factory=lambda: defaultdict(_GradeData))
+
+
+@dataclass
+class FarmerPaymentResult:
+    farmer: Farmer
+    total_quantity: float
+    grade_breakdown: dict
+    gross_amount: float
+
+
+@dataclass
+class DeductionBreakdown:
+    levy: float = 0.0
+    monthly_fee: float = 0.0
+    loan_repayment: float = 0.0
+    input_credit: float = 0.0
+
+
+@dataclass
+class LoanUpdate:
+    loan_id: int
+    installments_paid: int
+    status: str
+
+
+@dataclass
+class PendingDeductions:
+    loan_repayment_ded: Optional = None
+    loan_repayment_record: Optional = None
+    updated_loan: Optional[LoanUpdate] = None
+    input_credit_deds: list = field(default_factory=list)
+    updated_credits: list = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
 def get_delivery_quantity(delivery):
     return float(delivery.quantity_kg or delivery.volume_litres or 0)
 
+
+# ---------------------------------------------------------------------------
+# Fixed-price computation
+# ---------------------------------------------------------------------------
 
 def compute_fixed_price(cycle):
     # Query 1: create warnings for GRADED deliveries without a grade record
@@ -74,11 +135,7 @@ def compute_fixed_price(cycle):
     farmers = Farmer.objects.in_bulk(farmer_ids) if farmer_ids else {}
 
     # Pure Python accumulation — no more DB hits
-    farmer_data = defaultdict(lambda: {
-        'farmer': None,
-        'total_quantity': 0.0,
-        'grades': defaultdict(lambda: {'kg': 0.0, 'amount': 0.0}),
-    })
+    farmer_data: defaultdict[str, FarmerData] = defaultdict(FarmerData)
 
     for row in agg:
         fid = row['farmer_id']
@@ -89,26 +146,30 @@ def compute_fixed_price(cycle):
             continue
         amount = kg * price
         fd = farmer_data[fid]
-        fd['farmer'] = farmers[fid]
-        fd['total_quantity'] += kg
-        fd['grades'][grade]['kg'] += kg
-        fd['grades'][grade]['amount'] += amount
+        fd.farmer = farmers[fid]
+        fd.total_quantity += kg
+        fd.grades[grade].kg += kg
+        fd.grades[grade].amount += amount
 
     results = []
     for fd in farmer_data.values():
-        gross = sum(g['amount'] for g in fd['grades'].values())
-        results.append({
-            'farmer': fd['farmer'],
-            'total_quantity': round(fd['total_quantity'], 2),
-            'grade_breakdown': {
-                grade: {'kg': round(v['kg'], 2), 'amount': round(v['amount'], 2)}
-                for grade, v in fd['grades'].items()
+        gross = sum(g.amount for g in fd.grades.values())
+        results.append(FarmerPaymentResult(
+            farmer=fd.farmer,
+            total_quantity=round(fd.total_quantity, 2),
+            grade_breakdown={
+                grade: {'kg': round(v.kg, 2), 'amount': round(v.amount, 2)}
+                for grade, v in fd.grades.items()
             },
-            'gross_amount': round(gross, 2),
-        })
+            gross_amount=round(gross, 2),
+        ))
 
     return results
 
+
+# ---------------------------------------------------------------------------
+# Revenue-share computation
+# ---------------------------------------------------------------------------
 
 def compute_revenue_share(cycle):
     cooperative = cycle.cooperative
@@ -240,34 +301,32 @@ def compute_revenue_share(cycle):
             grade: round(qty, 2)
             for grade, qty in farmer_grades[farmer_id].items()
         }
-        results.append({
-            'farmer': farmer,
-            'total_quantity': round(kg, 2),
-            'grade_breakdown': grade_breakdown,
-            'gross_amount': round(gross, 2),
-        })
+        results.append(FarmerPaymentResult(
+            farmer=farmer,
+            total_quantity=round(kg, 2),
+            grade_breakdown=grade_breakdown,
+            gross_amount=round(gross, 2),
+        ))
 
     return results
 
 
+# ---------------------------------------------------------------------------
+# Deduction computation
+# ---------------------------------------------------------------------------
+
 def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits=None):
     """Pure computation of deductions — no DB writes.
 
-    Returns (deductions_dict, net_amount, pending) where pending contains
-    objects the caller should bulk_create/bulk_update.
+    Returns (DeductionBreakdown, net_amount, PendingDeductions) where
+    PendingDeductions contains objects the caller should bulk_create/bulk_update.
     """
     gross = float(farmer_payment.gross_amount)
     levy = gross * (float(cooperative.levy_percentage) / 100)
     monthly_fee_share = float(cooperative.monthly_fee) / active_farmer_count if active_farmer_count > 0 else 0
 
     loan_repayment = 0.0
-    pending = {
-        'loan_repayment_ded': None,
-        'loan_repayment_record': None,
-        'updated_loan': None,
-        'input_credit_deds': [],
-        'updated_credits': [],
-    }
+    pending = PendingDeductions()
 
     from apps.loans.models import Loan
     active_loan = Loan.objects.filter(
@@ -280,7 +339,7 @@ def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle,
         loan_repayment = float(active_loan.installment_amount)
 
         from apps.deductions.models import Deduction
-        pending['loan_repayment_ded'] = Deduction(
+        pending.loan_repayment_ded = Deduction(
             cooperative=cycle.cooperative,
             farmer=farmer_payment.farmer,
             cycle=cycle,
@@ -290,7 +349,7 @@ def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle,
         )
 
         from apps.loans.models import LoanRepayment
-        pending['loan_repayment_record'] = LoanRepayment(
+        pending.loan_repayment_record = LoanRepayment(
             loan=active_loan,
             farmer_payment=farmer_payment,
             amount=active_loan.installment_amount,
@@ -298,7 +357,7 @@ def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle,
 
         new_installments = active_loan.installments_paid + 1
         new_status = 'COMPLETED' if new_installments >= active_loan.number_of_installments else 'ACTIVE'
-        pending['updated_loan'] = (active_loan.id, new_installments, new_status)
+        pending.updated_loan = LoanUpdate(active_loan.id, new_installments, new_status)
 
     input_credit_total = 0.0
     from apps.deductions.models import FarmInputCredit as FIC, Deduction as DedModel
@@ -311,7 +370,7 @@ def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle,
         undeducted = undeducted_credits
     for credit in undeducted:
         input_credit_total += float(credit.amount)
-        pending['input_credit_deds'].append(
+        pending.input_credit_deds.append(
             DedModel(
                 cooperative=cycle.cooperative,
                 farmer=farmer_payment.farmer,
@@ -321,18 +380,16 @@ def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle,
                 notes=credit.item_description,
             )
         )
-        pending['updated_credits'].append(credit)
-
-    deductions = {
-        'levy': round(levy, 2),
-        'monthly_fee': round(monthly_fee_share, 2),
-        'loan_repayment': loan_repayment,
-        'input_credit': round(input_credit_total, 2),
-    }
+        pending.updated_credits.append(credit)
 
     total_deductions = levy + monthly_fee_share + loan_repayment + input_credit_total
     net = max(gross - total_deductions, 0)
-    return deductions, round(net, 2), pending
+    return DeductionBreakdown(
+        levy=round(levy, 2),
+        monthly_fee=round(monthly_fee_share, 2),
+        loan_repayment=loan_repayment,
+        input_credit=round(input_credit_total, 2),
+    ), round(net, 2), pending
 
 
 def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits=None):
@@ -341,19 +398,21 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, un
         farmer_payment, cooperative, active_farmer_count, cycle, undeducted_credits,
     )
 
-    if pending['loan_repayment_ded']:
-        pending['loan_repayment_ded'].save()
-        pending['loan_repayment_record'].save()
-        loan_id, installments, status = pending['updated_loan']
+    if pending.loan_repayment_ded:
+        pending.loan_repayment_ded.save()
+        pending.loan_repayment_record.save()
+        update = pending.updated_loan
         from apps.loans.models import Loan
-        Loan.objects.filter(id=loan_id).update(installments_paid=installments, status=status)
+        Loan.objects.filter(id=update.loan_id).update(
+            installments_paid=update.installments_paid, status=update.status,
+        )
 
-    for credit in pending['updated_credits']:
+    for credit in pending.updated_credits:
         credit.deducted_in_cycle = cycle
         credit.save(update_fields=['deducted_in_cycle'])
 
-    if pending['input_credit_deds']:
+    if pending.input_credit_deds:
         from apps.deductions.models import Deduction
-        Deduction.objects.bulk_create(pending['input_credit_deds'])
+        Deduction.objects.bulk_create(pending.input_credit_deds)
 
-    return deductions, net
+    return asdict(deductions), net

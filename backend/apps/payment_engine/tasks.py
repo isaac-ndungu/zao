@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from dataclasses import asdict
 from decimal import Decimal
 
 import redis as redis_module
@@ -12,6 +13,7 @@ from apps.deductions.models import Deduction, FarmInputCredit
 from apps.farmers.models import Farmer
 from apps.loans.models import Loan, LoanRepayment
 
+from .engine import FarmerPaymentResult, _compute_deductions
 from .models import ComputationWarning, FarmerPayment, PaymentCycle
 
 logger = logging.getLogger(__name__)
@@ -76,7 +78,6 @@ def run_payment_engine(self, cycle_id: str):
         cycle.farmer_payments.all().delete()
         cycle.warnings.all().delete()
 
-        from apps.deductions.models import Deduction
         Deduction.objects.filter(cycle=cycle, deduction_type='LOAN_REPAYMENT').delete()
         Deduction.objects.filter(cycle=cycle, deduction_type='INPUT_CREDIT').delete()
 
@@ -114,23 +115,23 @@ def run_payment_engine(self, cycle_id: str):
             cooperative=cycle.cooperative, is_active=True,
         ).values_list('id', flat=True))
 
-        present_ids = {d['farmer'].id for d in farmer_data}
+        present_ids = {d.farmer.id for d in farmer_data}
         missing_ids = all_active_ids - present_ids
 
         if missing_ids:
             missing_farmers = Farmer.objects.in_bulk(missing_ids)
             for fid, farmer in missing_farmers.items():
-                farmer_data.append({
-                    'farmer': farmer,
-                    'total_quantity': 0.0,
-                    'grade_breakdown': {},
-                    'gross_amount': 0.0,
-                })
+                farmer_data.append(FarmerPaymentResult(
+                    farmer=farmer,
+                    total_quantity=0.0,
+                    grade_breakdown={},
+                    gross_amount=0.0,
+                ))
 
         active_count = len(farmer_data)
 
         # Batch carry-forward and input credit queries — avoid N+1 in the loop
-        farmer_ids = [d['farmer'].id for d in farmer_data]
+        farmer_ids = [d.farmer.id for d in farmer_data]
         all_carried = FarmerPayment.objects.filter(
             farmer_id__in=farmer_ids,
             carry_forward_reason='BELOW_MINIMUM_THRESHOLD',
@@ -167,9 +168,8 @@ def run_payment_engine(self, cycle_id: str):
         carry_forward_updates = []
 
         for data in farmer_data:
-            from .engine import _compute_deductions
-            farmer = data['farmer']
-            gross = data['gross_amount']
+            farmer = data.farmer
+            gross = data.gross_amount
 
             # Carry forward any amount skipped in previous cycles
             carried_forward_amount = Decimal('0')
@@ -187,8 +187,8 @@ def run_payment_engine(self, cycle_id: str):
                 cooperative=cycle.cooperative,
                 cycle=cycle,
                 farmer=farmer,
-                total_quantity=data['total_quantity'],
-                grade_breakdown=data['grade_breakdown'],
+                total_quantity=data.total_quantity,
+                grade_breakdown=data.grade_breakdown,
                 gross_amount=round(gross, 2),
                 carried_forward_amount=carried_forward_amount,
                 carry_forward_reason=carry_forward_reason,
@@ -198,7 +198,7 @@ def run_payment_engine(self, cycle_id: str):
                 fp, cooperative, active_count, cycle,
                 credits_by_farmer.get(farmer.id, []),
             )
-            fp.deductions = deductions
+            fp.deductions = asdict(deductions)
             fp.net_amount = net
 
             tax, is_subject = taxes.get(farmer.id, (0.0, False))
@@ -209,23 +209,23 @@ def run_payment_engine(self, cycle_id: str):
                 'method': cooperative.payment_model,
                 'total_quantity': float(fp.total_quantity),
                 'gross_amount': float(fp.gross_amount),
-                'deductions_applied': deductions,
+                'deductions_applied': asdict(deductions),
                 'net_amount': float(net),
                 'withholding_tax': tax,
             }
             farmer_payments.append(fp)
 
-            if pending['loan_repayment_ded']:
-                all_loan_deds.append(pending['loan_repayment_ded'])
-                all_loan_repayments.append(pending['loan_repayment_record'])
-                updated_loans.append(pending['updated_loan'])
-            all_input_deds.extend(pending['input_credit_deds'])
-            credits_to_update.extend(pending['updated_credits'])
+            if pending.loan_repayment_ded:
+                all_loan_deds.append(pending.loan_repayment_ded)
+                all_loan_repayments.append(pending.loan_repayment_record)
+                updated_loans.append(pending.updated_loan)
+            all_input_deds.extend(pending.input_credit_deds)
+            credits_to_update.extend(pending.updated_credits)
 
-            total_levy += deductions['levy']
-            total_cooperative_fee += deductions['monthly_fee']
-            total_loan_repayments += deductions['loan_repayment']
-            total_input_credits += deductions['input_credit']
+            total_levy += deductions.levy
+            total_cooperative_fee += deductions.monthly_fee
+            total_loan_repayments += deductions.loan_repayment
+            total_input_credits += deductions.input_credit
 
         # Bulk writes
         for prev in carry_forward_updates:
@@ -234,9 +234,9 @@ def run_payment_engine(self, cycle_id: str):
         if all_loan_deds:
             Deduction.objects.bulk_create(all_loan_deds)
             LoanRepayment.objects.bulk_create(all_loan_repayments)
-            for loan_id, installments, status in updated_loans:
-                Loan.objects.filter(id=loan_id).update(
-                    installments_paid=installments, status=status,
+            for update in updated_loans:
+                Loan.objects.filter(id=update.loan_id).update(
+                    installments_paid=update.installments_paid, status=update.status,
                 )
         if all_input_deds:
             Deduction.objects.bulk_create(all_input_deds)
@@ -297,12 +297,11 @@ def run_payment_engine(self, cycle_id: str):
 
 
 def _create_levy_deductions(cycle, farmer_data):
-    from apps.deductions.models import Deduction
     Deduction.objects.filter(cycle=cycle, deduction_type='LEVY').delete()
     levies = []
     for data in farmer_data:
-        farmer = data['farmer']
-        gross = data['gross_amount']
+        farmer = data.farmer
+        gross = data.gross_amount
         levy_amount = round(gross * (float(cycle.cooperative.levy_percentage) / 100), 2)
         if levy_amount > 0:
             levies.append(Deduction(
