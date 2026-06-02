@@ -6,6 +6,17 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
+class SaleStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    COMPLETED = 'COMPLETED', 'Completed'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+
+
+class SaleUnit(models.TextChoices):
+    KG = 'kg', 'Kilograms'
+    LITRES = 'litres', 'Litres'
+
+
 class Buyer(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -28,13 +39,6 @@ class Buyer(CooperativeScopedModel):
 
 
 class Sale(CooperativeScopedModel):
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('COMPLETED', 'Completed'),
-        ('CANCELLED', 'Cancelled'),
-    ]
-    UNIT_CHOICES = [('kg', 'Kilograms'), ('litres', 'Litres')]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     buyer = models.ForeignKey(
         Buyer, on_delete=models.PROTECT,
@@ -57,13 +61,13 @@ class Sale(CooperativeScopedModel):
 
     product_type = models.CharField(max_length=20)
     grade_letter = models.CharField(max_length=20, blank=True)
-    unit = models.CharField(max_length=10, choices=UNIT_CHOICES)
+    unit = models.CharField(max_length=10, choices=SaleUnit.choices)
 
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, editable=False)
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    status = models.CharField(max_length=20, choices=SaleStatus.choices, default=SaleStatus.PENDING, db_index=True)
     sale_date = models.DateField(default=date.today, db_index=True)
     invoice_number = models.CharField(max_length=50, blank=True)
     notes = models.TextField(blank=True)

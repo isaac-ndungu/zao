@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from apps.base.constants import UserRole
 from apps.base.permissions import IsAdmin
 from apps.base.utils import log_audit
-from apps.cooperatives.models import Cooperative
+from apps.cooperatives.models import Cooperative, PaymentModel, ProduceType
 from apps.cooperatives.serializers import (
     CooperativeListSerializer,
     CooperativeDetailSerializer,
@@ -109,6 +109,6 @@ class CooperativeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def enums(self, request):
         return Response({
-            'produce_types': Cooperative.PRODUCE_CHOICES,
-            'payment_models': Cooperative.PAYMENT_MODEL_CHOICES,
+            'produce_types': ProduceType.choices,
+            'payment_models': PaymentModel.choices,
         })

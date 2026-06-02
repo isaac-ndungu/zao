@@ -4,14 +4,14 @@ from celery import shared_task
 
 from apps.notifications.utils import send_sms
 
-from .models import Delivery
+from .models import Delivery, ProductType
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task
 def send_delivery_sms(phone_number: str, farmer_name: str, batch_id: str, product_type: str):
-    product_label = dict(Delivery.PRODUCT_CHOICES).get(product_type, product_type)
+    product_label = dict(ProductType.choices).get(product_type, product_type)
     message = (
         f"Dear {farmer_name}, your delivery ({product_label}) "
         f"has been recorded. Batch ID: {batch_id}. "

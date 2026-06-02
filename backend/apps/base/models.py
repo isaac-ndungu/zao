@@ -4,6 +4,21 @@ from django.db import models
 import uuid
 
 
+class AuditAction(models.TextChoices):
+    CREATE = 'CREATE', 'Create'
+    UPDATE = 'UPDATE', 'Update'
+    DELETE = 'DELETE', 'Delete'
+    OVERRIDE = 'OVERRIDE', 'Override'
+    LOCK = 'LOCK', 'Lock'
+    UNLOCK = 'UNLOCK', 'Unlock'
+    RUN = 'RUN', 'Run'
+    LOGIN = 'LOGIN', 'Login'
+    DISBURSE = 'DISBURSE', 'Disburse'
+    GRADE = 'GRADE', 'Grade'
+    PDF_GENERATED = 'PDF_GENERATED', 'PDF Generated'
+    NOTIFY = 'NOTIFY', 'Notify'
+
+
 class LocationMixin(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -53,20 +68,7 @@ class AuditLog(CooperativeScopedModel):
     resource_id = models.UUIDField()
     action = models.CharField(
         max_length=20,
-        choices=[
-            ('CREATE', 'Create'),
-            ('UPDATE', 'Update'),
-            ('DELETE', 'Delete'),
-            ('OVERRIDE', 'Override'),
-            ('LOCK', 'Lock'),
-            ('UNLOCK', 'Unlock'),
-            ('RUN', 'Run'),
-            ('LOGIN', 'Login'),
-            ('DISBURSE', 'Disburse'),
-            ('GRADE', 'Grade'),
-            ('PDF_GENERATED', 'PDF Generated'),
-            ('NOTIFY', 'Notify'),
-        ]
+        choices=AuditAction.choices,
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     previous_value = models.JSONField(null=True, blank=True)

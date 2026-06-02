@@ -6,22 +6,27 @@ from django.utils import timezone
 from apps.base.models import CooperativeScopedModel, LocationMixin
 
 
-class Delivery(LocationMixin, CooperativeScopedModel):
-    PRODUCT_CHOICES = [
-        ('MILK', 'Milk'),
-        ('COFFEE_CHERRIES', 'Coffee Cherries'),
-        ('HONEY', 'Honey'),
-        ('OTHER', 'Other'),
-    ]
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('GRADED', 'Graded'),
-        ('ACCEPTED', 'Accepted'),
-        ('REJECTED', 'Rejected'),
-        ('PAID', 'Paid'),
-    ]
-    SHIFT_CHOICES = [('AM', 'Morning'), ('PM', 'Evening')]
+class ProductType(models.TextChoices):
+    MILK = 'MILK', 'Milk'
+    COFFEE_CHERRIES = 'COFFEE_CHERRIES', 'Coffee Cherries'
+    HONEY = 'HONEY', 'Honey'
+    OTHER = 'OTHER', 'Other'
 
+
+class DeliveryStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    GRADED = 'GRADED', 'Graded'
+    ACCEPTED = 'ACCEPTED', 'Accepted'
+    REJECTED = 'REJECTED', 'Rejected'
+    PAID = 'PAID', 'Paid'
+
+
+class Shift(models.TextChoices):
+    AM = 'AM', 'Morning'
+    PM = 'PM', 'Evening'
+
+
+class Delivery(LocationMixin, CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(
         'farmers.Farmer', on_delete=models.CASCADE,
@@ -34,7 +39,7 @@ class Delivery(LocationMixin, CooperativeScopedModel):
         related_name='graded_deliveries',
     )
 
-    product_type = models.CharField(max_length=20, choices=PRODUCT_CHOICES, db_index=True)
+    product_type = models.CharField(max_length=20, choices=ProductType.choices, db_index=True)
     batch_id = models.CharField(max_length=30, unique=True, editable=False, db_index=True)
 
     quantity_kg = models.DecimalField(
@@ -46,13 +51,13 @@ class Delivery(LocationMixin, CooperativeScopedModel):
         validators=[MinValueValidator(0)],
     )
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
+    status = models.CharField(max_length=20, choices=DeliveryStatus.choices, default=DeliveryStatus.PENDING, db_index=True)
     grade = models.CharField(max_length=20, blank=True)
     quality_metrics = models.JSONField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
 
     date_delivered = models.DateTimeField(default=timezone.now, db_index=True)
-    shift = models.CharField(max_length=2, choices=SHIFT_CHOICES, blank=True)
+    shift = models.CharField(max_length=2, choices=Shift.choices, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     is_synced = models.BooleanField(default=True)

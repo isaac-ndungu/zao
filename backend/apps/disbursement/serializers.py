@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.payment_engine.models import FarmerPayment, PaymentCycle
 
-from .models import DisbursementBatch, DisbursementTransaction
+from .models import CommandId, DisbursementBatch, DisbursementTransaction
 
 
 class DisbursementTransactionSerializer(serializers.ModelSerializer):
@@ -94,8 +94,8 @@ class DisbursementBatchDetailSerializer(serializers.ModelSerializer):
 class DisbursementBatchCreateSerializer(serializers.Serializer):
     payment_cycle = serializers.UUIDField()
     command_id = serializers.ChoiceField(
-        choices=DisbursementBatch.COMMAND_ID_CHOICES,
-        default='SalaryPayment',
+        choices=CommandId.choices,
+        default=CommandId.SALARY_PAYMENT,
         required=False,
     )
     notes = serializers.CharField(required=False, allow_blank=True)

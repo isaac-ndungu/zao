@@ -4,14 +4,19 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
-class Loan(CooperativeScopedModel):
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending Approval'),
-        ('ACTIVE', 'Active'),
-        ('COMPLETED', 'Completed'),
-        ('DEFAULTED', 'Defaulted'),
-    ]
+class LoanStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending Approval'
+    ACTIVE = 'ACTIVE', 'Active'
+    COMPLETED = 'COMPLETED', 'Completed'
+    DEFAULTED = 'DEFAULTED', 'Defaulted'
 
+
+class GuarantorStatus(models.TextChoices):
+    ACTIVE = 'ACTIVE', 'Active'
+    RELEASED = 'RELEASED', 'Released'
+
+
+class Loan(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(
         'farmers.Farmer', on_delete=models.PROTECT,
@@ -24,7 +29,7 @@ class Loan(CooperativeScopedModel):
     number_of_installments = models.PositiveIntegerField()
     installments_paid = models.PositiveIntegerField(default=0)
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True,
+        max_length=20, choices=LoanStatus.choices, default=LoanStatus.PENDING, db_index=True,
     )
     approved_by = models.ForeignKey(
         'auth_api.User', on_delete=models.SET_NULL, null=True, blank=True,
@@ -78,11 +83,6 @@ class LoanRepayment(models.Model):
 
 
 class LoanGuarantor(CooperativeScopedModel):
-    STATUS_CHOICES = [
-        ('ACTIVE', 'Active'),
-        ('RELEASED', 'Released'),
-    ]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     loan = models.ForeignKey(
         Loan, on_delete=models.CASCADE, related_name='guarantors',
@@ -93,7 +93,7 @@ class LoanGuarantor(CooperativeScopedModel):
     )
     agreed_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='ACTIVE',
+        max_length=20, choices=GuarantorStatus.choices, default=GuarantorStatus.ACTIVE,
     )
 
     class Meta:

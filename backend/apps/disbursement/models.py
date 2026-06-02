@@ -4,30 +4,46 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
-class DisbursementBatch(CooperativeScopedModel):
-    BATCH_STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('PROCESSING', 'Processing'),
-        ('COMPLETED', 'Completed'),
-        ('PARTIALLY_COMPLETED', 'Partially Completed'),
-        ('FAILED', 'Failed'),
-    ]
-    COMMAND_ID_CHOICES = [
-        ('BusinessPayment', 'Business Payment'),
-        ('SalaryPayment', 'Salary Payment'),
-        ('PromotionPayment', 'Promotion Payment'),
-    ]
+class BatchStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    PROCESSING = 'PROCESSING', 'Processing'
+    COMPLETED = 'COMPLETED', 'Completed'
+    PARTIALLY_COMPLETED = 'PARTIALLY_COMPLETED', 'Partially Completed'
+    FAILED = 'FAILED', 'Failed'
 
+
+class CommandId(models.TextChoices):
+    BUSINESS_PAYMENT = 'BusinessPayment', 'Business Payment'
+    SALARY_PAYMENT = 'SalaryPayment', 'Salary Payment'
+    PROMOTION_PAYMENT = 'PromotionPayment', 'Promotion Payment'
+
+
+class DisbursementPaymentMethod(models.TextChoices):
+    M_PESA = 'M_PESA', 'M-Pesa'
+    BANK = 'BANK', 'Bank Transfer'
+    CASH = 'CASH', 'Cash'
+
+
+class TransactionStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    QUEUED = 'QUEUED', 'Queued'
+    SENT = 'SENT', 'Sent'
+    SUCCESS = 'SUCCESS', 'Success'
+    FAILED = 'FAILED', 'Failed'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+
+
+class DisbursementBatch(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     payment_cycle = models.ForeignKey(
         'payment_engine.PaymentCycle', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='disbursement_batches',
     )
     status = models.CharField(
-        max_length=20, choices=BATCH_STATUS_CHOICES, default='PENDING', db_index=True,
+        max_length=20, choices=BatchStatus.choices, default=BatchStatus.PENDING, db_index=True,
     )
     command_id = models.CharField(
-        max_length=20, choices=COMMAND_ID_CHOICES, default='SalaryPayment',
+        max_length=20, choices=CommandId.choices, default=CommandId.SALARY_PAYMENT,
     )
     total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     total_transactions = models.PositiveIntegerField(default=0)
@@ -57,20 +73,6 @@ class DisbursementBatch(CooperativeScopedModel):
 
 
 class DisbursementTransaction(CooperativeScopedModel):
-    PAYMENT_METHOD_CHOICES = [
-        ('M_PESA', 'M-Pesa'),
-        ('BANK', 'Bank Transfer'),
-        ('CASH', 'Cash'),
-    ]
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('QUEUED', 'Queued'),
-        ('SENT', 'Sent'),
-        ('SUCCESS', 'Success'),
-        ('FAILED', 'Failed'),
-        ('CANCELLED', 'Cancelled'),
-    ]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     batch = models.ForeignKey(
         DisbursementBatch, on_delete=models.CASCADE,
@@ -85,11 +87,11 @@ class DisbursementTransaction(CooperativeScopedModel):
         related_name='disbursement_transactions',
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES)
+    payment_method = models.CharField(max_length=10, choices=DisbursementPaymentMethod.choices)
     recipient_identifier = models.CharField(max_length=100)
     recipient_name = models.CharField(max_length=200, blank=True)
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True,
+        max_length=20, choices=TransactionStatus.choices, default=TransactionStatus.PENDING, db_index=True,
     )
     transaction_id = models.CharField(max_length=100, blank=True, db_index=True)
     conversation_id = models.CharField(max_length=100, blank=True, db_index=True)

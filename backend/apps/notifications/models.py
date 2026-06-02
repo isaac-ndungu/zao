@@ -7,30 +7,32 @@ from django.utils import timezone
 from apps.base.models import CooperativeScopedModel
 
 
-class Notification(CooperativeScopedModel):
-    CHANNEL_CHOICES = [
-        ('SMS', 'SMS'),
-        ('USSD', 'USSD'),
-        ('EMAIL', 'Email'),
-        ('IN_APP', 'In App'),
-    ]
-    TYPE_CHOICES = [
-        ('DELIVERY_CONFIRMATION', 'Delivery Confirmation'),
-        ('PAYMENT_SENT', 'Payment Sent'),
-        ('PAYMENT_FAILED', 'Payment Failed'),
-        ('GRADE_RESULT', 'Grade Result'),
-        ('LOAN_APPROVAL', 'Loan Approval'),
-        ('LOAN_DISBURSEMENT', 'Loan Disbursement'),
-        ('LOAN_DEFAULTED', 'Loan Defaulted'),
-        ('USSD_SESSION', 'USSD Session'),
-        ('GENERAL', 'General'),
-    ]
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('SENT', 'Sent'),
-        ('FAILED', 'Failed'),
-    ]
+class NotificationChannel(models.TextChoices):
+    SMS = 'SMS', 'SMS'
+    USSD = 'USSD', 'USSD'
+    EMAIL = 'EMAIL', 'Email'
+    IN_APP = 'IN_APP', 'In App'
 
+
+class NotificationType(models.TextChoices):
+    DELIVERY_CONFIRMATION = 'DELIVERY_CONFIRMATION', 'Delivery Confirmation'
+    PAYMENT_SENT = 'PAYMENT_SENT', 'Payment Sent'
+    PAYMENT_FAILED = 'PAYMENT_FAILED', 'Payment Failed'
+    GRADE_RESULT = 'GRADE_RESULT', 'Grade Result'
+    LOAN_APPROVAL = 'LOAN_APPROVAL', 'Loan Approval'
+    LOAN_DISBURSEMENT = 'LOAN_DISBURSEMENT', 'Loan Disbursement'
+    LOAN_DEFAULTED = 'LOAN_DEFAULTED', 'Loan Defaulted'
+    USSD_SESSION = 'USSD_SESSION', 'USSD Session'
+    GENERAL = 'GENERAL', 'General'
+
+
+class NotificationStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    SENT = 'SENT', 'Sent'
+    FAILED = 'FAILED', 'Failed'
+
+
+class Notification(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cooperative = models.ForeignKey(
         'cooperatives.Cooperative', on_delete=models.CASCADE,
@@ -40,13 +42,13 @@ class Notification(CooperativeScopedModel):
         'farmers.Farmer', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='notifications',
     )
-    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES)
+    channel = models.CharField(max_length=10, choices=NotificationChannel.choices)
     notification_type = models.CharField(
-        max_length=30, choices=TYPE_CHOICES, default='GENERAL',
+        max_length=30, choices=NotificationType.choices, default=NotificationType.GENERAL,
     )
     content = models.TextField()
     status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default='PENDING', db_index=True,
+        max_length=10, choices=NotificationStatus.choices, default=NotificationStatus.PENDING, db_index=True,
     )
     retry_count = models.PositiveIntegerField(default=0)
     max_retries = models.PositiveIntegerField(default=3)

@@ -2,25 +2,26 @@ from django.db import models
 import uuid
 
 
-class Cooperative(models.Model):
-    PRODUCE_CHOICES = [
-        ('DAIRY', 'Dairy'),
-        ('COFFEE', 'Coffee'),
-        ('HONEY', 'Honey'),
-    ]
-    PAYMENT_MODEL_CHOICES = [
-        ('FIXED_PRICE', 'Fixed Price'),
-        ('REVENUE_SHARE', 'Revenue Share'),
-    ]
+class ProduceType(models.TextChoices):
+    DAIRY = 'DAIRY', 'Dairy'
+    COFFEE = 'COFFEE', 'Coffee'
+    HONEY = 'HONEY', 'Honey'
 
+
+class PaymentModel(models.TextChoices):
+    FIXED_PRICE = 'FIXED_PRICE', 'Fixed Price'
+    REVENUE_SHARE = 'REVENUE_SHARE', 'Revenue Share'
+
+
+class Cooperative(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     registration_number = models.CharField(max_length=50, unique=True)
     county = models.CharField(max_length=100)
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
-    produce_type = models.CharField(max_length=20, choices=PRODUCE_CHOICES)
-    payment_model = models.CharField(max_length=20, choices=PAYMENT_MODEL_CHOICES)
+    produce_type = models.CharField(max_length=20, choices=ProduceType.choices)
+    payment_model = models.CharField(max_length=20, choices=PaymentModel.choices)
     levy_percentage = models.DecimalField(max_digits=5, decimal_places=2)
     monthly_fee = models.DecimalField(max_digits=10, decimal_places=2)
     mpesa_shortcode = models.CharField(max_length=20, blank=True)

@@ -21,21 +21,27 @@ class GradeImage(models.Model):
         return f"GradeImage {self.id}"
 
 
-class Grade(CooperativeScopedModel):
-    GRADE_CHOICES = [
-        ('A', 'A'),
-        ('B', 'B'),
-        ('C', 'C'),
-        ('PREMIUM', 'Premium'),
-        ('STANDARD', 'Standard'),
-    ]
+class GradeLetter(models.TextChoices):
+    A = 'A', 'A'
+    B = 'B', 'B'
+    C = 'C', 'C'
+    PREMIUM = 'PREMIUM', 'Premium'
+    STANDARD = 'STANDARD', 'Standard'
 
+
+class DisputeStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    RESOLVED = 'RESOLVED', 'Resolved'
+    REJECTED = 'REJECTED', 'Rejected'
+
+
+class Grade(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     delivery = models.OneToOneField(
         'deliveries.Delivery', on_delete=models.CASCADE,
         related_name='grade_record',
     )
-    grade_letter = models.CharField(max_length=20, choices=GRADE_CHOICES, blank=True)
+    grade_letter = models.CharField(max_length=20, choices=GradeLetter.choices, blank=True)
     price_per_unit = models.DecimalField(
         max_digits=10, decimal_places=2,
         null=True, blank=True,
@@ -65,7 +71,7 @@ class Grade(CooperativeScopedModel):
 
 
 class GradePrice(models.Model):
-    GRADE_CHOICES = Grade.GRADE_CHOICES
+    GRADE_CHOICES = GradeLetter.choices
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     grade_letter = models.CharField(max_length=20, choices=GRADE_CHOICES)
@@ -87,12 +93,6 @@ class GradePrice(models.Model):
 
 
 class FarmerGradeDispute(models.Model):
-    STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('RESOLVED', 'Resolved'),
-        ('REJECTED', 'Rejected'),
-    ]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     grade = models.ForeignKey(
         Grade, on_delete=models.CASCADE, related_name='disputes',
@@ -102,7 +102,7 @@ class FarmerGradeDispute(models.Model):
     )
     reason = models.TextField()
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True,
+        max_length=20, choices=DisputeStatus.choices, default=DisputeStatus.PENDING, db_index=True,
     )
     resolved_by = models.ForeignKey(
         'auth_api.User', on_delete=models.SET_NULL, null=True, blank=True,

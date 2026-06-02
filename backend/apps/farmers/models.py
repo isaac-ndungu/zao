@@ -7,13 +7,13 @@ from apps.auth_api.models import User
 from apps.base.models import CooperativeScopedModel, LocationMixin
 
 
-class Farmer(LocationMixin, CooperativeScopedModel):
-    PAYMENT_METHOD_CHOICES = [
-        ('M-PESA', 'M-Pesa'),
-        ('BANK', 'Bank Transfer'),
-        ('CASH', 'Cash'),
-    ]
+class FarmerPaymentMethod(models.TextChoices):
+    M_PESA = 'M-PESA', 'M-Pesa'
+    BANK = 'BANK', 'Bank Transfer'
+    CASH = 'CASH', 'Cash'
 
+
+class Farmer(LocationMixin, CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, null=True, blank=True,
@@ -31,7 +31,7 @@ class Farmer(LocationMixin, CooperativeScopedModel):
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     village = models.CharField(max_length=100, blank=True)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    payment_method = models.CharField(max_length=20, choices=FarmerPaymentMethod.choices)
     bank_name = models.CharField(max_length=100, blank=True)
     bank_account = models.CharField(max_length=30, blank=True)
     bank_branch = models.CharField(max_length=100, blank=True)

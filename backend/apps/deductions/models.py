@@ -4,13 +4,13 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
-class Deduction(CooperativeScopedModel):
-    DEDUCTION_TYPES = [
-        ('LEVY', 'Levy'),
-        ('LOAN_REPAYMENT', 'Loan Repayment'),
-        ('INPUT_CREDIT', 'Input Credit'),
-    ]
+class DeductionType(models.TextChoices):
+    LEVY = 'LEVY', 'Levy'
+    LOAN_REPAYMENT = 'LOAN_REPAYMENT', 'Loan Repayment'
+    INPUT_CREDIT = 'INPUT_CREDIT', 'Input Credit'
 
+
+class Deduction(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(
         'farmers.Farmer', on_delete=models.CASCADE,
@@ -21,7 +21,7 @@ class Deduction(CooperativeScopedModel):
         related_name='deductions',
     )
     deduction_type = models.CharField(
-        max_length=20, choices=DEDUCTION_TYPES, db_index=True,
+        max_length=20, choices=DeductionType.choices, db_index=True,
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_by = models.ForeignKey(

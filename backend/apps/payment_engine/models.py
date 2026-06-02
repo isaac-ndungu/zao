@@ -4,18 +4,32 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
-class ComputationWarning(models.Model):
-    SEVERITY_CHOICES = [
-        ('WARNING', 'Warning'),
-        ('ERROR', 'Error'),
-    ]
+class Severity(models.TextChoices):
+    WARNING = 'WARNING', 'Warning'
+    ERROR = 'ERROR', 'Error'
 
+
+class CycleStatus(models.TextChoices):
+    DRAFT = 'DRAFT', 'Draft'
+    COMPUTING = 'COMPUTING', 'Computing'
+    COMPUTED = 'COMPUTED', 'Computed'
+    LOCKED = 'LOCKED', 'Locked'
+    DISBURSED = 'DISBURSED', 'Disbursed'
+
+
+class PaymentStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    PAID = 'PAID', 'Paid'
+    FAILED = 'FAILED', 'Failed'
+
+
+class ComputationWarning(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cycle = models.ForeignKey(
         'PaymentCycle', on_delete=models.CASCADE,
         related_name='warnings',
     )
-    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='WARNING')
+    severity = models.CharField(max_length=20, choices=Severity.choices, default=Severity.WARNING)
     message = models.TextField()
     delivery_id = models.UUIDField(null=True, blank=True)
     farmer_id = models.UUIDField(null=True, blank=True)
@@ -31,20 +45,12 @@ class ComputationWarning(models.Model):
 
 
 class PaymentCycle(CooperativeScopedModel):
-    STATUS_CHOICES = [
-        ('DRAFT', 'Draft'),
-        ('COMPUTING', 'Computing'),
-        ('COMPUTED', 'Computed'),
-        ('LOCKED', 'Locked'),
-        ('DISBURSED', 'Disbursed'),
-    ]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     start_date = models.DateField()
     end_date = models.DateField()
     status = models.CharField(
-        max_length=20, choices=STATUS_CHOICES, default='DRAFT', db_index=True,
+        max_length=20, choices=CycleStatus.choices, default=CycleStatus.DRAFT, db_index=True,
     )
     totals = models.JSONField(default=dict, blank=True)
     celery_task_id = models.CharField(max_length=255, blank=True, default='', db_index=True)
@@ -74,12 +80,6 @@ class PaymentCycle(CooperativeScopedModel):
 
 
 class FarmerPayment(CooperativeScopedModel):
-    PAYMENT_STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('PAID', 'Paid'),
-        ('FAILED', 'Failed'),
-    ]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cycle = models.ForeignKey(
         PaymentCycle, on_delete=models.CASCADE,
@@ -95,7 +95,7 @@ class FarmerPayment(CooperativeScopedModel):
     deductions = models.JSONField(default=dict, blank=True)
     net_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     payment_status = models.CharField(
-        max_length=20, choices=PAYMENT_STATUS_CHOICES, default='PENDING', db_index=True,
+        max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING, db_index=True,
     )
     computation_log = models.JSONField(default=dict, blank=True)
     is_on_hold = models.BooleanField(default=False)

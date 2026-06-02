@@ -6,6 +6,12 @@ from apps.auth_api.managers import UserManager
 from apps.base.constants import UserRole
 
 
+class OTPPurpose(models.TextChoices):
+    LOGIN = 'LOGIN', 'Login'
+    PASSWORD_RESET = 'PASSWORD_RESET', 'Password Reset'
+    ACTION_CONFIRM = 'ACTION_CONFIRM', 'Action Confirm'
+
+
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
@@ -38,16 +44,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class TwoFactorOTP(models.Model):
-    PURPOSE_CHOICES = [
-        ('LOGIN', 'Login'),
-        ('PASSWORD_RESET', 'Password Reset'),
-        ('ACTION_CONFIRM', 'Action Confirm'),
-    ]
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otp_codes')
     otp_code = models.CharField(max_length=6)
-    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES)
+    purpose = models.CharField(max_length=20, choices=OTPPurpose.choices)
     attempts = models.PositiveSmallIntegerField(default=0)
     expires_at = models.DateTimeField()
     is_used = models.BooleanField(default=False)
