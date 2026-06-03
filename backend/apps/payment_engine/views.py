@@ -1,4 +1,5 @@
 from celery.result import AsyncResult
+from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
@@ -85,6 +86,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
         instance.delete()
 
+    @extend_schema(summary="Run payment computation", description="Triggers Celery task to compute farmer payments for this cycle.")
     @action(detail=True, methods=['post'])
     def run(self, request, pk=None):
         cycle = self.get_object()
@@ -108,6 +110,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
         return Response({'task_id': task.id, 'status': 'started'})
 
+    @extend_schema(summary="Preview cycle payments", description="Returns detailed preview of farmer payments before locking.")
     @action(detail=True, methods=['get'])
     def preview(self, request, pk=None):
         cycle = self.get_object()
@@ -116,6 +119,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
         return Response(serializer.data)
 
+    @extend_schema(summary="Lock payment cycle", description="Locks a COMPUTED cycle, preventing further changes.")
     @action(detail=True, methods=['post'])
     def lock(self, request, pk=None):
         cycle = self.get_object()
@@ -139,6 +143,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
         return Response(PaymentCycleSerializer(cycle).data)
 
+    @extend_schema(summary="Unlock payment cycle", description="Returns a LOCKED cycle back to COMPUTED status.")
     @action(detail=True, methods=['post'])
     def unlock(self, request, pk=None):
         cycle = self.get_object()
@@ -162,6 +167,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
         return Response(PaymentCycleSerializer(cycle).data)
 
+    @extend_schema(summary="Cycle status", description="Returns current status, totals, warnings, and celery task info.")
     @action(detail=True, methods=['get'])
     def status(self, request, pk=None):
         cycle = self.get_object()
@@ -170,6 +176,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         )
         return Response(serializer.data)
 
+    @extend_schema(summary="Hold farmer payment", description="Place a hold on a specific farmer payment within this cycle.")
     @action(detail=True, methods=['post'])
     def hold(self, request, pk=None):
         cycle = self.get_object()
@@ -214,6 +221,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
         return Response({'status': 'held', 'farmer_payment_id': str(fp.id)})
 
+    @extend_schema(summary="Release held payment", description="Release a previously held farmer payment.")
     @action(detail=True, methods=['post'])
     def release(self, request, pk=None):
         cycle = self.get_object()
@@ -256,6 +264,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
         return Response({'status': 'released', 'farmer_payment_id': str(fp.id)})
 
+    @extend_schema(summary="Task status", description="Returns the Celery task status for the running computation.")
     @action(detail=True, methods=['get'], url_path='task-status')
     def task_status(self, request, pk=None):
         cycle = self.get_object()
@@ -281,6 +290,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
         return Response(result)
 
+    @extend_schema(summary="Export cycle as CSV", description="Downloads farmer payments as a CSV file.")
     @action(detail=True, methods=['get'])
     def export(self, request, pk=None):
         import csv

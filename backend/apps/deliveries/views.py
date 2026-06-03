@@ -1,4 +1,7 @@
-from django.db import models, transaction
+import logging
+
+from drf_spectacular.utils import extend_schema
+from django.db import IntegrityError, models, transaction
 from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.decorators import action
@@ -18,6 +21,8 @@ from .serializers import (
     DeliverySyncSerializer,
 )
 from .tasks import send_bulk_delivery_sms, send_delivery_sms
+
+logger = logging.getLogger(__name__)
 
 
 class DeliveryViewSet(CooperativeScopedViewSet):
@@ -121,12 +126,14 @@ class DeliveryViewSet(CooperativeScopedViewSet):
         )
         instance.delete()
 
+    @extend_schema(summary="Sync offline deliveries", description="Bulk create deliveries from offline device. Returns synced IDs or 409 on duplicate local_id.")
     @action(detail=False, methods=['post'])
     def sync(self, request):
         serializer = DeliverySyncSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         results = []
+        conflicts = []
         sms_deliveries = []
         raw_deliveries = request.data.get('deliveries', [])
         with transaction.atomic():
@@ -138,6 +145,10 @@ class DeliveryViewSet(CooperativeScopedViewSet):
                 else:
                     create_serializer.validated_data.pop('cooperative_id', None)
                     coop_id = request.cooperative_id
+                local_id = raw_data.get('local_id', '')
+                if local_id and Delivery.objects.filter(cooperative_id=coop_id, local_id=local_id).exists():
+                    conflicts.append({'local_id': local_id, 'detail': 'Duplicate local_id'})
+                    continue
                 instance = create_serializer.save(
                     cooperative_id=coop_id,
                 )
@@ -156,8 +167,13 @@ class DeliveryViewSet(CooperativeScopedViewSet):
         if sms_deliveries:
             send_bulk_delivery_sms.delay(sms_deliveries)
 
-        return Response({'synced': results}, status=status.HTTP_201_CREATED)
+        data = {'synced': results}
+        if conflicts:
+            data['conflicts'] = conflicts
+            return Response(data, status=status.HTTP_409_CONFLICT)
+        return Response(data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(summary="Delivery map data", description="Returns deliveries with GPS coordinates for map display.")
     @action(detail=False, methods=['get'])
     def map(self, request):
         qs = self.get_queryset().annotate(
@@ -187,6 +203,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
 
         return Response(results)
 
+    @extend_schema(summary="Delivery summary stats", description="Returns total count, breakdown by product type and status.")
     @action(detail=False, methods=['get'])
     def summary(self, request):
         qs = self.get_queryset()
@@ -197,6 +214,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             'pending_grading': qs.filter(status='PENDING').count(),
         })
 
+    @extend_schema(summary="Batch details", description="Returns delivery batch info by batch_id query param.")
     @action(detail=False, methods=['get'])
     def batches(self, request):
         qs = self.get_queryset()

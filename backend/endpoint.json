@@ -2019,6 +2019,35 @@
           }
         },
         "notes": "Setting status to COMPLETED triggers Celery task to decrement inventory. CANCELLED reverses it."
+      },
+
+      "11.17_sale_update": {
+        "method": "PUT",
+        "path": "/api/sales/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "buyer":          {"type": "string",  "required": true,  "example": "<buyer_uuid>"},
+            "inventory":      {"type": "string",  "required": true,  "example": "<inventory_uuid>"},
+            "quantity":       {"type": "number",  "required": true,  "example": 200.00},
+            "price_per_unit": {"type": "number",  "required": true,  "example": 50.00},
+            "status":         {"type": "string",  "required": false, "example": "PENDING", "notes": "PENDING, COMPLETED, CANCELLED"},
+            "sale_date":      {"type": "string",  "required": true,  "example": "2026-05-20"},
+            "invoice_number": {"type": "string",  "required": false, "example": "INV-2026-001"},
+            "notes":          {"type": "string",  "required": false, "example": "Bulk purchase"},
+            "payment_cycle":  {"type": "string",  "required": false, "example": null}
+          }
+        },
+        "notes": "total_amount recomputed as quantity * price_per_unit. Only quantity, price_per_unit, status, notes, invoice_number, payment_cycle are meaningful on update."
+      },
+
+      "11.18_sale_delete": {
+        "method": "DELETE",
+        "path": "/api/sales/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content",
+        "notes": "Deletes sale record. Does not reverse inventory changes — cancel via PATCH status=CANCELLED first."
       }
     },
 
@@ -2082,7 +2111,61 @@
         "notes": "Only PENDING disputes can be resolved. Sets resolved_by and resolved_at automatically."
       },
 
-      "12.5_grade_images": {
+      "12.5_dispute_create": {
+        "method": "POST",
+        "path": "/api/disputes/",
+        "auth": "Bearer — role=farmers or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "grade":  {"type": "string", "required": true, "example": "<grade_uuid>", "notes": "Must be a graded delivery"},
+            "reason": {"type": "string", "required": true, "example": "The quality assessment does not match my delivery"}
+          }
+        },
+        "response_201": {
+          "id": "<uuid>",
+          "grade": "<uuid>",
+          "reason": "The quality assessment does not match my delivery",
+          "status": "PENDING",
+          "created_at": "2026-05-28T12:00:00Z"
+        },
+        "notes": "Alternative to POST /api/grades/{id}/dispute/. Allows manager/staff to create disputes on behalf of farmers."
+      },
+
+      "12.6_dispute_update": {
+        "method": "PUT",
+        "path": "/api/disputes/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "grade":  {"type": "string", "required": true, "example": "<grade_uuid>"},
+            "reason": {"type": "string", "required": true, "example": "Updated dispute reason"}
+          }
+        }
+      },
+
+      "12.7_dispute_partial_update": {
+        "method": "PATCH",
+        "path": "/api/disputes/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "reason": {"type": "string", "required": false, "example": "Updated dispute reason"}
+          }
+        }
+      },
+
+      "12.8_dispute_delete": {
+        "method": "DELETE",
+        "path": "/api/disputes/{id}/",
+        "auth": "Bearer — role=manager",
+        "response_204": "No content",
+        "notes": "Only PENDING disputes can be deleted."
+      },
+
+      "12.9_grade_images": {
         "methods": [
           {
             "method": "GET",
@@ -2417,7 +2500,23 @@
         }
       },
 
-      "15.2_initiate": {
+      "15.2_create": {
+        "method": "POST",
+        "path": "/api/disbursements/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "payment_cycle": {"type": "string", "required": false, "example": "<payment_cycle_uuid>"},
+            "command_id":    {"type": "string", "required": false, "example": "SalaryPayment", "notes": "BusinessPayment, SalaryPayment, PromotionPayment"},
+            "notes":         {"type": "string", "required": false, "example": "Direct batch creation"}
+          }
+        },
+        "response_201": "DisbursementBatchDetailSerializer (empty transactions array).",
+        "notes": "Creates an empty disbursement batch without transactions. Use initiate to populate from a payment cycle."
+      },
+
+      "15.3_initiate": {
         "method": "POST",
         "path": "/api/disbursements/initiate/",
         "auth": "Bearer — role=accountant or manager",
@@ -2433,7 +2532,7 @@
         "notes": "Creates batch + transactions from cycle FarmerPayments (is_on_hold=false, net_amount>0). Skips farmers below minimum_payout_amount (carried forward). One transaction per farmer."
       },
 
-      "15.3_detail": {
+      "15.4_detail": {
         "method": "GET",
         "path": "/api/disbursements/{id}/",
         "auth": "Bearer — any authenticated",
@@ -2485,7 +2584,42 @@
         }
       },
 
-      "15.4_approve": {
+      "15.5_update": {
+        "method": "PUT",
+        "path": "/api/disbursements/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "payment_cycle": {"type": "string", "required": false, "example": "<payment_cycle_uuid>"},
+            "command_id":    {"type": "string", "required": false, "example": "SalaryPayment"},
+            "notes":         {"type": "string", "required": false, "example": "Updated batch notes"}
+          }
+        },
+        "notes": "Only notes and command_id are meaningful on update. status changes via approve/live workflows."
+      },
+
+      "15.6_partial_update": {
+        "method": "PATCH",
+        "path": "/api/disbursements/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "notes": {"type": "string", "required": false, "example": "Updated batch notes"}
+          }
+        }
+      },
+
+      "15.7_delete": {
+        "method": "DELETE",
+        "path": "/api/disbursements/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_204": "No content",
+        "notes": "Only PENDING batches can be deleted."
+      },
+
+      "15.8_approve": {
         "method": "POST",
         "path": "/api/disbursements/{id}/approve/",
         "auth": "Bearer — role=manager",
@@ -2493,7 +2627,7 @@
         "notes": "Batch must be PENDING. Sets approved_by and approved_at. Audits."
       },
 
-      "15.5_live": {
+      "15.9_live": {
         "method": "POST",
         "path": "/api/disbursements/{id}/live/",
         "auth": "Bearer — role=accountant or manager",
@@ -2504,7 +2638,7 @@
         "notes": "Batch must be PENDING. Triggers Celery task process_batch_disbursements. Saves celery_task_id."
       },
 
-      "15.6_retry_failed": {
+      "15.10_retry_failed": {
         "method": "POST",
         "path": "/api/disbursements/{id}/retry_failed/",
         "auth": "Bearer — role=accountant or manager",
@@ -2515,14 +2649,14 @@
         "notes": "Resets FAILED transactions to PENDING, clears error fields. Returns 400 if no failed transactions."
       },
 
-      "15.7_csv": {
+      "15.11_csv": {
         "method": "GET",
         "path": "/api/disbursements/{id}/csv/",
         "auth": "Bearer — role=accountant or manager",
         "notes": "CSV download of pending BANK transactions for bulk upload. Columns: AccountNumber, BeneficiaryName, Amount, Narration."
       },
 
-      "15.8_confirm_manual": {
+      "15.12_confirm_manual": {
         "method": "POST",
         "path": "/api/disbursements/{id}/confirm_manual/",
         "auth": "Bearer — role=accountant or manager",
@@ -2540,7 +2674,7 @@
         "notes": "Only BANK/CASH transactions. Sets status=SUCCESS, completed_at=now. Updates FarmerPayment to PAID. Triggers update_batch_summary Celery task."
       },
 
-      "15.9_transactions": {
+      "15.13_transactions": {
         "method": "GET",
         "path": "/api/disbursements/{id}/transactions/",
         "auth": "Bearer — any authenticated",
@@ -2613,7 +2747,45 @@
         "response_200": "LoanDetailSerializer (all fields + nested repayments, guarantors)."
       },
 
-      "16.4_approve": {
+      "16.4_update": {
+        "method": "PUT",
+        "path": "/api/loans/{id}/",
+        "auth": "Bearer — any authenticated",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer":                 {"type": "string",  "required": true,  "example": "<farmer_uuid>"},
+            "amount_principal":       {"type": "number",  "required": true,  "example": 50000.00},
+            "interest_rate":          {"type": "number",  "required": true,  "example": 5.00},
+            "number_of_installments": {"type": "integer", "required": true,  "example": 12},
+            "notes":                  {"type": "string",  "required": false, "example": "Farm inputs for next season"}
+          }
+        },
+        "notes": "total_repayable and installment_amount auto-recalculated on save. Only PENDING loans can be meaningfully updated."
+      },
+
+      "16.5_partial_update": {
+        "method": "PATCH",
+        "path": "/api/loans/{id}/",
+        "auth": "Bearer — any authenticated",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "amount_principal":       {"type": "number",  "required": false, "example": 55000.00},
+            "notes":                  {"type": "string",  "required": false, "example": "Updated loan terms"}
+          }
+        }
+      },
+
+      "16.6_delete": {
+        "method": "DELETE",
+        "path": "/api/loans/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_204": "No content",
+        "notes": "Deletes the loan and cascaded repayments/guarantors."
+      },
+
+      "16.7_approve": {
         "method": "POST",
         "path": "/api/loans/{id}/approve/",
         "auth": "Bearer — role=accountant or manager",
@@ -2621,7 +2793,7 @@
         "notes": "Validates: status must be PENDING, must have >=1 ACTIVE guarantor. Sets status=ACTIVE, approved_by, approved_at."
       },
 
-      "16.5_disburse": {
+      "16.8_disburse": {
         "method": "POST",
         "path": "/api/loans/{id}/disburse/",
         "auth": "Bearer — role=accountant",
@@ -2629,7 +2801,7 @@
         "notes": "Status must be ACTIVE. disburse_at must be null. Sets disbursed_at=now. Returns 400 if conditions not met."
       },
 
-      "16.6_add_guarantor": {
+      "16.9_add_guarantor": {
         "method": "POST",
         "path": "/api/loans/{id}/add_guarantor/",
         "auth": "Bearer — role=accountant or manager",
@@ -2643,7 +2815,7 @@
         "notes": "Only for PENDING loans. Creates LoanGuarantor record."
       },
 
-      "16.7_remove_guarantor": {
+      "16.10_remove_guarantor": {
         "method": "POST",
         "path": "/api/loans/{id}/remove_guarantor/",
         "auth": "Bearer — role=accountant or manager",
@@ -2657,7 +2829,7 @@
         "notes": "Only for PENDING loans. Returns 404 if guarantor not found."
       },
 
-      "16.8_mark_completed": {
+      "16.11_mark_completed": {
         "method": "POST",
         "path": "/api/loans/{id}/mark_completed/",
         "auth": "Bearer — role=accountant",
@@ -2665,7 +2837,7 @@
         "notes": "Status must be ACTIVE. installments_paid must >= number_of_installments. Sets status=COMPLETED."
       },
 
-      "16.9_mark_defaulted": {
+      "16.12_mark_defaulted": {
         "method": "POST",
         "path": "/api/loans/{id}/mark_defaulted/",
         "auth": "Bearer — role=manager",
@@ -2728,7 +2900,63 @@
         "notes": "deduction_type auto-set to LOAN_REPAYMENT. Audits."
       },
 
-      "17.3_farm_input_credit_list": {
+      "17.3_deduction_detail": {
+        "method": "GET",
+        "path": "/api/deductions/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "farmer": "<uuid>",
+          "farmer_name": "Grace Njoki",
+          "cycle": "<uuid>",
+          "cycle_name": "May 2026 Payment Cycle",
+          "deduction_type": "LOAN_REPAYMENT",
+          "amount": "5000.00",
+          "created_by": "<uuid>",
+          "created_by_name": "Isaac Kamau",
+          "notes": "Monthly loan repayment",
+          "cooperative": "<uuid>",
+          "created_at": "2026-05-28T10:00:00Z"
+        }
+      },
+
+      "17.4_deduction_update": {
+        "method": "PUT",
+        "path": "/api/deductions/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer": {"type": "string", "required": true,  "example": "<farmer_uuid>"},
+            "cycle":  {"type": "string", "required": true,  "example": "<payment_cycle_uuid>"},
+            "amount": {"type": "number", "required": true,  "example": 5000.00},
+            "notes":  {"type": "string", "required": false, "example": "Monthly loan repayment"}
+          }
+        }
+      },
+
+      "17.5_deduction_partial_update": {
+        "method": "PATCH",
+        "path": "/api/deductions/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "amount": {"type": "number", "required": false, "example": 5500.00},
+            "notes":  {"type": "string", "required": false, "example": "Updated deduction amount"}
+          }
+        }
+      },
+
+      "17.6_deduction_delete": {
+        "method": "DELETE",
+        "path": "/api/deductions/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_204": "No content",
+        "notes": "Deletes deduction record. Cannot restore to payment cycle after deletion."
+      },
+
+      "17.7_farm_input_credit_list": {
         "method": "GET",
         "path": "/api/deductions/farm-input-credits/",
         "auth": "Bearer — any authenticated",
@@ -2754,7 +2982,7 @@
         }
       },
 
-      "17.4_farm_input_credit_create": {
+      "17.8_farm_input_credit_create": {
         "method": "POST",
         "path": "/api/deductions/farm-input-credits/",
         "auth": "Bearer — role=accountant or manager",
@@ -2769,6 +2997,61 @@
         },
         "response_201": "FarmInputCreditDetailSerializer.",
         "notes": "Cannot delete if already deducted in a cycle."
+      },
+
+      "17.9_farm_input_credit_detail": {
+        "method": "GET",
+        "path": "/api/deductions/farm-input-credits/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "farmer": "<uuid>",
+          "farmer_name": "Grace Njoki",
+          "item_description": "Fertilizer 50kg bag",
+          "amount": "3000.00",
+          "supplied_date": "2026-05-15",
+          "deducted_in_cycle": null,
+          "deducted_in_cycle_name": null,
+          "deducted": false,
+          "cooperative": "<uuid>",
+          "created_at": "2026-05-15T10:00:00Z"
+        }
+      },
+
+      "17.10_farm_input_credit_update": {
+        "method": "PUT",
+        "path": "/api/deductions/farm-input-credits/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "farmer":          {"type": "string", "required": true,  "example": "<farmer_uuid>"},
+            "item_description":{"type": "string", "required": true,  "example": "Fertilizer 50kg bag"},
+            "amount":          {"type": "number", "required": true,  "example": 3000.00},
+            "supplied_date":   {"type": "string", "required": false, "example": "2026-05-15"}
+          }
+        }
+      },
+
+      "17.11_farm_input_credit_partial_update": {
+        "method": "PATCH",
+        "path": "/api/deductions/farm-input-credits/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "item_description": {"type": "string", "required": false, "example": "Fertilizer 100kg bag"},
+            "amount":           {"type": "number", "required": false, "example": 3500.00}
+          }
+        }
+      },
+
+      "17.12_farm_input_credit_delete": {
+        "method": "DELETE",
+        "path": "/api/deductions/farm-input-credits/{id}/",
+        "auth": "Bearer — role=accountant or manager",
+        "response_204": "No content",
+        "notes": "Cannot delete if already deducted in a cycle (deducted_in_cycle is not null)."
       }
     },
 

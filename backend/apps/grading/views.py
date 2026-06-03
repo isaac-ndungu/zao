@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status
@@ -161,6 +162,7 @@ class GradeViewSet(CooperativeScopedViewSet):
         )
         instance.delete()
 
+    @extend_schema(summary="Override grade", description="Manager override of a grade. POST to set, PATCH to update.")
     @action(detail=True, methods=['post', 'patch'])
     def override(self, request, pk=None):
         grade = self.get_object()
@@ -208,6 +210,7 @@ class GradeViewSet(CooperativeScopedViewSet):
         update_inventory_on_grade.delay(str(grade.id))
         return Response(GradeDetailSerializer(grade).data)
 
+    @extend_schema(summary="List/Create grade prices", description="GET to list price tiers, POST to create a new one.")
     @action(detail=False, methods=['get', 'post'])
     def prices(self, request):
         if request.method == 'GET':
@@ -258,6 +261,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(summary="Manage grade images", description="GET/POST to list/add images, DELETE to remove.")
     @action(detail=True, methods=['get', 'post'], url_path='images')
     def images(self, request, pk=None):
         grade = self.get_object()
@@ -278,6 +282,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(summary="Manage grade images", description="GET/POST to list/add images, DELETE to remove.")
     @action(detail=True, methods=['delete'], url_path='images/(?P<image_id>[^/.]+)')
     def delete_image(self, request, pk=None, image_id=None):
         grade = self.get_object()
@@ -315,6 +320,7 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
             return GradeDisputeResolveSerializer
         return GradeDisputeSerializer
 
+    @extend_schema(summary="Resolve grade dispute", description="Resolve or reject a FarmerGradeDispute.")
     @action(detail=True, methods=['post'])
     def resolve(self, request, pk=None):
         dispute = self.get_object()

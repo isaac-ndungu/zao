@@ -2,6 +2,7 @@ import csv
 import io
 import logging
 
+from drf_spectacular.utils import extend_schema
 from django.db.models import Case, IntegerField, When
 from django.http import HttpResponse
 from django.utils import timezone
@@ -72,6 +73,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
             )
         instance.delete()
 
+    @extend_schema(summary="Initiate disbursement", description="Create a disbursement batch from a LOCKED payment cycle.")
     @action(detail=False, methods=['post'])
     def initiate(self, request):
         serializer = DisbursementBatchCreateSerializer(
@@ -99,6 +101,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(summary="Approve disbursement", description="Manager approval of a disbursement batch.")
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         batch = self.get_object()
@@ -124,6 +127,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         return Response(DisbursementBatchDetailSerializer(batch).data)
 
+    @extend_schema(summary="Send to M-Pesa", description="Trigger actual M-Pesa B2C disbursement via Daraja API.")
     @action(detail=True, methods=['post'])
     def live(self, request, pk=None):
         batch = self.get_object()
@@ -148,6 +152,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         return Response({'task_id': task.id, 'status': 'processing'})
 
+    @extend_schema(summary="Retry failed transactions", description="Retry all FAILED transactions in a batch.")
     @action(detail=True, methods=['post'])
     def retry_failed(self, request, pk=None):
         batch = self.get_object()
@@ -181,6 +186,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         return Response({'retried': count, 'status': 'PENDING'})
 
+    @extend_schema(summary="Export batch as CSV", description="Download disbursement transactions as CSV.")
     @action(detail=True, methods=['get'])
     def csv(self, request, pk=None):
         batch = self.get_object()
@@ -233,6 +239,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         return response
 
+    @extend_schema(summary="Confirm manual payment", description="Mark a cash/bank transaction as completed outside M-Pesa.")
     @action(detail=True, methods=['post'])
     def confirm_manual(self, request, pk=None):
         serializer = ConfirmManualSerializer(data=request.data)
