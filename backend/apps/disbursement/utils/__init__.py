@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime, time, timezone as dt_timezone
+from datetime import date, datetime, time, timedelta, timezone as dt_timezone
 
 from django.conf import settings
 from django.db.models import Sum
@@ -7,6 +7,7 @@ from django.db.models import Sum
 from apps.payment_engine.models import FarmerPayment
 
 
+EAT = dt_timezone(timedelta(hours=3))
 KENYA_PHONE_RE = re.compile(r'^(?:\+?254|0)?([17]\d{8})$')
 
 
@@ -19,7 +20,7 @@ def normalize_mpesa_number(phone: str) -> str:
 
 
 def validate_disbursement_window() -> None:
-    now = datetime.now(dt_timezone.utc).time()
+    now = datetime.now(EAT).time()
     start_str = settings.MPESA_DISBURSEMENT_BLACKOUT_START
     end_str = settings.MPESA_DISBURSEMENT_BLACKOUT_END
     try:

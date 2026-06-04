@@ -54,4 +54,4 @@ class RequestOTPRateThrottle(_UserFromTokenThrottle):
 
 class VerifyOTPRateThrottle(_UserFromTokenThrottle):
     scope = 'verify_otp'
-    rate = '5/5min'
+    rate = '5/min'

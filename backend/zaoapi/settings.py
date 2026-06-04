@@ -219,7 +219,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'login': '10/min',
         'request_otp': '5/hour',
-        'verify_otp': '5/5min',
+        'verify_otp': '5/min',
     },
 }
 
