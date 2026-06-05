@@ -331,7 +331,7 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
         return GradeDisputeSerializer
 
     @extend_schema(summary="Resolve grade dispute", description="Resolve or reject a FarmerGradeDispute.")
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post', 'patch'])
     def resolve(self, request, pk=None):
         dispute = self.get_object()
         if dispute.status != 'PENDING':
@@ -341,9 +341,9 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
             )
         serializer = GradeDisputeResolveSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        dispute.status = serializer.validated_data['status']
+        dispute.status = serializer.validated_data['resolution']
         dispute.resolved_by = request.user
-        dispute.resolution_notes = serializer.validated_data.get('resolution_notes', '')
+        dispute.resolution_notes = serializer.validated_data.get('notes', '')
         dispute.resolved_at = timezone.now()
         dispute.save(update_fields=['status', 'resolved_by', 'resolution_notes', 'resolved_at'])
         log_audit(

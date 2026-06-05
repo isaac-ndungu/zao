@@ -43,7 +43,7 @@ class InventoryViewSet(ReadOnlyModelViewSet):
         for param in ('product_type', 'grade'):
             val = self.request.query_params.get(param)
             if val:
-                qs = qs.filter(**{param: val})
+                qs = qs.filter(**{f'{param}__iexact': val})
         batch_id = self.request.query_params.get('batch_id')
         if batch_id:
             qs = qs.filter(batch_id=batch_id)

@@ -186,5 +186,15 @@ class GradeDisputeSerializer(serializers.ModelSerializer):
 
 
 class GradeDisputeResolveSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=['RESOLVED', 'REJECTED'])
-    resolution_notes = serializers.CharField(required=False, allow_blank=True)
+    resolution = serializers.ChoiceField(
+        choices=['RESOLVED', 'REJECTED'], default='RESOLVED', required=False,
+    )
+    notes = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        unknown = set(self.initial_data) - {'resolution', 'notes'}
+        if unknown:
+            raise serializers.ValidationError(
+                f"Unknown fields: {', '.join(sorted(unknown))}"
+            )
+        return attrs
