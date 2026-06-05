@@ -79,7 +79,7 @@ class TwoFAVerifySerializer(serializers.Serializer):
             purpose='LOGIN',
             is_used=False,
             expires_at__gt=timezone.now(),
-        ).last()
+        ).order_by('-created_at').first()
 
         if not otp:
             raise serializers.ValidationError('Invalid or expired OTP.')
