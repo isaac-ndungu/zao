@@ -77,16 +77,12 @@ class LoanViewSet(CooperativeScopedViewSet):
         return qs
 
     def perform_create(self, serializer):
-        user = self.request.user
-        status_val = 'PENDING'
-        if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT):
-            status_val = 'ACTIVE'
         instance = serializer.save(
             cooperative_id=self.request.cooperative_id,
-            status=status_val,
+            status='PENDING',
         )
         log_audit(
-            actor=user,
+            actor=self.request.user,
             resource_type='loan',
             resource_id=instance.id,
             action='CREATE',

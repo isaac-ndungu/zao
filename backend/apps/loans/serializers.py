@@ -29,6 +29,8 @@ class AddGuarantorSerializer(serializers.Serializer):
         loan = self.context['view'].get_object()
         if loan.status != 'PENDING':
             raise serializers.ValidationError('Guarantors can only be added to PENDING loans.')
+        if guarantor.id == loan.farmer_id:
+            raise serializers.ValidationError('A farmer cannot be their own guarantor.')
         if guarantor.cooperative_id != loan.cooperative_id:
             raise serializers.ValidationError('Guarantor must belong to the same cooperative.')
         if LoanGuarantor.objects.filter(loan=loan, guarantor=guarantor).exists():
