@@ -322,6 +322,9 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated(), IsManager()]
         return [IsAuthenticated()]
 
+    def perform_create(self, serializer):
+        serializer.save(raised_by=self.request.user)
+
     def get_serializer_class(self):
         if self.action == 'resolve':
             return GradeDisputeResolveSerializer

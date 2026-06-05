@@ -181,7 +181,7 @@ class GradePriceSerializer(serializers.ModelSerializer):
 class GradeDisputeSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerGradeDispute
-        fields = ['id', 'reason', 'status', 'created_at']
+        fields = ['id', 'grade', 'reason', 'status', 'created_at']
         read_only_fields = ['id', 'status', 'created_at']
 
 
