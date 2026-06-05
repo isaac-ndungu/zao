@@ -48,6 +48,24 @@ def update_delivery_from_grade(grade):
     return delivery
 
 
+def _reverse_inventory_contribution(delivery, was_rejected):
+    coop = delivery.cooperative
+    product = delivery.product_type
+    inventory = coop.inventory or {}
+    current = inventory.get(product, {})
+
+    if was_rejected:
+        current['rejected_qty_kg'] = float(current.get('rejected_qty_kg', 0)) - float(delivery.quantity_kg or 0)
+        current['rejected_volume_litres'] = float(current.get('rejected_volume_litres', 0)) - float(delivery.volume_litres or 0)
+    else:
+        current['graded_qty_kg'] = float(current.get('graded_qty_kg', 0)) - float(delivery.quantity_kg or 0)
+        current['graded_volume_litres'] = float(current.get('graded_volume_litres', 0)) - float(delivery.volume_litres or 0)
+
+    inventory[product] = current
+    coop.inventory = inventory
+    coop.save(update_fields=['inventory'])
+
+
 class GradeViewSet(CooperativeScopedViewSet):
     queryset = Grade.objects.all().select_related(
         'delivery__farmer', 'delivery__cooperative', 'overridden_by',
@@ -137,9 +155,18 @@ class GradeViewSet(CooperativeScopedViewSet):
         )
 
     def perform_update(self, serializer):
+        instance = serializer.instance
+        was_rejected = bool(instance.rejection_reason)
+        delivery = instance.delivery
+
         serializer.validated_data.pop('delivery', None)
         instance = serializer.save()
         update_delivery_from_grade(instance)
+
+        _reverse_inventory_contribution(delivery, was_rejected)
+
+        instance.is_inventory_updated = False
+        instance.save(update_fields=['is_inventory_updated'])
         update_inventory_on_grade.delay(str(instance.id))
         log_audit(
             actor=self.request.user,
@@ -152,6 +179,13 @@ class GradeViewSet(CooperativeScopedViewSet):
         )
 
     def perform_destroy(self, instance):
+        from apps.inventory.models import Inventory
+
+        delivery = instance.delivery
+        was_rejected = bool(instance.rejection_reason)
+        _reverse_inventory_contribution(delivery, was_rejected)
+        Inventory.objects.filter(batch_id=delivery.batch_id, cooperative=delivery.cooperative).delete()
+
         log_audit(
             actor=self.request.user,
             resource_type='grade',
@@ -170,6 +204,9 @@ class GradeViewSet(CooperativeScopedViewSet):
             grade, data=request.data, partial=request.method == 'PATCH'
         )
         serializer.is_valid(raise_exception=True)
+
+        was_rejected = bool(grade.rejection_reason)
+        delivery = grade.delivery
 
         previous = {
             'grade_letter': grade.grade_letter,
@@ -190,6 +227,10 @@ class GradeViewSet(CooperativeScopedViewSet):
         grade.rejection_reason = serializer.validated_data.get(
             'rejection_reason', grade.rejection_reason
         )
+
+        _reverse_inventory_contribution(delivery, was_rejected)
+
+        grade.is_inventory_updated = False
         grade.save()
 
         update_delivery_from_grade(grade)

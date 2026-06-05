@@ -181,8 +181,9 @@ def compute_revenue_share(cycle):
             date_delivered__date__gte=cycle.start_date,
             date_delivered__date__lte=cycle.end_date,
             status__in=['GRADED', 'ACCEPTED'],
+            grade_record__isnull=False,
         )
-        .values('farmer_id', 'product_type', 'grade')
+        .values('farmer_id', 'product_type', 'grade_record__grade_letter')
         .annotate(
             total_kg=Coalesce(Sum('quantity_kg'), Value(Decimal('0')))
             + Coalesce(Sum('volume_litres'), Value(Decimal('0'))),
@@ -201,7 +202,7 @@ def compute_revenue_share(cycle):
     for row in agg:
         fid = row['farmer_id']
         ptype = row['product_type']
-        grade = row['grade'] or 'UNGRADED'
+        grade = row['grade_record__grade_letter'] or 'UNGRADED'
         kg = float(row['total_kg'])
         farmer_total_kg[fid] += kg
         farmer_type_kg[fid][ptype] += kg

@@ -32,7 +32,7 @@ def update_inventory_on_grade(grade_id: str):
 
             unit, qty = _determine_unit(product, delivery.quantity_kg, delivery.volume_litres)
 
-            Inventory.objects.update_or_create(
+            inv, created = Inventory.objects.update_or_create(
                 batch_id=delivery.batch_id,
                 cooperative=coop,
                 defaults={
@@ -40,9 +40,11 @@ def update_inventory_on_grade(grade_id: str):
                     'grade': grade.grade_letter,
                     'unit': unit,
                     'quantity_in': qty,
-                    'quantity_out': 0,
                 },
             )
+            if created:
+                inv.quantity_out = 0
+                inv.save(update_fields=['quantity_out'])
 
             inventory = coop.inventory or {}
             current = inventory.get(product, {})

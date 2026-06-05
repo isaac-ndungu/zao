@@ -105,16 +105,34 @@ class SaleViewSet(CooperativeScopedViewSet):
         return SaleDetailSerializer
 
     def perform_create(self, serializer):
-        if getattr(self.request.user, 'role', None) == 'admin':
-            cooperative_id = serializer.validated_data.pop('cooperative_id', None) or self.request.cooperative_id
-        else:
-            serializer.validated_data.pop('cooperative_id', None)
-            cooperative_id = self.request.cooperative_id
+        from django.db import transaction
+        from apps.inventory.models import Inventory
 
-        instance = serializer.save(
-            cooperative_id=cooperative_id,
-            recorded_by=self.request.user,
-        )
+        inventory = serializer.validated_data.get('inventory')
+        quantity = serializer.validated_data.get('quantity')
+
+        with transaction.atomic():
+            if inventory and quantity:
+                inv = Inventory.objects.select_for_update().get(id=inventory.id)
+                available = inv.quantity_in - inv.quantity_out
+                if quantity > available:
+                    from rest_framework.exceptions import ValidationError
+                    raise ValidationError(
+                        f'Insufficient inventory: {float(available)} {inv.unit} available, '
+                        f'{float(quantity)} {inv.unit} requested.'
+                    )
+
+            if getattr(self.request.user, 'role', None) == 'admin':
+                cooperative_id = serializer.validated_data.pop('cooperative_id', None) or self.request.cooperative_id
+            else:
+                serializer.validated_data.pop('cooperative_id', None)
+                cooperative_id = self.request.cooperative_id
+
+            instance = serializer.save(
+                cooperative_id=cooperative_id,
+                recorded_by=self.request.user,
+            )
+
         log_audit(
             actor=self.request.user,
             resource_type='sale',

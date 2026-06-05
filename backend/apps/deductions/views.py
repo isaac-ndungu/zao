@@ -105,7 +105,7 @@ class FarmInputCreditViewSet(CooperativeScopedViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return FarmInputCreditListSerializer
-        if self.action in ('create',):
+        if self.action in ('create', 'update', 'partial_update'):
             return FarmInputCreditCreateSerializer
         return FarmInputCreditDetailSerializer
 
