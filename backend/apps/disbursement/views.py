@@ -134,7 +134,13 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         if batch.status != 'PENDING':
             return Response(
-                {'detail': 'Only approved PENDING batches can go live.'},
+                {'detail': 'Only PENDING batches can go live.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not batch.approved_by:
+            return Response(
+                {'detail': 'Batch must be approved before going live.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

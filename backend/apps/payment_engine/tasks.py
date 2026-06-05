@@ -62,6 +62,10 @@ def run_payment_engine(self, cycle_id: str):
         logger.warning("Cycle %s is locked, skipping", cycle_id)
         return {'error': 'Cycle is locked'}
 
+    if cycle.status == 'DISBURSED':
+        logger.warning("Cycle %s is already disbursed, skipping", cycle_id)
+        return {'error': 'Cycle is already disbursed'}
+
     # Distributed lock guard — prevent concurrent computation on the same cycle
     if not _acquire_cycle_lock(cycle_id, self.request.id or ''):
         logger.warning(

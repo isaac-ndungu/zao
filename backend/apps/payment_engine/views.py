@@ -91,9 +91,9 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
     def run(self, request, pk=None):
         cycle = self.get_object()
 
-        if cycle.status == 'LOCKED':
+        if cycle.status in ('LOCKED', 'DISBURSED', 'COMPUTING'):
             return Response(
-                {'detail': 'Cannot run computation on a locked cycle.'},
+                {'detail': f'Cannot run computation on a {cycle.status.lower()} cycle.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

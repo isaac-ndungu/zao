@@ -6,8 +6,9 @@ from decimal import Decimal
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Case, When
+from django.db.models import Case, F, When
 from django.db.models import IntegerField
+from django.db.models.functions import Greatest
 from django.core.mail import send_mail
 from django.utils import timezone
 
@@ -423,7 +424,11 @@ def _send_stuck_alerts(stuck_by_coop: dict[str, list[DisbursementTransaction]]) 
 @shared_task
 def reverse_deductions_on_failure(farmer_id: str, farmer_payment_id: str):
     from apps.deductions.models import Deduction
-    from apps.loans.models import LoanRepayment
+    from apps.loans.models import Loan, LoanRepayment
+
+    loan_repayment = LoanRepayment.objects.filter(
+        farmer_payment_id=farmer_payment_id,
+    ).first()
 
     deductions = Deduction.objects.filter(
         farmer=farmer_id,
@@ -432,6 +437,12 @@ def reverse_deductions_on_failure(farmer_id: str, farmer_payment_id: str):
         if ded.deduction_type == 'LOAN_REPAYMENT':
             LoanRepayment.objects.filter(farmer_payment_id=farmer_payment_id).delete()
     deductions.delete()
+
+    if loan_repayment:
+        Loan.objects.filter(id=loan_repayment.loan_id).update(
+            installments_paid=Greatest(F('installments_paid') - 1, 0),
+            status='ACTIVE',
+        )
 
     logger.info(
         "Reversed deductions for farmer %s on payment %s",
