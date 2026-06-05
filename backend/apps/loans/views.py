@@ -30,7 +30,7 @@ class LoanViewSet(CooperativeScopedViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return LoanListSerializer
-        if self.action == 'create':
+        if self.action in ('create', 'update', 'partial_update'):
             return LoanCreateSerializer
         return LoanDetailSerializer
 
