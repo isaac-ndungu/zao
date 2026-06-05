@@ -17,6 +17,10 @@ from .serializers import (
 class BuyerViewSet(CooperativeScopedViewSet):
     queryset = Buyer.objects.all().select_related('cooperative')
     serializer_class = BuyerSerializer
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['name', 'contact_person', 'phone_number', 'email']
+    ordering_fields = ['name', 'created_at']
+    ordering = ['name']
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):

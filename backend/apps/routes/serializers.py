@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import CollectionRoute, RouteStop
+from .models import CollectionRoute, DayOfWeekChoices, RouteStop
 
 
 class RouteStopSerializer(serializers.Serializer):
@@ -45,6 +45,8 @@ class RouteDetailSerializer(serializers.ModelSerializer):
 
 
 class RouteWriteSerializer(serializers.ModelSerializer):
+    day_of_week = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = CollectionRoute
         fields = [
@@ -64,6 +66,16 @@ class RouteWriteSerializer(serializers.ModelSerializer):
             if not isinstance(coord, (list, tuple)) or len(coord) != 2:
                 raise serializers.ValidationError('Each coordinate must be [lng, lat].')
         return value
+
+    def validate_day_of_week(self, value):
+        if not value:
+            return value
+        try:
+            return DayOfWeekChoices.from_string(value)
+        except ValueError:
+            raise serializers.ValidationError(
+                f'"{value}" is not a valid day of week.'
+            )
 
 
 class RouteAssignSerializer(serializers.Serializer):

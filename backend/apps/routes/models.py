@@ -3,14 +3,18 @@ from django.db import models
 from apps.base.models import CooperativeScopedModel
 
 
-class DayOfWeek(models.IntegerChoices):
-    MONDAY = 0, 'Monday'
-    TUESDAY = 1, 'Tuesday'
-    WEDNESDAY = 2, 'Wednesday'
-    THURSDAY = 3, 'Thursday'
-    FRIDAY = 4, 'Friday'
-    SATURDAY = 5, 'Saturday'
-    SUNDAY = 6, 'Sunday'
+class DayOfWeekChoices(models.TextChoices):
+    MONDAY = 'MONDAY', 'Monday'
+    TUESDAY = 'TUESDAY', 'Tuesday'
+    WEDNESDAY = 'WEDNESDAY', 'Wednesday'
+    THURSDAY = 'THURSDAY', 'Thursday'
+    FRIDAY = 'FRIDAY', 'Friday'
+    SATURDAY = 'SATURDAY', 'Saturday'
+    SUNDAY = 'SUNDAY', 'Sunday'
+
+    @classmethod
+    def from_string(cls, value):
+        return cls(value.upper())
 
 
 class CollectionRoute(CooperativeScopedModel):
@@ -21,7 +25,9 @@ class CollectionRoute(CooperativeScopedModel):
     estimated_distance_km = models.DecimalField(
         max_digits=7, decimal_places=2, null=True, blank=True,
     )
-    day_of_week = models.IntegerField(null=True, blank=True, choices=DayOfWeek.choices)
+    day_of_week = models.CharField(
+        max_length=9, null=True, blank=True, choices=DayOfWeekChoices.choices,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
