@@ -310,6 +310,13 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
         'grade', 'raised_by', 'resolved_by',
     )
 
+    def get_queryset(self):
+        user = self.request.user
+        qs = self.queryset
+        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+            return qs
+        return qs.filter(grade__cooperative_id=self.request.cooperative_id)
+
     def get_permissions(self):
         if self.action == 'resolve':
             return [IsAuthenticated(), IsManager()]
