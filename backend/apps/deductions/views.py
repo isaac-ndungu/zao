@@ -20,11 +20,12 @@ class DeductionViewSet(CooperativeScopedViewSet):
     queryset = Deduction.objects.all().select_related(
         'farmer', 'cycle', 'created_by', 'cooperative',
     )
+    lookup_value_regex = '[0-9a-f-]{36}'
 
     def get_serializer_class(self):
         if self.action == 'list':
             return DeductionListSerializer
-        if self.action in ('create',):
+        if self.action in ('create', 'update', 'partial_update'):
             return DeductionCreateSerializer
         return DeductionDetailSerializer
 
