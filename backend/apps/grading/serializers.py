@@ -6,7 +6,7 @@ from .models import Grade, GradeImage, GradePrice, FarmerGradeDispute
 
 
 def validate_delivery_scoped(value, request, instance=None):
-    if value.status != 'PENDING':
+    if instance is None and value.status != 'PENDING':
         raise serializers.ValidationError(
             'Only PENDING deliveries can be graded.'
         )
@@ -56,9 +56,9 @@ class GradeImageSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Unsupported image format. Only JPEG and PNG images are allowed.'
             )
-        if image.width < 300 or image.height < 300:
+        if max(image.width, image.height) < 300:
             raise serializers.ValidationError(
-                f'Image dimensions must be at least 300×300 pixels. '
+                f'Image longest edge must be at least 300 pixels. '
                 f'Got {image.width}×{image.height}.'
             )
 
