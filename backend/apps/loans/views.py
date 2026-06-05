@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated, OR
 from rest_framework.response import Response
 
@@ -26,6 +27,16 @@ class LoanViewSet(CooperativeScopedViewSet):
     queryset = Loan.objects.all().select_related(
         'farmer', 'approved_by', 'cooperative',
     ).prefetch_related('repayments')
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = [
+        'farmer__first_name', 'farmer__last_name',
+        'farmer__member_number', 'notes',
+    ]
+    ordering_fields = [
+        'created_at', 'amount_principal', 'status',
+        'installments_paid', 'number_of_installments',
+    ]
+    ordering = ['-created_at']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -62,7 +73,7 @@ class LoanViewSet(CooperativeScopedViewSet):
             qs = qs.filter(farmer_id=farmer_id)
         status_param = self.request.query_params.get('status')
         if status_param:
-            qs = qs.filter(status=status_param)
+            qs = qs.filter(status__iexact=status_param)
         return qs
 
     def perform_create(self, serializer):
