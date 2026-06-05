@@ -7,8 +7,9 @@ from rest_framework.response import Response
 
 from apps.base.permissions import IsManager
 from apps.base.views import CooperativeScopedViewSet
+from apps.farmers.models import Farmer
 
-from .models import CollectionRoute, RouteStop
+from .models import CollectionRoute, DayOfWeekChoices, RouteStop
 from .serializers import (
     RouteAssignSerializer,
     RouteDetailSerializer,
@@ -42,7 +43,10 @@ class RouteViewSet(CooperativeScopedViewSet):
             qs = qs.filter(is_active=is_active.lower() == 'true')
         day_of_week = self.request.query_params.get('day_of_week')
         if day_of_week is not None:
-            qs = qs.filter(day_of_week=int(day_of_week))
+            try:
+                qs = qs.filter(day_of_week=DayOfWeekChoices.from_string(day_of_week))
+            except ValueError:
+                qs = qs.none()
         return qs
 
     @action(detail=True, methods=['post'], url_path='assign-stops')
@@ -52,6 +56,17 @@ class RouteViewSet(CooperativeScopedViewSet):
         serializer.is_valid(raise_exception=True)
 
         stops_data = serializer.validated_data['stops']
+        all_farmer_ids = {fid for sd in stops_data for fid in sd['farmer_ids']}
+        if all_farmer_ids:
+            existing = set(Farmer.objects.filter(id__in=all_farmer_ids).values_list('id', flat=True))
+            missing = all_farmer_ids - existing
+            if missing:
+                return Response(
+                    {'detail': f'Farmers not found: {len(missing)} invalid ID(s).',
+                     'invalid_farmer_ids': [str(m) for m in missing]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         with transaction.atomic():
             route.stops.all().delete()
             stop_instances = []

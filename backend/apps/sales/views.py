@@ -73,6 +73,25 @@ class SaleViewSet(CooperativeScopedViewSet):
     ]
     ordering = ['-sale_date']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status = self.request.query_params.get('status')
+        if status:
+            qs = qs.filter(status__iexact=status)
+        buyer = self.request.query_params.get('buyer')
+        if buyer:
+            qs = qs.filter(buyer_id=buyer)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(sale_date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(sale_date__lte=date_to)
+        product_type = self.request.query_params.get('product_type')
+        if product_type:
+            qs = qs.filter(product_type__iexact=product_type)
+        return qs
+
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsManager()]
