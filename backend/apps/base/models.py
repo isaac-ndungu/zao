@@ -17,6 +17,10 @@ class AuditAction(models.TextChoices):
     GRADE = 'GRADE', 'Grade'
     PDF_GENERATED = 'PDF_GENERATED', 'PDF Generated'
     NOTIFY = 'NOTIFY', 'Notify'
+    MEMBERSHIP_ADDED = 'MEMBERSHIP_ADDED', 'Membership Added'
+    MEMBERSHIP_UPDATED = 'MEMBERSHIP_UPDATED', 'Membership Updated'
+    MEMBERSHIP_DEACTIVATED = 'MEMBERSHIP_DEACTIVATED', 'Membership Deactivated'
+    MEMBERSHIP_REACTIVATED = 'MEMBERSHIP_REACTIVATED', 'Membership Reactivated'
 
 
 class LocationMixin(models.Model):
@@ -67,7 +71,7 @@ class AuditLog(CooperativeScopedModel):
     resource_type = models.CharField(max_length=100)
     resource_id = models.UUIDField()
     action = models.CharField(
-        max_length=20,
+        max_length=50,
         choices=AuditAction.choices,
     )
     ip_address = models.GenericIPAddressField(null=True, blank=True)
