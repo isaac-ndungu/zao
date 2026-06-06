@@ -66,7 +66,7 @@ class PendingDeductions:
     loan_repayment_record: Optional = None
     updated_loan: Optional[LoanUpdate] = None
     input_credit_deds: list = field(default_factory=list)
-    updated_credits: list = field(default_factory=list)
+    updated_credits: list = field(default_factory=list)  # list of (credit, amount_deducted) tuples
 
 
 # ---------------------------------------------------------------------------
@@ -363,25 +363,39 @@ def _compute_deductions(farmer_payment, cooperative, active_farmer_count, cycle,
     input_credit_total = 0.0
     from apps.deductions.models import FarmInputCredit as FIC, Deduction as DedModel
     if undeducted_credits is None:
-        undeducted = FIC.objects.filter(
+        active_credits = FIC.objects.filter(
             farmer=farmer_payment.farmer,
-            deducted_in_cycle__isnull=True,
+            status='ACTIVE',
         )
     else:
-        undeducted = undeducted_credits
-    for credit in undeducted:
-        input_credit_total += float(credit.amount)
+        active_credits = undeducted_credits
+
+    # Calculate remaining budget after non-input-credit deductions
+    remaining = max(gross - levy - monthly_fee_share - loan_repayment, 0)
+
+    # Deduct credits in FIFO order (oldest first), up to remaining budget
+    for credit in sorted(active_credits, key=lambda c: c.supplied_date):
+        inst_amount = float(credit.installment_amount or credit.amount)
+        remaining_credit = float(credit.amount) - float(credit.total_deducted)
+        actual_deduction = min(inst_amount, remaining_credit)
+
+        if remaining < actual_deduction:
+            # Can't fully cover this credit's installment — it carries forward
+            continue
+
+        remaining -= actual_deduction
+        input_credit_total += actual_deduction
         pending.input_credit_deds.append(
             DedModel(
                 cooperative=cycle.cooperative,
                 farmer=farmer_payment.farmer,
                 cycle=cycle,
                 deduction_type='INPUT_CREDIT',
-                amount=credit.amount,
+                amount=actual_deduction,
                 notes=credit.item_description,
             )
         )
-        pending.updated_credits.append(credit)
+        pending.updated_credits.append((credit, actual_deduction))
 
     total_deductions = levy + monthly_fee_share + loan_repayment + input_credit_total
     net = max(gross - total_deductions, 0)
@@ -408,9 +422,13 @@ def apply_deductions(farmer_payment, cooperative, active_farmer_count, cycle, un
             installments_paid=update.installments_paid, status=update.status,
         )
 
-    for credit in pending.updated_credits:
-        credit.deducted_in_cycle = cycle
-        credit.save(update_fields=['deducted_in_cycle'])
+    for credit, amount_deducted in pending.updated_credits:
+        credit.total_deducted += Decimal(str(amount_deducted))
+        if credit.total_deducted >= credit.amount:
+            credit.status = 'COMPLETED'
+            credit.deducted_in_cycle = cycle
+            credit.installment_amount = credit.installment_amount or credit.amount
+        credit.save(update_fields=['total_deducted', 'status', 'deducted_in_cycle'])
 
     if pending.input_credit_deds:
         from apps.deductions.models import Deduction

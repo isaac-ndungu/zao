@@ -99,7 +99,7 @@ class DeductionViewSet(CooperativeScopedViewSet):
 
 class FarmInputCreditViewSet(CooperativeScopedViewSet):
     queryset = FarmInputCredit.objects.all().select_related(
-        'farmer', 'cooperative', 'deducted_in_cycle',
+        'farmer', 'cooperative',
     )
 
     def get_serializer_class(self):
@@ -119,9 +119,9 @@ class FarmInputCreditViewSet(CooperativeScopedViewSet):
         farmer = self.request.query_params.get('farmer')
         if farmer:
             qs = qs.filter(farmer_id=farmer)
-        undeducted = self.request.query_params.get('undeducted')
-        if undeducted and undeducted.lower() == 'true':
-            qs = qs.filter(deducted_in_cycle__isnull=True)
+        status = self.request.query_params.get('status')
+        if status:
+            qs = qs.filter(status=status)
         return qs
 
     def perform_create(self, serializer):
@@ -142,9 +142,9 @@ class FarmInputCreditViewSet(CooperativeScopedViewSet):
         )
 
     def perform_destroy(self, instance):
-        if instance.deducted_in_cycle_id:
+        if instance.status == 'COMPLETED':
             raise ValidationError(
-                'Cannot delete an input credit that has already been deducted in a cycle.'
+                'Cannot delete an input credit that has already been fully deducted.'
             )
         log_audit(
             actor=self.request.user,

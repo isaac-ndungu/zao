@@ -10,6 +10,11 @@ class DeductionType(models.TextChoices):
     INPUT_CREDIT = 'INPUT_CREDIT', 'Input Credit'
 
 
+class FarmInputCreditStatus(models.TextChoices):
+    ACTIVE = 'ACTIVE', 'Active'
+    COMPLETED = 'COMPLETED', 'Completed'
+
+
 class Deduction(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     farmer = models.ForeignKey(
@@ -47,6 +52,14 @@ class FarmInputCredit(CooperativeScopedModel):
     )
     item_description = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    installment_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='Amount deducted per cycle. Defaults to amount (pay in full).',
+    )
+    total_deducted = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(
+        max_length=10, choices=FarmInputCreditStatus.choices, default='ACTIVE',
+    )
     supplied_date = models.DateField()
     deducted_in_cycle = models.ForeignKey(
         'payment_engine.PaymentCycle', on_delete=models.SET_NULL,

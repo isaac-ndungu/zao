@@ -14,7 +14,7 @@ class DeductionAdmin(admin.ModelAdmin):
 
 @admin.register(FarmInputCredit)
 class FarmInputCreditAdmin(admin.ModelAdmin):
-    list_display = ['farmer', 'item_description', 'amount', 'supplied_date', 'deducted_in_cycle']
-    list_select_related = ['farmer', 'deducted_in_cycle']
-    list_filter = ['deducted_in_cycle', 'cooperative']
+    list_display = ['farmer', 'item_description', 'amount', 'installment_amount', 'total_deducted', 'status', 'supplied_date']
+    list_select_related = ['farmer']
+    list_filter = ['status', 'cooperative']
     search_fields = ['farmer__first_name', 'farmer__last_name', 'item_description']
