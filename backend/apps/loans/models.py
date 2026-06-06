@@ -46,7 +46,8 @@ class Loan(CooperativeScopedModel):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Loan {self.id} — {self.farmer.member_number}'
+        mn = self.farmer.primary_membership.member_number if self.farmer.primary_membership else '---'
+        return f'Loan {self.id} — {mn}'
 
     def save(self, *args, **kwargs):
         if not self.total_repayable or not self.installment_amount:
@@ -102,4 +103,5 @@ class LoanGuarantor(CooperativeScopedModel):
         unique_together = ('loan', 'guarantor')
 
     def __str__(self):
-        return f'{self.guarantor.member_number} → {self.loan} [{self.status}]'
+        mn = self.guarantor.primary_membership.member_number if self.guarantor.primary_membership else '---'
+        return f'{mn} → {self.loan} [{self.status}]'

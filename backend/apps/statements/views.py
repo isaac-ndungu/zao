@@ -162,7 +162,7 @@ class FarmerPaymentHistoryView(APIView):
         return Response({
             'farmer_id': farmer_id,
             'farmer_name': f'{farmer.first_name} {farmer.last_name}',
-            'member_number': farmer.member_number,
+            'member_number': farmer.primary_membership.member_number if farmer.primary_membership else '',
             'payments': [
                 {
                     'farmer_payment_id': str(p['id']),
@@ -354,7 +354,7 @@ class AnnualReportView(APIView):
             farmer = farmers_map.get(str(fs['farmer']))
             farmer_summaries.append({
                 'farmer_id': str(fs['farmer']),
-                'member_number': farmer.member_number if farmer else '',
+                'member_number': farmer.primary_membership.member_number if farmer and farmer.primary_membership else '',
                 'farmer_name': f'{farmer.first_name} {farmer.last_name}' if farmer else 'Unknown',
                 'total_quantity': float(fs['total_quantity'] or 0),
                 'total_gross': float(fs['total_gross'] or 0),

@@ -115,8 +115,8 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
             return _end(
                 session,
                 f'Name: {f.first_name} {f.last_name}\n'
-                f'Member: {f.member_number}\n'
-                f'Payment: {f.get_payment_method_display()}',
+                f'Member: {f.primary_membership.member_number if f.primary_membership else "---"}\n'
+                f'Payment: {f.primary_membership.get_payment_method_display() if f.primary_membership else "---"}',
             )
 
         if current_input == '0':

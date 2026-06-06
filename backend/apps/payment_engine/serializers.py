@@ -22,7 +22,7 @@ class FarmerPaymentPreviewSerializer(serializers.ModelSerializer):
         return f'{obj.farmer.first_name} {obj.farmer.last_name}'
 
     def get_member_number(self, obj):
-        return obj.farmer.member_number
+        return obj.farmer.primary_membership.member_number if obj.farmer.primary_membership else ''
 
 
 class CyclePreviewSerializer(serializers.ModelSerializer):

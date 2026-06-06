@@ -57,7 +57,7 @@ class LoanListSerializer(serializers.ModelSerializer):
         return f'{obj.farmer.first_name} {obj.farmer.last_name}'
 
     def get_farmer_member_number(self, obj):
-        return obj.farmer.member_number
+        return obj.farmer.primary_membership.member_number if obj.farmer.primary_membership else ''
 
     def get_remaining_installments(self, obj):
         return max(0, obj.number_of_installments - obj.installments_paid)
@@ -85,7 +85,7 @@ class LoanDetailSerializer(serializers.ModelSerializer):
         return f'{obj.farmer.first_name} {obj.farmer.last_name}'
 
     def get_farmer_member_number(self, obj):
-        return obj.farmer.member_number
+        return obj.farmer.primary_membership.member_number if obj.farmer.primary_membership else ''
 
     def get_approved_by_name(self, obj):
         if obj.approved_by:

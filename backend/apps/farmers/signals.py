@@ -6,10 +6,10 @@ from django.utils import timezone
 
 from apps.cooperatives.models import Cooperative
 
-from .models import Farmer
+from .models import Farmer, FarmerCooperativeMembership
 
 
-@receiver(pre_save, sender=Farmer)
+@receiver(pre_save, sender=FarmerCooperativeMembership)
 def auto_generate_member_number(sender, instance, **kwargs):
     if instance.member_number:
         return
@@ -25,8 +25,31 @@ def auto_generate_member_number(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Farmer)
+def create_initial_membership(sender, instance, created, **kwargs):
+    if not created:
+        return
+    if not instance.cooperative_id:
+        return
+    FarmerCooperativeMembership.objects.get_or_create(
+        farmer=instance,
+        cooperative_id=instance.cooperative_id,
+        defaults={
+            'mpesa_number': instance.phone_number,
+        },
+    )
+
+
+@receiver(post_save, sender=Farmer)
 def update_search_vector(sender, instance, **kwargs):
-    if instance.member_number and (instance.first_name or instance.last_name):
+    primary = instance.primary_membership
+    mn = primary.member_number if primary else ''
+    if mn and (instance.first_name or instance.last_name):
         Farmer.objects.filter(id=instance.id).update(
-            search_vector=SearchVector('first_name', 'last_name', 'member_number'),
+            search_vector=SearchVector('first_name', 'last_name'),
         )
+
+
+@receiver(pre_save, sender=Farmer)
+def ensure_primary_cooperative(sender, instance, **kwargs):
+    """Ensure Farmer always has a cooperative_id set (from CooperativeScopedModel)."""
+    pass

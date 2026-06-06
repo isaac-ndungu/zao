@@ -203,7 +203,7 @@ def process_batch_disbursements(self, batch_id: str):
 
     for chunk_index, chunk in enumerate(chunks):
         for txn in chunk:
-            mpesa_number = txn.farmer.mpesa_number
+            mpesa_number = txn.recipient_identifier
             try:
                 mpesa_number = normalize_mpesa_number(mpesa_number)
             except ValueError:

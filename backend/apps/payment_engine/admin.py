@@ -17,5 +17,5 @@ class FarmerPaymentAdmin(admin.ModelAdmin):
     list_display = ['farmer', 'cycle', 'total_quantity', 'gross_amount', 'net_amount', 'cooperative']
     list_select_related = ['farmer', 'cycle', 'cooperative']
     list_filter = ['cycle', 'cooperative']
-    search_fields = ['farmer__first_name', 'farmer__last_name', 'farmer__member_number']
+    search_fields = ['farmer__first_name', 'farmer__last_name', 'farmer__id']
     readonly_fields = ['total_quantity', 'grade_breakdown', 'gross_amount', 'deductions', 'net_amount', 'computation_log']

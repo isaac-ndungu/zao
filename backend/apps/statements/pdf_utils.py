@@ -56,7 +56,7 @@ def generate_farmer_statement(farmer_payment_id, cooperative_id, request_user):
     html = render_to_string('statements/farmer_statement.html', context)
     pdf = HTML(string=html).write_pdf()
 
-    member = slugify(fp.farmer.member_number)
+    member = slugify(fp.farmer.primary_membership.member_number) if fp.farmer.primary_membership else 'unknown'
     cycle_name = slugify(fp.cycle.name)
     filename = f'coopchain_statement_{member}_{cycle_name}.pdf'
 

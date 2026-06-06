@@ -30,10 +30,16 @@ class DisbursementTransactionSerializer(serializers.ModelSerializer):
         return f'{obj.farmer.first_name} {obj.farmer.last_name}'
 
     def get_member_number(self, obj):
-        return obj.farmer.member_number
+        membership = obj.farmer.memberships.filter(
+            cooperative_id=obj.cooperative_id
+        ).first()
+        return membership.member_number if membership else ''
 
     def get_mpesa_number(self, obj):
-        return obj.farmer.mpesa_number
+        membership = obj.farmer.memberships.filter(
+            cooperative_id=obj.cooperative_id
+        ).first()
+        return membership.mpesa_number if membership else ''
 
 
 class DisbursementBatchListSerializer(serializers.ModelSerializer):
@@ -139,7 +145,18 @@ class DisbursementBatchCreateSerializer(serializers.Serializer):
         farmer_payments = FarmerPayment.objects.filter(
             cycle=cycle,
             is_on_hold=False,
-        ).select_related('farmer').order_by('farmer__member_number', 'id')
+        ).select_related('farmer__cooperative').order_by('farmer__member_number', 'id')
+
+        # Prefetch memberships for all relevant farmers
+        farmer_ids = [fp.farmer_id for fp in farmer_payments]
+        from apps.farmers.models import FarmerCooperativeMembership
+        memberships = {
+            m.farmer_id: m
+            for m in FarmerCooperativeMembership.objects.filter(
+                farmer_id__in=farmer_ids,
+                cooperative=cooperative,
+            )
+        }
 
         txns = []
         minimum_payout = float(cooperative.minimum_payout_amount or 0)
@@ -156,10 +173,14 @@ class DisbursementBatchCreateSerializer(serializers.Serializer):
                 continue
 
             farmer = fp.farmer
-            if farmer.payment_method == 'M-PESA':
-                recipient = farmer.mpesa_number
-            elif farmer.payment_method == 'BANK':
-                recipient = farmer.bank_account or ''
+            membership = memberships.get(farmer.id)
+            if not membership:
+                continue
+
+            if membership.payment_method == 'M-PESA':
+                recipient = membership.mpesa_number or farmer.phone_number
+            elif membership.payment_method == 'BANK':
+                recipient = membership.bank_account or ''
             else:
                 recipient = ''
 
@@ -169,7 +190,7 @@ class DisbursementBatchCreateSerializer(serializers.Serializer):
                 farmer_payment=fp,
                 farmer=farmer,
                 amount=fp.net_amount,
-                payment_method=farmer.payment_method.replace('-', '_'),
+                payment_method=membership.payment_method.replace('-', '_'),
                 recipient_identifier=recipient,
                 recipient_name=str(farmer),
                 status='PENDING',

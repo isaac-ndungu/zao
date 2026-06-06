@@ -297,7 +297,17 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         cycle = self.get_object()
         farmer_payments = FarmerPayment.objects.filter(
             cycle=cycle,
-        ).select_related('farmer').order_by('farmer__member_number')
+        ).select_related('farmer').order_by('farmer__id')
+
+        from apps.farmers.models import FarmerCooperativeMembership
+        farmer_ids = [fp.farmer_id for fp in farmer_payments]
+        memberships = {
+            m.farmer_id: m
+            for m in FarmerCooperativeMembership.objects.filter(
+                farmer_id__in=farmer_ids,
+                cooperative=cycle.cooperative,
+            )
+        }
 
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = (
@@ -312,15 +322,16 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
         ])
 
         for fp in farmer_payments:
+            membership = memberships.get(fp.farmer_id)
             writer.writerow([
-                fp.farmer.member_number,
+                membership.member_number if membership else '',
                 f'{fp.farmer.first_name} {fp.farmer.last_name}',
                 fp.total_quantity,
                 fp.gross_amount,
                 fp.deductions,
                 fp.withholding_tax_amount,
                 fp.net_amount,
-                fp.farmer.payment_method,
+                membership.payment_method if membership else 'M-PESA',
                 fp.payment_status,
             ])
 

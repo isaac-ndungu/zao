@@ -59,6 +59,17 @@ def _build_user_claims(user):
     if user.role == UserRole.FARMER:
         farmer = getattr(user, 'farmer_profile', None)
         claims['farmer_id'] = str(farmer.id) if farmer else None
+        if farmer:
+            claims['memberships'] = [
+                {
+                    'cooperative_id': str(m.cooperative_id),
+                    'member_number': m.member_number,
+                    'is_active': m.is_active,
+                }
+                for m in farmer.memberships.all()
+            ]
+        else:
+            claims['memberships'] = []
     return claims
 
 

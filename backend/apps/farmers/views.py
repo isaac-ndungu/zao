@@ -20,17 +20,18 @@ from apps.base.permissions import IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
-from .models import Farmer
+from .models import Farmer, FarmerCooperativeMembership
 from .serializers import (
     FarmerCreateSerializer,
     FarmerDetailSerializer,
     FarmerListSerializer,
     FarmerSelfUpdateSerializer,
+    MembershipCreateSerializer,
+    MembershipSerializer,
 )
 
 
 def _create_farmer_user(farmer, cooperative_id):
-    """Create a linked User with unusable password for a farmer."""
     email = farmer.email or f'farmer_{farmer.id}@placeholder.local'
     user = User.objects.create_user(
         email=email,
@@ -52,23 +53,31 @@ class FarmerViewSet(CooperativeScopedViewSet):
     queryset = Farmer.objects.all().select_related('cooperative', 'user')
     filter_backends = [OrderingFilter]
     ordering_fields = [
-        'first_name', 'last_name', 'member_number',
+        'first_name', 'last_name',
         'date_joined', 'phone_number',
     ]
     ordering = ['first_name']
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+            qs = self.queryset
+        else:
+            qs = self.queryset.filter(
+                memberships__cooperative_id=self.request.cooperative_id,
+                memberships__is_active=True,
+            ).distinct()
+
         query = self.request.query_params.get('q', '').strip()
         if query:
             if len(query) < 3:
                 qs = qs.filter(
                     Q(first_name__icontains=query)
                     | Q(last_name__icontains=query)
-                    | Q(member_number__icontains=query)
+                    | Q(memberships__member_number__icontains=query)
                 )
             else:
-                search_vector = SearchVector('first_name', 'last_name', 'member_number')
+                search_vector = SearchVector('first_name', 'last_name')
                 search_query = SearchQuery(query)
                 qs = (
                     qs.annotate(
@@ -77,7 +86,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                     )
                     .filter(Q(rank__gte=0.1) | Q(similarity__gte=0.3))
                 )
-        for param in ('first_name', 'last_name', 'county', 'sub_county', 'ward', 'village', 'payment_method'):
+        for param in ('first_name', 'last_name', 'county', 'sub_county', 'ward', 'village'):
             val = self.request.query_params.get(param)
             if val:
                 qs = qs.filter(**{param: val})
@@ -97,6 +106,8 @@ class FarmerViewSet(CooperativeScopedViewSet):
         if self.action == 'me':
             return [IsAuthenticated()]
         if self.action in ('create', 'update', 'partial_update', 'destroy', 'import_csv'):
+            return [IsAuthenticated(), IsManager()]
+        if self.action in ('lookup',):
             return [IsAuthenticated(), IsManager()]
         return [IsAuthenticated()]
 
@@ -119,9 +130,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
             serializer.validated_data.pop('cooperative_id', None)
             cooperative_id = request.cooperative_id
 
-        instance = serializer.save(
-            cooperative_id=cooperative_id,
-        )
+        instance = serializer.save(cooperative_id=cooperative_id)
 
         _create_farmer_user(instance, cooperative_id)
 
@@ -131,8 +140,8 @@ class FarmerViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='CREATE',
             new_value={
-                'member_number': instance.member_number,
                 'name': f'{instance.first_name} {instance.last_name}',
+                'phone': instance.phone_number,
             },
             cooperative_id=request.cooperative_id,
         )
@@ -140,9 +149,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
         response_serializer = FarmerDetailSerializer(
             instance, context={'request': request}
         )
-        data = response_serializer.data
-
-        return Response(data, status=status.HTTP_201_CREATED)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_update(self, serializer):
         instance = serializer.save()
@@ -151,9 +158,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
             resource_type='farmer',
             resource_id=instance.id,
             action='UPDATE',
-            previous_value={
-                'member_number': instance.member_number,
-            },
+            previous_value={},
             new_value=serializer.validated_data,
             cooperative_id=self.request.cooperative_id,
         )
@@ -165,12 +170,44 @@ class FarmerViewSet(CooperativeScopedViewSet):
             resource_id=instance.id,
             action='DELETE',
             previous_value={
-                'member_number': instance.member_number,
                 'name': f'{instance.first_name} {instance.last_name}',
             },
             cooperative_id=self.request.cooperative_id,
         )
         instance.delete()
+
+    @action(detail=False, methods=['get'])
+    def lookup(self, request):
+        phone = request.query_params.get('phone', '').strip()
+        if not phone:
+            return Response(
+                {'error': 'phone query parameter is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        phone = phone.lstrip('+')
+        farmer = Farmer.objects.filter(phone_number__endswith=phone).first()
+        if not farmer:
+            return Response(
+                {'error': 'Farmer not found.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        primary = farmer.primary_membership
+        return Response({
+            'id': farmer.id,
+            'first_name': farmer.first_name,
+            'last_name': farmer.last_name,
+            'phone_number': farmer.phone_number,
+            'member_number': primary.member_number if primary else None,
+            'primary_cooperative_name': farmer.cooperative.name if farmer.cooperative_id else None,
+            'existing_memberships': [
+                {
+                    'cooperative_id': str(m.cooperative_id),
+                    'member_number': m.member_number,
+                    'is_active': m.is_active,
+                }
+                for m in farmer.memberships.all()
+            ],
+        })
 
     @action(detail=False, methods=['get', 'patch'])
     def me(self, request):
@@ -231,13 +268,11 @@ class FarmerViewSet(CooperativeScopedViewSet):
             'first_name', 'last_name', 'email', 'id_number',
             'phone_number', 'mpesa_number', 'date_of_birth',
             'county', 'sub_county', 'ward', 'village',
-            'payment_method', 'bank_name', 'bank_account', 'bank_branch',
         ])
         writer.writerow([
             'Jane', 'Wanjiku', 'jane.wanjiku@example.com', '12345678',
             '0712345678', '0712345678', '1990-01-15',
             'Kiambu', 'Kikuyu', 'Karuna', 'Gitaru',
-            'M-PESA', '', '', '',
         ])
         return response
 
@@ -262,47 +297,90 @@ class FarmerViewSet(CooperativeScopedViewSet):
             return Response({'error': 'CSV file is empty.'}, status=400)
 
         errors = []
-        created = []
+        created_farmers = []
+        linked_farmers = []
 
         with transaction.atomic():
             for row_num, row in enumerate(rows, start=2):
                 try:
-                    data = {
-                        'first_name': row.get('first_name', '').strip(),
-                        'last_name': row.get('last_name', '').strip(),
-                        'email': row.get('email', '').strip(),
-                        'id_number': row.get('id_number', '').strip(),
-                        'phone_number': row.get('phone_number', '').strip(),
-                        'mpesa_number': row.get('mpesa_number', '').strip(),
-                        'county': row.get('county', '').strip(),
-                        'sub_county': row.get('sub_county', '').strip(),
-                        'ward': row.get('ward', '').strip(),
-                        'village': row.get('village', '').strip(),
-                        'payment_method': row.get('payment_method', 'M-PESA').strip(),
-                        'bank_name': row.get('bank_name', '').strip(),
-                        'bank_account': row.get('bank_account', '').strip(),
-                        'bank_branch': row.get('bank_branch', '').strip(),
-                        'is_active': True,
-                    }
-                    date_of_birth = row.get('date_of_birth', '').strip()
-                    if date_of_birth:
-                        data['date_of_birth'] = date_of_birth
+                    phone = normalize_phone_for_csv(row.get('phone_number', '').strip())
+                    existing = Farmer.objects.filter(phone_number=phone).first() if phone else None
 
-                    serializer = FarmerCreateSerializer(data=data)
-                    serializer.is_valid(raise_exception=True)
-                    if getattr(request.user, 'role', None) == 'admin':
-                        coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
-                    else:
-                        serializer.validated_data.pop('cooperative_id', None)
+                    if existing:
                         coop_id = request.cooperative_id
+                        if getattr(request.user, 'role', None) == 'admin':
+                            coop_id = row.get('cooperative_id', '').strip() or request.cooperative_id
 
-                    instance = serializer.save(cooperative_id=coop_id)
-                    _create_farmer_user(instance, coop_id)
-                    created.append({
-                        'row': row_num,
-                        'member_number': instance.member_number,
-                        'name': f'{instance.first_name} {instance.last_name}',
-                    })
+                        if FarmerCooperativeMembership.objects.filter(
+                            farmer=existing, cooperative_id=coop_id
+                        ).exists():
+                            linked_farmers.append({
+                                'row': row_num,
+                                'member_number': existing.primary_membership.member_number if existing.primary_membership else 'N/A',
+                                'name': f'{existing.first_name} {existing.last_name}',
+                                'status': 'already_member',
+                            })
+                        else:
+                            FarmerCooperativeMembership.objects.create(
+                                farmer=existing,
+                                cooperative_id=coop_id,
+                                payment_method=row.get('payment_method', 'M-PESA').strip() or 'M-PESA',
+                                mpesa_number=normalize_phone_for_csv(row.get('mpesa_number', '').strip()) or phone,
+                                bank_name=row.get('bank_name', '').strip(),
+                                bank_account=row.get('bank_account', '').strip(),
+                                bank_branch=row.get('bank_branch', '').strip(),
+                            )
+                            linked_farmers.append({
+                                'row': row_num,
+                                'member_number': existing.primary_membership.member_number if existing.primary_membership else 'N/A',
+                                'name': f'{existing.first_name} {existing.last_name}',
+                                'status': 'membership_added',
+                            })
+                    else:
+                        mpesa_number = normalize_phone_for_csv(row.get('mpesa_number', '').strip()) or phone
+                        data = {
+                            'first_name': row.get('first_name', '').strip(),
+                            'last_name': row.get('last_name', '').strip(),
+                            'email': row.get('email', '').strip(),
+                            'id_number': row.get('id_number', '').strip(),
+                            'phone_number': phone,
+                            'date_of_birth': row.get('date_of_birth', '').strip(),
+                            'county': row.get('county', '').strip(),
+                            'sub_county': row.get('sub_county', '').strip(),
+                            'ward': row.get('ward', '').strip(),
+                            'village': row.get('village', '').strip(),
+                        }
+
+                        serializer = FarmerCreateSerializer(data=data)
+                        serializer.is_valid(raise_exception=True)
+                        if getattr(request.user, 'role', None) == 'admin':
+                            coop_id = serializer.validated_data.pop('cooperative_id', None) or request.cooperative_id
+                        else:
+                            serializer.validated_data.pop('cooperative_id', None)
+                            coop_id = request.cooperative_id
+
+                        instance = serializer.save(cooperative_id=coop_id)
+                        _create_farmer_user(instance, coop_id)
+
+                        # Update the auto-created membership with payment details
+                        membership = instance.memberships.filter(cooperative_id=coop_id).first()
+                        if membership:
+                            membership.mpesa_number = mpesa_number
+                            membership.payment_method = row.get('payment_method', 'M-PESA').strip() or 'M-PESA'
+                            membership.bank_name = row.get('bank_name', '').strip()
+                            membership.bank_account = row.get('bank_account', '').strip()
+                            membership.bank_branch = row.get('bank_branch', '').strip()
+                            membership.save(update_fields=[
+                                'mpesa_number', 'payment_method', 'bank_name',
+                                'bank_account', 'bank_branch',
+                            ])
+
+                        created_farmers.append({
+                            'row': row_num,
+                            'member_number': instance.primary_membership.member_number if instance.primary_membership else 'N/A',
+                            'name': f'{instance.first_name} {instance.last_name}',
+                        })
+
                 except Exception as e:
                     errors.append({'row': row_num, 'error': str(e)})
 
@@ -315,7 +393,102 @@ class FarmerViewSet(CooperativeScopedViewSet):
                 status=400,
             )
 
-        return Response({
-            'message': f'{len(created)} farmer(s) imported successfully.',
-            'created': created,
-        })
+        result = {'message': f'{len(created_farmers)} farmer(s) created, {len(linked_farmers)} linked.'}
+        if created_farmers:
+            result['created_farmers'] = created_farmers
+        if linked_farmers:
+            result['linked_farmers'] = linked_farmers
+        return Response(result)
+
+
+def normalize_phone_for_csv(value):
+    if not value:
+        return ''
+    if value.startswith('+'):
+        value = value[1:]
+    if value.startswith('0'):
+        value = '254' + value[1:]
+    return value
+
+
+class MembershipViewSet(CooperativeScopedViewSet):
+    queryset = FarmerCooperativeMembership.objects.all().select_related(
+        'farmer', 'cooperative'
+    )
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update'):
+            return [IsAuthenticated(), IsManager()]
+        return [IsAuthenticated()]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return MembershipCreateSerializer
+        return MembershipSerializer
+
+    def get_queryset(self):
+        farmer_id = self.kwargs.get('farmer_pk')
+        if farmer_id:
+            return self.queryset.filter(farmer_id=farmer_id)
+        return self.queryset.filter(
+            cooperative_id=self.request.cooperative_id
+        )
+
+    def perform_create(self, serializer):
+        farmer_id = self.kwargs.get('farmer_pk')
+        farmer = Farmer.objects.get(id=farmer_id)
+        membership = serializer.save(farmer=farmer)
+        log_audit(
+            actor=self.request.user,
+            resource_type='farmer_membership',
+            resource_id=membership.id,
+            action='MEMBERSHIP_ADDED',
+            new_value={
+                'farmer_id': str(farmer.id),
+                'farmer_name': f'{farmer.first_name} {farmer.last_name}',
+                'cooperative_id': str(membership.cooperative_id),
+                'member_number': membership.member_number,
+            },
+            cooperative_id=self.request.cooperative_id,
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_audit(
+            actor=self.request.user,
+            resource_type='farmer_membership',
+            resource_id=instance.id,
+            action='MEMBERSHIP_UPDATED',
+            new_value=serializer.validated_data,
+            cooperative_id=self.request.cooperative_id,
+        )
+
+    @action(detail=True, methods=['patch'])
+    def deactivate(self, request, farmer_pk=None, pk=None):
+        membership = self.get_object()
+        membership.is_active = False
+        membership.save(update_fields=['is_active'])
+        log_audit(
+            actor=request.user,
+            resource_type='farmer_membership',
+            resource_id=membership.id,
+            action='MEMBERSHIP_DEACTIVATED',
+            new_value={'is_active': False},
+            cooperative_id=request.cooperative_id,
+        )
+        return Response(MembershipSerializer(membership).data)
+
+    @action(detail=True, methods=['patch'])
+    def reactivate(self, request, farmer_pk=None, pk=None):
+        membership = self.get_object()
+        membership.is_active = True
+        membership.save(update_fields=['is_active'])
+        log_audit(
+            actor=request.user,
+            resource_type='farmer_membership',
+            resource_id=membership.id,
+            action='MEMBERSHIP_REACTIVATED',
+            new_value={'is_active': True},
+            cooperative_id=request.cooperative_id,
+        )
+        return Response(MembershipSerializer(membership).data)

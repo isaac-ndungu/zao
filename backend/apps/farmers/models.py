@@ -19,22 +19,16 @@ class Farmer(LocationMixin, CooperativeScopedModel):
         User, on_delete=models.CASCADE, null=True, blank=True,
         related_name='farmer_profile'
     )
-    member_number = models.CharField(max_length=50, unique=True, editable=False, null=True, blank=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     email = models.EmailField(blank=True)
     id_number = models.CharField(max_length=200)
     phone_number = models.CharField(max_length=30, unique=True)
-    mpesa_number = models.CharField(max_length=30, blank=True, default='')
     date_of_birth = models.DateField(null=True, blank=True)
     county = models.CharField(max_length=100)
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     village = models.CharField(max_length=100, blank=True)
-    payment_method = models.CharField(max_length=20, choices=FarmerPaymentMethod.choices, null=True, blank=True)
-    bank_name = models.CharField(max_length=100, blank=True, default='')
-    bank_account = models.CharField(max_length=30, blank=True, default='')
-    bank_branch = models.CharField(max_length=100, blank=True, default='')
     is_active = models.BooleanField(default=True)
     has_active_loan = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -54,7 +48,7 @@ class Farmer(LocationMixin, CooperativeScopedModel):
 
     def __str__(self):
         primary = self.primary_membership
-        mn = primary.member_number if primary else self.member_number or '---'
+        mn = primary.member_number if primary else '---'
         return f'{mn} — {self.first_name} {self.last_name}'
 
 
