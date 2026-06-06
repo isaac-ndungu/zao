@@ -109,18 +109,45 @@ class FarmerRequestOTPSerializer(serializers.Serializer):
 
     def validate_phone_number(self, value):
         value = normalize_phone(value)
+        # Try both normalized (2547...) and legacy (07...) formats
+        alt = '0' + value[3:] if value.startswith('254') else value
         user = User.objects.filter(
-            phone_number=value,
+            phone_number__in=[value, alt],
             role='farmer',
             is_active=True,
         ).select_related('farmer_profile').first()
         if not user:
-            raise serializers.ValidationError('No farmer account found with this phone number.')
+            farmer = Farmer.objects.filter(phone_number__in=[value, alt]).first()
+            if not farmer:
+                raise serializers.ValidationError('No farmer account found with this phone number.')
         return value
 
     def validate(self, attrs):
         phone = attrs['phone_number']
-        user = User.objects.get(phone_number=phone, role='farmer', is_active=True)
+        alt = '0' + phone[3:] if phone.startswith('254') else phone
+        user = User.objects.filter(
+            phone_number__in=[phone, alt], role='farmer', is_active=True,
+        ).select_related('farmer_profile').first()
+        if not user:
+            farmer = Farmer.objects.filter(phone_number__in=[phone, alt]).first()
+            if farmer:
+                from apps.base.constants import UserRole
+                from django.utils.crypto import get_random_string
+                email = farmer.email or f'farmer_{farmer.id}@placeholder.local'
+                user = User.objects.create_user(
+                    email=email,
+                    phone_number=farmer.phone_number,
+                    first_name=farmer.first_name,
+                    last_name=farmer.last_name,
+                    password=get_random_string(length=72),
+                    role=UserRole.FARMER,
+                    cooperative_id=farmer.cooperative_id,
+                )
+                user.set_unusable_password()
+                user.save(update_fields=['password'])
+                farmer.user = user
+                farmer.save(update_fields=['user'])
+                user = User.objects.select_related('farmer_profile').get(id=user.id)
         attrs['user'] = user
         return attrs
 
