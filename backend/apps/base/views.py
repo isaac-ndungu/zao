@@ -4,7 +4,7 @@ from rest_framework.viewsets import ModelViewSet
 class CooperativeScopedViewSet(ModelViewSet):
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
-        if request.user.is_authenticated:
+        if request.user.is_authenticated and not getattr(request, 'cooperative_id', None):
             request.cooperative_id = request.user.cooperative_id
 
     def get_queryset(self):
