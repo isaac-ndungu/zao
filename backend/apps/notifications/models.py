@@ -82,6 +82,10 @@ class USSDSession(models.Model):
         'farmers.Farmer', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='ussd_sessions',
     )
+    membership = models.ForeignKey(
+        'farmers.FarmerCooperativeMembership', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='ussd_sessions',
+    )
     current_menu = models.CharField(max_length=20, default='HOME')
     last_activity = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)

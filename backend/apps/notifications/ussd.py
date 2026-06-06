@@ -4,24 +4,32 @@ import re
 from django.utils import timezone
 
 from apps.base.utils import normalize_phone_for_sms
-from apps.farmers.models import Farmer
+from apps.farmers.models import FarmerCooperativeMembership
 
 from .models import Notification, USSDSession
 from .utils import format_delivery_for_ussd
 
 logger = logging.getLogger(__name__)
 
+REQUIRES_MEMBERSHIP = frozenset({'MENU', 'DELIVERIES', 'PAYMENTS'})
+
 
 def _log_ussd_notification(session, content):
-    if session.farmer:
-        Notification.objects.create(
-            cooperative=session.farmer.cooperative,
-            recipient=session.farmer,
-            channel='USSD',
-            notification_type='USSD_SESSION',
-            content=content,
-            status='SENT',
-        )
+    if not session.farmer:
+        return
+    coop_id = None
+    if session.membership:
+        coop_id = session.membership.cooperative_id
+    elif session.farmer.cooperative_id:
+        coop_id = session.farmer.cooperative_id
+    Notification.objects.create(
+        cooperative_id=coop_id,
+        recipient=session.farmer,
+        channel='USSD',
+        notification_type='USSD_SESSION',
+        content=content,
+        status='SENT',
+    )
 
 
 def _end(session, message):
@@ -49,45 +57,105 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
     text = text.strip()
     parts = text.split('*') if text else ['']
     current_input = parts[-1]
-    prior = parts[:-1] if text else []
 
-    # Input sanitisation
     if current_input and (len(current_input) > 20 or not re.match(r'^[a-zA-Z0-9\-]+$', current_input)):
         return _end(session, 'Invalid input. Please try again.')
 
     state = session.current_menu
 
-    #   HOME / empty input                        ─
+    # Guard: states that require a selected membership
+    if state in REQUIRES_MEMBERSHIP and not session.membership_id:
+        return _end(session, 'Session expired. Please dial again.')
+
+    # ── HOME ──
     if state == 'HOME' and not current_input:
         return _con(session, 'Welcome to Zao Cooperative.\nEnter your member number:', 'MEMBER_NUMBER')
 
     if state == 'HOME' and current_input:
         state = 'MEMBER_NUMBER'
 
-    #   MEMBER_NUMBER                           
+    # ── MEMBER_NUMBER ──
     if state == 'MEMBER_NUMBER':
         if not current_input:
             return _con(session, 'Enter your member number:', 'MEMBER_NUMBER')
 
-        farmer = Farmer.objects.filter(member_number=current_input).first()
-        if not farmer:
-            logger.warning('USSD invalid member number: %s (session %s)', current_input, session_id)
+        membership = FarmerCooperativeMembership.objects.filter(
+            member_number=current_input,
+            farmer__phone_number=phone,
+            is_active=True,
+        ).select_related('farmer', 'cooperative').first()
+
+        if not membership:
+            logger.warning(
+                'USSD invalid member number: %s phone: %s (session %s)',
+                current_input, phone, session_id,
+            )
             return _end(session, 'Invalid member number. Please try again.')
 
-        session.farmer = farmer
+        session.farmer = membership.farmer
+
+        # Count active memberships to decide if co-op picker is needed
+        active_memberships = list(
+            FarmerCooperativeMembership.objects.filter(
+                farmer=membership.farmer,
+                is_active=True,
+            ).select_related('cooperative')
+        )
+
+        if len(active_memberships) == 1:
+            session.membership = membership
+            session.save(update_fields=['farmer', 'membership'])
+            return _con(
+                session,
+                '1. My Deliveries\n2. My Payments\n3. My Profile',
+                'MENU',
+            )
+
+        # Multiple active memberships → show picker
         session.save(update_fields=['farmer'])
+        lines = [
+            f'{i}. {m.cooperative.name}'
+            for i, m in enumerate(active_memberships, start=1)
+        ]
+        return _con(
+            session,
+            'Select cooperative:\n' + '\n'.join(lines),
+            'COOP_PICKER',
+        )
+
+    # ── COOP_PICKER ──
+    if state == 'COOP_PICKER':
+        if not current_input or not session.farmer_id:
+            return _end(session, 'Session expired. Please dial again.')
+
+        active_memberships = list(
+            FarmerCooperativeMembership.objects.filter(
+                farmer=session.farmer,
+                is_active=True,
+            ).select_related('cooperative')
+        )
+
+        try:
+            idx = int(current_input) - 1
+            membership = active_memberships[idx]
+        except (ValueError, IndexError):
+            return _end(session, 'Invalid selection. Please dial again.')
+
+        session.membership = membership
+        session.save(update_fields=['membership'])
         return _con(
             session,
             '1. My Deliveries\n2. My Payments\n3. My Profile',
             'MENU',
         )
 
-    #   MENU                               ─
+    # ── MENU ──
     if state == 'MENU':
         if current_input == '1':
             from apps.deliveries.models import Delivery
             deliveries = Delivery.objects.filter(
                 farmer=session.farmer,
+                cooperative_id=session.membership.cooperative_id,
             ).order_by('-date_delivered')[:3]
             if not deliveries:
                 return _end(session, 'No deliveries found.')
@@ -102,6 +170,7 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
             from apps.payment_engine.models import FarmerPayment
             payment = FarmerPayment.objects.filter(
                 farmer=session.farmer,
+                cooperative_id=session.membership.cooperative_id,
             ).order_by('-created_at').first()
             if not payment:
                 return _end(session, 'No payments found.')
@@ -111,22 +180,27 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
             )
 
         if current_input == '3':
+            m = session.membership
             f = session.farmer
             return _end(
                 session,
                 f'Name: {f.first_name} {f.last_name}\n'
-                f'Member: {f.primary_membership.member_number if f.primary_membership else "---"}\n'
-                f'Payment: {f.primary_membership.get_payment_method_display() if f.primary_membership else "---"}',
+                f'Member: {m.member_number}\n'
+                f'Co-op: {m.cooperative.name}\n'
+                f'Payment: {m.get_payment_method_display()}',
             )
 
         if current_input == '0':
+            session.membership = None
+            session.farmer = None
+            session.save(update_fields=['membership', 'farmer'])
             return _con(
                 session, 'Welcome to Zao Cooperative.\nEnter your member number:', 'HOME',
             )
 
         return _end(session, 'Sorry, we could not process your request. Please dial again.')
 
-    #   DELIVERIES (back)                         
+    # ── DELIVERIES (back) ──
     if state == 'DELIVERIES':
         if current_input == '0':
             return _con(
@@ -137,6 +211,8 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
 
         return _end(session, 'Sorry, we could not process your request. Please dial again.')
 
-    #   Catch-all                             
-    logger.warning('USSD unhandled state: %s input: %s (session %s)', state, current_input, session_id)
+    logger.warning(
+        'USSD unhandled state: %s input: %s (session %s)',
+        state, current_input, session_id,
+    )
     return _end(session, 'Sorry, we could not process your request. Please dial again.')
