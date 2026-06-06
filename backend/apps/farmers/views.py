@@ -1,12 +1,14 @@
 import csv
 import io
 import secrets
+import uuid
 
 from django.contrib.postgres.search import (
     SearchQuery, SearchRank, SearchVector, TrigramSimilarity,
 )
 from django.db import transaction
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.decorators import action
@@ -421,10 +423,27 @@ class MembershipViewSet(CooperativeScopedViewSet):
             return [IsAuthenticated(), IsManager()]
         return [IsAuthenticated()]
 
+    def get_serializer(self, *args, **kwargs):
+        if self.action == 'create' and 'farmer_pk' in self.kwargs:
+            kwargs.setdefault('context', {})['farmer'] = get_object_or_404(
+                Farmer, id=self.kwargs['farmer_pk']
+            )
+        return super().get_serializer(*args, **kwargs)
+
     def get_serializer_class(self):
         if self.action == 'create':
             return MembershipCreateSerializer
         return MembershipSerializer
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
+        try:
+            uuid.UUID(str(lookup))
+            filter_kwargs = {'pk': lookup}
+        except ValueError:
+            filter_kwargs = {'member_number': lookup}
+        return get_object_or_404(queryset, **filter_kwargs)
 
     def get_queryset(self):
         farmer_id = self.kwargs.get('farmer_pk')
@@ -435,8 +454,7 @@ class MembershipViewSet(CooperativeScopedViewSet):
         )
 
     def perform_create(self, serializer):
-        farmer_id = self.kwargs.get('farmer_pk')
-        farmer = Farmer.objects.get(id=farmer_id)
+        farmer = serializer.context.get('farmer')
         membership = serializer.save(farmer=farmer)
         log_audit(
             actor=self.request.user,
