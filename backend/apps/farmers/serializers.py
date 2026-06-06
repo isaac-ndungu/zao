@@ -47,8 +47,6 @@ class FarmerDetailSerializer(serializers.ModelSerializer):
 
 
 class FarmerCreateSerializer(serializers.ModelSerializer):
-    user_id = serializers.UUIDField(required=False, write_only=True)
-    user_email = serializers.EmailField(required=False, write_only=True)
     cooperative_id = serializers.UUIDField(required=False, write_only=True)
 
     class Meta:
@@ -58,27 +56,17 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
             'mpesa_number', 'date_of_birth', 'county', 'sub_county',
             'ward', 'village', 'payment_method', 'bank_name',
             'bank_account', 'bank_branch', 'is_active',
-            'user_id', 'user_email', 'cooperative_id',
+            'cooperative_id',
         ]
         extra_kwargs = {
             'first_name': {'min_length': 1},
             'last_name': {'min_length': 1},
         }
 
-    def validate_user_id(self, value):
-        if not User.objects.filter(id=value).exists():
-            raise serializers.ValidationError('User not found.')
-        return value
-
     def validate_cooperative_id(self, value):
         if not Cooperative.objects.filter(id=value).exists():
             raise serializers.ValidationError('Cooperative not found.')
         return value
-
-    def validate_user_email(self, value):
-        if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError('A user with this email already exists.')
-        return value.lower()
 
     def validate_phone_number(self, value):
         value = normalize_phone(value)
@@ -86,6 +74,8 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
             )
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError('A user with this phone number already exists.')
         return value
 
     def validate_mpesa_number(self, value):
@@ -125,16 +115,12 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop('user_id', None)
-        validated_data.pop('user_email', None)
         if validated_data.get('id_number'):
             validated_data['id_number'] = encrypt_field(validated_data['id_number'])
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         validated_data.pop('cooperative_id', None)
-        validated_data.pop('user_id', None)
-        validated_data.pop('user_email', None)
         if 'id_number' in validated_data and validated_data['id_number']:
             validated_data['id_number'] = encrypt_field(validated_data['id_number'])
         return super().update(instance, validated_data)

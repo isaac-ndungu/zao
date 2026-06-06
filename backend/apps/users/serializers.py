@@ -1,3 +1,7 @@
+import secrets
+
+from django.conf import settings
+from django.core.mail import send_mail
 from rest_framework import serializers
 
 from apps.auth_api.models import User
@@ -11,13 +15,13 @@ class UserListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'phone_number', 'first_name', 'last_name',
             'role', 'cooperative_id', 'is_active', 'two_fa_enabled',
-            'date_joined',
+            'must_change_password', 'date_joined',
         ]
-        read_only_fields = ['id', 'cooperative_id', 'date_joined', 'two_fa_enabled']
+        read_only_fields = ['id', 'cooperative_id', 'date_joined', 'two_fa_enabled', 'must_change_password']
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
@@ -38,10 +42,26 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
+        password = validated_data.pop('password', None) or secrets.token_urlsafe(8)
         user = User(**validated_data)
         user.set_password(password)
+        role = validated_data.get('role')
+        if role and role not in ('admin', 'farmer'):
+            user.must_change_password = True
         user.save()
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        send_mail(
+            'Your Zao Account Credentials',
+            f'Your account has been created.\n\n'
+            f'Email: {user.email}\n'
+            f'Temporary password: {password}\n\n'
+            f'Please log in and change your password on first use.',
+            from_email,
+            [user.email],
+            fail_silently=False,
+        )
+
         return user
 
 
@@ -75,24 +95,23 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
-        cooperative_id = validated_data.pop('cooperative_id', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        if cooperative_id:
-            instance.cooperative_id = cooperative_id
         if password:
             instance.set_password(password)
+            instance.must_change_password = False
         instance.save()
         return instance
 
 
 class UserSelfUpdateSerializer(serializers.ModelSerializer):
+    current_password = serializers.CharField(write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone_number', 'email', 'password']
-        extra_kwargs = {field: {'required': False} for field in fields}
+        fields = ['first_name', 'last_name', 'phone_number', 'email', 'current_password', 'password']
+        extra_kwargs = {field: {'required': False} for field in fields if field != 'current_password'}
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exclude(pk=self.instance.pk).exists():
@@ -105,11 +124,25 @@ class UserSelfUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value
 
+    def validate(self, attrs):
+        if attrs.get('password') and not attrs.get('current_password'):
+            raise serializers.ValidationError(
+                {'current_password': 'Current password is required to set a new password.'}
+            )
+        if attrs.get('current_password'):
+            if not self.instance.check_password(attrs['current_password']):
+                raise serializers.ValidationError(
+                    {'current_password': 'Current password is incorrect.'}
+                )
+        return attrs
+
     def update(self, instance, validated_data):
+        validated_data.pop('current_password', None)
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         if password:
             instance.set_password(password)
+            instance.must_change_password = False
         instance.save()
         return instance

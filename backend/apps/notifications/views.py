@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -12,6 +14,8 @@ from .models import Notification
 from .serializers import NotificationListSerializer, NotificationDetailSerializer
 from .ussd import handle_ussd
 
+logger = logging.getLogger(__name__)
+
 
 @csrf_exempt
 @require_POST
@@ -22,6 +26,7 @@ def ussd_callback(request):
     text = request.POST.get('text', '')
 
     expected = getattr(settings, 'AFRICASTALKING_USSD_CODE', '*384*12345#')
+    logger.warning('USSD callback: service_code=%s expected=%s', service_code, expected)
     if service_code != expected:
         return HttpResponse('END Invalid service code.', content_type='text/plain')
 

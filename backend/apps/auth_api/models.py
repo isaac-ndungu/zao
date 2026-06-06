@@ -10,6 +10,7 @@ class OTPPurpose(models.TextChoices):
     LOGIN = 'LOGIN', 'Login'
     PASSWORD_RESET = 'PASSWORD_RESET', 'Password Reset'
     ACTION_CONFIRM = 'ACTION_CONFIRM', 'Action Confirm'
+    FARMER_LOGIN = 'FARMER_LOGIN', 'Farmer Login'
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -23,6 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         'cooperatives.Cooperative', on_delete=models.SET_NULL, null=True, blank=True
     )
     two_fa_enabled = models.BooleanField(default=False)
+    must_change_password = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)

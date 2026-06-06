@@ -16,17 +16,20 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.base.constants import UserRole
 
-from .models import TwoFactorOTP
+from .models import TwoFactorOTP, User
 from .serializers import (
     LOGIN_TOKEN_SALT,
+    FARMER_LOGIN_TOKEN_SALT,
+    FarmerRequestOTPSerializer,
+    FarmerVerifyOTPSerializer,
     LoginSerializer,
-    RegisterSerializer,
     RequestOTPSerializer,
     TokenResponseSerializer,
     TwoFAVerifySerializer,
     UserSerializer,
 )
 from .throttles import (
+    FarmerRequestOTPRateThrottle,
     LoginRateThrottle,
     RequestOTPRateThrottle,
     VerifyOTPRateThrottle,
@@ -46,8 +49,25 @@ def _set_refresh_cookie(response, refresh_token):
     return response
 
 
+def _build_user_claims(user):
+    claims = {
+        'role': user.role or '',
+        'cooperative_id': str(user.cooperative_id) if user.cooperative_id else None,
+        'phone_number': user.phone_number or '',
+        'must_change_password': user.must_change_password,
+    }
+    if user.role == UserRole.FARMER:
+        farmer = getattr(user, 'farmer_profile', None)
+        claims['farmer_id'] = str(farmer.id) if farmer else None
+    return claims
+
+
 def _login_response(user):
     refresh = RefreshToken.for_user(user)
+    claims = _build_user_claims(user)
+    for k, v in claims.items():
+        refresh.access_token[k] = v
+        refresh[k] = v
     data = TokenResponseSerializer({
         'access': str(refresh.access_token),
         'refresh': str(refresh),
@@ -69,7 +89,11 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-        if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.AUDITOR):
+        requires_2fa = (
+            user.two_fa_enabled
+            or user.role == UserRole.MANAGER
+        )
+        if requires_2fa:
             signer = TimestampSigner(salt=LOGIN_TOKEN_SALT)
             login_token = signer.sign(user.email)
             return Response({
@@ -126,6 +150,53 @@ class VerifyOTPView(APIView):
         return _login_response(user)
 
 
+class FarmerRequestOTPView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = FarmerRequestOTPSerializer
+    throttle_classes = [FarmerRequestOTPRateThrottle]
+
+    def post(self, request):
+        from apps.notifications.utils import send_sms
+        serializer = FarmerRequestOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+
+        otp_code = f'{random.randint(0, 999999):06d}'
+        expires_at = timezone.now() + timedelta(minutes=5)
+
+        otp = TwoFactorOTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            purpose='FARMER_LOGIN',
+            expires_at=expires_at,
+        )
+
+        signer = TimestampSigner(salt=FARMER_LOGIN_TOKEN_SALT)
+        login_token = signer.sign(f'{user.id}:{otp.id}')
+
+        msg = f'Your OTP is: {otp_code}. It expires in 5 minutes.'
+        send_sms(user.phone_number, msg)
+
+        return Response({
+            'login_token': login_token,
+            'detail': 'OTP sent to your phone.',
+        })
+
+
+class FarmerVerifyOTPView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = FarmerVerifyOTPSerializer
+    throttle_classes = [VerifyOTPRateThrottle]
+
+    def post(self, request):
+        serializer = FarmerVerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        return _login_response(user)
+
+
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = serializers.Serializer
@@ -141,18 +212,6 @@ class LogoutView(APIView):
         response = Response({'detail': 'Logged out.'})
         response.delete_cookie('refresh_token', path='/api/auth/')
         return response
-
-
-class RegisterView(APIView):
-    authentication_classes = []
-    permission_classes = []
-    serializer_class = RegisterSerializer
-
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return _login_response(user)
 
 
 class TokenRefreshView(APIView):

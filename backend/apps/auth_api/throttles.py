@@ -1,12 +1,10 @@
 from django.core.signing import BadSignature, TimestampSigner
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
 
-from .serializers import LOGIN_TOKEN_SALT
+from .serializers import FARMER_LOGIN_TOKEN_SALT, LOGIN_TOKEN_SALT
 
 
 class _RateFallbackMixin:
-    """Fall back to class-level rate if scope not in settings THROTTLE_RATES."""
-
     def get_rate(self):
         try:
             return self.THROTTLE_RATES[self.scope]
@@ -55,3 +53,29 @@ class RequestOTPRateThrottle(_UserFromTokenThrottle):
 class VerifyOTPRateThrottle(_UserFromTokenThrottle):
     scope = 'verify_otp'
     rate = '5/min'
+
+
+class _FarmerFromPhoneThrottle(_RateFallbackMixin, SimpleRateThrottle):
+    scope = None
+    rate = None
+
+    def get_cache_key(self, request, view):
+        phone = None
+        try:
+            phone = request.data.get('phone_number', '').strip()
+        except Exception:
+            pass
+        if phone:
+            return self.cache_format % {
+                'scope': self.scope,
+                'ident': f'phone_{phone}',
+            }
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': self.get_ident(request),
+        }
+
+
+class FarmerRequestOTPRateThrottle(_FarmerFromPhoneThrottle):
+    scope = 'farmer_request_otp'
+    rate = '3/hour'
