@@ -55,6 +55,7 @@ class Cooperative(models.Model):
     last_delivery_date = models.DateField(null=True, blank=True)
     last_delivery_sequence = models.IntegerField(default=0)
     inventory = models.JSONField(default=dict, blank=True)
+    logo = models.ImageField(upload_to='cooperative_logos/', blank=True)
     minimum_payout_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     revenue_share_by_produce_type = models.BooleanField(default=False)
     prorate_new_members = models.BooleanField(default=False)

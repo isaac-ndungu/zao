@@ -8,7 +8,7 @@ class CooperativeListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'registration_number', 'county',
             'produce_type', 'payment_model', 'is_active',
-            'is_verified', 'member_count',
+            'is_verified', 'member_count', 'logo',
         ]
 
 
