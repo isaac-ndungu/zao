@@ -1,16 +1,13 @@
-import json
 import logging
 
 from django.conf import settings
 from decouple import config
-from urllib.request import Request, urlopen
-from urllib.error import URLError
+
+import africastalking
 
 from apps.base.utils import normalize_phone_for_sms
 
 logger = logging.getLogger(__name__)
-
-AT_API_URL = 'https://api.africastalking.com/version1/messaging'
 
 
 def send_sms(phone_number: str, message: str) -> dict:
@@ -32,29 +29,15 @@ def send_sms(phone_number: str, message: str) -> dict:
         )
         return {'success': False, 'external_id': None, 'error': 'AT credentials not configured'}
 
-    payload = json.dumps({
-        'username': username,
-        'to': phone,
-        'message': message,
-    }).encode('utf-8')
-
-    headers = {
-        'ApiKey': api_key,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    }
-
     try:
-        req = Request(AT_API_URL, data=payload, headers=headers, method='POST')
-        with urlopen(req, timeout=10) as resp:
-            body = json.loads(resp.read().decode('utf-8'))
-            sms_data = body.get('SMSMessageData', {})
-            recipients = sms_data.get('Recipients', [])
-            external_id = recipients[0].get('messageId', '') if recipients else ''
-            cost = recipients[0].get('cost', None) if recipients else None
-            logger.info('SMS sent to %s: %s', phone, body)
-            return {'success': True, 'external_id': external_id, 'error': None}
-    except URLError as e:
+        africastalking.initialize(username, api_key)
+        sms = africastalking.SMS
+        response = sms.send(message, [phone])
+        recipients = response.get('SMSMessageData', {}).get('Recipients', [])
+        external_id = recipients[0].get('messageId', '') if recipients else ''
+        logger.info('SMS sent to %s: %s', phone, response)
+        return {'success': True, 'external_id': external_id, 'error': None}
+    except Exception as e:
         logger.error('Failed to send SMS to %s: %s', phone, e)
         return {'success': False, 'external_id': None, 'error': str(e)}
 
