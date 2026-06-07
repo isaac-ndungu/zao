@@ -239,6 +239,47 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Zao API',
+    'DESCRIPTION': (
+        'Zao is a comprehensive agricultural cooperative management platform '
+        'that digitizes the entire farmer value chain, from collection '
+        'and quality grading to payments, deductions, loans, and disbursements.\n\n'
+        'The API enables cooperatives to manage farmers, track deliveries in '
+        'real-time, compute payment cycles with automatic deductions, disburse '
+        'payments via M-Pesa B2C (Daraja), bank transfers, or cash, and '
+        'generate financial reports.\n\n'
+        'All endpoints require JWT authentication unless noted otherwise. '
+        'Include `Authorization: Bearer <token>` header.\n\n'
+        '**Apps:**\n\n'
+        '- **auth_api** — Authentication & JWT management: login, 2FA OTP (email), '
+        'farmer OTP (SMS), token refresh, logout.\n'
+        '- **cooperatives** — Cooperative entity CRUD with stats, enums, '
+        'and current-cooperative lookup.\n'
+        '- **users** — User account CRUD scoped to cooperative, self-profile endpoint.\n'
+        '- **farmers** — Farmer profiles with full-text search, CSV import, '
+        'nested cooperative membership (activate/deactivate).\n'
+        '- **deliveries** — Milk delivery recording with offline sync, GPS map data, '
+        'batch grouping, summary stats, SMS notifications.\n'
+        '- **grading** — Milk quality grading with price tiers, manager overrides, '
+        'image attachments, farmer disputes with resolution.\n'
+        '- **inventory** — Read-only batch inventory with summary aggregation '
+        'and low-stock threshold alerts.\n'
+        '- **routes** — Collection route definitions with GPS stop assignment '
+        'and farmer grouping.\n'
+        '- **sales** — Buyer records and sales transactions with inventory '
+        'availability checks.\n'
+        '- **payment_engine** — Payment cycle lifecycle: draft, compute (Celery), '
+        'preview, lock/unlock, hold/release payments, CSV export.\n'
+        '- **deductions** — Loan repayment deductions and farm input credits, '
+        'integrated with payment cycles.\n'
+        '- **loans** — Loan lifecycle: create, approve, disburse, add/remove '
+        'guarantors, mark completed or defaulted.\n'
+        '- **disbursement** — Payment disbursement (M-Pesa B2C via Daraja, Bank, '
+        'Cash): initiate, approve, send live, retry, export, confirm.\n'
+        '- **notifications** — Notification log (SMS, email, in-app) and '
+        "Africa's Talking USSD callback.\n"
+        '- **statements** — Farmer payment PDF statements, payment history JSON, '
+        'season/KRA/annual reports, audit log.'
+    ),
     'VERSION': '1.0.0',
 }
 
