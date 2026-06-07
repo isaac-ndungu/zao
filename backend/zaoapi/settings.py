@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'apps.disbursement',
     'apps.notifications',
     'apps.statements',
+    'apps.chat',
 ]
 
 MIDDLEWARE = [
@@ -161,6 +162,10 @@ MPESA_B2C_TIMEOUT_URL = config('MPESA_B2C_TIMEOUT_URL', default='')
 MPESA_DISBURSEMENT_BLACKOUT_START = config('MPESA_DISBURSEMENT_BLACKOUT_START', default='01:00')
 MPESA_DISBURSEMENT_BLACKOUT_END = config('MPESA_DISBURSEMENT_BLACKOUT_END', default='04:00')
 MPESA_CALLBACK_IP_WHITELIST = config('MPESA_CALLBACK_IP_WHITELIST', default='')
+
+# Google AI (Gemini)
+GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
+GOOGLE_AI_MODEL = config('GOOGLE_AI_MODEL', default='gemini-2.5-flash')
 
 # Celery configuration
 CELERY_BROKER_URL = config('REDIS_URL')
