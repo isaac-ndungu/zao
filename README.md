@@ -72,6 +72,7 @@ Zao supports the following agricultural cooperative models in Kenya:
 | **SMS + USSD** | Africa's Talking | Notifications, USSD self-service |
 | **PDF Generation** | WeasyPrint 68.1 | Statements, reports, vouchers |
 | **API Docs** | drf-spectacular 0.29.0 | Swagger UI + ReDoc auto-docs |
+| **AI** | Google Gemini API (gemini-2.0-flash) | API chatbot for cooperative Q&A |
 
 
 ---
@@ -87,6 +88,7 @@ Zao supports the following agricultural cooperative models in Kenya:
 - **M-Pesa Daraja API** — Safaricom payment gateway account with B2C credentials
 - **Africa's Talking** — SMS and USSD gateway account
 - **Cloudinary** (optional) — Media storage for reports and documents
+- **Google AI (Gemini)** — API key from [aistudio.google.com](https://aistudio.google.com/app/apikey) for the chatbot
 - **Email Server** — SMTP credentials for OTP and notifications
 
 ---
@@ -181,6 +183,10 @@ CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
 
+# Google AI (Gemini)
+GOOGLE_API_KEY=your-gemini-api-key
+GOOGLE_AI_MODEL=gemini-2.0-flash
+
 # Timezone
 TIME_ZONE=Africa/Nairobi
 ```
@@ -260,6 +266,7 @@ zao/
 │   │   ├── deductions/               # Levies, fees, loan repayments
 │   │   ├── loans/                    # Farmer loan tracking
 │   │   ├── disbursement/             # M-Pesa B2C, exports, vouchers
+│   │   ├── chat/                     # AI chatbot (Gemini)
 │   │   ├── notifications/            # SMS, USSD, email
 │   │   └── statements/               # Statements & reports
 │   │
@@ -296,6 +303,7 @@ zao/
 | `payment_engine` | Computing payments and cycle management | `PaymentCycle`, `FarmerPayment` |
 | `deductions` | Cooperative levies, fees, loans | `Deduction` |
 | `disbursement` | M-Pesa, bank export, cash vouchers | `DisbursementBatch`, `Transaction` |
+| `chat` | Session-based AI chatbot | `ChatMessage` |
 | `notifications` | SMS, USSD, email | `Notification` |
 | `statements` | Farmer & cooperative statements & reports | `Statement` |
 
@@ -335,6 +343,8 @@ Once the server is running, visit:
 | **POST** | `/api/payment-engine/run/` | Compute payments |
 | **POST** | `/api/payment-engine/cycles/{id}/lock/` | Lock payment cycle |
 | **POST** | `/api/disbursement/initiate/` | Initiate M-Pesa disbursement |
+| **POST** | `/api/chat/` | Ask the AI chatbot (JWT required) |
+| **GET** | `/api/chat/` | List conversation history |
 | **GET** | `/api/statements/farmer/{id}/cycle/{id}` | Get farmer statement |
 | **POST** | `/api/statements/pdf/generate/` | Generate PDF statement |
 
@@ -346,7 +356,7 @@ Once the server is running, visit:
 
 ### Authentication & Authorization
 
-- **JWT Tokens**: 15-minute access token + 7-day refresh token
+- **JWT Tokens**: 1-day access token + 7-day refresh token
 - **HTTP-Only Cookies**: Refresh tokens stored securely, inaccessible to JavaScript
 - **Two-Factor Authentication (2FA)**: Email OTP required for Accountant and Manager roles on new device login
 - **Role-Based Access Control (RBAC)**: Six roles with granular permissions
@@ -402,6 +412,14 @@ Once the server is running, visit:
 ### Cloudinary
 
 - **Purpose**: Media storage for PDF statements, reports, vouchers
+
+### Google AI (Gemini)
+
+- **Purpose**: AI chatbot that answers cooperative Q&A — payment queries, member data, cycle insights
+- **Model**: `gemini-2.0-flash` (configurable via `GOOGLE_AI_MODEL`)
+- **Auth**: API key in `GOOGLE_API_KEY` env var (get one at [aistudio.google.com](https://aistudio.google.com/app/apikey))
+- **Endpoint**: `POST /api/chat/` (JWT required)
+- **Context**: System prompt built from auto-generated API schema description, enabling the model to answer from the cooperative's own data
 
 
 ---
