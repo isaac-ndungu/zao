@@ -1,21 +1,28 @@
 import json
 import logging
+import time
 from decimal import Decimal
+from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 from base64 import b64encode
 
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.x509 import load_pem_x509_certificate
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
 class MpesaDarajaClient:
-    def __init__(self):
+    def __init__(self, shortcode: str | None = None):
         self.consumer_key = settings.MPESA_CONSUMER_KEY
         self.consumer_secret = settings.MPESA_CONSUMER_SECRET
         self.passkey = settings.MPESA_PASSKEY
-        self.shortcode = settings.MPESA_SHORTCODE
+        self.shortcode = shortcode or settings.MPESA_SHORTCODE
+        self.initiator_name = settings.MPESA_INITIATOR_NAME
+        self.initiator_password = settings.MPESA_INITIATOR_PASSWORD
         self.environment = settings.MPESA_ENVIRONMENT or 'sandbox'
         self._base_url = (
             'https://sandbox.safaricom.co.ke'
@@ -23,6 +30,8 @@ class MpesaDarajaClient:
             else 'https://api.safaricom.co.ke'
         )
         self._token = None
+        self._token_expiry = 0.0
+        self._public_key = None
 
     def _request(self, path: str, data: dict = None, method: str = 'POST', token: str = None) -> dict:
         url = f'{self._base_url}{path}'
@@ -44,7 +53,7 @@ class MpesaDarajaClient:
             raise
 
     def get_oauth_token(self) -> str:
-        if self._token:
+        if self._token and time.time() < self._token_expiry:
             return self._token
 
         auth_str = f'{self.consumer_key}:{self.consumer_secret}'
@@ -58,6 +67,8 @@ class MpesaDarajaClient:
             with urlopen(req, timeout=10) as resp:
                 result = json.loads(resp.read().decode('utf-8'))
                 self._token = result.get('access_token')
+                expires_in = result.get('expires_in', 3600)
+                self._token_expiry = time.time() + expires_in - 60  # 60s buffer
                 if not self._token:
                     raise RuntimeError(f'OAuth token missing from response: {result}')
                 return self._token
@@ -65,9 +76,32 @@ class MpesaDarajaClient:
             logger.error('OAuth token request failed: %s', e)
             raise
 
+    def _load_public_key(self):
+        if self._public_key is not None:
+            return self._public_key
+        cert_path = Path(settings.MPESA_PUBLIC_CERT_PATH)
+        if not cert_path.exists():
+            raise RuntimeError(
+                f'MPESA public certificate not found at {cert_path}. '
+                f'Download from Daraja portal and save to this path, '
+                f'or set MPESA_PUBLIC_CERT_PATH in settings.'
+            )
+        cert_data = cert_path.read_bytes()
+        cert = load_pem_x509_certificate(cert_data)
+        self._public_key = cert.public_key()
+        return self._public_key
+
     def _build_security_credential(self) -> str:
-        credential = f'{self.shortcode}{self.passkey}'
-        return b64encode(credential.encode('utf-8')).decode('utf-8')
+        public_key = self._load_public_key()
+        encrypted = public_key.encrypt(
+            self.initiator_password.encode('utf-8'),
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+        return b64encode(encrypted).decode('utf-8')
 
     def initiate_b2c(
         self,
@@ -81,7 +115,8 @@ class MpesaDarajaClient:
         token = self.get_oauth_token()
 
         payload = {
-            'InitiatorName': 'testapi',
+            'OriginatorConversationID': conversation_id,
+            'InitiatorName': self.initiator_name,
             'SecurityCredential': self._build_security_credential(),
             'CommandID': command_id,
             'Amount': int(amount),
@@ -90,7 +125,7 @@ class MpesaDarajaClient:
             'Remarks': remarks,
             'QueueTimeOutURL': settings.MPESA_B2C_TIMEOUT_URL,
             'ResultURL': settings.MPESA_B2C_RESULT_URL,
-            'Occasion': occasion or remarks,
+            'Occassion': occasion or remarks,
         }
 
         logger.info(
@@ -98,7 +133,7 @@ class MpesaDarajaClient:
             command_id, phone_number, amount, conversation_id,
         )
         return self._request(
-            '/mpesa/b2c/v1/paymentrequest',
+            '/mpesa/b2c/v3/paymentrequest/',
             data=payload,
             token=token,
         )
@@ -106,7 +141,7 @@ class MpesaDarajaClient:
     def query_transaction_status(self, conversation_id: str) -> dict:
         token = self.get_oauth_token()
         payload = {
-            'InitiatorName': 'testapi',
+            'InitiatorName': self.initiator_name,
             'SecurityCredential': self._build_security_credential(),
             'CommandID': 'TransactionStatusQuery',
             'PartyA': self.shortcode,
@@ -126,7 +161,7 @@ class MpesaDarajaClient:
     def query_account_balance(self) -> dict:
         token = self.get_oauth_token()
         payload = {
-            'InitiatorName': 'testapi',
+            'InitiatorName': self.initiator_name,
             'SecurityCredential': self._build_security_credential(),
             'CommandID': 'AccountBalance',
             'PartyA': self.shortcode,

@@ -80,7 +80,8 @@ def send_single_mpesa_disbursement(
             ])
 
         # Phase 2: M-Pesa API call OUTSIDE transaction
-        client = MpesaDarajaClient()
+        coop_shortcode = batch.cooperative.mpesa_shortcode or None
+        client = MpesaDarajaClient(shortcode=coop_shortcode)
         conversation_id = str(txn.id)
 
         try:
@@ -310,13 +311,14 @@ def reconcile_stuck_transactions():
     stuck = DisbursementTransaction.objects.filter(
         status__in=['QUEUED', 'SENT'],
         sent_at__lte=stuck_time,
-    ).select_related('batch')
+    ).select_related('batch', 'batch__cooperative')
 
-    client = MpesaDarajaClient()
     reconciled = 0
     stuck_by_coop: dict[str, list[DisbursementTransaction]] = defaultdict(list)
 
     for txn in stuck:
+        coop_shortcode = txn.batch.cooperative.mpesa_shortcode or None
+        client = MpesaDarajaClient(shortcode=coop_shortcode)
         if not txn.conversation_id:
             txn.status = 'FAILED'
             txn.failure_reason = 'Stuck without conversation_id'

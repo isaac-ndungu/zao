@@ -244,9 +244,13 @@ def run_payment_engine(self, cycle_id: str):
                 )
         if all_input_deds:
             Deduction.objects.bulk_create(all_input_deds)
-            for credit in credits_to_update:
-                credit.deducted_in_cycle = cycle
-                credit.save(update_fields=['deducted_in_cycle'])
+            for credit, amount_deducted in credits_to_update:
+                credit.total_deducted += Decimal(str(amount_deducted))
+                if credit.total_deducted >= credit.amount:
+                    credit.status = 'COMPLETED'
+                    credit.deducted_in_cycle = cycle
+                    credit.installment_amount = credit.installment_amount or credit.amount
+                credit.save(update_fields=['total_deducted', 'status', 'deducted_in_cycle'])
 
         _create_levy_deductions(cycle, farmer_data)
 

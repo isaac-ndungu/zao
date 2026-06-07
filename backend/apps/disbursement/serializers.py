@@ -145,7 +145,7 @@ class DisbursementBatchCreateSerializer(serializers.Serializer):
         farmer_payments = FarmerPayment.objects.filter(
             cycle=cycle,
             is_on_hold=False,
-        ).select_related('farmer__cooperative').order_by('farmer__member_number', 'id')
+        ).select_related('farmer__cooperative').order_by('id')
 
         # Prefetch memberships for all relevant farmers
         farmer_ids = [fp.farmer_id for fp in farmer_payments]

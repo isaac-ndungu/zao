@@ -1,6 +1,8 @@
+import ipaddress
 import json
 import logging
 
+from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -12,10 +14,36 @@ from .models import DisbursementTransaction
 logger = logging.getLogger(__name__)
 
 
+def _validate_callback_ip(request) -> bool:
+    whitelist = getattr(settings, 'MPESA_CALLBACK_IP_WHITELIST', '')
+    if not whitelist:
+        return True
+    remote_ip = request.META.get('REMOTE_ADDR', '')
+    try:
+        addr = ipaddress.ip_address(remote_ip)
+    except ValueError:
+        logger.warning('Invalid callback remote address: %s', remote_ip)
+        return False
+    for cidr in whitelist.split(','):
+        cidr = cidr.strip()
+        if not cidr:
+            continue
+        try:
+            if addr in ipaddress.ip_network(cidr, strict=False):
+                return True
+        except ValueError:
+            logger.warning('Invalid CIDR in whitelist: %s', cidr)
+    logger.warning('Callback from %s rejected — not in whitelist', remote_ip)
+    return False
+
+
 @csrf_exempt
 def mpesa_result_callback(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+
+    if not _validate_callback_ip(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
 
     try:
         body = json.loads(request.body.decode('utf-8'))
@@ -117,6 +145,9 @@ def mpesa_result_callback(request):
 def mpesa_timeout_callback(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
+
+    if not _validate_callback_ip(request):
+        return JsonResponse({'error': 'Forbidden'}, status=403)
 
     try:
         body = json.loads(request.body.decode('utf-8'))
