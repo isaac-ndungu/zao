@@ -240,6 +240,7 @@ class LoanViewSet(CooperativeScopedViewSet):
         )
         serializer.is_valid(raise_exception=True)
         reason = serializer.validated_data['reason']
+        reason = reason.strip()[:500]
         loan.status = 'DEFAULTED'
         loan.notes = (loan.notes + '\n' if loan.notes else '') + f'Defaulted: {reason}'
         loan.save(update_fields=['status', 'notes'])

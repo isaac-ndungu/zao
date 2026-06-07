@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from weasyprint import HTML
 
+from apps.base.encryption import decrypt_field
 from apps.base.utils import log_audit
 from apps.cooperatives.models import Cooperative
 from apps.deliveries.models import Delivery
@@ -155,7 +156,7 @@ def generate_kra_report(year, cooperative_id, request_user):
         {
             'member_number': f['farmer__member_number'],
             'farmer_name': f'{f["farmer__first_name"]} {f["farmer__last_name"]}',
-            'id_number': f['farmer__id_number'],
+            'id_number': decrypt_field(f['farmer__id_number']) if f['farmer__id_number'] else '',
             'gross_amount': float(f['gross_amount'] or 0),
             'withholding_tax_amount': float(f['withholding_tax_amount'] or 0),
             'net_amount': float(f['net_amount'] or 0),
