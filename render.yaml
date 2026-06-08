@@ -24,7 +24,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    command: sh -c "celery -A zaoapi worker -l info"
+    startCommand: sh -c "celery -A zaoapi worker -l info"
     envVars:
       - key: DATABASE_URL
         fromService:
@@ -43,7 +43,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    command: sh -c "celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    startCommand: sh -c "celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     envVars:
       - key: DATABASE_URL
         fromService:
