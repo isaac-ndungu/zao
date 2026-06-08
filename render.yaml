@@ -19,15 +19,12 @@ services:
         value: zaoapi.settings
       - key: CELERY_TASK_ALWAYS_EAGER
         value: "False"
-    envVarGroups:
-      - zao-api-env
-
   - type: worker
     name: zao-celery-worker
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    command: celery -A zaoapi worker -l info
+    command: sh -c "celery -A zaoapi worker -l info"
     envVars:
       - key: DATABASE_URL
         fromService:
@@ -41,15 +38,12 @@ services:
           property: connectionString
       - key: CELERY_TASK_ALWAYS_EAGER
         value: "False"
-    envVarGroups:
-      - zao-api-env
-
   - type: worker
     name: zao-celery-beat
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    command: celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: sh -c "celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     envVars:
       - key: DATABASE_URL
         fromService:
@@ -63,8 +57,6 @@ services:
           property: connectionString
       - key: CELERY_TASK_ALWAYS_EAGER
         value: "False"
-    envVarGroups:
-      - zao-api-env
 
   - type: pserv
     name: zao-db
