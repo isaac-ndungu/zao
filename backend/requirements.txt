@@ -58,4 +58,11 @@ vine==5.1.0
 wcwidth==0.7.0
 weasyprint==68.1
 webencodings==0.5.1
+whitenoise==6.7.0
 zopfli==0.4.2
+
+# Production
+gunicorn==23.0.0
+
+# External APIs
+africastalking==2.0.2

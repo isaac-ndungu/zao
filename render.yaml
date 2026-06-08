@@ -1,0 +1,80 @@
+services:
+  - type: web
+    name: zao-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: DATABASE_HOST
+        fromService:
+          type: pserv
+          name: zao-db
+          property: host
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: zao-redis
+          property: connectionString
+      - key: DJANGO_SETTINGS_MODULE
+        value: zaoapi.settings
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "False"
+    envVarGroups:
+      - zao-api-env
+
+  - type: worker
+    name: zao-celery-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    command: celery -A zaoapi worker -l info
+    envVars:
+      - key: DATABASE_HOST
+        fromService:
+          type: pserv
+          name: zao-db
+          property: host
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: zao-redis
+          property: connectionString
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "False"
+    envVarGroups:
+      - zao-api-env
+
+  - type: cron
+    name: zao-celery-beat
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    command: celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    schedule: "*/5 * * * *"
+    envVars:
+      - key: DATABASE_HOST
+        fromService:
+          type: pserv
+          name: zao-db
+          property: host
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: zao-redis
+          property: connectionString
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "False"
+    envVarGroups:
+      - zao-api-env
+
+  - type: pserv
+    name: zao-db
+    plan: starter
+    runtime: image
+    image:
+      url: postgres:16-alpine
+
+  - type: redis
+    name: zao-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
