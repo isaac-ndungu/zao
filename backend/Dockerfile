@@ -28,7 +28,9 @@ FROM dependencies AS application
 
 COPY . .
 
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8000
 
-CMD python manage.py collectstatic --noinput --clear && \
-    gunicorn zaoapi.wsgi:application --bind 0.0.0.0:8000 --workers 4
+ENTRYPOINT ["./entrypoint.sh"]

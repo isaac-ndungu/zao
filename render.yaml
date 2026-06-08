@@ -9,7 +9,7 @@ services:
         fromService:
           type: pserv
           name: zao-db
-          property: connectionString
+          property: internalConnectionString
       - key: REDIS_URL
         fromService:
           type: redis
@@ -24,18 +24,19 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    startCommand: sh -c "celery -A zaoapi worker -l info"
     envVars:
       - key: DATABASE_URL
         fromService:
           type: pserv
           name: zao-db
-          property: connectionString
+          property: internalConnectionString
       - key: REDIS_URL
         fromService:
           type: redis
           name: zao-redis
           property: connectionString
+      - key: SERVICE_TYPE
+        value: worker
       - key: CELERY_TASK_ALWAYS_EAGER
         value: "False"
   - type: worker
@@ -43,18 +44,19 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    startCommand: sh -c "celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     envVars:
       - key: DATABASE_URL
         fromService:
           type: pserv
           name: zao-db
-          property: connectionString
+          property: internalConnectionString
       - key: REDIS_URL
         fromService:
           type: redis
           name: zao-redis
           property: connectionString
+      - key: SERVICE_TYPE
+        value: beat
       - key: CELERY_TASK_ALWAYS_EAGER
         value: "False"
 
@@ -69,3 +71,4 @@ services:
     name: zao-redis
     plan: starter
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: ["0.0.0.0/0"]
