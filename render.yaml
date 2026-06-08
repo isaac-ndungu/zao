@@ -71,4 +71,5 @@ services:
     name: zao-redis
     plan: starter
     maxmemoryPolicy: allkeys-lru
-    ipAllowList: ["0.0.0.0/0"]
+    ipAllowList:
+      - source: 0.0.0.0/0
