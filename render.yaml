@@ -9,7 +9,7 @@ services:
         fromService:
           type: pserv
           name: zao-db
-          property: internalConnectionString
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
@@ -29,7 +29,7 @@ services:
         fromService:
           type: pserv
           name: zao-db
-          property: internalConnectionString
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
@@ -49,7 +49,7 @@ services:
         fromService:
           type: pserv
           name: zao-db
-          property: internalConnectionString
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
