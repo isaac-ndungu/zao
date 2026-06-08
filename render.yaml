@@ -5,11 +5,11 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
-      - key: DATABASE_HOST
+      - key: DATABASE_URL
         fromService:
           type: pserv
           name: zao-db
-          property: host
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
@@ -29,11 +29,11 @@ services:
     dockerContext: ./backend
     command: celery -A zaoapi worker -l info
     envVars:
-      - key: DATABASE_HOST
+      - key: DATABASE_URL
         fromService:
           type: pserv
           name: zao-db
-          property: host
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
@@ -44,19 +44,18 @@ services:
     envVarGroups:
       - zao-api-env
 
-  - type: cron
+  - type: worker
     name: zao-celery-beat
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     command: celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    schedule: "*/5 * * * *"
     envVars:
-      - key: DATABASE_HOST
+      - key: DATABASE_URL
         fromService:
           type: pserv
           name: zao-db
-          property: host
+          property: connectionString
       - key: REDIS_URL
         fromService:
           type: redis
