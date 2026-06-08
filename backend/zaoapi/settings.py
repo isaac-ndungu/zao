@@ -114,30 +114,27 @@ WSGI_APPLICATION = 'zaoapi.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASE_URL = config('DATABASE_URL', default=None)
-if DATABASE_URL:
-    url = urlparse(DATABASE_URL)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': url.path[1:],
-            'USER': url.username,
-            'PASSWORD': url.password,
-            'HOST': url.hostname,
-            'PORT': url.port,
-            'CONN_MAX_AGE': 600,
-        }
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{name}".format(
+        user=config('DATABASE_USER'),
+        password=config('DATABASE_PASSWORD'),
+        host=config('DATABASE_HOST'),
+        port=config('DATABASE_PORT'),
+        name=config('DATABASE_NAME'),
+    )
+
+url = urlparse(DATABASE_URL)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': url.path[1:],
+        'USER': url.username,
+        'PASSWORD': url.password,
+        'HOST': url.hostname,
+        'PORT': url.port,
+        'CONN_MAX_AGE': 600,
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DATABASE_NAME'),
-            'USER': config('DATABASE_USER'),
-            'PASSWORD': config('DATABASE_PASSWORD'),
-            'HOST': config('DATABASE_HOST'),
-            'PORT': config('DATABASE_PORT'),
-        }
-    }
+}
 
 
 # Password validation

@@ -5,11 +5,16 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_HOST
         fromService:
           type: pserv
           name: zao-db
-          property: connectionString
+          property: host
+      - key: DATABASE_PORT
+        fromService:
+          type: pserv
+          name: zao-db
+          property: port
       - key: REDIS_URL
         fromService:
           type: redis
@@ -25,11 +30,16 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_HOST
         fromService:
           type: pserv
           name: zao-db
-          property: connectionString
+          property: host
+      - key: DATABASE_PORT
+        fromService:
+          type: pserv
+          name: zao-db
+          property: port
       - key: REDIS_URL
         fromService:
           type: redis
@@ -45,11 +55,16 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_HOST
         fromService:
           type: pserv
           name: zao-db
-          property: connectionString
+          property: host
+      - key: DATABASE_PORT
+        fromService:
+          type: pserv
+          name: zao-db
+          property: port
       - key: REDIS_URL
         fromService:
           type: redis
