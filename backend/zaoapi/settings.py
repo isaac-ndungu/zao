@@ -124,17 +124,18 @@ if not DATABASE_URL:
     )
 
 url = urlparse(DATABASE_URL)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': url.path[1:],
-        'USER': url.username,
-        'PASSWORD': url.password,
-        'HOST': url.hostname,
-        'PORT': url.port,
-        'CONN_MAX_AGE': 600,
-    }
+db_config = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': url.path[1:],
+    'USER': url.username,
+    'PASSWORD': url.password,
+    'HOST': url.hostname,
+    'PORT': url.port,
+    'CONN_MAX_AGE': 600,
 }
+if url.query:
+    db_config['OPTIONS'] = dict(param.split('=', 1) for param in url.query.split('&'))
+DATABASES = {'default': db_config}
 
 
 # Password validation
