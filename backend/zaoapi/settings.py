@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import socket
 from urllib.parse import urlparse
 from decouple import config
 
@@ -124,12 +125,18 @@ if not DATABASE_URL:
     )
 
 url = urlparse(DATABASE_URL)
+hostname = url.hostname
+if hostname and hostname.endswith('.supabase.co'):
+    try:
+        hostname = socket.getaddrinfo(hostname, None, socket.AF_INET)[0][4][0]
+    except Exception:
+        pass
 db_config = {
     'ENGINE': 'django.db.backends.postgresql',
     'NAME': url.path[1:],
     'USER': url.username,
     'PASSWORD': url.password,
-    'HOST': url.hostname,
+    'HOST': hostname,
     'PORT': url.port,
     'CONN_MAX_AGE': 600,
 }
