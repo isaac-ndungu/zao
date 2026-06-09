@@ -9,6 +9,7 @@ case "${SERVICE_TYPE:-web}" in
     exec celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     ;;
   web)
+    python manage.py migrate --noinput
     python manage.py collectstatic --noinput --clear
     celery -A zaoapi worker -l info &
     celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler &
