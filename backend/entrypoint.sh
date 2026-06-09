@@ -10,6 +10,8 @@ case "${SERVICE_TYPE:-web}" in
     ;;
   web)
     python manage.py collectstatic --noinput --clear
+    celery -A zaoapi worker -l info &
+    celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler &
     exec gunicorn zaoapi.wsgi:application --bind 0.0.0.0:8000 --workers 4
     ;;
 esac
