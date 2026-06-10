@@ -1,3 +1,4 @@
+import uuid
 import random
 from datetime import timedelta
 
@@ -15,13 +16,18 @@ from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.base.constants import UserRole
+from apps.base.permissions import IsAdmin
+from apps.base.utils import log_audit
 
 from .models import TwoFactorOTP, User
 from .serializers import (
     LOGIN_TOKEN_SALT,
     FARMER_LOGIN_TOKEN_SALT,
+    INVITE_TOKEN_SALT,
     FarmerRequestOTPSerializer,
     FarmerVerifyOTPSerializer,
+    InviteAcceptSerializer,
+    InviteSerializer,
     LoginSerializer,
     RequestOTPSerializer,
     TokenResponseSerializer,
@@ -145,7 +151,10 @@ class RequestOTPView(APIView):
             fail_silently=False,
         )
 
-        return Response({'detail': 'OTP sent to your email.'})
+        data = {'detail': 'OTP sent to your email.'}
+        if settings.DEBUG:
+            data['otp_code'] = otp_code
+        return Response(data)
 
 
 class VerifyOTPView(APIView):
@@ -189,10 +198,13 @@ class FarmerRequestOTPView(APIView):
         msg = f'Your OTP is: {otp_code}. It expires in 5 minutes.'
         send_sms(user.phone_number, msg)
 
-        return Response({
+        data = {
             'login_token': login_token,
             'detail': 'OTP sent to your phone.',
-        })
+        }
+        if settings.DEBUG:
+            data['otp_code'] = otp_code
+        return Response(data)
 
 
 class FarmerVerifyOTPView(APIView):
@@ -223,6 +235,85 @@ class LogoutView(APIView):
         response = Response({'detail': 'Logged out.'})
         response.delete_cookie('refresh_token', path='/api/auth/')
         return response
+
+
+class InviteView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = InviteSerializer
+
+    def post(self, request):
+        serializer = InviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        placeholder_phone = f'pending-{uuid.uuid4().hex[:8]}'
+        user = User.objects.create(
+            email=serializer.validated_data['email'],
+            phone_number=placeholder_phone,
+            first_name=serializer.validated_data['first_name'],
+            last_name=serializer.validated_data['last_name'],
+            role=serializer.validated_data['role'],
+            cooperative_id=request.cooperative_id,
+            is_active=False,
+            must_change_password=True,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        token = signer.sign(user.email)
+
+        invite_link = f'{request.scheme}://{request.get_host()}/api/auth/invite/accept/?token={token}'
+
+        coop_name = user.cooperative.name if user.cooperative else 'your cooperative'
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        send_mail(
+            'You\'ve been invited to Zao',
+            (
+                f'You have been invited to join {coop_name} '
+                f'as a {user.get_role_display()}.\n\n'
+                f'Click the link below to set up your account:\n{invite_link}\n\n'
+                f'This link expires in 7 days.'
+            ),
+            from_email,
+            [user.email],
+            fail_silently=False,
+        )
+
+        log_audit(
+            actor=request.user,
+            resource_type='user_invite',
+            resource_id=user.id,
+            action='CREATE',
+            new_value={'email': user.email, 'role': user.role},
+            cooperative_id=request.cooperative_id,
+        )
+
+        return Response({
+            'detail': 'Invite sent.',
+            'email': user.email,
+            'role': user.role,
+            'expires_in_days': 7,
+            'invite_link': invite_link,
+        }, status=status.HTTP_201_CREATED)
+
+
+class InviteAcceptView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = InviteAcceptSerializer
+
+    def post(self, request):
+        serializer = InviteAcceptSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+
+        user.phone_number = serializer.validated_data['phone_number']
+        user.set_password(serializer.validated_data['password'])
+        user.is_active = True
+        user.must_change_password = False
+        user.save(update_fields=['phone_number', 'password', 'is_active', 'must_change_password'])
+
+        return _login_response(user)
 
 
 class TokenRefreshView(APIView):

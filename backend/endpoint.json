@@ -130,7 +130,8 @@
           }
         },
         "response_200": {
-          "detail": "OTP sent to your email."
+          "detail": "OTP sent to your email.",
+          "otp_code": {"type": "string", "example": "482916", "notes": "Only returned when DEBUG=True. In production, OTP is emailed."}
         },
         "notes": "OTP expires in 5 minutes. Token signed with TimestampSigner (max age 180s). OTP sent via email."
       },
@@ -194,6 +195,59 @@
           "detail": "Logged out."
         },
         "notes": "Blacklists refresh token. Deletes refresh_token cookie."
+      },
+
+      "1.7_invite": {
+        "method": "POST",
+        "path": "/api/auth/invite/",
+        "auth": "Bearer — role=admin",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "email": {"type": "string", "example": "newmanager@coop.co.ke"},
+            "first_name": {"type": "string", "example": "Peter"},
+            "last_name": {"type": "string", "example": "Kiprop"},
+            "role": {"type": "string", "enum": ["manager", "accountant", "grader"], "example": "manager"}
+          }
+        },
+        "response_201": {
+          "detail": "Invite sent.",
+          "email": "newmanager@coop.co.ke",
+          "role": "manager",
+          "expires_in_days": 7,
+          "invite_link": "http://localhost:8000/api/auth/invite/accept/?token=<signed_token>"
+        },
+        "notes": "Creates inactive User, emails invite link. Link expires in 7 days."
+      },
+
+      "1.8_invite_accept": {
+        "method": "POST",
+        "path": "/api/auth/invite/accept/",
+        "auth": "None",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "token": {"type": "string", "example": "<signed_token_from_invite_link>"},
+            "password": {"type": "string", "min_length": 8, "example": "SecurePass123!"},
+            "phone_number": {"type": "string", "example": "0714000001"}
+          }
+        },
+        "response_200": {
+          "access": "<jwt_access_token>",
+          "refresh": "<jwt_refresh_token>",
+          "user": {
+            "id": "<uuid>",
+            "email": "newmanager@coop.co.ke",
+            "phone_number": "0714000001",
+            "first_name": "Peter",
+            "last_name": "Kiprop",
+            "role": "manager",
+            "cooperative_id": "<uuid>",
+            "two_fa_enabled": false,
+            "must_change_password": false
+          }
+        },
+        "notes": "Sets password + phone, activates account, returns JWT. Token is one-time use."
       }
     },
 
@@ -896,6 +950,65 @@
             {"county": "Nakuru", "count": 4}
           ]
         }
+      },
+
+      "4.10_memberships_list": {
+        "method": "GET",
+        "path": "/api/farmers/{farmer_id}/memberships/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "count": 1,
+          "results": [
+            {
+              "id": "<uuid>",
+              "farmer": "<farmer_uuid>",
+              "cooperative": "<coop_uuid>",
+              "member_number": "KBD-001",
+              "payment_method": "M-PESA",
+              "mpesa_number": "0713000001",
+              "bank_name": "",
+              "bank_account": "",
+              "bank_branch": "",
+              "is_active": true,
+              "joined_at": "2026-01-15T08:00:00Z",
+              "left_at": null
+            }
+          ]
+        }
+      },
+
+      "4.11_memberships_retrieve": {
+        "method": "GET",
+        "path": "/api/farmers/{farmer_id}/memberships/{id}/",
+        "auth": "Bearer — any authenticated",
+        "response_200": {
+          "id": "<uuid>",
+          "farmer": "<farmer_uuid>",
+          "cooperative": "<coop_uuid>",
+          "member_number": "KBD-001",
+          "payment_method": "M-PESA",
+          "mpesa_number": "0713000001",
+          "is_active": true,
+          "joined_at": "2026-01-15T08:00:00Z"
+        }
+      },
+
+      "4.12_memberships_update": {
+        "method": "PATCH",
+        "path": "/api/farmers/{farmer_id}/memberships/{id}/",
+        "auth": "Bearer — role=manager",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "payment_method": {"type": "string", "required": false, "example": "BANK"},
+            "mpesa_number": {"type": "string", "required": false, "example": "0713000099"},
+            "bank_name": {"type": "string", "required": false, "example": "KCB Bank"},
+            "bank_account": {"type": "string", "required": false, "example": "1234567890"},
+            "bank_branch": {"type": "string", "required": false, "example": "Mwea"},
+            "is_active": {"type": "boolean", "required": false, "example": true}
+          }
+        },
+        "response_200": "Updated membership object (same structure as GET detail)."
       }
     },
 
@@ -3229,6 +3342,50 @@
         "path": "/api/notifications/<uuid:pk>/",
         "auth": "Bearer — role=staff",
         "response_200": "NotificationDetailSerializer (all model fields + recipient_name, recipient_phone)."
+      }
+    },
+
+    "20_chat": {
+      "description": "Chatbot powered by Google Gemini 2.0 Flash",
+
+      "20.1_send": {
+        "method": "POST",
+        "path": "/api/chat/",
+        "auth": "Bearer — JWT required",
+        "request": {
+          "content_type": "application/json",
+          "body": {
+            "message": {"type": "string", "example": "How do I check my account balance?", "notes": "User's message to the chatbot"}
+          }
+        },
+        "response_200": {
+          "session_id": "<uuid>",
+          "reply": "You can check your balance via USSD by dialing *384*ZAO# or through the farmer portal."
+        }
+      },
+
+      "20.2_history": {
+        "method": "GET",
+        "path": "/api/chat/",
+        "auth": "Bearer — JWT required",
+        "query_params": {
+          "session_id": {"type": "string", "required": true, "example": "<uuid>", "notes": "Session UUID. Required."}
+        },
+        "response_200": {
+          "session_id": "<uuid>",
+          "messages": [
+            {
+              "role": "user",
+              "content": "How do I check my account balance?",
+              "created_at": "2026-06-09T10:00:00Z"
+            },
+            {
+              "role": "assistant",
+              "content": "You can check your balance via USSD by dialing *384*ZAO#...",
+              "created_at": "2026-06-09T10:00:01Z"
+            }
+          ]
+        }
       }
     }
   }

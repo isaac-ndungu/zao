@@ -2,12 +2,14 @@ from django.core.signing import TimestampSigner, BadSignature
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.base.constants import UserRole
 from apps.base.utils import normalize_phone
 from apps.farmers.models import Farmer
 from .models import User, TwoFactorOTP
 
 LOGIN_TOKEN_SALT = 'auth-login-token'
 FARMER_LOGIN_TOKEN_SALT = 'auth-farmer-login-token'
+INVITE_TOKEN_SALT = 'auth-invite-token'
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -221,6 +223,50 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+
+class InviteSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    role = serializers.ChoiceField(
+        choices=[UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.GRADER]
+    )
+
+    def validate_email(self, value):
+        value = value.lower().strip()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        return value
+
+
+INVITE_MAX_AGE_SECONDS = 604800  # 7 days
+
+
+class InviteAcceptSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True, min_length=8)
+    phone_number = serializers.CharField()
+
+    def validate_phone_number(self, value):
+        value = normalize_phone(value)
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError('A user with this phone number already exists.')
+        return value
+
+    def validate(self, attrs):
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        try:
+            email = signer.unsign(attrs['token'], max_age=INVITE_MAX_AGE_SECONDS)
+        except BadSignature:
+            raise serializers.ValidationError('Invalid or expired invite token.')
+
+        user = User.objects.filter(email=email, is_active=False).first()
+        if not user:
+            raise serializers.ValidationError('Invalid or expired invite token.')
+
+        attrs['user'] = user
+        return attrs
 
 
 class TokenResponseSerializer(serializers.Serializer):
