@@ -187,6 +187,9 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
         validated_data.pop('cooperative_id', None)
         if 'id_number' in validated_data and validated_data['id_number']:
             validated_data['id_number'] = encrypt_field(validated_data['id_number'])
+        name_fields = {k: validated_data[k] for k in ('first_name', 'last_name') if k in validated_data}
+        if name_fields and instance.user:
+            User.objects.filter(pk=instance.user.pk).update(**name_fields)
         return super().update(instance, validated_data)
 
 
