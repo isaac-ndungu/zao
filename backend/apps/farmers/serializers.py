@@ -156,7 +156,10 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
             )
-        if User.objects.filter(phone_number=value).exists():
+        qs = User.objects.filter(phone_number=value)
+        if self.instance and self.instance.user:
+            qs = qs.exclude(pk=self.instance.user.pk)
+        if qs.exists():
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value
 
