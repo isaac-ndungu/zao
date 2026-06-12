@@ -79,9 +79,7 @@ Zao supports the following agricultural cooperative models in Kenya:
 
 ## Prerequisites
 
-- **Python 3.14+**
-- **PostgreSQL 13+** (with connection details)
-- **Redis 7.0+** (for Celery broker and session cache)
+- **Docker** and **Docker Compose** (all services run in containers)
 - **Git**
 
 ### External Services (Required for production)
@@ -102,103 +100,53 @@ git clone <repo_url>
 cd zao
 ```
 
-### 2. Create and Activate Virtual Environment
+### 2. Configure Environment Variables
 
-**On Linux/macOS:**
-```bash
-python -m venv env
-source env/bin/activate
-```
-
-**On Windows :**
-```powershell
-python -m venv env
-source env\Scripts\Activate
-```
-
-### 3. Install Dependencies
+A `.env` file is required in the `backend/` directory. Copy the template and fill in your values:
 
 ```bash
-cd backend
-pip install -r requirements.txt
+cp backend/.env.example backend/.env
 ```
 
-### 4. Configure Environment Variables
+Key defaults for local development:
+- `DEBUG=True` — enables `otp_code` in API responses for convenience
+- `EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend` — OTPs print to `docker compose logs web`
+- `DATABASE_HOST=localhost`, `DATABASE_PORT=5433` — Docker PostgreSQL is mapped to port 5433
+- `REDIS_URL=redis://localhost:6380` — Docker Redis is mapped to port 6380
 
-Create a `.env` file in the `backend/` directory:
-
-```env
-# Django Configuration
-SECRET_KEY=your-secret-key-here
-DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1,yourdomain.com
-
-# Database
-DATABASE_ENGINE=django.db.backends.postgresql
-DATABASE_NAME=zao_db
-DATABASE_USER=zao_user
-DATABASE_PASSWORD=your-secure-password
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-
-# Redis
-REDIS_URL=redis://localhost:6379/0
-
-# JWT Tokens
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_LIFETIME=900  # 15 minutes in seconds
-REFRESH_TOKEN_LIFETIME=604800  # 7 days in seconds
-
-# Field-Level Encryption
-FIELD_ENCRYPTION_KEY=your-32-character-base64-encoded-key
-
-# M-Pesa Daraja
-MPESA_ENVIRONMENT=sandbox  # or 'production'
-MPESA_CONSUMER_KEY=your-daraja-consumer-key
-MPESA_CONSUMER_SECRET=your-daraja-consumer-secret
-MPESA_PASSKEY=your-mpesa-passkey
-MPESA_SHORTCODE=your-business-shortcode
-MPESA_B2C_RESULT_URL=https://yourdomain.com/api/callback/mpesa/result/
-MPESA_B2C_TIMEOUT_URL=https://yourdomain.com/api/callback/mpesa/timeout/
-MPESA_DISBURSEMENT_BLACKOUT_START=01:00  # No disbursements between these times
-MPESA_DISBURSEMENT_BLACKOUT_END=04:00
-
-# Africa's Talking
-AFRICAS_TALKING_USERNAME=sandbox
-AFRICAS_TALKING_API_KEY=your-api-key
-AFRICAS_TALKING_SHORTCODE=your-shortcode
-AFRICAS_TALKING_USSD_CODE=*xxx#
-
-# Email Configuration
-EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-EMAIL_HOST=smtp.gmail.com  # or your email provider
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER=your-email@gmail.com
-EMAIL_HOST_PASSWORD=your-app-password
-DEFAULT_FROM_EMAIL=noreply@zaocooperatives.com
-
-# Cloudinary (optional, for media storage)
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-# Google AI (Gemini)
-GOOGLE_API_KEY=your-gemini-api-key
-GOOGLE_AI_MODEL=gemini-2.0-flash
-
-# Timezone
-TIME_ZONE=Africa/Nairobi
-```
-
-### 5. Initialize the Database
+### 3. Start All Services
 
 ```bash
-# Run migrations
-python manage.py migrate
+docker compose up -d
+```
 
-# Create superuser
-python manage.py createsuperuser
+This starts five containers:
+- **web** — Gunicorn + Django API (port 8000)
+- **db** — PostgreSQL (port 5433)
+- **redis** — Redis (port 6380)
+- **celery_worker** — Async task processor
+- **celery_beat** — Scheduled task scheduler
+
+### 4. Run Migrations
+
+```bash
+docker compose exec web python manage.py migrate
+```
+
+### 5. Seed Demo Data (Optional)
+
+Populates the database with realistic Kenyan cooperative data for development and presentations:
+
+```bash
+docker compose exec web python manage.py seed_demo_data --clear
+```
+
+Creates 3 co-ops, 150 farmers, 1,152 deliveries, 30 loans, and more. See [seed_demo_data.py](backend/apps/base/management/commands/seed_demo_data.py) for details.
+
+### 6. Create a Superuser (if not using seed data)
+
+```bash
+docker compose exec web python manage.py createsuperuser
 ```
 
 
@@ -207,24 +155,41 @@ python manage.py createsuperuser
 
 ## Running the Application
 
-### Development Server
+### Development (Docker)
 
-**Start Django Development Server:**
+All services run inside Docker containers — one command starts everything:
+
 ```bash
-cd backend
-python manage.py runserver 0.0.0.0:8000
+docker compose up -d
 ```
 
-**In another terminal, start Celery Worker:**
+The API is available at [http://localhost:8000](http://localhost:8000).
+
+### Useful Commands
+
+| Action | Command |
+|---|---|
+| Start all services | `docker compose up -d` |
+| Stop all services | `docker compose down` |
+| Restart web only | `docker compose restart web` |
+| View web logs | `docker compose logs web -f` |
+| Run a Django command | `docker compose exec web python manage.py <command>` |
+| Open a shell in the container | `docker compose exec web bash` |
+| Check service health | `curl http://localhost:8000/api/health/` |
+
+### OTPs & Emails in Development
+
+With `EMAIL_BACKEND=console.EmailBackend` (default in `.env`), emails are printed to the container's stdout:
+
 ```bash
-cd backend
-celery -A zaoapi worker -l info
+docker compose logs web -f
 ```
 
-**In a third terminal, start Celery Beat (for scheduled tasks):**
-```bash
-cd backend
-celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+When `DEBUG=True`, OTP codes are also returned directly in the API response body:
+
+```json
+POST /api/auth/2fa/request/ → {"detail": "OTP sent.", "otp_code": "482916"}
+POST /api/auth/farmer/request/ → {"detail": "OTP sent.", "otp_code": "482916", "login_token": "..."}
 ```
 
 ### Production Deployment
@@ -232,16 +197,12 @@ celery -A zaoapi beat -l info --scheduler django_celery_beat.schedulers:Database
 **Using Render or Railway:**
 1. Set environment variables in the dashboard
 2. Deploy using their CLI or GitHub integration
-3. Run migrations on first deploy: `python manage.py migrate`
+3. Run migrations on first deploy: `docker compose exec web python manage.py migrate`
 4. Configure the Celery worker as a background worker
 
-**Using Gunicorn + Systemd:**
+**Using Docker on a VPS:**
 ```bash
-# Install gunicorn
-pip install gunicorn
-
-# Start with gunicorn
-gunicorn --workers 4 --bind 0.0.0.0:8000 zaoapi.wsgi:application
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ---
@@ -283,7 +244,7 @@ zao/
 │   ├── doc.md                        # Detailed project documentation
 │   └── endpoint.json                 # API endpoint reference
 │
-├── env/                              # Python virtual environment
+├── docker-compose.yml               # Docker service definitions
 ├── LICENSE                           # Project license
 └── README.md                         # This file
 ```
