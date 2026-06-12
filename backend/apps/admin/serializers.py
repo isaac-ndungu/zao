@@ -40,7 +40,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
             'role', 'cooperative', 'is_active', 'is_staff', 'is_superuser',
             'two_fa_enabled', 'must_change_password', 'date_joined', 'last_login',
         ]
-        read_only_fields = ['id', 'date_joined', 'last_login']
+        read_only_fields = ['id', 'date_joined', 'last_login', 'is_superuser']
 
     def validate_email(self, value):
         instance = self.instance

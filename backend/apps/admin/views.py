@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework import serializers, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -72,6 +73,11 @@ class AdminUserViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin, Retrie
 
     def get_queryset(self):
         return self.queryset
+
+    def perform_destroy(self, instance):
+        if instance.is_superuser:
+            raise PermissionDenied('Cannot delete a superuser.')
+        super().perform_destroy(instance)
 
 
 class AdminUserActivateView(APIView):
@@ -219,6 +225,8 @@ class ImpersonateView(APIView):
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         if not target.is_active:
             return Response({'detail': 'Cannot impersonate an inactive user.'}, status=status.HTTP_400_BAD_REQUEST)
+        if target.is_superuser:
+            return Response({'detail': 'Cannot impersonate a superuser.'}, status=status.HTTP_403_FORBIDDEN)
         refresh = RefreshToken.for_user(target)
         access = refresh.access_token
         access['exp'] = int((timezone.now() + timedelta(minutes=15)).timestamp())
