@@ -7,3 +7,11 @@ class GlobalUserRateThrottle(UserRateThrottle):
 
 class GlobalAnonRateThrottle(AnonRateThrottle):
     rate = '100/hour'
+
+
+class SuperAdminThrottle(UserRateThrottle):
+    scope = 'superadmin'
+
+
+class SuperAdminSensitiveThrottle(UserRateThrottle):
+    scope = 'superadmin_sensitive'

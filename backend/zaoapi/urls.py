@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
@@ -47,3 +48,6 @@ urlpatterns = [
     path('api/callback/', include(notification_callback_urlpatterns)),
     path('api/', include(api_urlpatterns)),
 ]
+
+if settings.SUPERADMIN_ENABLED:
+    urlpatterns.append(path('api/admin/', include('apps.admin.urls')))

@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'apps.notifications',
     'apps.statements',
     'apps.chat',
+    'apps.admin',
 ]
 
 MIDDLEWARE = [
@@ -217,7 +218,7 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 NOTIFICATIONS_DRY_RUN = config('NOTIFICATIONS_DRY_RUN', default=True, cast=bool)
-AFRICASTALKING_USSD_CODE = config('AFRICASTALKING_USSD_CODE', default='*384*12345#')
+AFRICASTALKING_USSD_CODE = config('AFRICASTALKING_USSD_CODE', default='*384*11411#')
 
 # Email
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
@@ -227,6 +228,7 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_TIMEOUT = 15
 
 USE_I18N = True
 
@@ -268,6 +270,8 @@ REST_FRAMEWORK = {
         'request_otp': '5/hour',
         'verify_otp': '5/min',
         'farmer_request_otp': '3/hour',
+        'superadmin': '100/min',
+        'superadmin_sensitive': '3/hour',
     },
 }
 
@@ -323,6 +327,9 @@ SPECTACULAR_SETTINGS = {
     ),
     'VERSION': '1.0.0',
 }
+
+# Superadmin API
+SUPERADMIN_ENABLED = config('SUPERADMIN_ENABLED', default=True, cast=bool)
 
 # CORS - restrict in production
 CORS_ALLOW_ALL_ORIGINS = False

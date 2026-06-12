@@ -21,6 +21,13 @@ class AuditAction(models.TextChoices):
     MEMBERSHIP_UPDATED = 'MEMBERSHIP_UPDATED', 'Membership Updated'
     MEMBERSHIP_DEACTIVATED = 'MEMBERSHIP_DEACTIVATED', 'Membership Deactivated'
     MEMBERSHIP_REACTIVATED = 'MEMBERSHIP_REACTIVATED', 'Membership Reactivated'
+    ADMIN_CREATE = 'ADMIN_CREATE', 'Admin Create'
+    ADMIN_UPDATE = 'ADMIN_UPDATE', 'Admin Update'
+    ADMIN_DELETE = 'ADMIN_DELETE', 'Admin Delete'
+    ADMIN_ACTION = 'ADMIN_ACTION', 'Admin Action'
+    IMPERSONATE = 'IMPERSONATE', 'Impersonate'
+    FORCE_STATUS = 'FORCE_STATUS', 'Force Status'
+    TRANSFER_COOPERATIVE = 'TRANSFER_COOPERATIVE', 'Transfer Cooperative'
 
 
 class LocationMixin(models.Model):

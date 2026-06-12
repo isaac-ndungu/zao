@@ -387,7 +387,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
                     errors.append({'row': row_num, 'error': str(e)})
 
             if errors:
-                raise ValueError('rollback')
+                transaction.set_rollback(True)
 
         if errors:
             return Response(
