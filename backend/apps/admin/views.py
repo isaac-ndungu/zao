@@ -13,9 +13,9 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
+from apps.auth_api.models import TwoFactorOTP
 from apps.base.models import AuditAction, AuditLog
 from apps.base.throttles import SuperAdminSensitiveThrottle
 from apps.base.constants import UserRole
@@ -24,7 +24,8 @@ from apps.cooperatives.models import Cooperative
 from apps.deliveries.models import Delivery
 from apps.disbursement.models import DisbursementBatch
 from apps.farmers.models import Farmer
-from apps.payment_engine.models import PaymentCycle
+from apps.loans.models import Loan
+from apps.payment_engine.models import PaymentCycle, FarmerPayment
 
 from .mixins import ModelAdminMixin
 from .permissions import IsSuperUser
@@ -33,6 +34,15 @@ from .serializers import (
     AdminCooperativeDeactivateSerializer,
     AdminCooperativeSerializer,
     AdminDashboardSerializer,
+    AdminDeliverySerializer,
+    AdminDisbursementBatchSerializer,
+    AdminFarmerPaymentHoldSerializer,
+    AdminFarmerPaymentSerializer,
+    AdminFarmerSerializer,
+    AdminForceDeliveryStatusSerializer,
+    AdminLoanSerializer,
+    AdminOTPTokenSerializer,
+    AdminPaymentCycleSerializer,
     AdminUserActivateSerializer,
     AdminUserDeactivateSerializer,
     AdminUserResetPasswordSerializer,
@@ -72,9 +82,20 @@ class CreateSuperUserView(APIView):
 class AdminUserViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = User.objects.all().select_related('cooperative').order_by('-date_joined')
     serializer_class = AdminUserSerializer
+    search_fields = ['email', 'phone_number', 'first_name', 'last_name']
 
     def get_queryset(self):
-        return self.queryset
+        qs = self.queryset
+        role = self.request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+        cooperative = self.request.query_params.get('cooperative')
+        if cooperative:
+            qs = qs.filter(cooperative_id=cooperative)
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+        return qs
 
     def perform_destroy(self, instance):
         if instance.is_superuser:
@@ -253,9 +274,17 @@ class ImpersonateView(APIView):
 class AdminCooperativeViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Cooperative.objects.all().order_by('name')
     serializer_class = AdminCooperativeSerializer
+    search_fields = ['name', 'registration_number', 'county']
 
     def get_queryset(self):
-        return self.queryset
+        qs = self.queryset
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+        county = self.request.query_params.get('county')
+        if county:
+            qs = qs.filter(county__icontains=county)
+        return qs
 
 
 class AdminCooperativeActivateView(APIView):
@@ -317,38 +346,129 @@ class AdminDashboardView(APIView):
     serializer_class = AdminDashboardSerializer
 
     def get(self, request):
-        users = User.objects.all()
+        period = request.query_params.get('period', '')
+
+        def date_filter(days):
+            from django.utils import timezone
+            return timezone.now() - timedelta(days=days)
+
+        def count_with_period(qs, period_days=None):
+            if period_days and period:
+                cutoff = date_filter(period_days)
+                return qs.filter(created_at__gte=cutoff).count()
+            return qs.count()
+
+        def status_counts(qs, statuses, period_days=None):
+            result = {}
+            for s in statuses:
+                if period_days and period:
+                    cutoff = date_filter(period_days)
+                    result[s] = qs.filter(status=s, created_at__gte=cutoff).count()
+                else:
+                    result[s] = qs.filter(status=s).count()
+            return result
+
+        period_days = None
+        prev_period_days = None
+        if period:
+            try:
+                if period.endswith('d'):
+                    period_days = int(period[:-1])
+                elif period.endswith('h'):
+                    period_days = int(period[:-1]) / 24
+                prev_period_days = period_days * 2 if period_days else None
+            except (ValueError, TypeError):
+                pass
+
+        now = timezone.now()
+        prev_cutoff = date_filter(prev_period_days) if prev_period_days else None
+        cur_cutoff = date_filter(period_days) if period_days else None
+
+        def period_changes(current_qs, prev_qs):
+            cur = current_qs.count()
+            prv = prev_qs.count()
+            return {
+                'current': cur,
+                'previous': prv,
+                'change_pct': round(((cur - prv) / prv * 100), 1) if prv else None,
+            }
+
+        total_users_qs = User.objects.all()
+        total_farmers_qs = Farmer.objects.all()
+        total_cooperatives_qs = Cooperative.objects.all()
+        total_deliveries_qs = Delivery.objects.all()
+        total_cycles_qs = PaymentCycle.objects.all()
+        total_batches_qs = DisbursementBatch.objects.all()
+
+        cur_users = total_users_qs
+        prv_users = User.objects.all()
+        if cur_cutoff:
+            cur_users = total_users_qs.filter(date_joined__gte=cur_cutoff)
+        if prev_cutoff:
+            prv_users = User.objects.filter(date_joined__gte=prev_cutoff, date_joined__lt=cur_cutoff)
+        elif cur_cutoff:
+            prv_users = User.objects.filter(date_joined__lt=cur_cutoff)
+
+        cur_farmers = total_farmers_qs
+        prv_farmers = Farmer.objects.all()
+        if cur_cutoff:
+            cur_farmers = total_farmers_qs.filter(date_joined__gte=cur_cutoff)
+        if prev_cutoff:
+            prv_farmers = Farmer.objects.filter(date_joined__gte=prev_cutoff, date_joined__lt=cur_cutoff)
+        elif cur_cutoff:
+            prv_farmers = Farmer.objects.filter(date_joined__lt=cur_cutoff)
+
+        cur_deliveries = total_deliveries_qs
+        prv_deliveries = Delivery.objects.all()
+        if cur_cutoff:
+            cur_deliveries = total_deliveries_qs.filter(date_delivered__gte=cur_cutoff)
+        if prev_cutoff:
+            prv_deliveries = Delivery.objects.filter(date_delivered__gte=prev_cutoff, date_delivered__lt=cur_cutoff)
+        elif cur_cutoff:
+            prv_deliveries = Delivery.objects.filter(date_delivered__lt=cur_cutoff)
+
         users_by_role = {}
         for role_choice in UserRole.values:
-            users_by_role[role_choice] = users.filter(role=role_choice).count()
+            users_by_role[role_choice] = cur_users.filter(role=role_choice).count()
 
-        deliveries = Delivery.objects.all()
         deliveries_by_status = {}
         for status_choice in ['PENDING', 'GRADED', 'ACCEPTED', 'REJECTED', 'PAID']:
-            deliveries_by_status[status_choice] = deliveries.filter(status=status_choice).count()
+            deliveries_by_status[status_choice] = cur_deliveries.filter(status=status_choice).count()
 
-        cycles = PaymentCycle.objects.all()
+        cur_cycles = total_cycles_qs
+        if cur_cutoff:
+            cur_cycles = total_cycles_qs.filter(created_at__gte=cur_cutoff)
         cycles_by_status = {}
         for status_choice in ['DRAFT', 'COMPUTING', 'COMPUTED', 'LOCKED', 'DISBURSED']:
-            cycles_by_status[status_choice] = cycles.filter(status=status_choice).count()
+            cycles_by_status[status_choice] = cur_cycles.filter(status=status_choice).count()
 
-        batches = DisbursementBatch.objects.all()
+        cur_batches = total_batches_qs
+        if cur_cutoff:
+            cur_batches = total_batches_qs.filter(created_at__gte=cur_cutoff)
         batches_by_status = {}
         for status_choice in ['PENDING', 'PROCESSING', 'COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED']:
-            batches_by_status[status_choice] = batches.filter(status=status_choice).count()
+            batches_by_status[status_choice] = cur_batches.filter(status=status_choice).count()
+
+
 
         data = {
-            'total_users': users.count(),
+            'total_users': cur_users.count(),
             'users_by_role': users_by_role,
-            'total_cooperatives': Cooperative.objects.count(),
-            'total_farmers': Farmer.objects.count(),
-            'total_deliveries': deliveries.count(),
+            'total_cooperatives': total_cooperatives_qs.count(),
+            'total_farmers': cur_farmers.count(),
+            'total_deliveries': cur_deliveries.count(),
             'deliveries_by_status': deliveries_by_status,
-            'total_payment_cycles': cycles.count(),
+            'total_payment_cycles': total_cycles_qs.count(),
             'cycles_by_status': cycles_by_status,
-            'total_disbursement_batches': batches.count(),
+            'total_disbursement_batches': total_batches_qs.count(),
             'batches_by_status': batches_by_status,
             'total_audit_logs': AuditLog.objects.count(),
+            'period': period,
+            'changes': {
+                'users': period_changes(cur_users, prv_users),
+                'farmers': period_changes(cur_farmers, prv_farmers),
+                'deliveries': period_changes(cur_deliveries, prv_deliveries),
+            } if period else {},
         }
         return Response(data)
 
@@ -358,8 +478,25 @@ class AdminAuditLogView(APIView):
     serializer_class = AuditLogSerializer
 
     def get(self, request):
-        logs = AuditLog.objects.select_related('actor').order_by('-created_at')[:200]
-        return Response(AuditLogSerializer(logs, many=True).data)
+        qs = AuditLog.objects.select_related('actor').order_by('-created_at')
+        resource_type = request.query_params.get('resource_type')
+        if resource_type:
+            qs = qs.filter(resource_type=resource_type)
+        resource_id = request.query_params.get('resource_id')
+        if resource_id:
+            qs = qs.filter(resource_id=resource_id)
+        action = request.query_params.get('action')
+        if action:
+            qs = qs.filter(action=action)
+        actor = request.query_params.get('actor')
+        if actor:
+            qs = qs.filter(actor_id=actor)
+        limit = request.query_params.get('limit', '200')
+        try:
+            limit = int(limit)
+        except ValueError:
+            limit = 200
+        return Response(AuditLogSerializer(qs[:limit], many=True).data)
 
 
 class AdminHealthView(APIView):
@@ -411,17 +548,41 @@ class AdminCeleryTasksView(APIView):
             reserved = inspect.reserved() or {}
             scheduled = inspect.scheduled() or {}
             for worker, tasks in active.items():
-                result['active'].extend(tasks)
+                for t in tasks:
+                    result['active'].append({
+                        'task_name': t.get('name'),
+                        'task_id': t.get('id'),
+                        'args': str(t.get('args', '')),
+                        'kwargs': str(t.get('kwargs', '')),
+                        'worker': worker,
+                        'started': t.get('time_start'),
+                    })
             for worker, tasks in reserved.items():
-                result['reserved'].extend(tasks)
+                for t in tasks:
+                    result['reserved'].append({
+                        'task_name': t.get('name'),
+                        'task_id': t.get('id'),
+                        'args': str(t.get('args', '')),
+                        'kwargs': str(t.get('kwargs', '')),
+                        'worker': worker,
+                    })
             for worker, tasks in scheduled.items():
-                result['scheduled'].extend(tasks)
+                for t in tasks:
+                    result['scheduled'].append({
+                        'task_name': t.get('name'),
+                        'task_id': t.get('id'),
+                        'args': str(t.get('args', '')),
+                        'kwargs': str(t.get('kwargs', '')),
+                        'worker': worker,
+                        'eta': t.get('eta'),
+                    })
         except Exception:
             pass
         return Response({
             'active_count': len(result['active']),
             'reserved_count': len(result['reserved']),
             'scheduled_count': len(result['scheduled']),
+            'tasks': result,
         })
 
 
@@ -440,3 +601,476 @@ class RevokeAllSessionsView(APIView):
             'detail': f'{count} sessions revoked.',
             'tokens_blacklisted': count,
         })
+
+
+class AdminFarmerViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, GenericViewSet):
+    queryset = Farmer.objects.all().select_related('cooperative').order_by('-date_joined')
+    serializer_class = AdminFarmerSerializer
+    search_fields = ['first_name', 'last_name', 'id_number', 'phone_number', 'email']
+
+    def get_queryset(self):
+        qs = self.queryset
+        coop = self.request.query_params.get('cooperative')
+        if coop:
+            qs = qs.filter(cooperative_id=coop)
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+        return qs
+
+
+class AdminDeliveryViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    queryset = Delivery.objects.all().select_related('farmer', 'grader', 'cooperative').order_by('-date_delivered')
+    serializer_class = AdminDeliverySerializer
+    search_fields = ['batch_id', 'farmer__first_name', 'farmer__last_name', 'farmer__phone_number']
+
+    def get_queryset(self):
+        qs = self.queryset
+        status = self.request.query_params.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        coop = self.request.query_params.get('cooperative')
+        if coop:
+            qs = qs.filter(cooperative_id=coop)
+        product_type = self.request.query_params.get('product_type')
+        if product_type:
+            qs = qs.filter(product_type=product_type)
+        return qs
+
+
+class AdminDeliveryForceStatusView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminForceDeliveryStatusSerializer
+
+    def post(self, request, pk):
+        try:
+            delivery = Delivery.objects.get(pk=pk)
+        except Delivery.DoesNotExist:
+            return Response({'detail': 'Delivery not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AdminForceDeliveryStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_status = serializer.validated_data['status']
+        old_status = delivery.status
+        delivery.status = new_status
+        delivery.save(update_fields=['status'])
+        log_audit(
+            actor=request.user, resource_type='delivery', resource_id=delivery.pk,
+            action=AuditAction.FORCE_STATUS,
+            previous_value={'status': old_status},
+            new_value={'status': new_status},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Delivery status updated.', 'status': new_status})
+
+
+class AdminPaymentCycleViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericViewSet):
+    queryset = PaymentCycle.objects.all().select_related('cooperative', 'locked_by').order_by('-end_date')
+    serializer_class = AdminPaymentCycleSerializer
+    search_fields = ['name']
+
+    def get_queryset(self):
+        qs = self.queryset
+        status = self.request.query_params.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        coop = self.request.query_params.get('cooperative')
+        if coop:
+            qs = qs.filter(cooperative_id=coop)
+        return qs
+
+    def perform_create(self, serializer):
+        instance = serializer.save(status='DRAFT')
+        log_audit(
+            actor=self.request.user, resource_type='payment_cycle', resource_id=instance.pk,
+            action=AuditAction.ADMIN_CREATE,
+            ip_address=self.request.META.get('REMOTE_ADDR'),
+        )
+
+
+class AdminPaymentCycleLockView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            cycle = PaymentCycle.objects.get(pk=pk)
+        except PaymentCycle.DoesNotExist:
+            return Response({'detail': 'Payment cycle not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if cycle.status != 'COMPUTED':
+            return Response({'detail': 'Only COMPUTED cycles can be locked.'}, status=status.HTTP_400_BAD_REQUEST)
+        cycle.status = 'LOCKED'
+        cycle.locked_by = request.user
+        cycle.locked_at = timezone.now()
+        cycle.save(update_fields=['status', 'locked_by', 'locked_at'])
+        log_audit(
+            actor=request.user, resource_type='payment_cycle', resource_id=cycle.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'LOCKED'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Payment cycle locked.'})
+
+
+class AdminPaymentCycleUnlockView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            cycle = PaymentCycle.objects.get(pk=pk)
+        except PaymentCycle.DoesNotExist:
+            return Response({'detail': 'Payment cycle not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if cycle.status != 'LOCKED':
+            return Response({'detail': 'Only LOCKED cycles can be unlocked.'}, status=status.HTTP_400_BAD_REQUEST)
+        cycle.status = 'COMPUTED'
+        cycle.locked_by = None
+        cycle.locked_at = None
+        cycle.save(update_fields=['status', 'locked_by', 'locked_at'])
+        log_audit(
+            actor=request.user, resource_type='payment_cycle', resource_id=cycle.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'COMPUTED'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Payment cycle unlocked.'})
+
+
+class AdminDisbursementBatchViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    queryset = DisbursementBatch.objects.all().select_related('cooperative', 'payment_cycle').order_by('-created_at')
+    serializer_class = AdminDisbursementBatchSerializer
+    search_fields = ['id', 'cooperative__name']
+
+    def get_queryset(self):
+        qs = self.queryset
+        status = self.request.query_params.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        coop = self.request.query_params.get('cooperative')
+        if coop:
+            qs = qs.filter(cooperative_id=coop)
+        return qs
+
+
+class AdminDisbursementBatchApproveView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            batch = DisbursementBatch.objects.get(pk=pk)
+        except DisbursementBatch.DoesNotExist:
+            return Response({'detail': 'Batch not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if batch.status != 'PENDING':
+            return Response({'detail': 'Only PENDING batches can be approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        batch.status = 'PROCESSING'
+        batch.approved_by = request.user
+        batch.approved_at = timezone.now()
+        batch.save(update_fields=['status', 'approved_by', 'approved_at'])
+        log_audit(
+            actor=request.user, resource_type='disbursement_batch', resource_id=batch.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'PROCESSING'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Batch approved.'})
+
+
+class AdminDisbursementBatchRejectView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            batch = DisbursementBatch.objects.get(pk=pk)
+        except DisbursementBatch.DoesNotExist:
+            return Response({'detail': 'Batch not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if batch.status != 'PENDING':
+            return Response({'detail': 'Only PENDING batches can be rejected.'}, status=status.HTTP_400_BAD_REQUEST)
+        batch.status = 'FAILED'
+        batch.save(update_fields=['status'])
+        log_audit(
+            actor=request.user, resource_type='disbursement_batch', resource_id=batch.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'FAILED'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Batch rejected.'})
+
+
+class AdminFarmerPaymentViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    queryset = FarmerPayment.objects.all().select_related('farmer', 'cycle').order_by('-created_at')
+    serializer_class = AdminFarmerPaymentSerializer
+    search_fields = ['farmer__first_name', 'farmer__last_name', 'farmer__phone_number']
+
+    def get_queryset(self):
+        qs = self.queryset
+        cycle = self.request.query_params.get('cycle')
+        if cycle:
+            qs = qs.filter(cycle_id=cycle)
+        payment_status = self.request.query_params.get('payment_status')
+        if payment_status:
+            qs = qs.filter(payment_status=payment_status)
+        is_on_hold = self.request.query_params.get('is_on_hold')
+        if is_on_hold is not None:
+            qs = qs.filter(is_on_hold=is_on_hold.lower() == 'true')
+        return qs
+
+
+class AdminFarmerPaymentHoldView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminFarmerPaymentHoldSerializer
+
+    def post(self, request, pk):
+        try:
+            payment = FarmerPayment.objects.get(pk=pk)
+        except FarmerPayment.DoesNotExist:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AdminFarmerPaymentHoldSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment.is_on_hold = serializer.validated_data['hold']
+        payment.hold_reason = serializer.validated_data.get('reason', '')
+        payment.save(update_fields=['is_on_hold', 'hold_reason'])
+        log_audit(
+            actor=request.user, resource_type='farmer_payment', resource_id=payment.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'is_on_hold': payment.is_on_hold},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Payment hold toggled.', 'is_on_hold': payment.is_on_hold})
+
+
+class AdminLoanViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    queryset = Loan.objects.all().select_related('farmer', 'approved_by', 'cooperative').order_by('-created_at')
+    serializer_class = AdminLoanSerializer
+    search_fields = ['farmer__first_name', 'farmer__last_name']
+
+    def get_queryset(self):
+        qs = self.queryset
+        status = self.request.query_params.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        farmer = self.request.query_params.get('farmer')
+        if farmer:
+            qs = qs.filter(farmer_id=farmer)
+        return qs
+
+
+class AdminLoanApproveView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            loan = Loan.objects.get(pk=pk)
+        except Loan.DoesNotExist:
+            return Response({'detail': 'Loan not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if loan.status != 'PENDING':
+            return Response({'detail': 'Only PENDING loans can be approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        loan.status = 'ACTIVE'
+        loan.approved_by = request.user
+        loan.approved_at = timezone.now()
+        loan.save(update_fields=['status', 'approved_by', 'approved_at'])
+        log_audit(
+            actor=request.user, resource_type='loan', resource_id=loan.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'ACTIVE'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Loan approved.', 'status': 'ACTIVE'})
+
+
+class AdminLoanRejectView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            loan = Loan.objects.get(pk=pk)
+        except Loan.DoesNotExist:
+            return Response({'detail': 'Loan not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if loan.status != 'PENDING':
+            return Response({'detail': 'Only PENDING loans can be rejected.'}, status=status.HTTP_400_BAD_REQUEST)
+        loan.status = 'COMPLETED'
+        loan.save(update_fields=['status'])
+        log_audit(
+            actor=request.user, resource_type='loan', resource_id=loan.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'COMPLETED'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Loan rejected.', 'status': 'COMPLETED'})
+
+
+class AdminLoanMarkDefaultedView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            loan = Loan.objects.get(pk=pk)
+        except Loan.DoesNotExist:
+            return Response({'detail': 'Loan not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if loan.status != 'ACTIVE':
+            return Response({'detail': 'Only ACTIVE loans can be marked defaulted.'}, status=status.HTTP_400_BAD_REQUEST)
+        loan.status = 'DEFAULTED'
+        loan.save(update_fields=['status'])
+        log_audit(
+            actor=request.user, resource_type='loan', resource_id=loan.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'DEFAULTED'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Loan marked as defaulted.', 'status': 'DEFAULTED'})
+
+
+class AdminLoanMarkCompletedView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, pk):
+        try:
+            loan = Loan.objects.get(pk=pk)
+        except Loan.DoesNotExist:
+            return Response({'detail': 'Loan not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if loan.status not in ('ACTIVE', 'DEFAULTED'):
+            return Response({'detail': 'Only ACTIVE or DEFAULTED loans can be marked completed.'}, status=status.HTTP_400_BAD_REQUEST)
+        loan.status = 'COMPLETED'
+        loan.save(update_fields=['status'])
+        log_audit(
+            actor=request.user, resource_type='loan', resource_id=loan.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'status': 'COMPLETED'},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Loan marked as completed.', 'status': 'COMPLETED'})
+
+
+class AdminOTPTokenView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminOTPTokenSerializer
+
+    def get(self, request):
+        qs = TwoFactorOTP.objects.all().select_related('user').order_by('-created_at')
+        user_id = request.query_params.get('user')
+        if user_id:
+            qs = qs.filter(user_id=user_id)
+        purpose = request.query_params.get('purpose')
+        if purpose:
+            qs = qs.filter(purpose=purpose)
+        is_used = request.query_params.get('is_used')
+        if is_used is not None:
+            qs = qs.filter(is_used=is_used.lower() == 'true')
+        return Response(AdminOTPTokenSerializer(qs[:100], many=True).data)
+
+
+class AdminOTPTokenInvalidateAllView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request, user_id):
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        count = TwoFactorOTP.objects.filter(user=user, is_used=False).update(is_used=True)
+        log_audit(
+            actor=request.user, resource_type='user', resource_id=user.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'otp_invalidated': count},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': f'{count} pending OTPs invalidated.', 'invalidated_count': count})
+
+
+class AdminMigrationHealthView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def get(self, request):
+        from django.db.migrations.executor import MigrationExecutor
+        from django.db import connections
+        executor = MigrationExecutor(connections['default'])
+        plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
+        return Response({
+            'unapplied_migrations': [
+                f'{migration.app_label}.{migration.name}'
+                for migration, _ in plan
+            ],
+            'count': len(plan),
+            'up_to_date': len(plan) == 0,
+        })
+
+
+class AdminUserBulkActionView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request):
+        action = request.data.get('action')
+        ids = request.data.get('ids', [])
+        if action not in ('activate', 'deactivate'):
+            return Response({'detail': 'Invalid action. Use activate or deactivate.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not ids:
+            return Response({'detail': 'No IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        users = User.objects.filter(id__in=ids)
+        if action == 'activate':
+            users = users.exclude(is_active=True)
+            count = users.count()
+            users.update(is_active=True)
+        else:
+            users = users.filter(is_superuser=False).exclude(is_active=False)
+            count = users.count()
+            users.update(is_active=False)
+        log_audit(
+            actor=request.user, resource_type='user', resource_id='bulk',
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'action': action, 'count': count},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': f'{count} users {action}d.', 'count': count})
+
+
+class AdminCooperativeBulkActionView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request):
+        action = request.data.get('action')
+        ids = request.data.get('ids', [])
+        if action not in ('activate', 'deactivate'):
+            return Response({'detail': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not ids:
+            return Response({'detail': 'No IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        coops = Cooperative.objects.filter(id__in=ids)
+        if action == 'activate':
+            coops = coops.exclude(is_active=True)
+            count = coops.count()
+            coops.update(is_active=True)
+        else:
+            coops = coops.exclude(is_active=False)
+            count = coops.count()
+            coops.update(is_active=False)
+        return Response({'detail': f'{count} cooperatives {action}d.', 'count': count})
+
+
+class AdminFarmerBulkActionView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request):
+        action = request.data.get('action')
+        ids = request.data.get('ids', [])
+        if action not in ('activate', 'deactivate'):
+            return Response({'detail': 'Invalid action.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not ids:
+            return Response({'detail': 'No IDs provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        farmers = Farmer.objects.filter(id__in=ids)
+        if action == 'activate':
+            farmers = farmers.exclude(is_active=True)
+            count = farmers.count()
+            farmers.update(is_active=True)
+        else:
+            farmers = farmers.exclude(is_active=False)
+            count = farmers.count()
+            farmers.update(is_active=False)
+        return Response({'detail': f'{count} farmers {action}d.', 'count': count})
