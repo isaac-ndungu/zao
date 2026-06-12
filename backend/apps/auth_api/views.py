@@ -57,6 +57,7 @@ def _set_refresh_cookie(response, refresh_token):
 
 def _build_user_claims(user):
     claims = {
+        'is_superuser': user.is_superuser,
         'role': user.role or '',
         'cooperative_id': str(user.cooperative_id) if user.cooperative_id else None,
         'phone_number': user.phone_number or '',

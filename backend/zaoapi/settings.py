@@ -86,6 +86,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'apps.base.middleware.TenantMiddleware',
+    'apps.admin.middleware.SuperAdminIPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -330,6 +331,7 @@ SPECTACULAR_SETTINGS = {
 
 # Superadmin API
 SUPERADMIN_ENABLED = config('SUPERADMIN_ENABLED', default=True, cast=bool)
+SUPERADMIN_ALLOWED_IPS = config('SUPERADMIN_ALLOWED_IPS', default='', cast=lambda v: [i.strip() for i in v.split(',') if i.strip()])
 
 # CORS - restrict in production
 CORS_ALLOW_ALL_ORIGINS = False

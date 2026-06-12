@@ -16,6 +16,7 @@ from apps.admin.views import (
     AdminUserViewSet,
     CreateSuperUserView,
     ImpersonateView,
+    RevokeAllSessionsView,
 )
 
 urlpatterns = [
@@ -36,4 +37,5 @@ urlpatterns = [
     path('audit-logs/', AdminAuditLogView.as_view()),
     path('health/', AdminHealthView.as_view()),
     path('celery/tasks/', AdminCeleryTasksView.as_view()),
+    path('auth/revoke-all-sessions/', RevokeAllSessionsView.as_view()),
 ]

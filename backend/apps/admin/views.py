@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
@@ -12,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from apps.base.models import AuditAction, AuditLog
@@ -289,15 +291,25 @@ class AdminCooperativeDeactivateView(APIView):
             return Response({'detail': 'Cooperative not found.'}, status=status.HTTP_404_NOT_FOUND)
         if not coop.is_active:
             return Response({'detail': 'Cooperative is already inactive.'}, status=status.HTTP_400_BAD_REQUEST)
-        coop.is_active = False
-        coop.save(update_fields=['is_active'])
-        log_audit(
-            actor=request.user, resource_type='cooperative', resource_id=coop.pk,
-            action=AuditAction.ADMIN_ACTION,
-            new_value={'is_active': False},
-            ip_address=request.META.get('REMOTE_ADDR'),
-        )
-        return Response({'detail': 'Cooperative deactivated.'})
+        deactivate_users = request.query_params.get('deactivate_users', '').lower() == 'true'
+        with transaction.atomic():
+            coop.is_active = False
+            coop.save(update_fields=['is_active'])
+            deactivated_count = 0
+            if deactivate_users:
+                users = User.objects.filter(cooperative=coop, is_superuser=False, is_active=True)
+                deactivated_count = users.count()
+                users.update(is_active=False)
+            log_audit(
+                actor=request.user, resource_type='cooperative', resource_id=coop.pk,
+                action=AuditAction.ADMIN_ACTION,
+                new_value={'is_active': False, 'deactivated_users': deactivated_count},
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        return Response({
+            'detail': 'Cooperative deactivated.',
+            'deactivated_users': deactivated_count,
+        })
 
 
 class AdminDashboardView(APIView):
@@ -410,4 +422,21 @@ class AdminCeleryTasksView(APIView):
             'active_count': len(result['active']),
             'reserved_count': len(result['reserved']),
             'scheduled_count': len(result['scheduled']),
+        })
+
+
+class RevokeAllSessionsView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = serializers.Serializer
+
+    def post(self, request):
+        tokens = OutstandingToken.objects.filter(user=request.user)
+        count = 0
+        for token in tokens:
+            _, created = BlacklistedToken.objects.get_or_create(token=token)
+            if created:
+                count += 1
+        return Response({
+            'detail': f'{count} sessions revoked.',
+            'tokens_blacklisted': count,
         })
