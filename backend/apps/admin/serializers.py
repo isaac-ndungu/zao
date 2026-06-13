@@ -44,8 +44,9 @@ class AdminUserSerializer(serializers.ModelSerializer):
             'id', 'email', 'phone_number', 'first_name', 'last_name',
             'role', 'cooperative', 'is_active', 'is_staff', 'is_superuser',
             'two_fa_enabled', 'must_change_password', 'date_joined', 'last_login',
+            'deleted_at', 'restored_at',
         ]
-        read_only_fields = ['id', 'date_joined', 'last_login', 'is_superuser']
+        read_only_fields = ['id', 'date_joined', 'last_login', 'is_superuser', 'deleted_at', 'restored_at']
 
     def validate_email(self, value):
         instance = self.instance
@@ -70,7 +71,7 @@ class AdminUserActivateSerializer(serializers.Serializer):
     pass
 
 class AdminUserDeactivateSerializer(serializers.Serializer):
-    pass
+    notify = serializers.BooleanField(default=True)
 
 class AdminUserToggle2FASerializer(serializers.Serializer):
     pass
@@ -88,7 +89,7 @@ class AdminCooperativeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cooperative
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at', 'last_member_sequence', 'last_delivery_sequence']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_member_sequence', 'last_delivery_sequence', 'deleted_at', 'restored_at']
 
 
 class AdminCooperativeActivateSerializer(serializers.Serializer):
@@ -113,6 +114,7 @@ class AdminDashboardSerializer(serializers.Serializer):
     total_audit_logs = serializers.IntegerField()
     period = serializers.CharField(required=False, allow_blank=True)
     changes = serializers.DictField(child=serializers.FloatField(), required=False)
+    trash = serializers.DictField(child=serializers.IntegerField(), required=False)
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
@@ -268,3 +270,30 @@ class AdminOTPTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = TwoFactorOTP
         fields = ['id', 'user', 'purpose', 'attempts', 'expires_at', 'is_used', 'created_at']
+
+
+class AdminSoftDeleteConfirmSerializer(serializers.Serializer):
+    confirm = serializers.BooleanField(required=True)
+
+    def validate_confirm(self, value):
+        if not value:
+            raise serializers.ValidationError('You must set confirm to true to proceed.')
+        return value
+
+
+class AdminRestoreConfirmSerializer(serializers.Serializer):
+    confirm = serializers.BooleanField(required=True)
+
+    def validate_confirm(self, value):
+        if not value:
+            raise serializers.ValidationError('You must set confirm to true to proceed.')
+        return value
+
+
+class AdminPurgeConfirmSerializer(serializers.Serializer):
+    pass
+
+
+class AdminBinSummarySerializer(serializers.Serializer):
+    users = serializers.IntegerField()
+    cooperatives = serializers.IntegerField()

@@ -46,6 +46,12 @@ class Farmer(LocationMixin, CooperativeScopedModel):
     def primary_membership(self):
         return self.memberships.order_by('joined_at').first()
 
+    def delete(self, using=None, keep_parents=False):
+        self.soft_delete()
+
+    def hard_delete(self, using=None, keep_parents=False):
+        super().delete(using=using, keep_parents=keep_parents)
+
     def __str__(self):
         primary = self.primary_membership
         mn = primary.member_number if primary else '---'

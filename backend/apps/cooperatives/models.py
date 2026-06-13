@@ -1,5 +1,22 @@
+from django.utils import timezone
 from django.db import models
 import uuid
+
+
+class CooperativeQuerySet(models.QuerySet):
+    def delete(self):
+        self.update(deleted_at=timezone.now())
+
+
+class CooperativeManager(models.Manager):
+    def get_queryset(self):
+        return CooperativeQuerySet(self.model, using=self._db).filter(deleted_at__isnull=True)
+
+    def all_with_trashed(self):
+        return CooperativeQuerySet(self.model, using=self._db)
+
+    def trashed_only(self):
+        return CooperativeQuerySet(self.model, using=self._db).filter(deleted_at__isnull=False)
 
 
 class ProduceType(models.TextChoices):
@@ -59,6 +76,104 @@ class Cooperative(models.Model):
     minimum_payout_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     revenue_share_by_produce_type = models.BooleanField(default=False)
     prorate_new_members = models.BooleanField(default=False)
+
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+    deleted_via_cascade_from = models.UUIDField(null=True, blank=True)
+
+    objects = CooperativeManager()
+
+    def delete(self, using=None, keep_parents=False):
+        from django.contrib.auth import get_user_model
+        from apps.farmers.models import Farmer, FarmerCooperativeMembership
+        from apps.deliveries.models import Delivery
+        from apps.payment_engine.models import PaymentCycle, FarmerPayment
+        from apps.loans.models import Loan
+        from apps.grading.models import Grade
+        from apps.disbursement.models import DisbursementBatch, DisbursementTransaction
+        from apps.deductions.models import Deduction, FarmInputCredit
+        from apps.sales.models import Sale
+        from apps.inventory.models import Inventory
+        from apps.routes.models import CollectionRoute
+        from apps.notifications.models import Notification
+        User = get_user_model()
+        now = timezone.now()
+        self.deleted_at = now
+        self.save(update_fields=['deleted_at'])
+        cascade_models = [
+            (Farmer, 'cooperative'),
+            (FarmerCooperativeMembership, 'cooperative'),
+            (User, 'cooperative'),
+            (Delivery, 'cooperative'),
+            (PaymentCycle, 'cooperative'),
+            (FarmerPayment, 'cooperative'),
+            (Loan, 'cooperative'),
+            (Grade, 'cooperative'),
+            (DisbursementBatch, 'cooperative'),
+            (DisbursementTransaction, 'cooperative'),
+            (Deduction, 'cooperative'),
+            (FarmInputCredit, 'cooperative'),
+            (Sale, 'cooperative'),
+            (Inventory, 'cooperative'),
+            (CollectionRoute, 'cooperative'),
+            (Notification, 'cooperative'),
+        ]
+        for model_cls, field in cascade_models:
+            if hasattr(model_cls, 'deleted_at'):
+                model_cls.objects.filter(**{field: self}).update(
+                    deleted_at=now,
+                    deleted_via_cascade_from=self.pk,
+                )
+
+    def restore(self):
+        from django.contrib.auth import get_user_model
+        from apps.farmers.models import Farmer, FarmerCooperativeMembership
+        from apps.deliveries.models import Delivery
+        from apps.payment_engine.models import PaymentCycle, FarmerPayment
+        from apps.loans.models import Loan
+        from apps.grading.models import Grade
+        from apps.disbursement.models import DisbursementBatch, DisbursementTransaction
+        from apps.deductions.models import Deduction, FarmInputCredit
+        from apps.sales.models import Sale
+        from apps.inventory.models import Inventory
+        from apps.routes.models import CollectionRoute
+        from apps.notifications.models import Notification
+        User = get_user_model()
+        now = timezone.now()
+        self.deleted_at = None
+        self.restored_at = now
+        self.deleted_via_cascade_from = None
+        self.save(update_fields=['deleted_at', 'restored_at', 'deleted_via_cascade_from'])
+        cascade_models = [
+            (Farmer, 'cooperative'),
+            (FarmerCooperativeMembership, 'cooperative'),
+            (User, 'cooperative'),
+            (Delivery, 'cooperative'),
+            (PaymentCycle, 'cooperative'),
+            (FarmerPayment, 'cooperative'),
+            (Loan, 'cooperative'),
+            (Grade, 'cooperative'),
+            (DisbursementBatch, 'cooperative'),
+            (DisbursementTransaction, 'cooperative'),
+            (Deduction, 'cooperative'),
+            (FarmInputCredit, 'cooperative'),
+            (Sale, 'cooperative'),
+            (Inventory, 'cooperative'),
+            (CollectionRoute, 'cooperative'),
+            (Notification, 'cooperative'),
+        ]
+        for model_cls, field in cascade_models:
+            if hasattr(model_cls, 'deleted_at'):
+                mgr = model_cls.objects
+                all_qs = mgr.all_with_trashed() if hasattr(mgr, 'all_with_trashed') else mgr
+                all_qs.filter(**{field: self, 'deleted_via_cascade_from': self.pk}).update(
+                    deleted_at=None,
+                    restored_at=now,
+                    deleted_via_cascade_from=None,
+                )
+
+    def hard_delete(self, using=None, keep_parents=False):
+        super().delete(using=using, keep_parents=keep_parents)
 
     class Meta:
         db_table = 'base_cooperative'

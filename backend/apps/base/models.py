@@ -1,7 +1,27 @@
-from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.contrib.postgres.indexes import BrinIndex
 from django.db import models
+from django.utils import timezone
 import uuid
+
+
+class SoftDeletableModel(models.Model):
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+    deleted_via_cascade_from = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['deleted_at'])
+
+    def restore(self):
+        self.deleted_at = None
+        self.restored_at = timezone.now()
+        self.deleted_via_cascade_from = None
+        self.save(update_fields=['deleted_at', 'restored_at', 'deleted_via_cascade_from'])
 
 
 class AuditAction(models.TextChoices):
@@ -28,6 +48,7 @@ class AuditAction(models.TextChoices):
     IMPERSONATE = 'IMPERSONATE', 'Impersonate'
     FORCE_STATUS = 'FORCE_STATUS', 'Force Status'
     TRANSFER_COOPERATIVE = 'TRANSFER_COOPERATIVE', 'Transfer Cooperative'
+    ADMIN_PURGE = 'ADMIN_PURGE', 'Admin Purge'
 
 
 class LocationMixin(models.Model):
@@ -45,7 +66,22 @@ class TenantQuerySet(models.QuerySet):
 
 class TenantManager(models.Manager):
     def get_queryset(self):
-        return TenantQuerySet(self.model, using=self._db)
+        qs = TenantQuerySet(self.model, using=self._db)
+        if hasattr(self.model, 'deleted_at'):
+            qs = qs.filter(deleted_at__isnull=True)
+        return qs
+
+    def all_with_trashed(self):
+        qs = TenantQuerySet(self.model, using=self._db)
+        if hasattr(self.model, 'deleted_at'):
+            return qs
+        return qs
+
+    def trashed_only(self):
+        qs = TenantQuerySet(self.model, using=self._db)
+        if hasattr(self.model, 'deleted_at'):
+            return qs.filter(deleted_at__isnull=False)
+        return qs.none()
 
     def for_cooperative(self, cooperative_id):
         return self.get_queryset().for_cooperative(cooperative_id)
@@ -57,11 +93,24 @@ class CooperativeScopedModel(models.Model):
         on_delete=models.CASCADE,
         related_name='%(class)s_set',
     )
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+    deleted_via_cascade_from = models.UUIDField(null=True, blank=True)
 
     objects = TenantManager()
 
     class Meta:
         abstract = True
+
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['deleted_at'])
+
+    def restore(self):
+        self.deleted_at = None
+        self.restored_at = timezone.now()
+        self.deleted_via_cascade_from = None
+        self.save(update_fields=['deleted_at', 'restored_at', 'deleted_via_cascade_from'])
 
 
 class AuditLog(CooperativeScopedModel):
@@ -73,7 +122,7 @@ class AuditLog(CooperativeScopedModel):
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor = models.ForeignKey(
-        get_user_model(), on_delete=models.SET_NULL, null=True, blank=True
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
     )
     resource_type = models.CharField(max_length=100)
     resource_id = models.UUIDField()

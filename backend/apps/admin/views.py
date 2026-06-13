@@ -30,6 +30,7 @@ from apps.payment_engine.models import PaymentCycle, FarmerPayment
 from .mixins import ModelAdminMixin
 from .permissions import IsSuperUser
 from .serializers import (
+    AdminBinSummarySerializer,
     AdminCooperativeActivateSerializer,
     AdminCooperativeDeactivateSerializer,
     AdminCooperativeSerializer,
@@ -43,6 +44,9 @@ from .serializers import (
     AdminLoanSerializer,
     AdminOTPTokenSerializer,
     AdminPaymentCycleSerializer,
+    AdminPurgeConfirmSerializer,
+    AdminRestoreConfirmSerializer,
+    AdminSoftDeleteConfirmSerializer,
     AdminUserActivateSerializer,
     AdminUserDeactivateSerializer,
     AdminUserResetPasswordSerializer,
@@ -85,7 +89,8 @@ class AdminUserViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin, Retrie
     search_fields = ['email', 'phone_number', 'first_name', 'last_name']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = User.objects.all_with_trashed().select_related('cooperative').order_by('-date_joined') if include_trashed else self.queryset
         role = self.request.query_params.get('role')
         if role:
             qs = qs.filter(role=role)
@@ -138,15 +143,30 @@ class AdminUserDeactivateView(APIView):
             return Response({'detail': 'User is already inactive.'}, status=status.HTTP_400_BAD_REQUEST)
         if user.is_superuser:
             return Response({'detail': 'Cannot deactivate a superuser.'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = AdminUserDeactivateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        notify = serializer.validated_data.get('notify', True)
         user.is_active = False
         user.save(update_fields=['is_active'])
+        if notify:
+            try:
+                send_mail(
+                    'Account Deactivated',
+                    f'Your account ({user.email}) has been deactivated by an administrator.\n\n'
+                    f'If you believe this is an error, please contact support@zao.app.',
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
         log_audit(
             actor=request.user, resource_type='user', resource_id=user.pk,
             action=AuditAction.ADMIN_ACTION,
-            new_value={'is_active': False},
+            new_value={'is_active': False, 'notify': notify},
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': 'User deactivated.'})
+        return Response({'detail': 'User deactivated.', 'notify': notify})
 
 
 class AdminUserResetPasswordView(APIView):
@@ -236,6 +256,97 @@ class AdminUserForceLogoutView(APIView):
         return Response({'detail': f'{count} tokens blacklisted.', 'tokens_blacklisted': count})
 
 
+class AdminBinSummaryView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminBinSummarySerializer
+
+    def get(self, request):
+        return Response({
+            'users': User.objects.trashed_only().count(),
+            'cooperatives': Cooperative.objects.trashed_only().count(),
+        })
+
+
+class AdminUserBinView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminUserSerializer
+
+    def get(self, request):
+        qs = User.objects.trashed_only().select_related('cooperative').order_by('-deleted_at')
+        role = request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+        return Response(AdminUserSerializer(qs[:200], many=True).data)
+
+
+class AdminUserDeleteView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminSoftDeleteConfirmSerializer
+
+    def post(self, request, pk):
+        serializer = AdminSoftDeleteConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user = User.objects.all_with_trashed().get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if user.deleted_at:
+            return Response({'detail': 'User is already deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        if user.is_superuser:
+            return Response({'detail': 'Cannot delete a superuser.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.soft_delete()
+        log_audit(
+            actor=request.user, resource_type='user', resource_id=user.pk,
+            action=AuditAction.ADMIN_DELETE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'User soft-deleted.', 'deleted_at': user.deleted_at})
+
+
+class AdminUserRestoreView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminRestoreConfirmSerializer
+
+    def post(self, request, pk):
+        serializer = AdminRestoreConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user = User.objects.all_with_trashed().get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user.deleted_at:
+            return Response({'detail': 'User is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.restore()
+        log_audit(
+            actor=request.user, resource_type='user', resource_id=user.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'restored': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'User restored.', 'restored_at': user.restored_at})
+
+
+class AdminUserPurgeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    throttle_classes = [SuperAdminSensitiveThrottle]
+    serializer_class = AdminPurgeConfirmSerializer
+
+    def post(self, request, pk):
+        try:
+            user = User.objects.all_with_trashed().get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not user.deleted_at:
+            return Response({'detail': 'User is not deleted. Soft-delete first.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.hard_delete()
+        log_audit(
+            actor=request.user, resource_type='user', resource_id=pk,
+            action=AuditAction.ADMIN_PURGE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'User permanently purged.'})
+
+
 class ImpersonateView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     throttle_classes = [SuperAdminSensitiveThrottle]
@@ -277,7 +388,8 @@ class AdminCooperativeViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin,
     search_fields = ['name', 'registration_number', 'county']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = Cooperative.objects.all_with_trashed().order_by('name') if include_trashed else self.queryset
         is_active = self.request.query_params.get('is_active')
         if is_active is not None:
             qs = qs.filter(is_active=is_active.lower() == 'true')
@@ -339,6 +451,81 @@ class AdminCooperativeDeactivateView(APIView):
             'detail': 'Cooperative deactivated.',
             'deactivated_users': deactivated_count,
         })
+
+
+class AdminCooperativeBinView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminCooperativeSerializer
+
+    def get(self, request):
+        qs = Cooperative.objects.trashed_only().order_by('-deleted_at')
+        return Response(AdminCooperativeSerializer(qs[:200], many=True).data)
+
+
+class AdminCooperativeDeleteView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminSoftDeleteConfirmSerializer
+
+    def post(self, request, pk):
+        serializer = AdminSoftDeleteConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            coop = Cooperative.objects.all_with_trashed().get(pk=pk)
+        except Cooperative.DoesNotExist:
+            return Response({'detail': 'Cooperative not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if coop.deleted_at:
+            return Response({'detail': 'Cooperative is already deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        coop.delete()
+        log_audit(
+            actor=request.user, resource_type='cooperative', resource_id=coop.pk,
+            action=AuditAction.ADMIN_DELETE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Cooperative soft-deleted.', 'deleted_at': coop.deleted_at})
+
+
+class AdminCooperativeRestoreView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminRestoreConfirmSerializer
+
+    def post(self, request, pk):
+        serializer = AdminRestoreConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            coop = Cooperative.objects.all_with_trashed().get(pk=pk)
+        except Cooperative.DoesNotExist:
+            return Response({'detail': 'Cooperative not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not coop.deleted_at:
+            return Response({'detail': 'Cooperative is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        coop.restore()
+        log_audit(
+            actor=request.user, resource_type='cooperative', resource_id=coop.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'restored': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Cooperative restored.', 'restored_at': coop.restored_at})
+
+
+class AdminCooperativePurgeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    throttle_classes = [SuperAdminSensitiveThrottle]
+    serializer_class = AdminPurgeConfirmSerializer
+
+    def post(self, request, pk):
+        try:
+            coop = Cooperative.objects.all_with_trashed().get(pk=pk)
+        except Cooperative.DoesNotExist:
+            return Response({'detail': 'Cooperative not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not coop.deleted_at:
+            return Response({'detail': 'Cooperative is not deleted. Soft-delete first.'}, status=status.HTTP_400_BAD_REQUEST)
+        coop.hard_delete()
+        log_audit(
+            actor=request.user, resource_type='cooperative', resource_id=pk,
+            action=AuditAction.ADMIN_PURGE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Cooperative permanently purged.'})
 
 
 class AdminDashboardView(APIView):
@@ -469,6 +656,10 @@ class AdminDashboardView(APIView):
                 'farmers': period_changes(cur_farmers, prv_farmers),
                 'deliveries': period_changes(cur_deliveries, prv_deliveries),
             } if period else {},
+            'trash': {
+                'users': User.objects.trashed_only().count(),
+                'cooperatives': Cooperative.objects.trashed_only().count(),
+            },
         }
         return Response(data)
 

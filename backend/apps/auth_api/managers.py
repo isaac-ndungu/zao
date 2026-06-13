@@ -2,6 +2,15 @@ from django.contrib.auth.base_user import BaseUserManager
 
 
 class UserManager(BaseUserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+    def all_with_trashed(self):
+        return super().get_queryset()
+
+    def trashed_only(self):
+        return super().get_queryset().filter(deleted_at__isnull=False)
+
     def create_user(self, email, phone_number, first_name, last_name, password=None, **extra_fields):
         if not email:
             raise ValueError('Email is required')

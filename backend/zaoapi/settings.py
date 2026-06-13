@@ -31,6 +31,7 @@ DEBUG = config("DEBUG", default="False")
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,.onrender.com").split(",")
 
+TRASH_RETENTION_DAYS = config("TRASH_RETENTION_DAYS", default=30, cast=int)
 
 # Application definition
 
@@ -215,6 +216,11 @@ CELERY_BEAT_SCHEDULE = {
     'cleanup-expired-otps': {
         'task': 'apps.auth_api.tasks.cleanup_expired_otps',
         'schedule': crontab(minute='*/30'),
+    },
+    'purge-deleted-records': {
+        'task': 'apps.base.tasks.purge_deleted_records',
+        'schedule': crontab(hour='1', minute='30'),
+        'options': {'expires': 3600},
     },
 }
 

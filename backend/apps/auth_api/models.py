@@ -4,6 +4,7 @@ from django.db import models
 
 from apps.auth_api.managers import UserManager
 from apps.base.constants import UserRole
+from apps.base.models import SoftDeletableModel
 
 
 class OTPPurpose(models.TextChoices):
@@ -13,7 +14,7 @@ class OTPPurpose(models.TextChoices):
     FARMER_LOGIN = 'FARMER_LOGIN', 'Farmer Login'
 
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin, SoftDeletableModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20, unique=True)
@@ -40,6 +41,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
+
+    def delete(self, using=None, keep_parents=False):
+        if self.is_superuser:
+            raise ValueError('Cannot delete a superuser.')
+        self.soft_delete()
+
+    def hard_delete(self, using=None, keep_parents=False):
+        super().delete(using=using, keep_parents=keep_parents)
 
     def __str__(self):
         return self.email

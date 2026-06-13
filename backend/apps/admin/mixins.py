@@ -50,7 +50,10 @@ class ModelAdminMixin:
             action=AuditAction.ADMIN_DELETE,
             ip_address=self.request.META.get('REMOTE_ADDR'),
         )
-        instance.delete()
+        if hasattr(instance, 'soft_delete'):
+            instance.soft_delete()
+        else:
+            instance.delete()
 
     def list(self, request, *args, **kwargs):
         if request.query_params.get('export') == 'csv':
