@@ -59,8 +59,20 @@ class Farmer(LocationMixin, CooperativeScopedModel):
         return f'{mn} — {self.first_name} {self.last_name}'
 
 
+class FarmerCooperativeMembershipManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+    def all_with_trashed(self):
+        return super().get_queryset()
+
+    def trashed_only(self):
+        return super().get_queryset().filter(deleted_at__isnull=False)
+
+
 class FarmerCooperativeMembership(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    objects = FarmerCooperativeMembershipManager()
     farmer = models.ForeignKey(
         Farmer, on_delete=models.CASCADE, related_name='memberships'
     )
