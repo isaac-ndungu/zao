@@ -59,6 +59,25 @@ def get_logger(name=None):
     return ContextAdapter(logging.getLogger(name), {})
 
 
+class SecurityHeadersMiddleware:
+    """Adds Content-Security-Policy and Permissions-Policy to every response."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if not hasattr(response, '_headers'):
+            return response
+        csp = getattr(settings, 'CONTENT_SECURITY_POLICY', None)
+        if csp:
+            response['Content-Security-Policy'] = csp
+        permissions = getattr(settings, 'PERMISSIONS_POLICY', None)
+        if permissions:
+            response['Permissions-Policy'] = permissions
+        return response
+
+
 class TenantMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response

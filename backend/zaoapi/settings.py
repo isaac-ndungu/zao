@@ -83,6 +83,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'apps.base.middleware.CorrelationIDMiddleware',
+    'apps.base.middleware.SecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -180,13 +181,15 @@ if hostname and hostname.endswith('.supabase.co'):
     except Exception:
         pass
 db_config = {
-    'ENGINE': 'django.db.backends.postgresql',
+    'ENGINE': 'zaoapi.db_pool',
     'NAME': url.path[1:],
     'USER': url.username,
     'PASSWORD': url.password,
     'HOST': hostname,
     'PORT': url.port,
     'CONN_MAX_AGE': 600,
+    'CONN_HEALTH_CHECKS': True,
+    'OPTIONS': {},
 }
 if url.query:
     db_config['OPTIONS'] = dict(param.split('=', 1) for param in url.query.split('&'))
@@ -399,3 +402,9 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
+
+# Content Security Policy
+CONTENT_SECURITY_POLICY = "default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: res.cloudinary.com; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+
+# Permissions Policy
+PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), sync-xhr=()"
