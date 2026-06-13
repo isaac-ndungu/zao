@@ -47,6 +47,7 @@ urlpatterns = [
     path('api/callback/mpesa/timeout/', mpesa_timeout_callback),
     path('api/callback/', include(notification_callback_urlpatterns)),
     path('api/', include(api_urlpatterns)),
+    path('api/', include('apps.legal.urls')),
 ]
 
 if settings.SUPERADMIN_ENABLED:

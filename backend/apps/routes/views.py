@@ -5,13 +5,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.base.idempotency import idempotent
 from apps.base.permissions import IsManager
 from apps.base.views import CooperativeScopedViewSet
 from apps.farmers.models import Farmer
 
 from .models import CollectionRoute, DayOfWeekChoices, RouteStop
 from .serializers import (
-from apps.base.idempotency import idempotent
     RouteAssignSerializer,
     RouteDetailSerializer,
     RouteListSerializer,

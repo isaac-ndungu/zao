@@ -23,8 +23,8 @@ from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
 from .models import Farmer, FarmerCooperativeMembership
-from .serializers import (
 from apps.base.idempotency import idempotent
+from .serializers import (
     FarmerCreateSerializer,
     FarmerDetailSerializer,
     FarmerListSerializer,

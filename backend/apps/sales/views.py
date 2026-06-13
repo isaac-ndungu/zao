@@ -1,13 +1,13 @@
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 
+from apps.base.idempotency import idempotent
 from apps.base.permissions import IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
 from .models import Buyer, Sale
 from .serializers import (
-from apps.base.idempotency import idempotent
     BuyerSerializer,
     SaleCreateSerializer,
     SaleDetailSerializer,

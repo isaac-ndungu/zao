@@ -34,8 +34,8 @@ from .serializers import (
     TwoFAVerifySerializer,
     UserSerializer,
 )
-from .throttles import (
 from apps.base.idempotency import idempotent
+from .throttles import (
     FarmerRequestOTPRateThrottle,
     LoginRateThrottle,
     RequestOTPRateThrottle,
@@ -85,7 +85,7 @@ class LoginView(APIView):
     serializer_class = LoginSerializer
     throttle_classes = [LoginRateThrottle]
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -112,7 +112,7 @@ class RequestOTPView(APIView):
     serializer_class = RequestOTPSerializer
     throttle_classes = [RequestOTPRateThrottle]
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         serializer = RequestOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -149,7 +149,7 @@ class VerifyOTPView(APIView):
     serializer_class = TwoFAVerifySerializer
     throttle_classes = [VerifyOTPRateThrottle]
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         serializer = TwoFAVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -163,7 +163,7 @@ class FarmerRequestOTPView(APIView):
     serializer_class = FarmerRequestOTPSerializer
     throttle_classes = [FarmerRequestOTPRateThrottle]
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         from apps.notifications.utils import send_sms
         serializer = FarmerRequestOTPSerializer(data=request.data)
@@ -201,7 +201,7 @@ class FarmerVerifyOTPView(APIView):
     serializer_class = FarmerVerifyOTPSerializer
     throttle_classes = [VerifyOTPRateThrottle]
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         serializer = FarmerVerifyOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -213,7 +213,7 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
         if refresh_token:
@@ -231,7 +231,7 @@ class InviteView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
     serializer_class = InviteSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         serializer = InviteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -293,7 +293,7 @@ class InviteAcceptView(APIView):
     permission_classes = []
     serializer_class = InviteAcceptSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         serializer = InviteAcceptSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -313,7 +313,7 @@ class TokenRefreshView(APIView):
     permission_classes = []
     serializer_class = TokenRefreshSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
         if not refresh_token:

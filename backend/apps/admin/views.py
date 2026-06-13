@@ -32,8 +32,8 @@ from apps.payment_engine.models import PaymentCycle, FarmerPayment
 
 from .mixins import ModelAdminMixin
 from .permissions import IsSuperUser
-from .serializers import (
 from apps.base.idempotency import idempotent
+from .serializers import (
     AdminBinSummarySerializer,
     AdminCooperativeActivateSerializer,
     AdminCooperativeDeactivateSerializer,
@@ -121,7 +121,7 @@ class AdminUserActivateView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminUserActivateSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             user = User.objects.get(pk=pk)
@@ -144,7 +144,7 @@ class AdminUserDeactivateView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminUserDeactivateSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             user = User.objects.get(pk=pk)
@@ -184,7 +184,7 @@ class AdminUserResetPasswordView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminUserResetPasswordSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             user = User.objects.get(pk=pk)
@@ -228,7 +228,7 @@ class AdminUserToggle2FAView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminUserToggle2FASerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             user = User.objects.get(pk=pk)
@@ -249,7 +249,7 @@ class AdminUserForceLogoutView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             user = User.objects.get(pk=pk)
@@ -303,7 +303,7 @@ class AdminUserDeleteView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminSoftDeleteConfirmSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         serializer = AdminSoftDeleteConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -328,7 +328,7 @@ class AdminUserRestoreView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminRestoreConfirmSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         serializer = AdminRestoreConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -353,7 +353,7 @@ class AdminUserPurgeView(APIView):
     throttle_classes = [SuperAdminSensitiveThrottle]
     serializer_class = AdminPurgeConfirmSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             user = User.objects.all_with_trashed().get(pk=pk)
@@ -375,7 +375,7 @@ class ImpersonateView(APIView):
     throttle_classes = [SuperAdminSensitiveThrottle]
     serializer_class = ImpersonateSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, user_id):
         try:
             target = User.objects.get(pk=user_id)
@@ -431,7 +431,7 @@ class AdminCooperativeActivateView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminCooperativeActivateSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             coop = Cooperative.objects.get(pk=pk)
@@ -454,7 +454,7 @@ class AdminCooperativeDeactivateView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminCooperativeDeactivateSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             coop = Cooperative.objects.get(pk=pk)
@@ -496,7 +496,7 @@ class AdminCooperativeDeleteView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminSoftDeleteConfirmSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         serializer = AdminSoftDeleteConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -519,7 +519,7 @@ class AdminCooperativeRestoreView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminRestoreConfirmSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         serializer = AdminRestoreConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -544,7 +544,7 @@ class AdminCooperativePurgeView(APIView):
     throttle_classes = [SuperAdminSensitiveThrottle]
     serializer_class = AdminPurgeConfirmSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             coop = Cooperative.objects.all_with_trashed().get(pk=pk)
@@ -878,7 +878,7 @@ class AdminDeliveryForceStatusView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminForceDeliveryStatusSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             delivery = Delivery.objects.get(pk=pk)
@@ -933,7 +933,7 @@ class AdminPaymentCycleLockView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             cycle = PaymentCycle.objects.get(pk=pk)
@@ -958,7 +958,7 @@ class AdminPaymentCycleUnlockView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             cycle = PaymentCycle.objects.get(pk=pk)
@@ -1000,7 +1000,7 @@ class AdminDisbursementBatchApproveView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             batch = DisbursementBatch.objects.get(pk=pk)
@@ -1025,7 +1025,7 @@ class AdminDisbursementBatchRejectView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             batch = DisbursementBatch.objects.get(pk=pk)
@@ -1068,7 +1068,7 @@ class AdminFarmerPaymentHoldView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminFarmerPaymentHoldSerializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             payment = FarmerPayment.objects.get(pk=pk)
@@ -1109,7 +1109,7 @@ class AdminLoanApproveView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             loan = Loan.objects.get(pk=pk)
@@ -1134,7 +1134,7 @@ class AdminLoanRejectView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             loan = Loan.objects.get(pk=pk)
@@ -1157,7 +1157,7 @@ class AdminLoanMarkDefaultedView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             loan = Loan.objects.get(pk=pk)
@@ -1180,7 +1180,7 @@ class AdminLoanMarkCompletedView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, pk):
         try:
             loan = Loan.objects.get(pk=pk)
@@ -1221,7 +1221,7 @@ class AdminOTPTokenInvalidateAllView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = serializers.Serializer
 
-     @idempotent()
+    @idempotent()
     def post(self, request, user_id):
         try:
             user = User.objects.get(pk=user_id)

@@ -11,8 +11,8 @@ from apps.base.views import CooperativeScopedViewSet
 from apps.notifications.models import Notification
 
 from .models import Loan, LoanGuarantor
-from .serializers import (
 from apps.base.idempotency import idempotent
+from .serializers import (
     AddGuarantorSerializer,
     LoanApproveSerializer,
     LoanCreateSerializer,

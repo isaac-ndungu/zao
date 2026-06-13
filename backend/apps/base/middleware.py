@@ -2,6 +2,9 @@ import uuid
 import logging
 
 from django.conf import settings
+from django.db.models import Exists, OuterRef
+from django.http import JsonResponse
+from django.utils import timezone
 
 from apps.farmers.models import Farmer
 
@@ -143,4 +146,51 @@ class TenantMiddleware:
                 request.cooperative_id = getattr(request.user, 'cooperative_id', None)
         else:
             request.cooperative_id = None
+        return self.get_response(request)
+
+
+class LegalAcceptanceMiddleware:
+    """Block authenticated users who haven't accepted required legal documents.
+
+    Must be placed after AuthenticationMiddleware. Skips legal endpoints,
+    admin endpoints, and authentication endpoints to avoid lockout loops.
+    """
+
+    SAFE_PATHS = {
+        '/api/legal/',
+        '/api/admin/',
+        '/api/auth/',
+        '/api/health/',
+        '/api/schema/',
+        '/api/docs/',
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.user.is_authenticated:
+            path = request.path_info
+            if not any(path.startswith(p) for p in self.SAFE_PATHS):
+                from apps.legal.models import LegalDocument, LegalAcceptance
+
+                has_pending = LegalDocument.objects.filter(
+                    is_active=True,
+                    requires_acceptance=True,
+                    published_at__lte=timezone.now(),
+                ).annotate(
+                    has_accepted=Exists(
+                        LegalAcceptance.objects.filter(
+                            user=request.user,
+                            document=OuterRef('pk'),
+                            version=OuterRef('version'),
+                        )
+                    ),
+                ).filter(has_accepted=False).exists()
+
+                if has_pending:
+                    return JsonResponse(
+                        {'requires_legal_acceptance': True},
+                        status=403,
+                    )
         return self.get_response(request)

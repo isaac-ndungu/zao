@@ -7,10 +7,10 @@ from rest_framework.response import Response
 
 from apps.base.constants import UserRole
 from apps.base.permissions import IsAdmin
+from apps.base.idempotency import idempotent
 from apps.base.utils import log_audit
 from apps.cooperatives.models import Cooperative, PaymentModel, ProduceType
 from apps.cooperatives.serializers import (
-from apps.base.idempotency import idempotent
     CooperativeListSerializer,
     CooperativeDetailSerializer,
 )

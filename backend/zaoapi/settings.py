@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'apps.statements',
     'apps.chat',
     'apps.admin',
+    'apps.legal',
 ]
 
 MIDDLEWARE = [
@@ -90,6 +91,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'apps.base.middleware.TenantMiddleware',
+    'apps.base.middleware.LegalAcceptanceMiddleware',
     'apps.admin.middleware.SuperAdminIPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -339,6 +341,7 @@ REST_FRAMEWORK = {
         'farmer_request_otp': '3/hour',
         'superadmin': '100/min',
         'superadmin_sensitive': '3/hour',
+        'legal_document': '20/min',
     },
 }
 

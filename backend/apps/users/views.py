@@ -4,13 +4,13 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.base.idempotency import idempotent
+from apps.base.utils import log_audit
 from apps.auth_api.models import User
 from apps.base.permissions import IsAdmin, IsAdminOrManager
 from apps.base.views import CooperativeScopedViewSet
-from apps.base.utils import log_audit
 
 from .serializers import (
-from apps.base.idempotency import idempotent
     UserCreateSerializer,
     UserListSerializer,
     UserSelfUpdateSerializer,
