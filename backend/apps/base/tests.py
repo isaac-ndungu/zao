@@ -155,3 +155,53 @@ class TestPurgeTask:
         farmer.soft_delete()
         result = purge_deleted_records()
         assert result == 'Purged 0 record(s) older than 30 days'
+
+
+class TestPhoneNormalization:
+    def test_normalize_07_safaricom(self):
+        from apps.base.utils import normalize_phone
+        assert normalize_phone('0712345678') == '254712345678'
+
+    def test_normalize_plus_254(self):
+        from apps.base.utils import normalize_phone
+        assert normalize_phone('+254712345678') == '254712345678'
+
+    def test_normalize_254_prefix(self):
+        from apps.base.utils import normalize_phone
+        assert normalize_phone('254712345678') == '254712345678'
+
+    def test_normalize_01_prefix(self):
+        from apps.base.utils import normalize_phone
+        assert normalize_phone('0112345678') == '254112345678'
+
+    def test_normalize_plus_254_01(self):
+        from apps.base.utils import normalize_phone
+        assert normalize_phone('+254112345678') == '254112345678'
+
+    def test_normalize_254_01(self):
+        from apps.base.utils import normalize_phone
+        assert normalize_phone('254112345678') == '254112345678'
+
+    def test_kenya_phone_re_accepts_07(self):
+        from apps.base.utils import KENYA_PHONE_RE
+        assert KENYA_PHONE_RE.match('254712345678')
+
+    def test_kenya_phone_re_accepts_01(self):
+        from apps.base.utils import KENYA_PHONE_RE
+        assert KENYA_PHONE_RE.match('254112345678')
+
+    def test_kenya_phone_re_rejects_too_short(self):
+        from apps.base.utils import KENYA_PHONE_RE
+        assert not KENYA_PHONE_RE.match('071234567')
+
+    def test_normalize_sms_07(self):
+        from apps.base.utils import normalize_phone_for_sms
+        assert normalize_phone_for_sms('0712345678') == '+254712345678'
+
+    def test_normalize_sms_01(self):
+        from apps.base.utils import normalize_phone_for_sms
+        assert normalize_phone_for_sms('0112345678') == '+254112345678'
+
+    def test_normalize_sms_bare_01(self):
+        from apps.base.utils import normalize_phone_for_sms
+        assert normalize_phone_for_sms('112345678') == '+254112345678'

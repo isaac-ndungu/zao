@@ -27,7 +27,7 @@ def normalize_phone_for_sms(phone: str) -> str:
     raise ValueError(f'Cannot normalize phone number for SMS: {phone}')
 
 
-KENYA_PHONE_RE = re.compile(r'^(?:\+254|0|254)?7\d{8}$')
+KENYA_PHONE_RE = re.compile(r'^(?:\+254|0|254)?[17]\d{8}$')
 
 KENYA_ID_RE = re.compile(r'^\d{6,8}$')
 

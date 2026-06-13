@@ -10,7 +10,7 @@ from apps.cooperatives.models import Cooperative
 from apps.farmers.models import Farmer, FarmerCooperativeMembership
 
 
-KENYA_PHONE_RE = re.compile(r'^(?:\+254|0|254)?7\d{8}$')
+KENYA_PHONE_RE = re.compile(r'^(?:\+254|0|254)?[17]\d{8}$')
 KENYA_ID_RE = re.compile(r'^\d{6,8}$')
 
 
