@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from apps.base.permissions import IsAccountantOrManager, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.idempotency import idempotent
 
 from .models import ComputationWarning, FarmerPayment, PaymentCycle
 from .serializers import (
@@ -88,6 +89,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Run payment computation", description="Triggers Celery task to compute farmer payments for this cycle.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def run(self, request, pk=None):
         cycle = self.get_object()
 
@@ -121,6 +123,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Lock payment cycle", description="Locks a COMPUTED cycle, preventing further changes.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def lock(self, request, pk=None):
         cycle = self.get_object()
 
@@ -145,6 +148,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Unlock payment cycle", description="Returns a LOCKED cycle back to COMPUTED status.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def unlock(self, request, pk=None):
         cycle = self.get_object()
 
@@ -178,6 +182,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Hold farmer payment", description="Place a hold on a specific farmer payment within this cycle.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def hold(self, request, pk=None):
         cycle = self.get_object()
 
@@ -223,6 +228,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Release held payment", description="Release a previously held farmer payment.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def release(self, request, pk=None):
         cycle = self.get_object()
 

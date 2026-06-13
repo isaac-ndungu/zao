@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from apps.base.permissions import IsAccountantOrManager, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.idempotency import idempotent
 from apps.payment_engine.models import FarmerPayment
 
 from .models import DisbursementBatch, DisbursementTransaction
@@ -75,6 +76,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Initiate disbursement", description="Create a disbursement batch from a LOCKED payment cycle.")
     @action(detail=False, methods=['post'])
+    @idempotent()
     def initiate(self, request):
         serializer = DisbursementBatchCreateSerializer(
             data=request.data,
@@ -103,6 +105,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Approve disbursement", description="Manager approval of a disbursement batch.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def approve(self, request, pk=None):
         batch = self.get_object()
 
@@ -129,6 +132,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Send to M-Pesa", description="Trigger actual M-Pesa B2C disbursement via Daraja API.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def live(self, request, pk=None):
         batch = self.get_object()
 
@@ -160,6 +164,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Retry failed transactions", description="Retry all FAILED transactions in a batch.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def retry_failed(self, request, pk=None):
         batch = self.get_object()
 
@@ -247,6 +252,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Confirm manual payment", description="Mark a cash/bank transaction as completed outside M-Pesa.")
     @action(detail=True, methods=['post'])
+    @idempotent()
     def confirm_manual(self, request, pk=None):
         serializer = ConfirmManualSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

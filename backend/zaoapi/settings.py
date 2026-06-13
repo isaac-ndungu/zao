@@ -243,6 +243,16 @@ MPESA_CALLBACK_HMAC_SECRET = config('MPESA_CALLBACK_HMAC_SECRET', default='')
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 GOOGLE_AI_MODEL = config('GOOGLE_AI_MODEL', default='gemini-2.5-flash')
 
+REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_URL,
+        'TIMEOUT': 300,
+    },
+}
+
 # Celery configuration
 CELERY_BROKER_URL = config('REDIS_URL')
 CELERY_RESULT_BACKEND = config('REDIS_URL')

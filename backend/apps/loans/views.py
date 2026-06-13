@@ -12,6 +12,7 @@ from apps.notifications.models import Notification
 
 from .models import Loan, LoanGuarantor
 from .serializers import (
+from apps.base.idempotency import idempotent
     AddGuarantorSerializer,
     LoanApproveSerializer,
     LoanCreateSerializer,
@@ -104,6 +105,7 @@ class LoanViewSet(CooperativeScopedViewSet):
             cooperative_id=self.request.cooperative_id,
         )
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         loan = self.get_object()
@@ -126,6 +128,7 @@ class LoanViewSet(CooperativeScopedViewSet):
         serializer = self.get_serializer(loan)
         return Response(serializer.data)
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def disburse(self, request, pk=None):
         loan = self.get_object()
@@ -152,6 +155,7 @@ class LoanViewSet(CooperativeScopedViewSet):
         serializer = self.get_serializer(loan)
         return Response(serializer.data)
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def add_guarantor(self, request, pk=None):
         loan = self.get_object()
@@ -181,6 +185,7 @@ class LoanViewSet(CooperativeScopedViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def remove_guarantor(self, request, pk=None):
         loan = self.get_object()
@@ -213,6 +218,7 @@ class LoanViewSet(CooperativeScopedViewSet):
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def mark_completed(self, request, pk=None):
         loan = self.get_object()
@@ -232,6 +238,7 @@ class LoanViewSet(CooperativeScopedViewSet):
         serializer = self.get_serializer(loan)
         return Response(serializer.data)
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def mark_defaulted(self, request, pk=None):
         loan = self.get_object()

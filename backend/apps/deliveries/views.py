@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from apps.base.permissions import IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.idempotency import idempotent
 
 from .models import Delivery
 from .serializers import (
@@ -72,6 +73,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
             return DeliveryListSerializer
         return DeliveryDetailSerializer
 
+    @idempotent()
     def create(self, request, *args, **kwargs):
         with transaction.atomic():
             serializer = self.get_serializer(data=request.data)
@@ -128,6 +130,7 @@ class DeliveryViewSet(CooperativeScopedViewSet):
 
     @extend_schema(summary="Sync offline deliveries", description="Bulk create deliveries from offline device. Returns synced IDs or 409 on duplicate local_id.")
     @action(detail=False, methods=['post'])
+    @idempotent()
     def sync(self, request):
         serializer = DeliverySyncSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

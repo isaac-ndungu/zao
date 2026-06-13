@@ -27,6 +27,7 @@ from .serializers import (
 from .tasks import update_inventory_on_grade
 
 
+from apps.base.idempotency import idempotent
 def update_delivery_from_grade(grade):
     delivery = grade.delivery
     updates = {}
@@ -124,6 +125,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             return GradeDisputeSerializer
         return GradeDetailSerializer
 
+    @idempotent()
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -196,6 +198,7 @@ class GradeViewSet(CooperativeScopedViewSet):
         )
         instance.delete()
 
+    @idempotent()
     @extend_schema(summary="Override grade", description="Manager override of a grade. POST to set, PATCH to update.")
     @action(detail=True, methods=['post', 'patch'])
     def override(self, request, pk=None):
@@ -274,6 +277,7 @@ class GradeViewSet(CooperativeScopedViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @idempotent()
     @action(detail=True, methods=['post'])
     def dispute(self, request, pk=None):
         grade = self.get_object()
@@ -371,6 +375,7 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
             return GradeDisputeResolveSerializer
         return GradeDisputeSerializer
 
+    @idempotent()
     @extend_schema(summary="Resolve grade dispute", description="Resolve or reject a FarmerGradeDispute.")
     @action(detail=True, methods=['post', 'patch'])
     def resolve(self, request, pk=None):

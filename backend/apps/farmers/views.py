@@ -24,6 +24,7 @@ from apps.base.views import CooperativeScopedViewSet
 
 from .models import Farmer, FarmerCooperativeMembership
 from .serializers import (
+from apps.base.idempotency import idempotent
     FarmerCreateSerializer,
     FarmerDetailSerializer,
     FarmerListSerializer,
@@ -122,6 +123,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
             return FarmerListSerializer
         return FarmerDetailSerializer
 
+    @idempotent()
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -278,6 +280,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
         ])
         return response
 
+    @idempotent()
     @action(detail=False, methods=['post'])
     def import_csv(self, request):
         file = request.FILES.get('file')

@@ -10,6 +10,7 @@ from apps.base.permissions import IsAdmin
 from apps.base.utils import log_audit
 from apps.cooperatives.models import Cooperative, PaymentModel, ProduceType
 from apps.cooperatives.serializers import (
+from apps.base.idempotency import idempotent
     CooperativeListSerializer,
     CooperativeDetailSerializer,
 )
@@ -22,6 +23,9 @@ class CooperativeViewSet(viewsets.ModelViewSet):
     ordering_fields = ['name', 'created_at', 'member_count', 'county']
     ordering = ['name']
 
+    @idempotent()
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return [IsAdmin()]

@@ -11,6 +11,7 @@ from .models import ChatMessage
 from .serializers import ChatMessageSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .utils import ask_gemini
 
+from apps.base.idempotency import idempotent
 SYSTEM_PROMPT = (
     'You are a helpful assistant for the Zao Agricultural Cooperative Management API. '
     'Answer questions about how to use the API, what endpoints exist, and how they work.\n\n'
@@ -30,6 +31,7 @@ class ChatView(APIView):
         serializer = ChatMessageSerializer(messages, many=True)
         return Response({'messages': serializer.data})
 
+    @idempotent()
     def post(self, request):
         req_serializer = ChatRequestSerializer(data=request.data)
         req_serializer.is_valid(raise_exception=True)

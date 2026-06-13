@@ -10,6 +10,7 @@ from apps.base.views import CooperativeScopedViewSet
 from apps.base.utils import log_audit
 
 from .serializers import (
+from apps.base.idempotency import idempotent
     UserCreateSerializer,
     UserListSerializer,
     UserSelfUpdateSerializer,
@@ -24,6 +25,9 @@ class UserViewSet(CooperativeScopedViewSet):
     ordering_fields = ['first_name', 'last_name', 'email', 'role', 'date_joined']
     ordering = ['first_name']
 
+    @idempotent()
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     def get_permissions(self):
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsAdmin()]

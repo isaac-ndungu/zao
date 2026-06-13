@@ -11,6 +11,7 @@ from apps.farmers.models import Farmer
 
 from .models import CollectionRoute, DayOfWeekChoices, RouteStop
 from .serializers import (
+from apps.base.idempotency import idempotent
     RouteAssignSerializer,
     RouteDetailSerializer,
     RouteListSerializer,
@@ -21,6 +22,9 @@ from .serializers import (
 class RouteViewSet(CooperativeScopedViewSet):
     queryset = CollectionRoute.objects.all().prefetch_related('stops__farmers')
 
+    @idempotent()
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     def get_serializer_class(self):
         if self.action == 'list':
             return RouteListSerializer
@@ -49,6 +53,7 @@ class RouteViewSet(CooperativeScopedViewSet):
                 qs = qs.none()
         return qs
 
+    @idempotent()
     @action(detail=True, methods=['post'], url_path='assign-stops')
     def assign_stops(self, request, pk=None):
         route = self.get_object()

@@ -7,6 +7,7 @@ from apps.base.views import CooperativeScopedViewSet
 
 from .models import Buyer, Sale
 from .serializers import (
+from apps.base.idempotency import idempotent
     BuyerSerializer,
     SaleCreateSerializer,
     SaleDetailSerializer,
@@ -22,6 +23,9 @@ class BuyerViewSet(CooperativeScopedViewSet):
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
+    @idempotent()
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsManager()]
@@ -92,6 +96,9 @@ class SaleViewSet(CooperativeScopedViewSet):
             qs = qs.filter(product_type__iexact=product_type)
         return qs
 
+    @idempotent()
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsManager()]
