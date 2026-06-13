@@ -29,11 +29,17 @@ def ask_gemini(messages: list[dict]) -> str:
     url = (
         'https://generativelanguage.googleapis.com/v1beta/models/'
         f'{settings.GOOGLE_AI_MODEL}:generateContent'
-        f'?key={settings.GOOGLE_API_KEY}'
     )
 
     body = json.dumps(payload).encode('utf-8')
-    req = Request(url, data=body, headers={'Content-Type': 'application/json'}, method='POST')
+    req = Request(
+        url, data=body,
+        headers={
+            'Content-Type': 'application/json',
+            'x-goog-api-key': settings.GOOGLE_API_KEY,
+        },
+        method='POST',
+    )
 
     try:
         with urlopen(req, timeout=30) as resp:
