@@ -1,6 +1,62 @@
+import uuid
+import logging
+
 from django.conf import settings
 
 from apps.farmers.models import Farmer
+
+
+logger = logging.getLogger(__name__)
+
+
+class CorrelationIDMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        correlation_id = request.META.get('HTTP_X_CORRELATION_ID') or str(uuid.uuid4())
+        request.correlation_id = correlation_id
+        with context_log(correlation_id=correlation_id):
+            return self.get_response(request)
+
+
+class context_log:
+    """Temporary context to attach correlation ID to log records.
+
+    Usage:
+        with context_log(correlation_id='...'):
+            logger.info('message')
+
+    Logging formatter reads ``correlation_id`` from the record's
+    ``__context__`` dict (set by the adapter below).
+    """
+
+    _contexts: list[dict] = []
+
+    def __init__(self, **kwargs):
+        self._data = kwargs
+
+    def __enter__(self):
+        self.__class__._contexts.append(self._data)
+        return self
+
+    def __exit__(self, *args):
+        self.__class__._contexts.pop()
+
+
+class ContextAdapter(logging.LoggerAdapter):
+    """Adapter that injects correlation ID context into every log call."""
+
+    def process(self, msg, kwargs):
+        ctx = {}
+        if context_log._contexts:
+            ctx.update(context_log._contexts[-1])
+        kwargs['extra'] = {**(kwargs.get('extra') or {}), '__context__': ctx}
+        return msg, kwargs
+
+
+def get_logger(name=None):
+    return ContextAdapter(logging.getLogger(name), {})
 
 
 class TenantMiddleware:
