@@ -59,6 +59,38 @@ def get_logger(name=None):
     return ContextAdapter(logging.getLogger(name), {})
 
 
+class RequestLoggingMiddleware:
+    """Logs every API request with method, path, status, duration, and correlation ID."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        correlation_id = getattr(request, 'correlation_id', '')
+        start = timezone.now()
+        with context_log(correlation_id=correlation_id):
+            logger.info(
+                'Request: method=%s path=%s correlation_id=%s',
+                request.method, request.get_full_path_info(), correlation_id,
+            )
+            try:
+                response = self.get_response(request)
+            except Exception as exc:
+                duration = (timezone.now() - start).total_seconds()
+                logger.exception(
+                    'Unhandled exception: method=%s path=%s duration=%s correlation_id=%s',
+                    request.method, request.get_full_path_info(), duration, correlation_id,
+                )
+                raise
+        duration = (timezone.now() - start).total_seconds()
+        logger.info(
+            'Response: method=%s path=%s status=%s duration=%s correlation_id=%s',
+            request.method, request.get_full_path_info(),
+            response.status_code, duration, correlation_id,
+        )
+        return response
+
+
 class SecurityHeadersMiddleware:
     """Adds Content-Security-Policy and Permissions-Policy to every response."""
 
