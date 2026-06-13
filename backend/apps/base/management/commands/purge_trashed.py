@@ -1,13 +1,10 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from apps.cooperatives.models import Cooperative
-
-User = get_user_model()
+from apps.base.constants import get_soft_deletable_models
 
 
 class Command(BaseCommand):
@@ -33,15 +30,15 @@ class Command(BaseCommand):
         if not execute:
             self.stdout.write('DRY RUN — use --execute to actually purge')
 
-        models = [
-            ('User', User),
-            ('Cooperative', Cooperative),
-        ]
+        models = get_soft_deletable_models()
 
         total = 0
-        for label, model in models:
-            qs = model.objects.all_with_trashed().filter(deleted_at__lt=cutoff)
+        for model_cls in models:
+            mgr = model_cls.objects
+            all_with_trashed = mgr.all_with_trashed if hasattr(mgr, 'all_with_trashed') else mgr
+            qs = all_with_trashed().filter(deleted_at__lt=cutoff)
             count = qs.count()
+            label = model_cls.__name__
             if count:
                 self.stdout.write(f'  {label}: {count} to purge')
                 if execute:

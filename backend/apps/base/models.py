@@ -112,6 +112,9 @@ class CooperativeScopedModel(models.Model):
         self.deleted_via_cascade_from = None
         self.save(update_fields=['deleted_at', 'restored_at', 'deleted_via_cascade_from'])
 
+    def hard_delete(self, using=None, keep_parents=False):
+        super().delete(using=using, keep_parents=keep_parents)
+
 
 class AuditLog(CooperativeScopedModel):
     cooperative = models.ForeignKey(

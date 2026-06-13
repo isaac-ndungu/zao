@@ -2,6 +2,7 @@ import uuid
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVectorField
 from django.db import models
+from django.utils import timezone
 
 from apps.auth_api.models import User
 from apps.base.models import CooperativeScopedModel, LocationMixin
@@ -75,6 +76,9 @@ class FarmerCooperativeMembership(models.Model):
     is_active = models.BooleanField(default=True)
     joined_at = models.DateTimeField(auto_now_add=True)
     left_at = models.DateTimeField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    restored_at = models.DateTimeField(null=True, blank=True)
+    deleted_via_cascade_from = models.UUIDField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Farmer Cooperative Membership'
@@ -86,6 +90,19 @@ class FarmerCooperativeMembership(models.Model):
                 name='unique_member_per_coop'
             ),
         ]
+
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save(update_fields=['deleted_at'])
+
+    def restore(self):
+        self.deleted_at = None
+        self.restored_at = timezone.now()
+        self.deleted_via_cascade_from = None
+        self.save(update_fields=['deleted_at', 'restored_at', 'deleted_via_cascade_from'])
+
+    def hard_delete(self, using=None, keep_parents=False):
+        super().delete(using=using, keep_parents=keep_parents)
 
     def __str__(self):
         return f'{self.member_number} @ {self.cooperative_id} — {self.farmer.first_name} {self.farmer.last_name}'

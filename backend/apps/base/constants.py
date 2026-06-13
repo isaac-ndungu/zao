@@ -1,6 +1,12 @@
 from django.db import models
 
 
+def get_soft_deletable_models():
+    from django.apps import apps
+    exclude = {'AuditLog'}
+    return [m for m in apps.get_models() if m.__name__ not in exclude and hasattr(m, 'deleted_at')]
+
+
 class UserRole(models.TextChoices):
     ADMIN = 'admin', 'Admin'
     MANAGER = 'manager', 'Manager'

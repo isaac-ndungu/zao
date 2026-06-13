@@ -2,8 +2,10 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import connections, transaction
+from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
@@ -16,14 +18,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from apps.auth_api.models import TwoFactorOTP
+from apps.base.constants import UserRole, get_soft_deletable_models
 from apps.base.models import AuditAction, AuditLog
 from apps.base.throttles import SuperAdminSensitiveThrottle
-from apps.base.constants import UserRole
 from apps.base.utils import log_audit
 from apps.cooperatives.models import Cooperative
 from apps.deliveries.models import Delivery
 from apps.disbursement.models import DisbursementBatch
 from apps.farmers.models import Farmer
+from apps.grading.models import Grade
 from apps.loans.models import Loan
 from apps.payment_engine.models import PaymentCycle, FarmerPayment
 
@@ -261,10 +264,16 @@ class AdminBinSummaryView(APIView):
     serializer_class = AdminBinSummarySerializer
 
     def get(self, request):
-        return Response({
-            'users': User.objects.trashed_only().count(),
-            'cooperatives': Cooperative.objects.trashed_only().count(),
-        })
+        data = {}
+        for model_cls in get_soft_deletable_models():
+            mgr = model_cls.objects
+            if hasattr(mgr, 'trashed_only'):
+                qs = mgr.trashed_only()
+            else:
+                qs = mgr.filter(deleted_at__isnull=False)
+            label = model_cls.__name__.lower()
+            data[label] = qs.count()
+        return Response(data)
 
 
 class AdminUserBinView(APIView):
@@ -536,7 +545,6 @@ class AdminDashboardView(APIView):
         period = request.query_params.get('period', '')
 
         def date_filter(days):
-            from django.utils import timezone
             return timezone.now() - timedelta(days=days)
 
         def count_with_period(qs, period_days=None):
@@ -659,6 +667,13 @@ class AdminDashboardView(APIView):
             'trash': {
                 'users': User.objects.trashed_only().count(),
                 'cooperatives': Cooperative.objects.trashed_only().count(),
+                'farmers': Farmer.objects.trashed_only().count(),
+                'deliveries': Delivery.objects.trashed_only().count(),
+                'grades': Grade.objects.trashed_only().count(),
+                'loans': Loan.objects.trashed_only().count(),
+                'paymentcycles': PaymentCycle.objects.trashed_only().count(),
+                'farmerpayments': FarmerPayment.objects.trashed_only().count(),
+                'disbursementbatches': DisbursementBatch.objects.trashed_only().count(),
             },
         }
         return Response(data)
@@ -703,7 +718,6 @@ class AdminHealthView(APIView):
         except Exception:
             pass
         try:
-            from django.core.cache import cache
             cache.set('admin_health', 'ok', 1)
             redis_ok = cache.get('admin_health') == 'ok'
         except Exception:
@@ -800,7 +814,8 @@ class AdminFarmerViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, Cr
     search_fields = ['first_name', 'last_name', 'id_number', 'phone_number', 'email']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = Farmer.objects.all_with_trashed().select_related('cooperative').order_by('-date_joined') if include_trashed else self.queryset
         coop = self.request.query_params.get('cooperative')
         if coop:
             qs = qs.filter(cooperative_id=coop)
@@ -816,7 +831,8 @@ class AdminDeliveryViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, 
     search_fields = ['batch_id', 'farmer__first_name', 'farmer__last_name', 'farmer__phone_number']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = Delivery.objects.all_with_trashed().select_related('farmer', 'grader', 'cooperative').order_by('-date_delivered') if include_trashed else self.queryset
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -860,7 +876,8 @@ class AdminPaymentCycleViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMix
     search_fields = ['name']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = PaymentCycle.objects.all_with_trashed().select_related('cooperative', 'locked_by').order_by('-end_date') if include_trashed else self.queryset
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -932,7 +949,8 @@ class AdminDisbursementBatchViewSet(ModelAdminMixin, ListModelMixin, RetrieveMod
     search_fields = ['id', 'cooperative__name']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = DisbursementBatch.objects.all_with_trashed().select_related('cooperative', 'payment_cycle').order_by('-created_at') if include_trashed else self.queryset
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -994,7 +1012,8 @@ class AdminFarmerPaymentViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMi
     search_fields = ['farmer__first_name', 'farmer__last_name', 'farmer__phone_number']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = FarmerPayment.objects.all_with_trashed().select_related('farmer', 'cycle').order_by('-created_at') if include_trashed else self.queryset
         cycle = self.request.query_params.get('cycle')
         if cycle:
             qs = qs.filter(cycle_id=cycle)
@@ -1036,7 +1055,8 @@ class AdminLoanViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, Gene
     search_fields = ['farmer__first_name', 'farmer__last_name']
 
     def get_queryset(self):
-        qs = self.queryset
+        include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
+        qs = Loan.objects.all_with_trashed().select_related('farmer', 'approved_by', 'cooperative').order_by('-created_at') if include_trashed else self.queryset
         status = self.request.query_params.get('status')
         if status:
             qs = qs.filter(status=status)
@@ -1178,8 +1198,6 @@ class AdminMigrationHealthView(APIView):
     serializer_class = serializers.Serializer
 
     def get(self, request):
-        from django.db.migrations.executor import MigrationExecutor
-        from django.db import connections
         executor = MigrationExecutor(connections['default'])
         plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
         return Response({

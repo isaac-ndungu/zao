@@ -1,5 +1,16 @@
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import models
+from apps.deliveries.models import Delivery
+from apps.deductions.models import Deduction, FarmInputCredit
+from apps.disbursement.models import DisbursementBatch, DisbursementTransaction
+from apps.farmers.models import Farmer, FarmerCooperativeMembership
+from apps.grading.models import Grade
+from apps.inventory.models import Inventory
+from apps.loans.models import Loan, LoanGuarantor
+from apps.notifications.models import Notification
+from apps.routes.models import CollectionRoute
+from apps.sales.models import Sale, Buyer
 import uuid
 
 
@@ -84,18 +95,7 @@ class Cooperative(models.Model):
     objects = CooperativeManager()
 
     def delete(self, using=None, keep_parents=False):
-        from django.contrib.auth import get_user_model
-        from apps.farmers.models import Farmer, FarmerCooperativeMembership
-        from apps.deliveries.models import Delivery
         from apps.payment_engine.models import PaymentCycle, FarmerPayment
-        from apps.loans.models import Loan
-        from apps.grading.models import Grade
-        from apps.disbursement.models import DisbursementBatch, DisbursementTransaction
-        from apps.deductions.models import Deduction, FarmInputCredit
-        from apps.sales.models import Sale
-        from apps.inventory.models import Inventory
-        from apps.routes.models import CollectionRoute
-        from apps.notifications.models import Notification
         User = get_user_model()
         now = timezone.now()
         self.deleted_at = now
@@ -108,12 +108,14 @@ class Cooperative(models.Model):
             (PaymentCycle, 'cooperative'),
             (FarmerPayment, 'cooperative'),
             (Loan, 'cooperative'),
+            (LoanGuarantor, 'cooperative'),
             (Grade, 'cooperative'),
             (DisbursementBatch, 'cooperative'),
             (DisbursementTransaction, 'cooperative'),
             (Deduction, 'cooperative'),
             (FarmInputCredit, 'cooperative'),
             (Sale, 'cooperative'),
+            (Buyer, 'cooperative'),
             (Inventory, 'cooperative'),
             (CollectionRoute, 'cooperative'),
             (Notification, 'cooperative'),
@@ -126,18 +128,7 @@ class Cooperative(models.Model):
                 )
 
     def restore(self):
-        from django.contrib.auth import get_user_model
-        from apps.farmers.models import Farmer, FarmerCooperativeMembership
-        from apps.deliveries.models import Delivery
         from apps.payment_engine.models import PaymentCycle, FarmerPayment
-        from apps.loans.models import Loan
-        from apps.grading.models import Grade
-        from apps.disbursement.models import DisbursementBatch, DisbursementTransaction
-        from apps.deductions.models import Deduction, FarmInputCredit
-        from apps.sales.models import Sale
-        from apps.inventory.models import Inventory
-        from apps.routes.models import CollectionRoute
-        from apps.notifications.models import Notification
         User = get_user_model()
         now = timezone.now()
         self.deleted_at = None
@@ -152,12 +143,14 @@ class Cooperative(models.Model):
             (PaymentCycle, 'cooperative'),
             (FarmerPayment, 'cooperative'),
             (Loan, 'cooperative'),
+            (LoanGuarantor, 'cooperative'),
             (Grade, 'cooperative'),
             (DisbursementBatch, 'cooperative'),
             (DisbursementTransaction, 'cooperative'),
             (Deduction, 'cooperative'),
             (FarmInputCredit, 'cooperative'),
             (Sale, 'cooperative'),
+            (Buyer, 'cooperative'),
             (Inventory, 'cooperative'),
             (CollectionRoute, 'cooperative'),
             (Notification, 'cooperative'),

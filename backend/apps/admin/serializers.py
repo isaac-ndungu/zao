@@ -291,9 +291,13 @@ class AdminRestoreConfirmSerializer(serializers.Serializer):
 
 
 class AdminPurgeConfirmSerializer(serializers.Serializer):
-    pass
+    confirm = serializers.BooleanField(required=True)
+
+    def validate_confirm(self, value):
+        if not value:
+            raise serializers.ValidationError('You must set confirm to true to proceed.')
+        return value
 
 
 class AdminBinSummarySerializer(serializers.Serializer):
-    users = serializers.IntegerField()
-    cooperatives = serializers.IntegerField()
+    pass
