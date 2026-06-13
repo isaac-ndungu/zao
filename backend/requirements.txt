@@ -62,6 +62,12 @@ webencodings==0.5.1
 whitenoise==6.7.0
 zopfli==0.4.2
 
+# Testing
+pytest==8.4.2
+pytest-django==4.12.0
+pytest-cov==6.1.1
+factory_boy==3.3.3
+
 # Production
 gunicorn==23.0.0
 

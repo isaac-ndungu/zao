@@ -1,0 +1,30 @@
+[run]
+source = apps
+omit =
+    */migrations/*
+    */tests.py
+    */__init__.py
+    */apps.py
+    */admin.py
+    */urls.py
+    */wsgi.py
+    */asgi.py
+    manage.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __str__
+    def __repr__
+    class Meta
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    abstract = True
+    pass
+
+show_missing = True
+skip_covered = False
+precision = 2
+
+[html]
+directory = coverage_html
