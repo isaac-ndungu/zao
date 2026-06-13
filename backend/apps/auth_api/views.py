@@ -1,5 +1,5 @@
 import uuid
-import random
+import secrets
 from datetime import timedelta
 
 from django.conf import settings
@@ -133,7 +133,7 @@ class RequestOTPView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-        otp_code = f'{random.randint(0, 999999):06d}'
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
         expires_at = timezone.now() + timedelta(minutes=5)
 
         TwoFactorOTP.objects.create(
@@ -183,7 +183,7 @@ class FarmerRequestOTPView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-        otp_code = f'{random.randint(0, 999999):06d}'
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
         expires_at = timezone.now() + timedelta(minutes=5)
 
         otp = TwoFactorOTP.objects.create(
