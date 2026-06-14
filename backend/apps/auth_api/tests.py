@@ -325,3 +325,41 @@ class TestPasswordReset:
     def test_reset_requires_auth_not_needed(self, client, superuser):
         resp = client.post('/api/auth/password-reset/request/', {'email': superuser.email})
         assert resp.status_code != 401
+
+
+class Test2FASelfService:
+    def test_enable_2fa(self, api_client):
+        resp = api_client.post('/api/auth/2fa/enable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 200
+        assert resp.json()['detail'] == 'Two-factor authentication enabled.'
+        api_client.user.refresh_from_db()
+        assert api_client.user.two_fa_enabled is True
+
+    def test_enable_2fa_wrong_password(self, api_client):
+        resp = api_client.post('/api/auth/2fa/enable/', {'password': 'wrongpassword'})
+        assert resp.status_code == 400
+
+    def test_enable_2fa_already_enabled(self, api_client):
+        api_client.user.two_fa_enabled = True
+        api_client.user.save(update_fields=['two_fa_enabled'])
+        resp = api_client.post('/api/auth/2fa/enable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 400
+        assert resp.json()['detail'] == '2FA is already enabled.'
+
+    def test_enable_2fa_requires_auth(self, client):
+        resp = client.post('/api/auth/2fa/enable/', {'password': 'testpass123'})
+        assert resp.status_code == 401
+
+    def test_disable_2fa(self, api_client):
+        api_client.user.two_fa_enabled = True
+        api_client.user.save(update_fields=['two_fa_enabled'])
+        resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 200
+        assert resp.json()['detail'] == 'Two-factor authentication disabled.'
+        api_client.user.refresh_from_db()
+        assert api_client.user.two_fa_enabled is False
+
+    def test_disable_2fa_not_enabled(self, api_client):
+        resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 400
+        assert resp.json()['detail'] == '2FA is not enabled.'

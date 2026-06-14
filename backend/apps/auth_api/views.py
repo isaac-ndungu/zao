@@ -30,6 +30,7 @@ from .serializers import (
     InviteAcceptSerializer,
     InviteSerializer,
     LoginSerializer,
+    PasswordConfirmationSerializer,
     PasswordResetRequestSerializer,
     PasswordResetVerifySerializer,
     RequestOTPSerializer,
@@ -373,6 +374,44 @@ class InviteAcceptView(APIView):
         user.save(update_fields=['phone_number', 'password', 'is_active', 'must_change_password'])
 
         return _login_response(user)
+
+
+class Enable2FAView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordConfirmationSerializer
+
+    @idempotent()
+    def post(self, request):
+        serializer = PasswordConfirmationSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        if user.two_fa_enabled:
+            return Response({'detail': '2FA is already enabled.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.two_fa_enabled = True
+        user.save(update_fields=['two_fa_enabled'])
+
+        return Response({'detail': 'Two-factor authentication enabled.'})
+
+
+class Disable2FAView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordConfirmationSerializer
+
+    @idempotent()
+    def post(self, request):
+        serializer = PasswordConfirmationSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        if not user.two_fa_enabled:
+            return Response({'detail': '2FA is not enabled.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.two_fa_enabled = False
+        user.save(update_fields=['two_fa_enabled'])
+
+        return Response({'detail': 'Two-factor authentication disabled.'})
 
 
 class TokenRefreshView(APIView):

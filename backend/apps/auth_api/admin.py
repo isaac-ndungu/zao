@@ -36,3 +36,4 @@ class TwoFactorOTPAdmin(admin.ModelAdmin):
     list_select_related = ['user']
     list_filter = ['purpose', 'is_used']
     readonly_fields = ['otp_code', 'created_at']
+
