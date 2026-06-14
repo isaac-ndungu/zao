@@ -1,3 +1,55 @@
+from django.test import TestCase
+from rest_framework.test import APIRequestFactory
+from rest_framework.request import Request as DRFRequest
+
+from apps.auth_api.models import User
+from apps.cooperatives.models import Cooperative
+from apps.users.views import UserViewSet
+
+
+class UserViewSetTestCase(TestCase):
+    def setUp(self):
+        self.coop_a = Cooperative.objects.create(name='A', registration_number='A1', county='C', produce_type='DAIRY', payment_model='FIXED_PRICE', levy_percentage=0, monthly_fee=0)
+        self.coop_b = Cooperative.objects.create(name='B', registration_number='B1', county='C', produce_type='DAIRY', payment_model='FIXED_PRICE', levy_percentage=0, monthly_fee=0)
+
+        # Admin (no cooperative)
+        self.admin = User.objects.create_superuser(email='admin@example.com', phone_number='100', first_name='Admin', last_name='User', password='pass')
+
+        # Manager in coop A
+        self.manager = User.objects.create_user(email='mgr@example.com', phone_number='101', first_name='Mgr', last_name='User', password='pass', role='manager', cooperative=self.coop_a)
+
+        # Users in various coops and roles
+        User.objects.create_user(email='u1@a.com', phone_number='102', first_name='U1', last_name='A', password='pass', role='manager', cooperative=self.coop_a)
+        User.objects.create_user(email='u2@a.com', phone_number='103', first_name='U2', last_name='A', password='pass', role='farmer', cooperative=self.coop_a)
+        User.objects.create_user(email='u1@b.com', phone_number='104', first_name='U1', last_name='B', password='pass', role='manager', cooperative=self.coop_b)
+
+    def _get_qs_for(self, user, params):
+        factory = APIRequestFactory()
+        django_req = factory.get('/api/users/', params)
+        drf_req = DRFRequest(django_req)
+        drf_req.user = user
+        # ensure cooperative_id is set as the middleware would
+        drf_req.cooperative_id = getattr(user.cooperative, 'id', None)
+        view = UserViewSet()
+        view.request = drf_req
+        view.queryset = User.objects.all()
+        return view.get_queryset()
+
+    def test_manager_sees_only_own_cooperative_users_and_role_filter(self):
+        qs = self._get_qs_for(self.manager, {'role': 'manager'})
+        emails = set(qs.values_list('email', flat=True))
+        # should include manager and u1@a.com but not u1@b.com or admin
+        self.assertIn('mgr@example.com', emails)
+        self.assertIn('u1@a.com', emails)
+        self.assertNotIn('u1@b.com', emails)
+        self.assertNotIn('admin@example.com', emails)
+
+    def test_admin_sees_all_users_when_role_filter(self):
+        qs = self._get_qs_for(self.admin, {'role': 'manager'})
+        emails = set(qs.values_list('email', flat=True))
+        # should include managers from both coops
+        self.assertIn('u1@a.com', emails)
+        self.assertIn('u1@b.com', emails)
 import io
 import tempfile
 

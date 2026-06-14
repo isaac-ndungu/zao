@@ -18,6 +18,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from rest_framework.permissions import AllowAny
 from apps.base.health import health_check
 from apps.disbursement.callbacks import mpesa_result_callback, mpesa_timeout_callback
 from apps.notifications.urls import api_urlpatterns, callback_urlpatterns as notification_callback_urlpatterns
@@ -25,9 +26,9 @@ from apps.notifications.urls import api_urlpatterns, callback_urlpatterns as not
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check, name='health-check'),
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[AllowAny]), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[AllowAny]), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[AllowAny]), name='redoc'),
     path('api/', include('apps.cooperatives.urls')),
     path('api/', include('apps.users.urls')),
     path('api/', include('apps.farmers.urls')),

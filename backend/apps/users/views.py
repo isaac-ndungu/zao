@@ -26,6 +26,23 @@ class UserViewSet(CooperativeScopedViewSet):
     ordering_fields = ['first_name', 'last_name', 'email', 'role', 'date_joined']
     ordering = ['first_name']
 
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+            qs = self.queryset
+        else:
+            qs = self.queryset.filter(cooperative_id=self.request.cooperative_id)
+
+        role = self.request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None and is_active != '':
+            qs = qs.filter(is_active=is_active.lower() == 'true')
+
+        return qs
+
     @idempotent()
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
