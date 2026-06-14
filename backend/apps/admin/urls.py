@@ -23,6 +23,8 @@ from apps.admin.views import (
     AdminFarmerPaymentViewSet,
     AdminFarmerViewSet,
     AdminHealthView,
+    AdminInviteRevokeView,
+    AdminInviteView,
     AdminLoanApproveView,
     AdminLoanMarkCompletedView,
     AdminLoanMarkDefaultedView,
@@ -105,5 +107,7 @@ urlpatterns = [
     path('health/', AdminHealthView.as_view()),
     path('migration-health/', AdminMigrationHealthView.as_view()),
     path('celery/tasks/', AdminCeleryTasksView.as_view()),
+    path('auth/invite/', AdminInviteView.as_view()),
+    path('auth/invite/<uuid:pk>/revoke/', AdminInviteRevokeView.as_view()),
     path('auth/revoke-all-sessions/', RevokeAllSessionsView.as_view()),
 ]

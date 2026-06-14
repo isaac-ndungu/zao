@@ -1,9 +1,12 @@
+import uuid
+import secrets
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.mail import send_mail
+from django.core.signing import TimestampSigner
 from django.db import connections, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
@@ -18,6 +21,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from apps.auth_api.models import TwoFactorOTP
+from apps.auth_api.serializers import INVITE_TOKEN_SALT
 from apps.base.constants import UserRole, get_soft_deletable_models
 from apps.base.models import AuditAction, AuditLog
 from apps.base.throttles import SuperAdminSensitiveThrottle
@@ -38,6 +42,8 @@ from .serializers import (
     AdminCooperativeActivateSerializer,
     AdminCooperativeDeactivateSerializer,
     AdminCooperativeSerializer,
+    AdminInviteRevokeSerializer,
+    AdminInviteSerializer,
     AdminDashboardSerializer,
     AdminDeliverySerializer,
     AdminDisbursementBatchSerializer,
@@ -1197,6 +1203,116 @@ class AdminLoanMarkCompletedView(APIView):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
         return Response({'detail': 'Loan marked as completed.', 'status': 'COMPLETED'})
+
+
+class AdminInviteView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminInviteSerializer
+
+    @idempotent()
+    def post(self, request):
+        serializer = AdminInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        placeholder_phone = f'pending-{uuid.uuid4().hex[:8]}'
+        user = User.objects.create(
+            email=serializer.validated_data['email'],
+            phone_number=placeholder_phone,
+            first_name=serializer.validated_data['first_name'],
+            last_name=serializer.validated_data['last_name'],
+            role=UserRole.MANAGER,
+            is_active=False,
+            must_change_password=True,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        try:
+            host = request.get_host()
+        except Exception:
+            host = 'localhost'
+        invite_link = f'{request.scheme}://{host}/api/auth/invite/verify/'
+
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
+        expires_at = timezone.now() + timedelta(minutes=10)
+
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            purpose='ACTION_CONFIRM',
+            expires_at=expires_at,
+        )
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        send_mail(
+            'You\'ve been invited to Zao',
+            (
+                'You have been invited to join as a Manager.\n\n'
+                f'Your invite code is: {otp_code}\n'
+                f'It expires in 10 minutes.\n\n'
+                f'Or click the link below:\n{invite_link}\n\n'
+                f'This invite expires in 7 days.'
+            ),
+            from_email,
+            [user.email],
+            fail_silently=False,
+        )
+
+        log_audit(
+            actor=request.user,
+            resource_type='user_invite',
+            resource_id=user.id,
+            action=AuditAction.ADMIN_CREATE,
+            new_value={'email': user.email, 'role': user.role},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({
+            'detail': 'Invite sent.',
+            'email': user.email,
+            'role': user.role,
+            'invite_token': invite_token,
+            'expires_in_days': 7,
+        }, status=status.HTTP_201_CREATED)
+
+
+class AdminInviteRevokeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminInviteRevokeSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        serializer = AdminInviteRevokeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not user.invite_revoked:
+            user.invite_revoked = True
+            user.save(update_fields=['invite_revoked'])
+
+        TwoFactorOTP.objects.filter(
+            user=user,
+            purpose='ACTION_CONFIRM',
+            is_used=False,
+        ).delete()
+
+        log_audit(
+            actor=request.user,
+            resource_type='user_invite',
+            resource_id=user.id,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'invite_revoked': True, 'otps_cleared': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({'detail': 'Invite revoked.'})
 
 
 class AdminOTPTokenView(APIView):

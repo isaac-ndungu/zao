@@ -226,26 +226,31 @@ class RegisterSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class InviteSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    first_name = serializers.CharField(max_length=150)
-    last_name = serializers.CharField(max_length=150)
-    role = serializers.ChoiceField(
-        choices=[UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.GRADER]
-    )
-
-    def validate_email(self, value):
-        value = value.lower().strip()
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('A user with this email already exists.')
-        return value
-
-
 INVITE_MAX_AGE_SECONDS = 604800  # 7 days
+INVITE_OTP_MAX_AGE_SECONDS = 600  # 10 minutes
 
 
-class InviteAcceptSerializer(serializers.Serializer):
-    token = serializers.CharField()
+class InviteRequestOTPSerializer(serializers.Serializer):
+    invite_token = serializers.CharField()
+
+    def validate(self, attrs):
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        try:
+            email = signer.unsign(attrs['invite_token'], max_age=INVITE_MAX_AGE_SECONDS)
+        except BadSignature:
+            raise serializers.ValidationError('Invalid or expired invite token.')
+
+        user = User.objects.filter(email=email, is_active=False, invite_revoked=False).first()
+        if not user:
+            raise serializers.ValidationError('Invalid or expired invite token.')
+
+        attrs['user'] = user
+        return attrs
+
+
+class InviteVerifySerializer(serializers.Serializer):
+    invite_token = serializers.CharField()
+    otp_code = serializers.CharField(max_length=6)
     password = serializers.CharField(write_only=True, min_length=8)
     phone_number = serializers.CharField()
 
@@ -258,13 +263,37 @@ class InviteAcceptSerializer(serializers.Serializer):
     def validate(self, attrs):
         signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
         try:
-            email = signer.unsign(attrs['token'], max_age=INVITE_MAX_AGE_SECONDS)
+            email = signer.unsign(attrs['invite_token'], max_age=INVITE_MAX_AGE_SECONDS)
         except BadSignature:
             raise serializers.ValidationError('Invalid or expired invite token.')
 
-        user = User.objects.filter(email=email, is_active=False).first()
+        user = User.objects.filter(email=email, is_active=False, invite_revoked=False).first()
         if not user:
             raise serializers.ValidationError('Invalid or expired invite token.')
+
+        otp = TwoFactorOTP.objects.filter(
+            user=user,
+            purpose='ACTION_CONFIRM',
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        ).order_by('-created_at').first()
+
+        if not otp:
+            raise serializers.ValidationError('Invalid or expired OTP.')
+
+        if otp.attempts >= 5:
+            otp.attempts += 1
+            otp.save(update_fields=['attempts'])
+            raise serializers.ValidationError('Too many attempts. Request a new OTP.')
+
+        otp.attempts += 1
+
+        if otp.otp_code != attrs['otp_code']:
+            otp.save(update_fields=['attempts'])
+            raise serializers.ValidationError('Invalid or expired OTP.')
+
+        otp.is_used = True
+        otp.save(update_fields=['attempts', 'is_used'])
 
         attrs['user'] = user
         return attrs

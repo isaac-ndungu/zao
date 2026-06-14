@@ -1,4 +1,5 @@
 import uuid
+import secrets
 from datetime import timedelta
 
 import pytest
@@ -363,3 +364,233 @@ class Test2FASelfService:
         resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
         assert resp.status_code == 400
         assert resp.json()['detail'] == '2FA is not enabled.'
+
+
+class TestInvite:
+    def _create_invite(self, **overrides):
+        email = overrides.get('email', 'invited@example.com')
+        user = User.objects.create(
+            email=email,
+            phone_number=f'pending-{uuid.uuid4().hex[:8]}',
+            first_name=overrides.get('first_name', 'Invited'),
+            last_name=overrides.get('last_name', 'User'),
+            role='manager',
+            is_active=False,
+            must_change_password=True,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            purpose='ACTION_CONFIRM',
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        return user, otp_code
+
+    def test_invite_verify_valid_otp(self, api_client):
+        user, otp_code = self._create_invite()
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': otp_code,
+            'password': 'newpass123',
+            'phone_number': '+254700000050',
+        })
+        assert resp.status_code == 200
+        assert 'access' in resp.json()
+
+        user.refresh_from_db()
+        assert user.is_active is True
+        assert user.must_change_password is False
+        assert user.phone_number == '254700000050'
+        assert user.check_password('newpass123')
+
+    def test_invite_verify_wrong_otp(self, api_client):
+        user, _ = self._create_invite()
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': '000000',
+            'password': 'newpass123',
+            'phone_number': '+254700000051',
+        })
+        assert resp.status_code == 400
+
+    def test_invite_verify_expired_otp(self, api_client):
+        user, _ = self._create_invite()
+
+        # Create expired OTP
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code='654321',
+            purpose='ACTION_CONFIRM',
+            expires_at=timezone.now() - timedelta(minutes=1),
+        )
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': '654321',
+            'password': 'newpass123',
+            'phone_number': '+254700000052',
+        })
+        assert resp.status_code == 400
+
+    def test_invite_verify_bad_token(self, api_client):
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': 'bad-token',
+            'otp_code': '123456',
+            'password': 'newpass123',
+            'phone_number': '+254700000053',
+        })
+        assert resp.status_code == 400
+
+    def test_invite_verify_short_password(self, api_client):
+        user, otp_code = self._create_invite()
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': otp_code,
+            'password': 'short',
+            'phone_number': '+254700000054',
+        })
+        assert resp.status_code == 400
+
+    def test_invite_verify_duplicate_phone(self, api_client):
+        User.objects.create_user(
+            email='existing@example.com',
+            phone_number='254700000099',
+            first_name='Existing',
+            last_name='User',
+            password='testpass123',
+        )
+
+        user, otp_code = self._create_invite()
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': otp_code,
+            'password': 'newpass123',
+            'phone_number': '254700000099',
+        })
+        assert resp.status_code == 400
+
+    def test_invite_verify_exhausted_attempts(self, api_client):
+        user, _ = self._create_invite()
+
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code='123456',
+            purpose='ACTION_CONFIRM',
+            expires_at=timezone.now() + timedelta(minutes=5),
+            attempts=5,
+        )
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': '123456',
+            'password': 'newpass123',
+            'phone_number': '+254700000055',
+        })
+        assert resp.status_code == 400
+        data = resp.json()
+        assert any('Too many attempts' in str(v) for v in data.values())
+
+    def test_invite_verify_revoked(self, api_client):
+        user, otp_code = self._create_invite()
+        user.invite_revoked = True
+        user.save(update_fields=['invite_revoked'])
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': otp_code,
+            'password': 'newpass123',
+            'phone_number': '+254700000057',
+        })
+        assert resp.status_code == 400
+
+    def test_invite_request_otp_revoked(self, api_client):
+        user, _ = self._create_invite()
+        user.invite_revoked = True
+        user.save(update_fields=['invite_revoked'])
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/request-otp/', {
+            'invite_token': invite_token,
+        })
+        assert resp.status_code == 400
+
+    def test_invite_request_otp_resend(self, api_client):
+        user, _ = self._create_invite()
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        resp = api_client.post('/api/auth/invite/request-otp/', {
+            'invite_token': invite_token,
+        })
+        assert resp.status_code == 200
+
+        # A new OTP should have been created
+        otps = TwoFactorOTP.objects.filter(user=user, purpose='ACTION_CONFIRM')
+        assert otps.count() >= 2
+
+    def test_invite_verify_no_auth_needed(self, client, api_client):
+        user, otp_code = self._create_invite()
+
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import INVITE_TOKEN_SALT
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        # Unauthenticated client should be able to verify
+        resp = client.post('/api/auth/invite/verify/', {
+            'invite_token': invite_token,
+            'otp_code': otp_code,
+            'password': 'newpass123',
+            'phone_number': '+254700000056',
+        })
+        assert resp.status_code == 200
+        assert 'access' in resp.json()

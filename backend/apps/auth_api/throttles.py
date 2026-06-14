@@ -1,7 +1,12 @@
 from django.core.signing import BadSignature, TimestampSigner
 from rest_framework.throttling import AnonRateThrottle, SimpleRateThrottle
 
-from .serializers import FARMER_LOGIN_TOKEN_SALT, LOGIN_TOKEN_SALT
+from .serializers import (
+    FARMER_LOGIN_TOKEN_SALT,
+    INVITE_MAX_AGE_SECONDS,
+    INVITE_TOKEN_SALT,
+    LOGIN_TOKEN_SALT,
+)
 
 
 class _RateFallbackMixin:
@@ -105,3 +110,45 @@ class PasswordResetRateThrottle(_RateFallbackMixin, AnonRateThrottle):
 class PasswordResetVerifyRateThrottle(_RateFallbackMixin, AnonRateThrottle):
     scope = 'password_reset_verify'
     rate = '10/min'
+
+
+class _TokenFromRequestBodyThrottle(_RateFallbackMixin, SimpleRateThrottle):
+    scope = None
+    rate = None
+    token_field = 'token'
+    token_salt = None
+
+    def get_cache_key(self, request, view):
+        token = None
+        try:
+            token = request.data.get(self.token_field)
+        except Exception:
+            pass
+        if token:
+            try:
+                signer = TimestampSigner(salt=self.token_salt)
+                email = signer.unsign(token, max_age=INVITE_MAX_AGE_SECONDS)
+                return self.cache_format % {
+                    'scope': self.scope,
+                    'ident': f'user_{email}',
+                }
+            except BadSignature:
+                pass
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': self.get_ident(request),
+        }
+
+
+class InviteRequestOTPRateThrottle(_TokenFromRequestBodyThrottle):
+    scope = 'invite_request_otp'
+    rate = '3/hour'
+    token_field = 'invite_token'
+    token_salt = INVITE_TOKEN_SALT
+
+
+class InviteVerifyRateThrottle(_TokenFromRequestBodyThrottle):
+    scope = 'invite_verify'
+    rate = '10/min'
+    token_field = 'invite_token'
+    token_salt = INVITE_TOKEN_SALT

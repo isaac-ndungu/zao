@@ -1,4 +1,3 @@
-import uuid
 import secrets
 from datetime import timedelta
 
@@ -16,8 +15,6 @@ from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.base.constants import UserRole
-from apps.base.permissions import IsAdmin
-from apps.base.utils import log_audit
 
 from .models import TwoFactorOTP, User
 from .serializers import (
@@ -27,8 +24,8 @@ from .serializers import (
     PASSWORD_RESET_TOKEN_SALT,
     FarmerRequestOTPSerializer,
     FarmerVerifyOTPSerializer,
-    InviteAcceptSerializer,
-    InviteSerializer,
+    InviteRequestOTPSerializer,
+    InviteVerifySerializer,
     LoginSerializer,
     PasswordConfirmationSerializer,
     PasswordResetRequestSerializer,
@@ -41,6 +38,8 @@ from .serializers import (
 from apps.base.idempotency import idempotent
 from .throttles import (
     FarmerRequestOTPRateThrottle,
+    InviteRequestOTPRateThrottle,
+    InviteVerifyRateThrottle,
     LoginRateThrottle,
     PasswordResetRateThrottle,
     PasswordResetVerifyRateThrottle,
@@ -295,75 +294,52 @@ class LogoutView(APIView):
         return response
 
 
-class InviteView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
-    serializer_class = InviteSerializer
+class InviteRequestOTPView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = InviteRequestOTPSerializer
+    throttle_classes = [InviteRequestOTPRateThrottle]
 
     @idempotent()
     def post(self, request):
-        serializer = InviteSerializer(data=request.data)
+        serializer = InviteRequestOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
 
-        placeholder_phone = f'pending-{uuid.uuid4().hex[:8]}'
-        user = User.objects.create(
-            email=serializer.validated_data['email'],
-            phone_number=placeholder_phone,
-            first_name=serializer.validated_data['first_name'],
-            last_name=serializer.validated_data['last_name'],
-            role=serializer.validated_data['role'],
-            cooperative_id=request.cooperative_id,
-            is_active=False,
-            must_change_password=True,
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
+        expires_at = timezone.now() + timedelta(minutes=10)
+
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            purpose='ACTION_CONFIRM',
+            expires_at=expires_at,
         )
-        user.set_unusable_password()
-        user.save(update_fields=['password'])
 
-        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
-        token = signer.sign(user.email)
-
-        invite_link = f'{request.scheme}://{request.get_host()}/api/auth/invite/accept/?token={token}'
-
-        coop_name = user.cooperative.name if user.cooperative else 'your cooperative'
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
         send_mail(
-            'You\'ve been invited to Zao',
-            (
-                f'You have been invited to join {coop_name} '
-                f'as a {user.get_role_display()}.\n\n'
-                f'Click the link below to set up your account:\n{invite_link}\n\n'
-                f'This link expires in 7 days.'
-            ),
+            'Your Zao Invite Code',
+            f'Your invite code is: {otp_code}\nIt expires in 10 minutes.',
             from_email,
             [user.email],
             fail_silently=False,
         )
 
-        log_audit(
-            actor=request.user,
-            resource_type='user_invite',
-            resource_id=user.id,
-            action='CREATE',
-            new_value={'email': user.email, 'role': user.role},
-            cooperative_id=request.cooperative_id,
-        )
-
-        return Response({
-            'detail': 'Invite sent.',
-            'email': user.email,
-            'role': user.role,
-            'expires_in_days': 7,
-            'invite_link': invite_link,
-        }, status=status.HTTP_201_CREATED)
+        data = {'detail': 'OTP sent to your email.'}
+        if settings.DEBUG:
+            data['otp_code'] = otp_code
+        return Response(data)
 
 
-class InviteAcceptView(APIView):
+class InviteVerifyView(APIView):
     authentication_classes = []
     permission_classes = []
-    serializer_class = InviteAcceptSerializer
+    serializer_class = InviteVerifySerializer
+    throttle_classes = [InviteVerifyRateThrottle]
 
     @idempotent()
     def post(self, request):
-        serializer = InviteAcceptSerializer(data=request.data)
+        serializer = InviteVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 

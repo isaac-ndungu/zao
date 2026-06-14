@@ -29,7 +29,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,.onrender.com").split(",")
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,.onrender.com,testserver").split(",")
 
 TRASH_RETENTION_DAYS = config("TRASH_RETENTION_DAYS", default=30, cast=int)
 
@@ -344,6 +344,8 @@ REST_FRAMEWORK = {
         'password_reset_verify': '30/min',
         'verify_otp': '5/min',
         'farmer_request_otp': '3/hour',
+        'invite_request_otp': '3/hour',
+        'invite_verify': '10/min',
         'superadmin': '100/min',
         'superadmin_sensitive': '3/hour',
         'legal_document': '20/min',

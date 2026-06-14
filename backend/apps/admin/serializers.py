@@ -299,5 +299,26 @@ class AdminPurgeConfirmSerializer(serializers.Serializer):
         return value
 
 
+class AdminInviteSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+
+    def validate_email(self, value):
+        value = value.lower().strip()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        return value
+
+
+class AdminInviteRevokeSerializer(serializers.Serializer):
+    confirm = serializers.BooleanField(required=True)
+
+    def validate_confirm(self, value):
+        if not value:
+            raise serializers.ValidationError('You must set confirm to true to proceed.')
+        return value
+
+
 class AdminBinSummarySerializer(serializers.Serializer):
     pass
