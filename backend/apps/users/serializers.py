@@ -15,9 +15,9 @@ class UserListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'phone_number', 'first_name', 'last_name',
             'role', 'cooperative_id', 'is_active', 'two_fa_enabled',
-            'must_change_password', 'date_joined',
+            'must_change_password', 'date_joined', 'avatar',
         ]
-        read_only_fields = ['id', 'cooperative_id', 'date_joined', 'two_fa_enabled', 'must_change_password']
+        read_only_fields = ['id', 'cooperative_id', 'date_joined', 'two_fa_enabled', 'must_change_password', 'avatar']
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -110,13 +110,9 @@ class UserSelfUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'phone_number', 'email', 'current_password', 'password']
-        extra_kwargs = {field: {'required': False} for field in fields if field != 'current_password'}
-
-    def validate_email(self, value):
-        if User.objects.filter(email__iexact=value).exclude(pk=self.instance.pk).exists():
-            raise serializers.ValidationError('A user with this email already exists.')
-        return value.lower()
+        fields = ['first_name', 'last_name', 'phone_number', 'email', 'current_password', 'password', 'avatar']
+        read_only_fields = ['email', 'avatar']
+        extra_kwargs = {field: {'required': False} for field in fields if field not in ('email', 'avatar', 'current_password')}
 
     def validate_phone_number(self, value):
         value = normalize_phone(value)
@@ -146,3 +142,16 @@ class UserSelfUpdateSerializer(serializers.ModelSerializer):
             instance.must_change_password = False
         instance.save()
         return instance
+
+
+class AvatarUploadSerializer(serializers.Serializer):
+    avatar = serializers.ImageField(
+        allow_empty_file=False,
+    )
+
+    def validate_avatar(self, value):
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError('Image size must not exceed 5MB.')
+        if value.content_type not in ('image/jpeg', 'image/png'):
+            raise serializers.ValidationError('Only JPEG and PNG images are allowed.')
+        return value

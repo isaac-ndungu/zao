@@ -7,6 +7,8 @@ from apps.auth_api.views import (
     InviteAcceptView,
     LoginView,
     LogoutView,
+    PasswordResetRequestView,
+    PasswordResetVerifyView,
     RequestOTPView,
     TokenRefreshView,
     VerifyOTPView,
@@ -22,4 +24,6 @@ urlpatterns = [
     path('auth/logout/', LogoutView.as_view()),
     path('auth/invite/', InviteView.as_view()),
     path('auth/invite/accept/', InviteAcceptView.as_view()),
+    path('auth/password-reset/request/', PasswordResetRequestView.as_view()),
+    path('auth/password-reset/verify/', PasswordResetVerifyView.as_view()),
 ]

@@ -10,6 +10,7 @@ from .models import User, TwoFactorOTP
 LOGIN_TOKEN_SALT = 'auth-login-token'
 FARMER_LOGIN_TOKEN_SALT = 'auth-farmer-login-token'
 INVITE_TOKEN_SALT = 'auth-invite-token'
+PASSWORD_RESET_TOKEN_SALT = 'auth-password-reset-token'
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -264,6 +265,65 @@ class InviteAcceptSerializer(serializers.Serializer):
         user = User.objects.filter(email=email, is_active=False).first()
         if not user:
             raise serializers.ValidationError('Invalid or expired invite token.')
+
+        attrs['user'] = user
+        return attrs
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, attrs):
+        email = attrs['email'].lower().strip()
+        user = User.objects.filter(email=email, is_active=True).first()
+        if not user:
+            raise serializers.ValidationError('No account found with this email address.')
+        attrs['user'] = user
+        return attrs
+
+
+PASSWORD_RESET_MAX_AGE_SECONDS = 600  # 10 minutes
+
+
+class PasswordResetVerifySerializer(serializers.Serializer):
+    reset_token = serializers.CharField()
+    otp_code = serializers.CharField(max_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    def validate(self, attrs):
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        try:
+            email = signer.unsign(attrs['reset_token'], max_age=PASSWORD_RESET_MAX_AGE_SECONDS)
+        except BadSignature:
+            raise serializers.ValidationError('Invalid or expired reset token.')
+
+        user = User.objects.filter(email=email, is_active=True).first()
+        if not user:
+            raise serializers.ValidationError('Invalid or expired reset token.')
+
+        otp = TwoFactorOTP.objects.filter(
+            user=user,
+            purpose='PASSWORD_RESET',
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        ).order_by('-created_at').first()
+
+        if not otp:
+            raise serializers.ValidationError('Invalid or expired OTP.')
+
+        if otp.attempts >= 5:
+            otp.attempts += 1
+            otp.save(update_fields=['attempts'])
+            raise serializers.ValidationError('Too many attempts. Request a new OTP.')
+
+        otp.attempts += 1
+
+        if otp.otp_code != attrs['otp_code']:
+            otp.save(update_fields=['attempts'])
+            raise serializers.ValidationError('Invalid or expired OTP.')
+
+        otp.is_used = True
+        otp.save(update_fields=['attempts', 'is_used'])
 
         attrs['user'] = user
         return attrs

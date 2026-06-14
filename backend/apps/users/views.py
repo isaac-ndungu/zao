@@ -11,6 +11,7 @@ from apps.base.permissions import IsAdmin, IsAdminOrManager
 from apps.base.views import CooperativeScopedViewSet
 
 from .serializers import (
+    AvatarUploadSerializer,
     UserCreateSerializer,
     UserListSerializer,
     UserSelfUpdateSerializer,
@@ -28,6 +29,7 @@ class UserViewSet(CooperativeScopedViewSet):
     @idempotent()
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
+
     def get_permissions(self):
         if self.action in ('update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsAdmin()]
@@ -89,3 +91,37 @@ class UserViewSet(CooperativeScopedViewSet):
             return Response(UserListSerializer(request.user).data)
 
         return Response(UserListSerializer(request.user).data)
+
+    @action(detail=False, methods=['patch'])
+    def avatar(self, request):
+        serializer = AvatarUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+
+        old_avatar = user.avatar
+        user.avatar = serializer.validated_data['avatar']
+        user.save()
+
+        if old_avatar:
+            try:
+                import cloudinary
+                public_id = old_avatar.name
+                cloudinary.uploader.destroy(public_id)
+            except Exception:
+                pass
+
+        return Response(UserListSerializer(user).data)
+
+    @avatar.mapping.delete
+    def delete_avatar(self, request):
+        user = request.user
+        if user.avatar:
+            try:
+                import cloudinary
+                public_id = user.avatar.name
+                cloudinary.uploader.destroy(public_id)
+            except Exception:
+                pass
+            user.avatar = None
+            user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)

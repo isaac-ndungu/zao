@@ -79,3 +79,29 @@ class _FarmerFromPhoneThrottle(_RateFallbackMixin, SimpleRateThrottle):
 class FarmerRequestOTPRateThrottle(_FarmerFromPhoneThrottle):
     scope = 'farmer_request_otp'
     rate = '3/hour'
+
+
+class PasswordResetRateThrottle(_RateFallbackMixin, AnonRateThrottle):
+    scope = 'password_reset'
+    rate = '5/hour'
+
+    def get_cache_key(self, request, view):
+        email = None
+        try:
+            email = request.data.get('email', '').strip().lower()
+        except Exception:
+            pass
+        if email:
+            return self.cache_format % {
+                'scope': self.scope,
+                'ident': f'email_{email}',
+            }
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': self.get_ident(request),
+        }
+
+
+class PasswordResetVerifyRateThrottle(_RateFallbackMixin, AnonRateThrottle):
+    scope = 'password_reset_verify'
+    rate = '10/min'

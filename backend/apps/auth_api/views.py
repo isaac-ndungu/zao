@@ -24,11 +24,14 @@ from .serializers import (
     LOGIN_TOKEN_SALT,
     FARMER_LOGIN_TOKEN_SALT,
     INVITE_TOKEN_SALT,
+    PASSWORD_RESET_TOKEN_SALT,
     FarmerRequestOTPSerializer,
     FarmerVerifyOTPSerializer,
     InviteAcceptSerializer,
     InviteSerializer,
     LoginSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetVerifySerializer,
     RequestOTPSerializer,
     TokenResponseSerializer,
     TwoFAVerifySerializer,
@@ -38,6 +41,8 @@ from apps.base.idempotency import idempotent
 from .throttles import (
     FarmerRequestOTPRateThrottle,
     LoginRateThrottle,
+    PasswordResetRateThrottle,
+    PasswordResetVerifyRateThrottle,
     RequestOTPRateThrottle,
     VerifyOTPRateThrottle,
 )
@@ -155,6 +160,68 @@ class VerifyOTPView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         return _login_response(user)
+
+
+class PasswordResetRequestView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = PasswordResetRequestSerializer
+    throttle_classes = [PasswordResetRateThrottle]
+
+    @idempotent()
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
+        expires_at = timezone.now() + timedelta(minutes=10)
+
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            purpose='PASSWORD_RESET',
+            expires_at=expires_at,
+        )
+
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(user.email)
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        send_mail(
+            'Reset Your Zao Password',
+            f'Your OTP is: {otp_code}\nIt expires in 10 minutes.',
+            from_email,
+            [user.email],
+            fail_silently=False,
+        )
+
+        data = {
+            'reset_token': reset_token,
+            'detail': 'OTP sent to your email.',
+        }
+        if settings.DEBUG:
+            data['otp_code'] = otp_code
+        return Response(data)
+
+
+class PasswordResetVerifyView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = PasswordResetVerifySerializer
+    throttle_classes = [PasswordResetVerifyRateThrottle]
+
+    @idempotent()
+    def post(self, request):
+        serializer = PasswordResetVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+
+        user.set_password(serializer.validated_data['password'])
+        user.must_change_password = False
+        user.save(update_fields=['password', 'must_change_password'])
+
+        return Response({'detail': 'Password reset successful.'})
 
 
 class FarmerRequestOTPView(APIView):

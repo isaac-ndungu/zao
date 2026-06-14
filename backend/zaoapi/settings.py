@@ -310,13 +310,16 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 STORAGES = {
+    'default': {
+        'BACKEND': DEFAULT_FILE_STORAGE,
+    },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
 }
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -337,6 +340,8 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'login': '10/min',
         'request_otp': '5/hour',
+        'password_reset': '5/hour',
+        'password_reset_verify': '30/min',
         'verify_otp': '5/min',
         'farmer_request_otp': '3/hour',
         'superadmin': '100/min',

@@ -190,3 +190,138 @@ class TestTwoFactorOTP:
                 expires_at=timezone.now() + timedelta(minutes=5),
             )
             assert otp.purpose == purpose
+
+
+class TestPasswordReset:
+    def test_request_reset_unknown_email(self, client):
+        resp = client.post('/api/auth/password-reset/request/', {'email': 'unknown@example.com'})
+        assert resp.status_code == 400
+
+    def test_request_reset_known_email(self, client, superuser):
+        resp = client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert 'reset_token' in data
+        assert data['detail'] == 'OTP sent to your email.'
+
+    def test_request_reset_creates_otp(self, client, superuser):
+        client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        otp = TwoFactorOTP.objects.filter(user=superuser, purpose='PASSWORD_RESET').first()
+        assert otp is not None
+        assert otp.expires_at > timezone.now()
+        assert not otp.is_used
+
+    def _get_otp(self, user):
+        return TwoFactorOTP.objects.filter(
+            user=user, purpose='PASSWORD_RESET'
+        ).order_by('-created_at').first().otp_code
+
+    def test_reset_with_valid_otp(self, client, superuser):
+        client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        otp_code = self._get_otp(superuser)
+        # Manually create a reset token
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': otp_code,
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 200
+        assert resp.json()['detail'] == 'Password reset successful.'
+
+        # User can login with new password
+        from rest_framework.test import APIClient
+        login_resp = APIClient().post('/api/auth/login/', {
+            'email': superuser.email,
+            'password': 'newpass123',
+        })
+        assert login_resp.status_code == 200
+
+    def test_reset_with_wrong_otp(self, client, superuser):
+        client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': '000000',
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 400
+
+    def test_reset_with_expired_otp(self, client, superuser):
+        from datetime import timedelta
+        TwoFactorOTP.objects.create(
+            user=superuser,
+            otp_code='123456',
+            purpose='PASSWORD_RESET',
+            expires_at=timezone.now() - timedelta(minutes=1),
+        )
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': '123456',
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 400
+
+    def test_reset_with_bad_token(self, client, superuser):
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': 'bad-token',
+            'otp_code': '123456',
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 400
+
+    def test_reset_rejects_short_password(self, client, superuser):
+        client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        otp_code = self._get_otp(superuser)
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': otp_code,
+            'password': 'short',
+        })
+        assert resp.status_code == 400
+
+    def test_reset_otp_exhausted_attempts(self, client, superuser):
+        from datetime import timedelta
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+
+        TwoFactorOTP.objects.create(
+            user=superuser,
+            otp_code='123456',
+            purpose='PASSWORD_RESET',
+            expires_at=timezone.now() + timedelta(minutes=5),
+            attempts=5,
+        )
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': '123456',
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 400
+        data = resp.json()
+        assert any('Too many attempts' in str(v) for v in data.values())
+
+    def test_reset_requires_auth_not_needed(self, client, superuser):
+        resp = client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        assert resp.status_code != 401
