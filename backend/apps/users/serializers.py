@@ -5,7 +5,7 @@ from django.core.mail import send_mail
 from rest_framework import serializers
 
 from apps.auth_api.models import User
-from apps.base.utils import normalize_phone
+from apps.base.utils import KENYA_PHONE_RE, normalize_phone
 from apps.cooperatives.models import Cooperative
 
 
@@ -116,6 +116,8 @@ class UserSelfUpdateSerializer(serializers.ModelSerializer):
 
     def validate_phone_number(self, value):
         value = normalize_phone(value)
+        if not KENYA_PHONE_RE.match(value):
+            raise serializers.ValidationError('Invalid phone number format.')
         if User.objects.filter(phone_number=value).exclude(pk=self.instance.pk).exists():
             raise serializers.ValidationError('A user with this phone number already exists.')
         return value

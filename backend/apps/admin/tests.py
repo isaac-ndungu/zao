@@ -249,7 +249,7 @@ class TestAdminInviteResend:
 
 
 class TestAdminInviteDuplicateEmail:
-    def test_duplicate_email_validation(self, superuser):
+    def test_duplicate_email_returns_400(self, superuser):
         client = APIClient()
         client.force_authenticate(user=superuser)
         client.post('/api/admin/auth/invite/', {
@@ -263,3 +263,54 @@ class TestAdminInviteDuplicateEmail:
             'last_name': 'User',
         })
         assert resp.status_code == 400
+
+    def test_duplicate_pending_invite_returns_400(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        # Same email while still PENDING
+        resp = client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Another',
+            'last_name': 'User',
+        })
+        assert resp.status_code == 400
+
+    def test_duplicate_email_existing_active_user_returns_400(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        User.objects.create_user(
+            email='existing@example.com',
+            phone_number='+254700000777',
+            first_name='Existing',
+            last_name='User',
+            password='testpass123',
+        )
+        resp = client.post('/api/admin/auth/invite/', {
+            'email': 'existing@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        assert resp.status_code == 400
+
+
+class TestAdminInviteRevokeAccepted:
+    def test_revoke_accepted_invite_returns_400(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        user = User.objects.get(email='invited@example.com')
+        user.is_active = True
+        user.phone_number = '254700000111'
+        user.save(update_fields=['is_active', 'phone_number'])
+        resp = client.post(f'/api/admin/auth/invite/{user.id}/revoke/', {'confirm': True})
+        assert resp.status_code == 400
+        assert 'Cannot revoke an accepted invite' in resp.json()['detail']

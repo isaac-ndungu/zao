@@ -306,7 +306,8 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         email = attrs['email'].lower().strip()
         user = User.objects.filter(email=email, is_active=True).first()
         if not user:
-            raise serializers.ValidationError('No account found with this email address.')
+            attrs['user'] = None
+            return attrs
         attrs['user'] = user
         return attrs
 

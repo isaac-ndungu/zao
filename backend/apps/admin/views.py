@@ -1296,6 +1296,12 @@ class AdminInviteRevokeView(APIView):
         except User.DoesNotExist:
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+        if user.is_active:
+            return Response(
+                {'detail': 'Cannot revoke an accepted invite.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if not user.invite_revoked:
             user.invite_revoked = True
             user.save(update_fields=['invite_revoked'])

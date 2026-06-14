@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import pytest
-from django.test.utils import override_settings
+from django.core.cache import cache
 from django.utils import timezone
 
 from apps.legal.models import LegalDocument, LegalAcceptance
@@ -279,15 +279,16 @@ class TestLegalAcceptanceView:
 
 class TestLegalRateLimiting:
     def test_rate_limit_exceeded(self, client):
+        cache.clear()
         LegalDocument.objects.create(
             slug='privacy-policy', title='PP', content='## C',
             version=1, is_active=True, published_at=timezone.now(),
         )
-        with override_settings(THROTTLE_RATES={'legal_document': '2/min'}):
-            client.get('/api/legal/privacy-policy/')
-            client.get('/api/legal/privacy-policy/')
+        for _ in range(20):
             resp = client.get('/api/legal/privacy-policy/')
-            assert resp.status_code == 429
+            assert resp.status_code == 200
+        resp = client.get('/api/legal/privacy-policy/')
+        assert resp.status_code == 429
 
 
 class TestPendingAcceptanceView:

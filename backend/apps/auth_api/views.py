@@ -180,6 +180,14 @@ class PasswordResetRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
+        if user is None:
+            signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+            reset_token = signer.sign('unknown@placeholder.local')
+            return Response({
+                'reset_token': reset_token,
+                'detail': 'OTP sent to your email.',
+            })
+
         otp_code = f'{secrets.randbelow(1_000_000):06d}'
         expires_at = timezone.now() + timedelta(minutes=10)
 
@@ -226,6 +234,10 @@ class PasswordResetVerifyView(APIView):
         user.set_password(serializer.validated_data['password'])
         user.must_change_password = False
         user.save(update_fields=['password', 'must_change_password'])
+
+        # Invalidate all existing refresh tokens for this user
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+        OutstandingToken.objects.filter(user=user).delete()
 
         return Response({'detail': 'Password reset successful.'})
 
@@ -389,6 +401,12 @@ class Disable2FAView(APIView):
         user = request.user
         if not user.two_fa_enabled:
             return Response({'detail': '2FA is not enabled.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.AUDITOR):
+            return Response(
+                {'detail': '2FA cannot be disabled for your role.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user.two_fa_enabled = False
         user.save(update_fields=['two_fa_enabled'])

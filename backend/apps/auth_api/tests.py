@@ -5,6 +5,7 @@ from datetime import timedelta
 import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from apps.auth_api.managers import UserManager
 from apps.auth_api.models import OTPPurpose, TwoFactorOTP
@@ -196,7 +197,10 @@ class TestTwoFactorOTP:
 class TestPasswordReset:
     def test_request_reset_unknown_email(self, client):
         resp = client.post('/api/auth/password-reset/request/', {'email': 'unknown@example.com'})
-        assert resp.status_code == 400
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['detail'] == 'OTP sent to your email.'
+        assert 'reset_token' in data
 
     def test_request_reset_known_email(self, client, superuser):
         resp = client.post('/api/auth/password-reset/request/', {'email': superuser.email})
@@ -327,6 +331,61 @@ class TestPasswordReset:
         resp = client.post('/api/auth/password-reset/request/', {'email': superuser.email})
         assert resp.status_code != 401
 
+    def test_reset_with_already_used_otp(self, client, superuser):
+        from datetime import timedelta
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+
+        TwoFactorOTP.objects.create(
+            user=superuser,
+            otp_code='123456',
+            purpose='PASSWORD_RESET',
+            expires_at=timezone.now() + timedelta(minutes=5),
+            is_used=True,
+        )
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': '123456',
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 400
+
+    def test_reset_invalidates_tokens(self, client, superuser):
+        from django.core.signing import TimestampSigner
+        from apps.auth_api.serializers import PASSWORD_RESET_TOKEN_SALT
+
+        # Create a refresh token for the user first
+        refresh = type('', (), {})()
+        refresh.user = superuser
+        OutstandingToken.objects.create(
+            user=superuser,
+            jti='test-jti',
+            token='test-token',
+            created_at=timezone.now(),
+            expires_at=timezone.now() + timedelta(days=1),
+        )
+
+        client.post('/api/auth/password-reset/request/', {'email': superuser.email})
+        otp_code = TwoFactorOTP.objects.filter(
+            user=superuser, purpose='PASSWORD_RESET'
+        ).order_by('-created_at').first().otp_code
+
+        signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
+        reset_token = signer.sign(superuser.email)
+
+        resp = client.post('/api/auth/password-reset/verify/', {
+            'reset_token': reset_token,
+            'otp_code': otp_code,
+            'password': 'newpass123',
+        })
+        assert resp.status_code == 200
+
+        # All outstanding tokens should be deleted
+        assert OutstandingToken.objects.filter(user=superuser).count() == 0
+
 
 class Test2FASelfService:
     def test_enable_2fa(self, api_client):
@@ -364,6 +423,57 @@ class Test2FASelfService:
         resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
         assert resp.status_code == 400
         assert resp.json()['detail'] == '2FA is not enabled.'
+
+    def test_disable_2fa_blocked_for_manager(self, api_client):
+        api_client.user.two_fa_enabled = True
+        api_client.user.role = UserRole.MANAGER
+        api_client.user.save(update_fields=['two_fa_enabled', 'role'])
+        resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 400
+        assert resp.json()['detail'] == '2FA cannot be disabled for your role.'
+
+    def test_disable_2fa_blocked_for_accountant(self, api_client):
+        api_client.user.two_fa_enabled = True
+        api_client.user.role = UserRole.ACCOUNTANT
+        api_client.user.save(update_fields=['two_fa_enabled', 'role'])
+        resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 400
+
+    def test_disable_2fa_blocked_for_auditor(self, api_client):
+        api_client.user.two_fa_enabled = True
+        api_client.user.role = UserRole.AUDITOR
+        api_client.user.save(update_fields=['two_fa_enabled', 'role'])
+        resp = api_client.post('/api/auth/2fa/disable/', {'password': api_client.user.raw_password})
+        assert resp.status_code == 400
+
+
+class Test2FALogin:
+    def test_verify_wrong_otp(self, client):
+        user = User.objects.create_user(
+            email='2fa@example.com',
+            phone_number='+254700000888',
+            first_name='Two',
+            last_name='FA',
+            password='testpass123',
+        )
+        user.two_fa_enabled = True
+        user.save(update_fields=['two_fa_enabled'])
+
+        # Login — get login_token
+        resp = client.post('/api/auth/login/', {
+            'email': '2fa@example.com',
+            'password': 'testpass123',
+        })
+        assert resp.status_code == 200
+        assert resp.json()['requires_2fa'] is True
+        login_token = resp.json()['login_token']
+
+        # Verify with wrong OTP
+        resp = client.post('/api/auth/2fa/verify/', {
+            'login_token': login_token,
+            'otp_code': '000000',
+        })
+        assert resp.status_code == 400
 
 
 class TestChangePassword:
