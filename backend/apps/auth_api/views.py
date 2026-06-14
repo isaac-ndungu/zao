@@ -22,6 +22,7 @@ from .serializers import (
     FARMER_LOGIN_TOKEN_SALT,
     INVITE_TOKEN_SALT,
     PASSWORD_RESET_TOKEN_SALT,
+    ChangePasswordSerializer,
     FarmerRequestOTPSerializer,
     FarmerVerifyOTPSerializer,
     InviteRequestOTPSerializer,
@@ -69,6 +70,11 @@ def _build_user_claims(user):
 
 
 def _login_response(user):
+    if user.must_change_password:
+        return Response(
+            {'detail': 'You must change your password before continuing.', 'must_change_password': True},
+            status=status.HTTP_403_FORBIDDEN,
+        )
     refresh = RefreshToken.for_user(user)
     claims = _build_user_claims(user)
     for k, v in claims.items():
@@ -388,6 +394,23 @@ class Disable2FAView(APIView):
         user.save(update_fields=['two_fa_enabled'])
 
         return Response({'detail': 'Two-factor authentication disabled.'})
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
+
+    @idempotent()
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.must_change_password = False
+        user.save(update_fields=['password', 'must_change_password'])
+
+        return _login_response(user)
 
 
 class TokenRefreshView(APIView):

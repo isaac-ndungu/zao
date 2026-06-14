@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.auth_api.views import (
+    ChangePasswordView,
     Disable2FAView,
     Enable2FAView,
     FarmerRequestOTPView,
@@ -24,6 +25,7 @@ urlpatterns = [
     path('auth/farmer/verify/', FarmerVerifyOTPView.as_view()),
     path('auth/refresh/', TokenRefreshView.as_view()),
     path('auth/logout/', LogoutView.as_view()),
+    path('auth/change-password/', ChangePasswordView.as_view()),
     path('auth/invite/request-otp/', InviteRequestOTPView.as_view()),
     path('auth/invite/verify/', InviteVerifyView.as_view()),
     path('auth/password-reset/request/', PasswordResetRequestView.as_view()),

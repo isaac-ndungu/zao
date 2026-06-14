@@ -35,6 +35,7 @@ from apps.loans.models import Loan
 from apps.payment_engine.models import PaymentCycle, FarmerPayment
 
 from .mixins import ModelAdminMixin
+from .pagination import AdminPagination
 from .permissions import IsSuperUser
 from apps.base.idempotency import idempotent
 from .serializers import (
@@ -42,6 +43,8 @@ from .serializers import (
     AdminCooperativeActivateSerializer,
     AdminCooperativeDeactivateSerializer,
     AdminCooperativeSerializer,
+    AdminInviteListSerializer,
+    AdminInviteResendSerializer,
     AdminInviteRevokeSerializer,
     AdminInviteSerializer,
     AdminDashboardSerializer,
@@ -1313,6 +1316,116 @@ class AdminInviteRevokeView(APIView):
         )
 
         return Response({'detail': 'Invite revoked.'})
+
+
+class AdminInviteListView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminInviteListSerializer
+
+    def get(self, request):
+        qs = User.objects.filter(phone_number__startswith='pending-').order_by('-date_joined')
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            if status_filter == 'PENDING':
+                qs = qs.filter(is_active=False, invite_revoked=False)
+            elif status_filter == 'ACCEPTED':
+                qs = qs.filter(is_active=True)
+            elif status_filter == 'REVOKED':
+                qs = qs.filter(invite_revoked=True)
+
+        role = request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+
+        email = request.query_params.get('email')
+        if email:
+            qs = qs.filter(email__icontains=email)
+
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = AdminInviteListSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = AdminInviteListSerializer(qs[:200], many=True)
+        return Response(serializer.data)
+
+
+class AdminInviteDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminInviteListSerializer
+
+    def get(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk, phone_number__startswith='pending-')
+        except User.DoesNotExist:
+            return Response({'detail': 'Invite not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(AdminInviteListSerializer(user).data)
+
+
+class AdminInviteResendView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminInviteResendSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            user = User.objects.get(pk=pk, is_active=False)
+        except User.DoesNotExist:
+            return Response({'detail': 'Invite not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if user.invite_revoked:
+            return Response(
+                {'detail': 'Cannot resend a revoked invite.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        otp_code = f'{secrets.randbelow(1_000_000):06d}'
+        expires_at = timezone.now() + timedelta(minutes=10)
+
+        TwoFactorOTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            purpose='ACTION_CONFIRM',
+            expires_at=expires_at,
+        )
+
+        signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
+        invite_token = signer.sign(user.email)
+
+        try:
+            host = request.get_host()
+        except Exception:
+            host = 'localhost'
+        invite_link = f'{request.scheme}://{host}/api/auth/invite/verify/'
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        send_mail(
+            'You\'ve been invited to Zao',
+            (
+                'You have been invited to join as a Manager.\n\n'
+                f'Your invite code is: {otp_code}\n'
+                f'It expires in 10 minutes.\n\n'
+                f'Or click the link below:\n{invite_link}\n\n'
+                f'This invite expires in 7 days.'
+            ),
+            from_email,
+            [user.email],
+            fail_silently=False,
+        )
+
+        log_audit(
+            actor=request.user,
+            resource_type='user_invite',
+            resource_id=user.id,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'resend': True, 'email': user.email},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return Response({'detail': 'Invite resent.', 'invite_token': invite_token})
 
 
 class AdminOTPTokenView(APIView):

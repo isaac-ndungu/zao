@@ -147,6 +147,107 @@ class TestAdminInvite:
         assert resp.status_code == 400
 
 
+class TestAdminInviteList:
+    def test_list_invites(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        resp = client.get('/api/admin/auth/invites/')
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data['results']) == 1
+        assert data['results'][0]['email'] == 'invited@example.com'
+        assert data['results'][0]['status'] == 'PENDING'
+
+    def test_list_invites_empty(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        resp = client.get('/api/admin/auth/invites/')
+        assert resp.status_code == 200
+        assert resp.json()['count'] == 0
+
+    def test_list_invites_filter_by_status(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        resp = client.get('/api/admin/auth/invites/?status=PENDING')
+        assert resp.status_code == 200
+        assert resp.json()['count'] == 1
+
+        resp = client.get('/api/admin/auth/invites/?status=ACCEPTED')
+        assert resp.status_code == 200
+        assert resp.json()['count'] == 0
+
+
+class TestAdminInviteDetail:
+    def test_invite_detail(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        user = User.objects.get(email='invited@example.com')
+        resp = client.get(f'/api/admin/auth/invites/{user.id}/')
+        assert resp.status_code == 200
+        assert resp.json()['email'] == 'invited@example.com'
+        assert resp.json()['status'] == 'PENDING'
+
+    def test_invite_detail_not_found(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        resp = client.get(f'/api/admin/auth/invites/{uuid.uuid4()}/')
+        assert resp.status_code == 404
+
+
+class TestAdminInviteResend:
+    def test_resend_invite(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        user = User.objects.get(email='invited@example.com')
+        old_otp_count = TwoFactorOTP.objects.filter(user=user, purpose='ACTION_CONFIRM').count()
+
+        resp = client.post(f'/api/admin/auth/invite/{user.id}/resend/')
+        assert resp.status_code == 200
+        assert resp.json()['detail'] == 'Invite resent.'
+
+        new_otp_count = TwoFactorOTP.objects.filter(user=user, purpose='ACTION_CONFIRM').count()
+        assert new_otp_count == old_otp_count + 1
+
+    def test_resend_revoked_invite_fails(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        client.post('/api/admin/auth/invite/', {
+            'email': 'invited@example.com',
+            'first_name': 'Invited',
+            'last_name': 'User',
+        })
+        user = User.objects.get(email='invited@example.com')
+        client.post(f'/api/admin/auth/invite/{user.id}/revoke/', {'confirm': True})
+        resp = client.post(f'/api/admin/auth/invite/{user.id}/resend/')
+        assert resp.status_code == 400
+
+    def test_resend_not_found(self, superuser):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        resp = client.post(f'/api/admin/auth/invite/{uuid.uuid4()}/resend/')
+        assert resp.status_code == 404
+
+
 class TestAdminInviteDuplicateEmail:
     def test_duplicate_email_validation(self, superuser):
         client = APIClient()

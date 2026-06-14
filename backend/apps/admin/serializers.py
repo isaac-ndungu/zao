@@ -1,4 +1,5 @@
 import secrets
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -318,6 +319,35 @@ class AdminInviteRevokeSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError('You must set confirm to true to proceed.')
         return value
+
+
+class AdminInviteListSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField()
+    expires_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'role',
+            'status', 'invite_revoked', 'is_active',
+            'date_joined', 'expires_at',
+        ]
+
+    def get_status(self, obj):
+        if obj.is_active:
+            return 'ACCEPTED'
+        if obj.invite_revoked:
+            return 'REVOKED'
+        return 'PENDING'
+
+    def get_expires_at(self, obj):
+        if obj.date_joined:
+            return obj.date_joined + timedelta(days=7)
+        return None
+
+
+class AdminInviteResendSerializer(serializers.Serializer):
+    pass
 
 
 class AdminBinSummarySerializer(serializers.Serializer):

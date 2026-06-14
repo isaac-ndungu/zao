@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import pytest
+from django.test.utils import override_settings
 from django.utils import timezone
 
 from apps.legal.models import LegalDocument, LegalAcceptance
@@ -160,6 +161,22 @@ class TestLegalDocumentDetailView:
         assert resp.status_code == 200
         assert resp.json()['version'] == 2
 
+    def test_inactive_document_returns_404(self, client):
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='inactive',
+            version=1, is_active=False, published_at=timezone.now(),
+        )
+        resp = client.get('/api/legal/privacy-policy/')
+        assert resp.status_code == 404
+
+    def test_future_publish_date_returns_404(self, client):
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='future',
+            version=1, is_active=True, published_at=timezone.now() + timedelta(days=1),
+        )
+        resp = client.get('/api/legal/privacy-policy/')
+        assert resp.status_code == 404
+
 
 class TestLegalDocumentVersionListView:
     def test_lists_versions(self, client):
@@ -245,6 +262,32 @@ class TestLegalAcceptanceView:
         assert resp1.status_code == 200
         assert resp2.status_code == 200
         assert LegalAcceptance.objects.count() == 1
+
+    def test_acceptance_records_ip_and_user_agent(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.post('/api/legal/privacy-policy/accept/', HTTP_USER_AGENT='test-agent')
+        assert resp.status_code == 200
+        acceptance = LegalAcceptance.objects.get(user=api_client.user, document=doc, version=1)
+        assert acceptance.version == 1
+        assert acceptance.ip_address is not None
+        assert acceptance.user_agent == 'test-agent'
+
+
+class TestLegalRateLimiting:
+    def test_rate_limit_exceeded(self, client):
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        with override_settings(THROTTLE_RATES={'legal_document': '2/min'}):
+            client.get('/api/legal/privacy-policy/')
+            client.get('/api/legal/privacy-policy/')
+            resp = client.get('/api/legal/privacy-policy/')
+            assert resp.status_code == 429
 
 
 class TestPendingAcceptanceView:

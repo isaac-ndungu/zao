@@ -366,6 +366,85 @@ class Test2FASelfService:
         assert resp.json()['detail'] == '2FA is not enabled.'
 
 
+class TestChangePassword:
+    def test_change_password_success(self, api_client):
+        old_password = api_client.user.raw_password
+        resp = api_client.post('/api/auth/change-password/', {
+            'current_password': old_password,
+            'new_password': 'newpass1234',
+        })
+        assert resp.status_code == 200
+        assert 'access' in resp.json()
+        api_client.user.refresh_from_db()
+        assert api_client.user.check_password('newpass1234')
+        assert api_client.user.must_change_password is False
+
+    def test_change_password_wrong_current(self, api_client):
+        resp = api_client.post('/api/auth/change-password/', {
+            'current_password': 'wrongpassword',
+            'new_password': 'newpass1234',
+        })
+        assert resp.status_code == 400
+
+    def test_change_password_short_new(self, api_client):
+        resp = api_client.post('/api/auth/change-password/', {
+            'current_password': api_client.user.raw_password,
+            'new_password': 'short',
+        })
+        assert resp.status_code == 400
+
+    def test_change_password_clears_flag(self, api_client):
+        api_client.user.must_change_password = True
+        api_client.user.save(update_fields=['must_change_password'])
+        resp = api_client.post('/api/auth/change-password/', {
+            'current_password': api_client.user.raw_password,
+            'new_password': 'newpass1234',
+        })
+        assert resp.status_code == 200
+        api_client.user.refresh_from_db()
+        assert api_client.user.must_change_password is False
+
+    def test_change_password_requires_auth(self, client):
+        resp = client.post('/api/auth/change-password/', {
+            'current_password': 'anything',
+            'new_password': 'newpass1234',
+        })
+        assert resp.status_code == 401
+
+    def test_login_blocked_when_must_change_password(self, client):
+        user = User.objects.create_user(
+            email='changeme@example.com',
+            phone_number='+254700000999',
+            first_name='Must',
+            last_name='Change',
+            password='testpass123',
+            must_change_password=True,
+        )
+        resp = client.post('/api/auth/login/', {
+            'email': 'changeme@example.com',
+            'password': 'testpass123',
+        })
+        assert resp.status_code == 403
+        data = resp.json()
+        assert data['must_change_password'] is True
+
+    def test_login_allows_after_password_change(self, client):
+        user = User.objects.create_user(
+            email='changed@example.com',
+            phone_number='+254700000998',
+            first_name='Already',
+            last_name='Changed',
+            password='testpass123',
+            must_change_password=False,
+        )
+        resp = client.post('/api/auth/login/', {
+            'email': 'changed@example.com',
+            'password': 'testpass123',
+        })
+        assert resp.status_code == 200
+        assert 'access' in resp.json()
+
+
 class TestInvite:
     def _create_invite(self, **overrides):
         email = overrides.get('email', 'invited@example.com')
