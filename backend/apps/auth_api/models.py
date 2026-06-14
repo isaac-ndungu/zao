@@ -24,6 +24,7 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeletableModel):
     cooperative = models.ForeignKey(
         'cooperatives.Cooperative', on_delete=models.SET_NULL, null=True, blank=True
     )
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     two_fa_enabled = models.BooleanField(default=False)
     must_change_password = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
