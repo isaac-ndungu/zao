@@ -94,7 +94,7 @@ class FarmerViewSet(CooperativeScopedViewSet):
             if val:
                 qs = qs.filter(**{param: val})
         is_active = self.request.query_params.get('is_active')
-        if is_active is not None:
+        if is_active:
             qs = qs.filter(is_active=is_active.lower() == 'true')
         return qs
 

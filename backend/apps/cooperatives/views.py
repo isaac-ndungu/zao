@@ -5,8 +5,10 @@ from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
+from rest_framework.exceptions import PermissionDenied
+
 from apps.base.constants import UserRole
-from apps.base.permissions import IsAdmin
+from apps.base.permissions import IsAdmin, IsAdminOrManager
 from apps.base.idempotency import idempotent
 from apps.base.utils import log_audit
 from apps.cooperatives.models import Cooperative, PaymentModel, ProduceType
@@ -27,8 +29,10 @@ class CooperativeViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
     def get_permissions(self):
-        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+        if self.action in ('update', 'partial_update', 'destroy'):
             return [IsAdmin()]
+        if self.action == 'create':
+            return [IsAdminOrManager()]
         return []
 
     def get_serializer_class(self):
@@ -50,13 +54,20 @@ class CooperativeViewSet(viewsets.ModelViewSet):
 
         for param in ('is_active', 'is_verified'):
             val = self.request.query_params.get(param)
-            if val is not None:
+            if val:
                 qs = qs.filter(**{param: val.lower() == 'true'})
 
         return qs
 
     def perform_create(self, serializer):
+        user = self.request.user
+        if getattr(user, 'role', None) == UserRole.MANAGER:
+            if user.cooperative_id:
+                raise PermissionDenied('You already belong to a cooperative.')
         instance = serializer.save()
+        if getattr(user, 'role', None) == UserRole.MANAGER:
+            user.cooperative_id = instance.id
+            user.save(update_fields=['cooperative_id'])
         log_audit(
             actor=self.request.user,
             resource_type='cooperative',

@@ -21,7 +21,8 @@ def auto_generate_member_number(sender, instance, **kwargs):
     year = timezone.now().year
     coop.last_member_sequence += 1
     coop.save(update_fields=['last_member_sequence'])
-    instance.member_number = f"{coop.prefix}-{year}-{coop.last_member_sequence:04d}"
+    prefix = coop.prefix or ''
+    instance.member_number = f"{prefix}-{year}-{coop.last_member_sequence:04d}".lstrip('-')
 
 
 @receiver(post_save, sender=Farmer)

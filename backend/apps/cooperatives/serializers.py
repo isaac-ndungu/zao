@@ -25,13 +25,24 @@ class CooperativeDetailSerializer(serializers.ModelSerializer):
         return value
 
     def validate_registration_number(self, value):
-        if not value.strip():
+        value = value.strip()
+        if not value:
             raise serializers.ValidationError(
                 'Registration number is required.'
+            )
+
+        qs = Cooperative.objects.filter(registration_number__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                'Cooperative with this registration number already exists.'
             )
         return value
 
     def validate_prefix(self, value):
+        if not value:
+            return value
         qs = Cooperative.objects.filter(prefix__iexact=value.strip())
         if self.instance:
             qs = qs.exclude(id=self.instance.id)

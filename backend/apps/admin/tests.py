@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 from apps.auth_api.models import TwoFactorOTP
 from apps.auth_api.serializers import INVITE_TOKEN_SALT
 from apps.base.constants import UserRole
+from apps.cooperatives.models import Cooperative
 
 User = get_user_model()
 
@@ -314,3 +315,65 @@ class TestAdminInviteRevokeAccepted:
         resp = client.post(f'/api/admin/auth/invite/{user.id}/revoke/', {'confirm': True})
         assert resp.status_code == 400
         assert 'Cannot revoke an accepted invite' in resp.json()['detail']
+
+
+class TestAdminCooperativeSerializer:
+    def test_admin_put_allows_same_registration_number(self, superuser, cooperative):
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        data = {
+            'name': 'Updated Coop Name',
+            'registration_number': cooperative.registration_number,
+            'county': cooperative.county,
+            'sub_county': cooperative.sub_county,
+            'ward': cooperative.ward,
+            'produce_type': cooperative.produce_type,
+            'payment_model': cooperative.payment_model,
+            'levy_percentage': float(cooperative.levy_percentage),
+            'monthly_fee': float(cooperative.monthly_fee),
+            'mpesa_shortcode': cooperative.mpesa_shortcode,
+            'till_number': cooperative.till_number,
+            'kra_pin': cooperative.kra_pin,
+            'phone_number': cooperative.phone_number,
+            'email': cooperative.email,
+            'physical_address': cooperative.physical_address,
+            'prefix': cooperative.prefix or 'UPD',
+        }
+        resp = client.put(f'/api/admin/cooperatives/{cooperative.id}/', data, format='json')
+        assert resp.status_code == 200
+        assert resp.json()['registration_number'] == cooperative.registration_number
+
+    def test_admin_put_rejects_duplicate_registration_number(self, superuser, cooperative):
+        other_coop = Cooperative.objects.create(
+            name='Other Coop',
+            registration_number='DUPLICATE123',
+            county='Nairobi',
+            produce_type='DAIRY',
+            payment_model='FIXED_PRICE',
+            levy_percentage='2.00',
+            monthly_fee='100.00',
+            prefix='OTHER123',
+        )
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        data = {
+            'name': 'Updated Coop Name',
+            'registration_number': other_coop.registration_number,
+            'county': cooperative.county,
+            'sub_county': cooperative.sub_county,
+            'ward': cooperative.ward,
+            'produce_type': cooperative.produce_type,
+            'payment_model': cooperative.payment_model,
+            'levy_percentage': float(cooperative.levy_percentage),
+            'monthly_fee': float(cooperative.monthly_fee),
+            'mpesa_shortcode': cooperative.mpesa_shortcode,
+            'till_number': cooperative.till_number,
+            'kra_pin': cooperative.kra_pin,
+            'phone_number': cooperative.phone_number,
+            'email': cooperative.email,
+            'physical_address': cooperative.physical_address,
+            'prefix': cooperative.prefix or 'UPD',
+        }
+        resp = client.put(f'/api/admin/cooperatives/{cooperative.id}/', data, format='json')
+        assert resp.status_code == 400
+        assert resp.json()['registration_number'] == ['Cooperative with this registration number already exists.']

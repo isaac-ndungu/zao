@@ -92,6 +92,28 @@ class AdminCooperativeSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'last_member_sequence', 'last_delivery_sequence', 'deleted_at', 'restored_at']
 
+    def validate_registration_number(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Registration number is required.')
+
+        qs = Cooperative.objects.filter(registration_number__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('Cooperative with this registration number already exists.')
+        return value
+
+    def validate_prefix(self, value):
+        if not value:
+            return value
+        qs = Cooperative.objects.filter(prefix__iexact=value.strip())
+        if self.instance:
+            qs = qs.exclude(id=self.instance.id)
+        if qs.exists():
+            raise serializers.ValidationError(f'The prefix "{value}" is already in use by another cooperative.')
+        return value
+
 
 class AdminCooperativeActivateSerializer(serializers.Serializer):
     pass
