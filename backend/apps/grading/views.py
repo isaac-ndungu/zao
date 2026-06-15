@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.base.constants import UserRole
-from apps.base.permissions import IsFarmer, IsGrader, IsManager
+from apps.base.permissions import IsFarmer, IsGrader, IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 
@@ -99,7 +99,7 @@ class GradeViewSet(CooperativeScopedViewSet):
         if self.action in ('prices',):
             return [IsAuthenticated()]
         if self.action in ('update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsManager()]
+            return [IsAuthenticated(), IsManagerOrGrader()]
         if self.action == 'images':
             if self.request.method == 'POST':
                 return [IsAuthenticated(), IsGrader()]
