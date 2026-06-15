@@ -38,6 +38,26 @@ class Buyer(CooperativeScopedModel):
         return self.name
 
 
+class SaleInventoryLineItem(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sale = models.ForeignKey(
+        'Sale', on_delete=models.CASCADE,
+        related_name='line_items',
+    )
+    inventory = models.ForeignKey(
+        'inventory.Inventory', on_delete=models.PROTECT,
+    )
+    quantity = models.DecimalField(max_digits=12, decimal_places=3)
+
+    class Meta:
+        unique_together = [['sale', 'inventory']]
+        verbose_name = 'Sale Inventory Line Item'
+        verbose_name_plural = 'Sale Inventory Line Items'
+
+    def __str__(self):
+        return f'{self.quantity} from {self.inventory.batch_id}'
+
+
 class Sale(CooperativeScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     buyer = models.ForeignKey(
@@ -47,6 +67,7 @@ class Sale(CooperativeScopedModel):
     inventory = models.ForeignKey(
         'inventory.Inventory', on_delete=models.PROTECT,
         related_name='sales',
+        null=True, blank=True,
     )
     payment_cycle = models.ForeignKey(
         'payment_engine.PaymentCycle', on_delete=models.SET_NULL,
@@ -87,6 +108,15 @@ class Sale(CooperativeScopedModel):
                 condition=models.Q(invoice_number__gt=''),
             ),
         ]
+
+    @property
+    def all_inventory(self):
+        line_items = self.line_items.select_related('inventory').all()
+        if line_items.exists():
+            return [(li.inventory, li.quantity) for li in line_items]
+        if self.inventory:
+            return [(self.inventory, self.quantity)]
+        return []
 
     def __str__(self):
         return f'{self.invoice_number or "Sale"} — {self.buyer.name} ({self.sale_date})'

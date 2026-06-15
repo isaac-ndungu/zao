@@ -114,16 +114,32 @@ class SaleViewSet(CooperativeScopedViewSet):
     def perform_create(self, serializer):
         from django.db import transaction
         from apps.inventory.models import Inventory
+        from rest_framework.exceptions import ValidationError
 
+        line_items_data = serializer.validated_data.get('line_items', [])
         inventory = serializer.validated_data.get('inventory')
         quantity = serializer.validated_data.get('quantity')
 
         with transaction.atomic():
-            if inventory and quantity:
+            if line_items_data:
+                inventory_ids = sorted([item['inventory'] for item in line_items_data])
+                inventories = {
+                    str(i.id): i
+                    for i in Inventory.objects.select_for_update().filter(id__in=inventory_ids)
+                }
+                for item in line_items_data:
+                    inv = inventories[str(item['inventory'])]
+                    available = inv.quantity_in - inv.quantity_out
+                    if item['quantity'] > available:
+                        raise ValidationError(
+                            f'Insufficient inventory in batch {inv.batch_id}: '
+                            f'{float(available)} {inv.unit} available, '
+                            f'{float(item["quantity"])} {inv.unit} requested.'
+                        )
+            elif inventory and quantity:
                 inv = Inventory.objects.select_for_update().get(id=inventory.id)
                 available = inv.quantity_in - inv.quantity_out
                 if quantity > available:
-                    from rest_framework.exceptions import ValidationError
                     raise ValidationError(
                         f'Insufficient inventory: {float(available)} {inv.unit} available, '
                         f'{float(quantity)} {inv.unit} requested.'
