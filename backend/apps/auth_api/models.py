@@ -69,6 +69,9 @@ class TwoFactorOTP(models.Model):
     class Meta:
         verbose_name = 'Two-Factor OTP'
         verbose_name_plural = 'Two-Factor OTPs'
+        indexes = [
+            models.Index(fields=['user', 'purpose', 'is_used', 'expires_at'], name='idx_otp_usr_purp_used_exp'),
+        ]
 
     def __str__(self):
         return f'{self.user.email} — {self.purpose} @ {self.created_at}'

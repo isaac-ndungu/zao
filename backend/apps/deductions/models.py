@@ -39,6 +39,10 @@ class Deduction(CooperativeScopedModel):
         verbose_name = 'Deduction'
         verbose_name_plural = 'Deductions'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['cooperative', 'cycle', 'deduction_type'], name='idx_deduction_coop_cycle_type'),
+            models.Index(fields=['cooperative', 'farmer', 'cycle'], name='idx_ded_coop_farmer_cycle'),
+        ]
 
     def __str__(self):
         return f'{self.deduction_type} {self.amount} — {self.farmer} ({self.cycle.name})'

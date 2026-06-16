@@ -44,6 +44,11 @@ class Loan(CooperativeScopedModel):
         verbose_name = 'Loan'
         verbose_name_plural = 'Loans'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['cooperative', 'farmer', 'status'], name='idx_loan_coop_farmer_status'),
+            models.Index(fields=['cooperative', 'farmer'], condition=models.Q(status='ACTIVE'), name='idx_loan_active_by_coop_farmer'),
+            models.Index(fields=['cooperative'], condition=models.Q(deleted_at__isnull=True), name='idx_loan_live_records'),
+        ]
 
     def __str__(self):
         mn = self.farmer.primary_membership.member_number if self.farmer.primary_membership else '---'

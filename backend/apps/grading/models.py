@@ -64,6 +64,9 @@ class Grade(CooperativeScopedModel):
     class Meta:
         verbose_name = 'Grade'
         verbose_name_plural = 'Grades'
+        indexes = [
+            models.Index(fields=['cooperative', 'created_at'], name='idx_grade_coop_created'),
+        ]
 
     def __str__(self):
         if self.grade_letter:

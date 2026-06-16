@@ -67,6 +67,9 @@ class DisbursementBatch(CooperativeScopedModel):
         verbose_name = 'Disbursement Batch'
         verbose_name_plural = 'Disbursement Batches'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['cooperative', 'created_at', 'status'], name='idx_dsb_coop_date_status'),
+        ]
 
     def __str__(self):
         return f'Batch {self.id} — {self.get_status_display()}'
@@ -115,6 +118,9 @@ class DisbursementTransaction(CooperativeScopedModel):
         verbose_name_plural = 'Disbursement Transactions'
         ordering = ['-created_at']
         unique_together = [['conversation_id', 'transaction_id']]
+        indexes = [
+            models.Index(fields=['cooperative', 'batch', 'status'], name='idx_dsb_txn_coop_batch_st'),
+        ]
 
     def __str__(self):
         return f'{self.farmer} — {self.amount} ({self.get_status_display()})'

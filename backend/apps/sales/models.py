@@ -80,8 +80,8 @@ class Sale(CooperativeScopedModel):
         related_name='recorded_sales',
     )
 
-    product_type = models.CharField(max_length=20)
-    grade_letter = models.CharField(max_length=20, blank=True)
+    product_type = models.CharField(max_length=20, db_index=True)
+    grade_letter = models.CharField(max_length=20, blank=True, db_index=True)
     unit = models.CharField(max_length=10, choices=SaleUnit.choices)
 
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
@@ -101,6 +101,10 @@ class Sale(CooperativeScopedModel):
         verbose_name = 'Sale'
         verbose_name_plural = 'Sales'
         ordering = ['-sale_date', '-created_at']
+        indexes = [
+            models.Index(fields=['cooperative', 'status', 'sale_date'], name='idx_sale_coop_status_date'),
+            models.Index(fields=['cooperative', 'sale_date', 'buyer'], name='idx_sale_coop_date_buyer'),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['cooperative', 'invoice_number'],

@@ -52,12 +52,12 @@ class Delivery(LocationMixin, CooperativeScopedModel):
     )
 
     status = models.CharField(max_length=20, choices=DeliveryStatus.choices, default=DeliveryStatus.PENDING, db_index=True)
-    grade = models.CharField(max_length=20, blank=True)
+    grade = models.CharField(max_length=20, blank=True, db_index=True)
     quality_metrics = models.JSONField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
 
     date_delivered = models.DateTimeField(default=timezone.now, db_index=True)
-    shift = models.CharField(max_length=2, choices=Shift.choices, blank=True)
+    shift = models.CharField(max_length=2, choices=Shift.choices, blank=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     is_synced = models.BooleanField(default=True)
@@ -67,6 +67,14 @@ class Delivery(LocationMixin, CooperativeScopedModel):
         verbose_name = 'Delivery'
         verbose_name_plural = 'Deliveries'
         ordering = ['-date_delivered']
+        indexes = [
+            models.Index(fields=['cooperative', 'date_delivered', 'status'], name='idx_delivery_coop_date_status'),
+            models.Index(fields=['cooperative', 'date_delivered', 'grade'], name='idx_delivery_coop_date_grade'),
+            models.Index(fields=['cooperative', 'date_delivered', 'product_type'], name='idx_del_coop_date_prodtype'),
+            models.Index(fields=['cooperative', 'date_delivered', 'shift'], name='idx_delivery_coop_date_shift'),
+            models.Index(fields=['cooperative', '-date_delivered'], condition=models.Q(status='PENDING'), name='idx_del_pending_grader'),
+            models.Index(fields=['cooperative'], condition=models.Q(deleted_at__isnull=True), name='idx_delivery_live_records'),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['cooperative', 'local_id'],

@@ -30,9 +30,9 @@ class Farmer(LocationMixin, CooperativeScopedModel):
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     village = models.CharField(max_length=100, blank=True)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     has_active_loan = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
+    date_joined = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     search_vector = SearchVectorField(null=True, blank=True)
 
@@ -41,6 +41,9 @@ class Farmer(LocationMixin, CooperativeScopedModel):
         verbose_name_plural = 'Farmers'
         indexes = [
             GinIndex(fields=['search_vector']),
+            models.Index(fields=['cooperative', 'is_active', 'county'], name='idx_farmer_coop_active_county'),
+            models.Index(fields=['cooperative', 'is_active', 'sub_county'], name='idx_farm_coop_act_subcounty'),
+            models.Index(fields=['cooperative'], condition=models.Q(deleted_at__isnull=True), name='idx_farmer_live_records'),
         ]
 
     @property
@@ -80,12 +83,12 @@ class FarmerCooperativeMembership(models.Model):
         'cooperatives.Cooperative', on_delete=models.CASCADE, related_name='farmer_memberships'
     )
     member_number = models.CharField(max_length=50, editable=False)
-    payment_method = models.CharField(max_length=20, choices=FarmerPaymentMethod.choices, default='M-PESA')
+    payment_method = models.CharField(max_length=20, choices=FarmerPaymentMethod.choices, default='M-PESA', db_index=True)
     mpesa_number = models.CharField(max_length=30, blank=True, default='')
     bank_name = models.CharField(max_length=100, blank=True, default='')
     bank_account = models.CharField(max_length=30, blank=True, default='')
     bank_branch = models.CharField(max_length=100, blank=True, default='')
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     joined_at = models.DateTimeField(auto_now_add=True)
     left_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -96,6 +99,11 @@ class FarmerCooperativeMembership(models.Model):
         verbose_name = 'Farmer Cooperative Membership'
         verbose_name_plural = 'Farmer Cooperative Memberships'
         unique_together = [['farmer', 'cooperative']]
+        indexes = [
+            models.Index(fields=['cooperative', 'is_active', 'payment_method'], name='idx_mem_coop_active_method'),
+            models.Index(fields=['cooperative'], condition=models.Q(left_at__isnull=False), name='idx_mem_left_coop'),
+            models.Index(fields=['cooperative'], condition=models.Q(deleted_at__isnull=True), name='idx_membership_live_records'),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['cooperative', 'member_number'],

@@ -62,6 +62,10 @@ class Notification(CooperativeScopedModel):
         verbose_name = 'Notification'
         verbose_name_plural = 'Notifications'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['cooperative', 'status', 'channel'], name='idx_notif_coop_status_chan'),
+            models.Index(fields=['cooperative', 'channel'], condition=models.Q(status='PENDING'), name='idx_notification_unsent'),
+        ]
 
     def __str__(self):
         return f'[{self.channel}] {self.notification_type} — {self.status}'

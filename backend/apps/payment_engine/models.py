@@ -77,6 +77,9 @@ class PaymentCycle(CooperativeScopedModel):
         verbose_name = 'Payment Cycle'
         verbose_name_plural = 'Payment Cycles'
         ordering = ['-end_date']
+        indexes = [
+            models.Index(fields=['cooperative', 'start_date', 'end_date'], name='idx_paymentcycle_coop_dates'),
+        ]
 
     def __str__(self):
         return f'{self.name} ({self.get_status_display()})'
@@ -122,6 +125,10 @@ class FarmerPayment(CooperativeScopedModel):
         verbose_name_plural = 'Farmer Payments'
         ordering = ['-created_at']
         unique_together = [['cycle', 'farmer']]
+        indexes = [
+            models.Index(fields=['cooperative', 'cycle', 'farmer'], name='idx_pay_coop_cycle_farmer'),
+            models.Index(fields=['cooperative', 'farmer', 'cycle'], name='idx_pay_coop_farmer_cycle'),
+        ]
 
     def __str__(self):
         return f'{self.farmer} — {self.cycle.name}'
