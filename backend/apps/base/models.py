@@ -49,6 +49,8 @@ class AuditAction(models.TextChoices):
     FORCE_STATUS = 'FORCE_STATUS', 'Force Status'
     TRANSFER_COOPERATIVE = 'TRANSFER_COOPERATIVE', 'Transfer Cooperative'
     ADMIN_PURGE = 'ADMIN_PURGE', 'Admin Purge'
+    SNAPSHOT_FAILED = 'SNAPSHOT_FAILED', 'Snapshot Failed'
+    EXPORT_FAILED = 'EXPORT_FAILED', 'Export Failed'
 
 
 class LocationMixin(models.Model):

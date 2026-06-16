@@ -15,13 +15,30 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ViewSet
+from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
 
 from apps.auth_api.models import TwoFactorOTP
 from apps.auth_api.serializers import INVITE_TOKEN_SALT
+from apps.analytics.cache import get_cached_analytics, record_access, set_cached_analytics
+from apps.analytics.queries.admin import (
+    get_admin_dashboard,
+    get_admin_disbursements,
+    get_admin_farmers,
+    get_admin_farmer_retention,
+    get_admin_financial,
+    get_admin_loans,
+    get_admin_operations,
+    get_admin_payment_efficiency,
+    get_admin_production,
+    get_admin_sales,
+    get_admin_seasonal,
+)
+from apps.analytics.serializers import AnalyticsQuerySerializer, AnalyticsResponseSerializer
+from apps.analytics.throttles import AnalyticsAdminThrottle
 from apps.base.constants import UserRole, get_soft_deletable_models
 from apps.base.models import AuditAction, AuditLog
 from apps.base.throttles import SuperAdminSensitiveThrottle
@@ -1565,3 +1582,153 @@ class AdminFarmerBulkActionView(APIView):
             count = farmers.count()
             farmers.update(is_active=False)
         return Response({'detail': f'{count} farmers {action}d.', 'count': count})
+
+
+class AdminAnalyticsViewSet(ViewSet):
+    """Cross-cooperative analytics for superusers."""
+
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    throttle_classes = [AnalyticsAdminThrottle]
+
+    def _parse_params(self):
+        serializer = AnalyticsQuerySerializer(data=self.request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
+        from apps.analytics.queries.common import parse_period
+        start, end = parse_period(
+            params.get('start_date'), params.get('end_date'), params.get('period'),
+        )
+        return {
+            'start_date': start,
+            'end_date': end,
+            'compare_to': params.get('compare_to'),
+        }
+
+    def _cached_response(self, action_name, params, compute_fn):
+        record_access(None)
+        data, cache_key = get_cached_analytics(
+            scope_type='global',
+            cooperative_id=None,
+            farmer_id=None,
+            action=action_name,
+            params=params,
+        )
+        if data is not None:
+            return Response(data)
+        result = compute_fn(params)
+        set_cached_analytics(cache_key, result)
+        return Response(result)
+
+    def _action(self, fn):
+        params = self._parse_params()
+        def compute(p):
+            return fn(
+                start_date=p['start_date'],
+                end_date=p['end_date'],
+                compare_to=p.get('compare_to'),
+            )
+        return self._cached_response(fn.__name__.replace('get_admin_', ''), params, compute)
+
+    @action(detail=False, methods=['get'])
+    def dashboard(self, request):
+        return self._action(get_admin_dashboard)
+
+    @action(detail=False, methods=['get'])
+    def production(self, request):
+        return self._action(get_admin_production)
+
+    @action(detail=False, methods=['get'])
+    def financial(self, request):
+        return self._action(get_admin_financial)
+
+    @action(detail=False, methods=['get'])
+    def farmers(self, request):
+        return self._action(get_admin_farmers)
+
+    @action(detail=False, methods=['get'])
+    def sales(self, request):
+        return self._action(get_admin_sales)
+
+    @action(detail=False, methods=['get'])
+    def loans(self, request):
+        return self._action(get_admin_loans)
+
+    @action(detail=False, methods=['get'])
+    def operations(self, request):
+        return self._action(get_admin_operations)
+
+    @action(detail=False, methods=['get'])
+    def disbursements(self, request):
+        return self._action(get_admin_disbursements)
+
+    @action(detail=False, methods=['get'])
+    def seasonal(self, request):
+        return self._action(get_admin_seasonal)
+
+    @action(detail=False, methods=['get'])
+    def payment_efficiency(self, request):
+        return self._action(get_admin_payment_efficiency)
+
+    @action(detail=False, methods=['get'])
+    def farmer_retention(self, request):
+        return self._action(get_admin_farmer_retention)
+
+    @action(detail=False, methods=['get'])
+    def leaderboard(self, request):
+        """Global leaderboard (cross-cooperative)."""
+        from apps.analytics.serializers import LeaderboardQuerySerializer
+        from apps.analytics.queries.common import parse_period, coalesce_sum
+        from apps.deliveries.models import Delivery
+        from apps.payment_engine.models import FarmerPayment
+        from apps.sales.models import Sale
+        from django.db.models import Sum
+        from django.core.cache import cache
+
+        serializer = LeaderboardQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
+        _type = params.get('type', 'top_farmers_by_volume')
+        limit = params.get('limit', 10)
+        period = params.get('period', '30d')
+        start, end = parse_period(period=period)
+
+        redis_key = f'leaderboard:{_type}:global:{period}'
+        raw = cache.zrevrange(redis_key, 0, limit - 1, withscores=True)
+        if raw:
+            items = [{'id': m, 'score': round(float(s), 2)} for m, s in raw]
+            return Response({'type': _type, 'limit': limit, 'period': period, 'data': items, 'cached': True})
+
+        if _type == 'top_farmers_by_volume':
+            agg = list(
+                Delivery.objects.filter(date_delivered__gte=start, date_delivered__lt=end)
+                .values('farmer_id')
+                .annotate(score=coalesce_sum(Sum('quantity_kg')))
+                .order_by('-score')[:limit]
+                .values_list('farmer_id', 'score')
+            )
+        elif _type == 'top_farmers_by_payout':
+            agg = list(
+                FarmerPayment.objects.filter(cycle__end_date__gte=start, cycle__start_date__lt=end)
+                .values('farmer_id')
+                .annotate(score=coalesce_sum(Sum('net_amount')))
+                .order_by('-score')[:limit]
+                .values_list('farmer_id', 'score')
+            )
+        elif _type == 'top_buyers':
+            agg = list(
+                Sale.objects.filter(status='COMPLETED', sale_date__gte=start, sale_date__lt=end)
+                .values('buyer__name')
+                .annotate(score=coalesce_sum(Sum('total_amount')))
+                .order_by('-score')[:limit]
+                .values_list('buyer__name', 'score')
+            )
+        else:
+            return Response({'detail': 'Invalid leaderboard type.'}, status=400)
+
+        items = [{'id': str(m) if not isinstance(m, str) else m, 'score': round(float(s), 2)} for m, s in agg]
+        mapping = {item['id']: item['score'] for item in items}
+        if mapping:
+            cache.zadd(redis_key, mapping)
+            cache.expire(redis_key, 7200)
+
+        return Response({'type': _type, 'limit': limit, 'period': period, 'data': items})

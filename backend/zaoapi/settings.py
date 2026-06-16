@@ -285,6 +285,30 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour='1', minute='30'),
         'options': {'expires': 3600},
     },
+    'analytics-daily-snapshots': {
+        'task': 'apps.analytics.tasks.compute_daily_snapshots',
+        'schedule': crontab(hour='0', minute='0'),
+    },
+    'analytics-weekly-snapshots': {
+        'task': 'apps.analytics.tasks.compute_weekly_snapshots',
+        'schedule': crontab(hour='1', minute='0', day_of_week='1'),
+    },
+    'analytics-monthly-snapshots': {
+        'task': 'apps.analytics.tasks.compute_monthly_snapshots',
+        'schedule': crontab(hour='2', minute='0', day_of_month='1'),
+    },
+    'analytics-materialized-monthly': {
+        'task': 'apps.analytics.tasks.compute_materialized_monthly',
+        'schedule': crontab(hour='3', minute='0', day_of_month='1'),
+    },
+    'analytics-warm-cache': {
+        'task': 'apps.analytics.tasks.warm_analytics_cache',
+        'schedule': crontab(minute='*/15'),
+    },
+    'analytics-refresh-leaderboards': {
+        'task': 'apps.analytics.tasks.refresh_leaderboards',
+        'schedule': crontab(minute='0'),
+    },
 }
 
 NOTIFICATIONS_DRY_RUN = config('NOTIFICATIONS_DRY_RUN', default=True, cast=bool)

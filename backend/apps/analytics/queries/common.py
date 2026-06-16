@@ -48,6 +48,8 @@ def farmer_reference_filter(scope_type, farmer_id=None):
 def get_role_scope(user):
     """Determine the analytics scope for a user."""
     if user.role == UserRole.ADMIN:
+        if user.cooperative_id:
+            return {'scope': 'cooperative', 'cooperative_id': user.cooperative_id}
         return {'scope': 'global'}
     if user.role == UserRole.FARMER:
         farmer_profile = getattr(user, 'farmer_profile', None)

@@ -1,6 +1,16 @@
+import csv
+import hashlib
+import io
+import json
 import logging
+from decimal import Decimal
 
+from django.db.models import Count, Sum
+from django.http import StreamingHttpResponse
 from django.utils.timezone import now
+from django.conf import settings
+from django.core.cache import cache
+import redis as redis_module
 
 from rest_framework import status
 from rest_framework.decorators import action
@@ -10,13 +20,19 @@ from rest_framework.viewsets import ViewSet
 
 from apps.base.constants import UserRole
 from apps.base.permissions import IsManager, IsAccountantOrManager
+from apps.deliveries.models import Delivery
+from apps.disbursement.models import DisbursementTransaction
+from apps.loans.models import Loan
+from apps.payment_engine.models import FarmerPayment
+from apps.sales.models import Sale
 
 from .cache import (
     get_cached_analytics,
     record_access,
     set_cached_analytics,
+    hash_params,
 )
-from .queries.common import get_role_scope, parse_period
+from .queries.common import get_role_scope, parse_period, coalesce_sum
 from .queries.cooperative import (
     get_dashboard as get_coop_dashboard,
     get_disbursements as get_coop_disbursements,
@@ -35,7 +51,13 @@ from .queries.farmer import (
     get_farmer_loans,
     get_farmer_production,
 )
-from .serializers import AnalyticsQuerySerializer, AnalyticsResponseSerializer
+from .models import AnalyticsExportTask, ExportStatus
+from .serializers import (
+    AnalyticsQuerySerializer,
+    AnalyticsResponseSerializer,
+    ExportQuerySerializer,
+    LeaderboardQuerySerializer,
+)
 from .throttles import (
     AnalyticsAdminThrottle,
     AnalyticsExportThrottle,
@@ -52,7 +74,7 @@ class AnalyticsViewSet(ViewSet):
     Three tiers:
     - Farmer: sees only own personal stats
     - Staff (manager/accountant/grader/auditor): sees cooperative-level
-    - Admin: sees app-wide (cross-cooperative) analytics
+    - Admin: sees app-wide (cross-cooperative) analytics via /api/admin/analytics/
     """
 
     permission_classes = [IsAuthenticated]
@@ -113,6 +135,11 @@ class AnalyticsViewSet(ViewSet):
                 {'detail': 'Not available for farmers.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        if scope['scope'] == 'global':
+            return Response(
+                {'detail': 'Use /api/admin/analytics/ for cross-cooperative analytics.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         return None
 
     # --- Actions ---
@@ -166,7 +193,7 @@ class AnalyticsViewSet(ViewSet):
                     end_date=p['end_date'],
                     compare_to=p.get('compare_to'),
                 )
-        else:
+        elif scope['scope'] in ('cooperative', 'global'):
             def compute(s, p):
                 return coop_fn(
                     cooperative_id=s.get('cooperative_id'),
@@ -174,6 +201,8 @@ class AnalyticsViewSet(ViewSet):
                     end_date=p['end_date'],
                     compare_to=p.get('compare_to'),
                 )
+        else:
+            return None
         return params, compute
 
     @action(detail=False, methods=['get'])
@@ -249,8 +278,236 @@ class AnalyticsViewSet(ViewSet):
 
     @action(detail=False, methods=['get'])
     def leaderboard(self, request):
-        return Response({'detail': 'Not implemented yet'}, status=501)
+        serializer = LeaderboardQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
+        scope = self._get_scope()
+        coop_id = scope.get('cooperative_id')
+
+        _type = params.get('type', 'top_farmers_by_volume')
+        limit = params.get('limit', 10)
+        period = params.get('period', '30d')
+
+        start, end = parse_period(period=period)
+        period_label = period
+
+        redis_key = f'leaderboard:{_type}:{coop_id or "global"}:{period_label}'
+
+        redis_url = settings.CACHES['default']['LOCATION']
+        rcon = redis_module.from_url(redis_url)
+        raw = rcon.zrevrange(redis_key, 0, limit - 1, withscores=True)
+        if raw:
+            items = []
+            for member, score in raw:
+                items.append({'id': member, 'score': round(float(score), 2)})
+            return Response({
+                'type': _type,
+                'limit': limit,
+                'period': period_label,
+                'data': items,
+                'cached': True,
+            })
+
+        if _type == 'top_farmers_by_volume':
+            qs = Delivery.objects.all()
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            qs = qs.filter(
+                date_delivered__gte=start, date_delivered__lt=end,
+            )
+            agg = list(
+                qs.values('farmer_id')
+                .annotate(score=coalesce_sum(Sum('quantity_kg')))
+                .order_by('-score')[:limit]
+                .values_list('farmer_id', 'score')
+            )
+        elif _type == 'top_farmers_by_payout':
+            qs = FarmerPayment.objects.all()
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            qs = qs.filter(
+                cycle__end_date__gte=start, cycle__start_date__lt=end,
+            )
+            agg = list(
+                qs.values('farmer_id')
+                .annotate(score=coalesce_sum(Sum('net_amount')))
+                .order_by('-score')[:limit]
+                .values_list('farmer_id', 'score')
+            )
+        elif _type == 'top_buyers':
+            qs = Sale.objects.filter(status='COMPLETED')
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            qs = qs.filter(
+                sale_date__gte=start, sale_date__lt=end,
+            )
+            agg = list(
+                qs.values('buyer__name')
+                .annotate(score=coalesce_sum(Sum('total_amount')))
+                .order_by('-score')[:limit]
+                .values_list('buyer__name', 'score')
+            )
+        else:
+            return Response({'detail': 'Invalid leaderboard type.'}, status=400)
+
+        items = [{'id': str(member) if not isinstance(member, str) else member, 'score': round(float(score), 2)} for member, score in agg]
+
+        mapping = {item['id']: item['score'] for item in items}
+        if mapping:
+            rcon.zadd(redis_key, mapping)
+            rcon.expire(redis_key, 3600 * 2)
+
+        return Response({
+            'type': _type,
+            'limit': limit,
+            'period': period_label,
+            'data': items,
+        })
 
     @action(detail=False, methods=['get'])
     def export(self, request):
-        return Response({'detail': 'Not implemented yet'}, status=501)
+        task_id = request.query_params.get('task_id')
+        if task_id:
+            try:
+                task = AnalyticsExportTask.objects.get(id=task_id)
+            except AnalyticsExportTask.DoesNotExist:
+                return Response({'detail': 'Export task not found.'}, status=404)
+            return Response({
+                'task_id': str(task.id),
+                'status': task.status,
+                'download_url': task.download_url or None,
+                'error_message': task.error_message or None,
+                'row_count': task.row_count,
+                'created_at': task.created_at.isoformat() if task.created_at else None,
+                'completed_at': task.completed_at.isoformat() if task.completed_at else None,
+            })
+
+        serializer = ExportQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        params = serializer.validated_data
+        scope = self._get_scope()
+        coop_id = scope.get('cooperative_id')
+
+        export_type = params['type']
+        export_format = params.get('format', 'csv')
+        start, end = parse_period(
+            params.get('start_date'), params.get('end_date'), params.get('period'),
+        )
+
+        count = self._estimate_export_rows(export_type, coop_id, start, end)
+
+        if count <= 10000:
+            return self._export_sync(export_type, coop_id, start, end, export_format)
+
+        export_task = AnalyticsExportTask.objects.create(
+            cooperative_id=coop_id,
+            requested_by=request.user if request.user.is_authenticated else None,
+            export_type=export_type,
+            params={'format': export_format, 'start': start.isoformat(), 'end': end.isoformat()},
+            status=ExportStatus.PENDING,
+            row_count=count,
+        )
+
+        from .tasks import generate_export
+        generate_export.delay(str(export_task.id))
+
+        return Response({
+            'task_id': str(export_task.id),
+            'status': ExportStatus.PENDING,
+            'row_count': count,
+            'detail': 'Export queued. Poll with ?task_id=<id> for status.',
+        }, status=status.HTTP_202_ACCEPTED)
+
+    def _estimate_export_rows(self, export_type, coop_id, start, end):
+        if export_type in ('dashboard',):
+            return 1
+        if export_type in ('production', 'operations'):
+            qs = Delivery.objects.all()
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            return qs.filter(date_delivered__gte=start, date_delivered__lt=end).count()
+        if export_type in ('financial',):
+            qs = FarmerPayment.objects.all()
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            return qs.filter(cycle__end_date__gte=start, cycle__start_date__lt=end).count()
+        if export_type in ('farmers',):
+            return 0
+        if export_type in ('sales',):
+            qs = Sale.objects.filter(status='COMPLETED')
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            return qs.filter(sale_date__gte=start, sale_date__lt=end).count()
+        if export_type in ('loans',):
+            return Loan.objects.count() if not coop_id else Loan.objects.filter(cooperative_id=coop_id).count()
+        if export_type in ('disbursements',):
+            from apps.disbursement.models import DisbursementTransaction
+            qs = DisbursementTransaction.objects.all()
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
+            return qs.filter(created_at__gte=start, created_at__lt=end).count()
+        return 0
+
+    def _flatten_row(self, prefix, value):
+        rows = []
+        if isinstance(value, dict):
+            for k, v in value.items():
+                rows.extend(self._flatten_row(f'{prefix}_{k}', v))
+        elif isinstance(value, list):
+            for i, v in enumerate(value):
+                rows.extend(self._flatten_row(f'{prefix}_{i}', v))
+        else:
+            rows.append((prefix, value))
+        return rows
+
+    def _dict_to_csv_rows(self, data):
+        flat = dict(self._flatten_row('', data))
+        return flat
+
+    def _export_sync(self, export_type, coop_id, start, end, fmt):
+        from .queries.cooperative import (
+            get_production as get_coop_production,
+            get_financial as get_coop_financial,
+            get_farmers as get_coop_farmers,
+            get_sales as get_coop_sales,
+            get_loans as get_coop_loans,
+            get_operations as get_coop_operations,
+            get_disbursements as get_coop_disbursements,
+        )
+
+        query_map = {
+            'production': get_coop_production,
+            'financial': get_coop_financial,
+            'farmers': get_coop_farmers,
+            'sales': get_coop_sales,
+            'loans': get_coop_loans,
+            'operations': get_coop_operations,
+            'disbursements': get_coop_disbursements,
+        }
+
+        fn = query_map.get(export_type)
+        if fn is None:
+            return Response({'detail': f'Export type "{export_type}" not supported.'}, status=400)
+
+        data = fn(cooperative_id=coop_id, start_date=start, end_date=end)
+
+        rows = [self._dict_to_csv_rows(data)]
+        writer_rows = []
+        if rows:
+            fieldnames = rows[0].keys()
+            writer_rows.append(fieldnames)
+            for r in rows:
+                writer_rows.append([r.get(f, '') for f in fieldnames])
+
+        def stream():
+            buffer = io.StringIO()
+            w = csv.writer(buffer)
+            for row in writer_rows:
+                w.writerow(row)
+                yield buffer.getvalue()
+                buffer.seek(0)
+                buffer.truncate(0)
+
+        response = StreamingHttpResponse(stream(), content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{export_type}_{start.isoformat()}_{end.isoformat()}.csv"'
+        return response

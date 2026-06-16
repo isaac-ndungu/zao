@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.admin.views import (
+    AdminAnalyticsViewSet,
     AdminAuditLogView,
     AdminBinSummaryView,
     AdminCeleryTasksView,
@@ -116,4 +117,16 @@ urlpatterns = [
     path('auth/invite/<uuid:pk>/revoke/', AdminInviteRevokeView.as_view()),
     path('auth/invite/<uuid:pk>/resend/', AdminInviteResendView.as_view()),
     path('auth/revoke-all-sessions/', RevokeAllSessionsView.as_view()),
+    path('analytics/dashboard/', AdminAnalyticsViewSet.as_view({'get': 'dashboard'}), name='admin-analytics-dashboard'),
+    path('analytics/production/', AdminAnalyticsViewSet.as_view({'get': 'production'}), name='admin-analytics-production'),
+    path('analytics/financial/', AdminAnalyticsViewSet.as_view({'get': 'financial'}), name='admin-analytics-financial'),
+    path('analytics/farmers/', AdminAnalyticsViewSet.as_view({'get': 'farmers'}), name='admin-analytics-farmers'),
+    path('analytics/sales/', AdminAnalyticsViewSet.as_view({'get': 'sales'}), name='admin-analytics-sales'),
+    path('analytics/loans/', AdminAnalyticsViewSet.as_view({'get': 'loans'}), name='admin-analytics-loans'),
+    path('analytics/operations/', AdminAnalyticsViewSet.as_view({'get': 'operations'}), name='admin-analytics-operations'),
+    path('analytics/disbursements/', AdminAnalyticsViewSet.as_view({'get': 'disbursements'}), name='admin-analytics-disbursements'),
+    path('analytics/seasonal/', AdminAnalyticsViewSet.as_view({'get': 'seasonal'}), name='admin-analytics-seasonal'),
+    path('analytics/payment-efficiency/', AdminAnalyticsViewSet.as_view({'get': 'payment_efficiency'}), name='admin-analytics-payment-efficiency'),
+    path('analytics/farmer-retention/', AdminAnalyticsViewSet.as_view({'get': 'farmer_retention'}), name='admin-analytics-farmer-retention'),
+    path('analytics/leaderboard/', AdminAnalyticsViewSet.as_view({'get': 'leaderboard'}), name='admin-analytics-leaderboard'),
 ]

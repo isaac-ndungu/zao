@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.db.models import Count, DateField, Q, Sum
+from django.db.models import Count, DateField, IntegerField, Q, Sum
 from django.db.models.functions import TruncMonth
 
 from apps.deliveries.models import Delivery
@@ -152,6 +152,6 @@ def _compute_farmer_loans(farmer_id, cooperative_id, start_date, end_date):
     repayment_count = agg['completed_count'] + agg['active_count']
     agg['repayment_rate_pct'] = round(agg['completed_count'] / repayment_count * 100, 1) if repayment_count else 0
     agg['installments_paid'] = int(
-        qs.aggregate(v=coalesce_sum(Sum('installments_paid')))['v']
+        qs.aggregate(v=coalesce_sum(Sum('installments_paid'), output_field=IntegerField()))['v']
     )
     return {k: float(v) if isinstance(v, Decimal) else v for k, v in agg.items()}
