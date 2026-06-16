@@ -49,6 +49,7 @@ urlpatterns = [
     path('api/callback/', include(notification_callback_urlpatterns)),
     path('api/', include(api_urlpatterns)),
     path('api/', include('apps.legal.urls')),
+    path('api/', include('apps.analytics.urls')),
 ]
 
 if settings.SUPERADMIN_ENABLED:

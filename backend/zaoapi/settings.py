@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.admin',
     'apps.legal',
+    'apps.analytics',
 ]
 
 MIDDLEWARE = [
@@ -349,6 +350,10 @@ REST_FRAMEWORK = {
         'superadmin': '100/min',
         'superadmin_sensitive': '3/hour',
         'legal_document': '20/min',
+        'analytics_admin': '60/min',
+        'analytics_staff': '30/min',
+        'analytics_farmer': '10/min',
+        'analytics_export': '5/hour',
     },
 }
 
