@@ -53,7 +53,11 @@ def get_role_scope(user):
         farmer_profile = getattr(user, 'farmer_profile', None)
         if farmer_profile is None:
             return {'scope': 'none'}
-        return {'scope': 'farmer', 'farmer_id': farmer_profile.id}
+        return {
+            'scope': 'farmer',
+            'farmer_id': farmer_profile.id,
+            'cooperative_id': farmer_profile.cooperative_id,
+        }
     return {'scope': 'cooperative', 'cooperative_id': user.cooperative_id}
 
 

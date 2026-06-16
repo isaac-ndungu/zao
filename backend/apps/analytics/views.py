@@ -17,7 +17,24 @@ from .cache import (
     set_cached_analytics,
 )
 from .queries.common import get_role_scope, parse_period
-from .queries.cooperative import get_dashboard as get_coop_dashboard
+from .queries.cooperative import (
+    get_dashboard as get_coop_dashboard,
+    get_disbursements as get_coop_disbursements,
+    get_farmers as get_coop_farmers,
+    get_farmer_retention as get_coop_farmer_retention,
+    get_financial as get_coop_financial,
+    get_loans as get_coop_loans,
+    get_operations as get_coop_operations,
+    get_payment_efficiency as get_coop_payment_efficiency,
+    get_production as get_coop_production,
+    get_sales as get_coop_sales,
+    get_seasonal as get_coop_seasonal,
+)
+from .queries.farmer import (
+    get_farmer_financial,
+    get_farmer_loans,
+    get_farmer_production,
+)
 from .serializers import AnalyticsQuerySerializer, AnalyticsResponseSerializer
 from .throttles import (
     AnalyticsAdminThrottle,
@@ -119,76 +136,116 @@ class AnalyticsViewSet(ViewSet):
 
         return self._cached_response('dashboard', params, compute)
 
+    def _coop_only(self, fn):
+        """Helper that builds a compute closure for cooperative-scoped endpoints."""
+        staff_block = self._staff_only()
+        if staff_block:
+            return staff_block
+
+        params = self._parse_params()
+        def compute(scope, p):
+            return fn(
+                cooperative_id=scope.get('cooperative_id'),
+                start_date=p['start_date'],
+                end_date=p['end_date'],
+                compare_to=p.get('compare_to'),
+            )
+        return params, compute
+
+    def _farmer_aware(self, coop_fn, farmer_fn):
+        """Helper that picks farmer vs cooperative query based on user role."""
+        params = self._parse_params()
+        scope = self._get_scope()
+
+        if scope['scope'] == 'farmer':
+            def compute(s, p):
+                return farmer_fn(
+                    farmer_id=s['farmer_id'],
+                    cooperative_id=s.get('cooperative_id'),
+                    start_date=p['start_date'],
+                    end_date=p['end_date'],
+                    compare_to=p.get('compare_to'),
+                )
+        else:
+            def compute(s, p):
+                return coop_fn(
+                    cooperative_id=s.get('cooperative_id'),
+                    start_date=p['start_date'],
+                    end_date=p['end_date'],
+                    compare_to=p.get('compare_to'),
+                )
+        return params, compute
+
     @action(detail=False, methods=['get'])
     def production(self, request):
-        params = self._parse_params()
-        return self._cached_response('production', params, lambda s, p: {})
+        params, compute = self._farmer_aware(get_coop_production, get_farmer_production)
+        return self._cached_response('production', params, compute)
 
     @action(detail=False, methods=['get'])
     def financial(self, request):
-        params = self._parse_params()
-        return self._cached_response('financial', params, lambda s, p: {})
+        params, compute = self._farmer_aware(get_coop_financial, get_farmer_financial)
+        return self._cached_response('financial', params, compute)
 
     @action(detail=False, methods=['get'])
     def farmers(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('farmers', params, lambda s, p: {})
+        r = self._coop_only(get_coop_farmers)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('farmers', params, compute)
 
     @action(detail=False, methods=['get'])
     def sales(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('sales', params, lambda s, p: {})
+        r = self._coop_only(get_coop_sales)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('sales', params, compute)
 
     @action(detail=False, methods=['get'])
     def loans(self, request):
-        params = self._parse_params()
-        return self._cached_response('loans', params, lambda s, p: {})
+        params, compute = self._farmer_aware(get_coop_loans, get_farmer_loans)
+        return self._cached_response('loans', params, compute)
 
     @action(detail=False, methods=['get'])
     def operations(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('operations', params, lambda s, p: {})
+        r = self._coop_only(get_coop_operations)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('operations', params, compute)
 
     @action(detail=False, methods=['get'])
     def disbursements(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('disbursements', params, lambda s, p: {})
+        r = self._coop_only(get_coop_disbursements)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('disbursements', params, compute)
 
     @action(detail=False, methods=['get'])
     def seasonal(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('seasonal', params, lambda s, p: {})
+        r = self._coop_only(get_coop_seasonal)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('seasonal', params, compute)
 
     @action(detail=False, methods=['get'])
     def payment_efficiency(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('payment_efficiency', params, lambda s, p: {})
+        r = self._coop_only(get_coop_payment_efficiency)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('payment_efficiency', params, compute)
 
     @action(detail=False, methods=['get'])
     def farmer_retention(self, request):
-        staff_block = self._staff_only()
-        if staff_block:
-            return staff_block
-        params = self._parse_params()
-        return self._cached_response('farmer_retention', params, lambda s, p: {})
+        r = self._coop_only(get_coop_farmer_retention)
+        if isinstance(r, Response):
+            return r
+        params, compute = r
+        return self._cached_response('farmer_retention', params, compute)
 
     @action(detail=False, methods=['get'])
     def leaderboard(self, request):

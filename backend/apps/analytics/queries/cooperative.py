@@ -1,20 +1,22 @@
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
-from django.db.models import Count, IntegerField, Sum, Q
-from django.db.models.functions import Coalesce
+from django.db.models import Avg, Count, DateField, IntegerField, Sum, Q
+from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
 
 from apps.deliveries.models import Delivery
 from apps.farmers.models import Farmer
+from apps.farmers.models import FarmerCooperativeMembership
 from apps.sales.models import Sale
 from apps.payment_engine.models import PaymentCycle, FarmerPayment
+from apps.grading.models import Grade
 from apps.loans.models import Loan
-from apps.disbursement.models import DisbursementBatch
+from apps.disbursement.models import DisbursementBatch, DisbursementTransaction
 from apps.deductions.models import Deduction
 from apps.inventory.models import Inventory
 
-from .common import coalesce_sum, compare_periods
+from .common import coalesce_sum, compare_periods, parse_period
 
 
 def get_dashboard(cooperative_id, start_date, end_date, compare_to=None):
@@ -255,4 +257,578 @@ def _compute_dashboard(cooperative_id, start_date, end_date):
             'total_out': float(inv_agg['total_out']),
             'running_balance': float(inv_agg['total_in'] - inv_agg['total_out']),
         },
+    }
+
+
+def get_production(cooperative_id, start_date, end_date, compare_to=None):
+    """Production trends: volume by product type, grade distribution, rejection rate, shifts."""
+    data = _compute_production(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_production(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_production(cooperative_id, start_date, end_date):
+    qs = Delivery.objects.filter(
+        cooperative_id=cooperative_id,
+        date_delivered__gte=start_date, date_delivered__lt=end_date,
+    )
+    total_kg = float(qs.aggregate(v=coalesce_sum(Sum('quantity_kg')))['v'])
+
+    by_product = dict(
+        qs.values('product_type')
+        .annotate(kg=coalesce_sum(Sum('quantity_kg')), count=Count('id'))
+        .values_list('product_type', 'kg')
+    )
+    by_status = dict(
+        qs.values('status')
+        .annotate(count=Count('id'))
+        .values_list('status', 'count')
+    )
+    total = qs.count()
+    rejected = qs.filter(status='REJECTED').count()
+    rejection_rate = round(rejected / total * 100, 1) if total else 0
+
+    grade_dist = dict(
+        qs.exclude(grade='')
+        .values('grade')
+        .annotate(kg=coalesce_sum(Sum('quantity_kg')))
+        .values_list('grade', 'kg')
+    )
+    by_shift = dict(
+        qs.exclude(shift='')
+        .values('shift')
+        .annotate(count=Count('id'), kg=coalesce_sum(Sum('quantity_kg')))
+        .values_list('shift', 'kg')
+    )
+
+    monthly = list(
+        qs.annotate(month=TruncMonth('date_delivered', output_field=DateField()))
+        .values('month', 'product_type')
+        .annotate(kg=coalesce_sum(Sum('quantity_kg')), count=Count('id'))
+        .order_by('month', 'product_type')
+    )
+    monthly_series = {}
+    for row in monthly:
+        m = row['month'].isoformat()
+        if m not in monthly_series:
+            monthly_series[m] = {}
+        monthly_series[m][row['product_type']] = float(row['kg'])
+
+    return {
+        'total_kg': total_kg,
+        'delivery_count': total,
+        'by_product_type': {k: float(v) for k, v in by_product.items()},
+        'by_status': {k: v for k, v in by_status.items()},
+        'rejection_rate_pct': rejection_rate,
+        'grade_distribution': {k: float(v) for k, v in grade_dist.items()},
+        'by_shift': {k: float(v) for k, v in by_shift.items()},
+        'monthly_series': monthly_series,
+    }
+
+
+def get_financial(cooperative_id, start_date, end_date, compare_to=None):
+    """Financial metrics: revenue, payouts, deductions, cycle funnel."""
+    data = _compute_financial(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_financial(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_financial(cooperative_id, start_date, end_date):
+    cycles = PaymentCycle.objects.filter(
+        cooperative_id=cooperative_id,
+        end_date__gte=start_date, start_date__lt=end_date,
+    )
+    cycle_ids = cycles.values_list('id', flat=True)
+
+    revenue = float(Sale.objects.filter(
+        cooperative_id=cooperative_id, status='COMPLETED',
+        sale_date__gte=start_date, sale_date__lt=end_date,
+    ).aggregate(v=coalesce_sum(Sum('total_amount')))['v'])
+
+    fp_qs = FarmerPayment.objects.filter(cooperative_id=cooperative_id, cycle_id__in=cycle_ids)
+    payout = fp_qs.aggregate(
+        gross=coalesce_sum(Sum('gross_amount')),
+        net=coalesce_sum(Sum('net_amount')),
+        withholding=coalesce_sum(Sum('withholding_tax_amount')),
+    )
+    deductions = dict(
+        Deduction.objects.filter(cooperative_id=cooperative_id, cycle_id__in=cycle_ids)
+        .values('deduction_type').annotate(total=coalesce_sum(Sum('amount')))
+        .values_list('deduction_type', 'total')
+    )
+
+    cycle_funnel = dict(
+        cycles.values('status').annotate(count=Count('id'))
+        .values_list('status', 'count')
+    )
+
+    by_month = list(
+        fp_qs.annotate(month=TruncMonth('cycle__end_date', output_field=DateField()))
+        .values('month')
+        .annotate(gross=coalesce_sum(Sum('gross_amount')), net=coalesce_sum(Sum('net_amount')))
+        .order_by('month')
+    )
+    payout_series = {r['month'].isoformat(): {'gross': float(r['gross']), 'net': float(r['net'])} for r in by_month}
+
+    return {
+        'total_revenue': revenue,
+        'total_gross_payout': float(payout['gross']),
+        'total_net_payout': float(payout['net']),
+        'total_withholding_tax': float(payout['withholding']),
+        'deductions_breakdown': {k: float(v) for k, v in deductions.items()},
+        'cycle_count': cycles.count(),
+        'cycles_by_status': {k: v for k, v in cycle_funnel.items()},
+        'payout_monthly_series': payout_series,
+    }
+
+
+def get_farmers(cooperative_id, start_date, end_date, compare_to=None):
+    """Farmer demographics: geographic distribution, registrations, payment methods."""
+    data = _compute_farmers(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_farmers(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_farmers(cooperative_id, start_date, end_date):
+    qs = Farmer.objects.filter(cooperative_id=cooperative_id)
+    total_active = qs.filter(is_active=True).count()
+
+    by_county = dict(
+        qs.filter(is_active=True).values('county')
+        .annotate(count=Count('id'))
+        .values_list('county', 'count')
+    )
+
+    by_sub_county = dict(
+        qs.filter(is_active=True, sub_county__gt='').values('sub_county')
+        .annotate(count=Count('id'))
+        .values_list('sub_county', 'count')
+    )
+
+    new_registrations = qs.filter(
+        date_joined__gte=start_date, date_joined__lt=end_date,
+    ).count()
+
+    monthly_new = list(
+        qs.filter(date_joined__gte=start_date, date_joined__lt=end_date)
+        .annotate(month=TruncMonth('date_joined', output_field=DateField()))
+        .values('month').annotate(count=Count('id'))
+        .order_by('month')
+    )
+    registration_series = {r['month'].isoformat(): r['count'] for r in monthly_new}
+
+    memberships = FarmerCooperativeMembership.objects.filter(
+        cooperative_id=cooperative_id, is_active=True,
+    )
+    by_payment_method = dict(
+        memberships.values('payment_method')
+        .annotate(count=Count('id'))
+        .values_list('payment_method', 'count')
+    )
+
+    return {
+        'total_active': total_active,
+        'new_this_period': new_registrations,
+        'by_county': dict(by_county),
+        'by_sub_county': dict(by_sub_county),
+        'by_payment_method': {k: v for k, v in by_payment_method.items()},
+        'registration_monthly_series': registration_series,
+    }
+
+
+def get_sales(cooperative_id, start_date, end_date, compare_to=None):
+    """Sales performance: trends, top buyers, price trends."""
+    data = _compute_sales(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_sales(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_sales(cooperative_id, start_date, end_date):
+    qs = Sale.objects.filter(
+        cooperative_id=cooperative_id, status='COMPLETED',
+        sale_date__gte=start_date, sale_date__lt=end_date,
+    )
+    total = coalesce_sum(Sum('total_amount'))
+    total_amount = float(qs.aggregate(v=total)['v'])
+    total_qty = float(qs.aggregate(v=coalesce_sum(Sum('quantity')))['v'])
+
+    by_buyer = dict(
+        qs.values('buyer__name').annotate(total=coalesce_sum(Sum('total_amount')))
+        .order_by('-total').values_list('buyer__name', 'total')
+    )
+    top_buyers = {k: float(v) for k, v in list(by_buyer.items())[:10]}
+
+    by_product = dict(
+        qs.values('product_type')
+        .annotate(amount=coalesce_sum(Sum('total_amount')), qty=coalesce_sum(Sum('quantity')))
+        .values_list('product_type', 'amount')
+    )
+
+    monthly = list(
+        qs.annotate(month=TruncMonth('sale_date', output_field=DateField()))
+        .values('month').annotate(amount=coalesce_sum(Sum('total_amount')))
+        .order_by('month')
+    )
+    monthly_series = {r['month'].isoformat(): float(r['amount']) for r in monthly}
+
+    price_by_grade = list(
+        qs.exclude(grade_letter='')
+        .values('grade_letter')
+        .annotate(
+            avg_price=coalesce_sum(Sum('total_amount')) / coalesce_sum(Sum('quantity')),
+            total_qty=coalesce_sum(Sum('quantity')),
+        )
+        .values_list('grade_letter', 'avg_price', 'total_qty')
+    )
+    price_trend = {g: {'avg_price': round(float(p), 2), 'total_qty': float(q)} for g, p, q in price_by_grade}
+
+    return {
+        'total_amount': total_amount,
+        'total_quantity': total_qty,
+        'by_buyer': {k: float(v) for k, v in by_buyer.items()},
+        'top_buyers': top_buyers,
+        'by_product_type': {k: float(v) for k, v in by_product.items()},
+        'monthly_series': monthly_series,
+        'price_trend': price_trend,
+    }
+
+
+def get_loans(cooperative_id, start_date, end_date, compare_to=None):
+    """Loan portfolio summary."""
+    data = _compute_loans(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_loans(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_loans(cooperative_id, start_date, end_date):
+    qs = Loan.objects.filter(cooperative_id=cooperative_id)
+    agg = qs.aggregate(
+        total_outstanding=coalesce_sum(Sum('amount_principal', filter=Q(status__in=['ACTIVE', 'DEFAULTED']))),
+        total_disbursed=coalesce_sum(Sum('amount_principal', filter=Q(status='ACTIVE'))),
+        active_count=Count('id', filter=Q(status='ACTIVE')),
+        defaulted_count=Count('id', filter=Q(status='DEFAULTED')),
+        completed_count=Count('id', filter=Q(status='COMPLETED')),
+        pending_count=Count('id', filter=Q(status='PENDING')),
+    )
+    total = agg['active_count'] + agg['defaulted_count'] + agg['completed_count']
+    agg['default_rate_pct'] = round(agg['defaulted_count'] / total * 100, 1) if total else 0
+    repayment_total = agg['completed_count'] + agg['active_count']
+    agg['repayment_rate_pct'] = round(agg['completed_count'] / repayment_total * 100, 1) if repayment_total else 0
+    agg['total_principal'] = float(
+        qs.aggregate(v=coalesce_sum(Sum('amount_principal')))['v']
+    )
+    agg['total_installments'] = int(
+        qs.aggregate(v=coalesce_sum(Sum('installments_paid'), output_field=IntegerField()))['v']
+    )
+    return {k: float(v) if isinstance(v, Decimal) else v for k, v in agg.items()}
+
+
+def get_operations(cooperative_id, start_date, end_date, compare_to=None):
+    """Operational metrics: grader throughput, shift distribution, rejection analysis."""
+    data = _compute_operations(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_operations(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_operations(cooperative_id, start_date, end_date):
+    d_qs = Delivery.objects.filter(
+        cooperative_id=cooperative_id,
+        date_delivered__gte=start_date, date_delivered__lt=end_date,
+    )
+    total = d_qs.count()
+
+    shift_dist = dict(
+        d_qs.exclude(shift='').values('shift')
+        .annotate(count=Count('id'), kg=coalesce_sum(Sum('quantity_kg')))
+        .values_list('shift', 'count')
+    )
+
+    g_qs = Grade.objects.filter(
+        cooperative_id=cooperative_id,
+        created_at__gte=start_date, created_at__lt=end_date,
+    )
+    grader_throughput = list(
+        g_qs.values('delivery__grader__email')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+        .values_list('delivery__grader__email', 'count')[:20]
+    )
+
+    rejection_reasons = dict(
+        d_qs.filter(status='REJECTED').exclude(rejection_reason='')
+        .values('rejection_reason')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+        .values_list('rejection_reason', 'count')[:10]
+    )
+
+    grade_overrides = g_qs.filter(is_overridden=True).count()
+
+    avg_daily = list(
+        d_qs.annotate(day=TruncMonth('date_delivered', output_field=DateField()))
+        .values('day')
+        .annotate(count=Count('id'), kg=coalesce_sum(Sum('quantity_kg')))
+        .order_by('day')
+    )
+
+    return {
+        'total_deliveries': total,
+        'by_shift': {k: v for k, v in shift_dist.items()},
+        'top_graders': [{'email': e, 'count': c} for e, c in grader_throughput],
+        'rejection_reasons': dict(rejection_reasons),
+        'grade_overrides': grade_overrides,
+        'monthly_volume': {r['day'].isoformat(): {'count': r['count'], 'kg': float(r['kg'])} for r in avg_daily},
+    }
+
+
+def get_disbursements(cooperative_id, start_date, end_date, compare_to=None):
+    """Disbursement funnel: success rates, method breakdown, batch timing."""
+    data = _compute_disbursements(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    if compare_to == 'previous':
+        duration = end_date - start_date
+        prev = _compute_disbursements(cooperative_id, start_date - duration, start_date)
+        result['comparison'] = {'previous_period': prev, 'changes': compare_periods(data, prev)}
+    return result
+
+
+def _compute_disbursements(cooperative_id, start_date, end_date):
+    batch_qs = DisbursementBatch.objects.filter(
+        cooperative_id=cooperative_id,
+        created_at__gte=start_date, created_at__lt=end_date,
+    )
+    batches_by_status = dict(
+        batch_qs.values('status').annotate(count=Count('id'))
+        .values_list('status', 'count')
+    )
+    agg = batch_qs.aggregate(
+        total_amount=coalesce_sum(Sum('total_amount')),
+        total_txns=coalesce_sum(Sum('total_transactions'), output_field=IntegerField()),
+        successful=coalesce_sum(Sum('successful_count'), output_field=IntegerField()),
+        failed=coalesce_sum(Sum('failed_count'), output_field=IntegerField()),
+    )
+
+    txn_qs = DisbursementTransaction.objects.filter(
+        batch__cooperative_id=cooperative_id,
+        created_at__gte=start_date, created_at__lt=end_date,
+    )
+    by_method = dict(
+        txn_qs.values('payment_method')
+        .annotate(total=coalesce_sum(Sum('amount')), count=Count('id'))
+        .values_list('payment_method', 'total')
+    )
+    by_txn_status = dict(
+        txn_qs.values('status')
+        .annotate(count=Count('id'))
+        .values_list('status', 'count')
+    )
+    total_txns = agg['total_txns']
+    success_rate = round(agg['successful'] / total_txns * 100, 1) if total_txns else 0
+
+    approved = batch_qs.exclude(approved_at__isnull=True)
+    avg_approval_hours = approved.extra(
+        select={'hours': "EXTRACT(EPOCH FROM (approved_at - created_at)) / 3600"}
+    ).aggregate(avg=Avg('hours'))['avg']
+
+    return {
+        'total_batches': batch_qs.count(),
+        'batches_by_status': {k: v for k, v in batches_by_status.items()},
+        'total_disbursed': float(agg['total_amount']),
+        'total_transactions': agg['total_txns'],
+        'success_rate_pct': success_rate,
+        'by_payment_method': {k: float(v) for k, v in by_method.items()},
+        'by_transaction_status': {k: v for k, v in by_txn_status.items()},
+        'avg_approval_time_hours': round(avg_approval_hours, 1) if avg_approval_hours else None,
+    }
+
+
+def get_seasonal(cooperative_id, start_date, end_date, compare_to=None):
+    """Monthly delivery volumes with Kenyan rain season markers."""
+    data = _compute_seasonal(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    return result
+
+
+def _season_label(month):
+    m = month.month
+    if 3 <= m <= 5:
+        return 'LONG_RAINS'
+    if 10 <= m <= 12:
+        return 'SHORT_RAINS'
+    return 'DRY_SEASON'
+
+
+def _compute_seasonal(cooperative_id, start_date, end_date):
+    qs = Delivery.objects.filter(
+        cooperative_id=cooperative_id,
+        date_delivered__gte=start_date, date_delivered__lt=end_date,
+    )
+    monthly = list(
+        qs.annotate(month=TruncMonth('date_delivered', output_field=DateField()))
+        .values('month', 'product_type')
+        .annotate(kg=coalesce_sum(Sum('quantity_kg')), count=Count('id'))
+        .order_by('month', 'product_type')
+    )
+    series = []
+    for row in monthly:
+        series.append({
+            'month': row['month'].isoformat(),
+            'product_type': row['product_type'],
+            'kg': float(row['kg']),
+            'delivery_count': row['count'],
+            'season': _season_label(row['month']),
+        })
+    total_annual = sum(s['kg'] for s in series)
+    peak = max(series, key=lambda x: x['kg']) if series else None
+    low = min(series, key=lambda x: x['kg']) if series else None
+    return {
+        'series': series,
+        'summary': {
+            'total_annual': total_annual,
+            'peak_month': peak['month'] if peak else None,
+            'peak_kg': peak['kg'] if peak else None,
+            'low_month': low['month'] if low else None,
+            'low_kg': low['kg'] if low else None,
+        },
+    }
+
+
+def get_payment_efficiency(cooperative_id, start_date, end_date, compare_to=None):
+    """Cycle time-to-disburse analysis."""
+    data = _compute_payment_efficiency(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    return result
+
+
+def _compute_payment_efficiency(cooperative_id, start_date, end_date):
+    cycles = PaymentCycle.objects.filter(
+        cooperative_id=cooperative_id,
+        end_date__gte=start_date, start_date__lt=end_date,
+    ).exclude(status='DRAFT')
+
+    batch_map = {
+        b.payment_cycle_id: b
+        for b in DisbursementBatch.objects.filter(
+            payment_cycle_id__in=cycles.values_list('id', flat=True),
+        )
+    }
+
+    cycle_data = []
+    for cycle in cycles:
+        batch = batch_map.get(cycle.id)
+        c = {
+            'cycle_name': cycle.name,
+            'status': cycle.status,
+            'end_date': cycle.end_date.isoformat(),
+        }
+        if cycle.computed_at and cycle.locked_at:
+            c['computation_days'] = (cycle.computed_at.date() - cycle.end_date).days
+        if batch and batch.approved_at and cycle.computed_at:
+            c['approval_days'] = (batch.approved_at.date() - cycle.computed_at.date()).days
+        if batch and batch.status in ('COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED') and batch.approved_at:
+            end = batch.updated_at.date() if hasattr(batch, 'updated_at') else batch.approved_at.date()
+            c['disbursement_days'] = (end - batch.approved_at.date()).days
+        days = [v for k, v in c.items() if k.endswith('_days') and isinstance(v, (int, float))]
+        if days:
+            c['total_days'] = sum(days)
+        cycle_data.append(c)
+
+    days_list = [c['total_days'] for c in cycle_data if 'total_days' in c]
+    avg_days = round(sum(days_list) / len(days_list), 1) if days_list else None
+    sorted_days = sorted(days_list) if days_list else []
+    median = sorted_days[len(sorted_days) // 2] if sorted_days else None
+
+    return {
+        'cycles': cycle_data,
+        'averages': {
+            'avg_total_days': avg_days,
+            'median_total_days': median,
+            'cycle_count': len(cycle_data),
+        },
+    }
+
+
+def get_farmer_retention(cooperative_id, start_date, end_date, compare_to=None):
+    """Farmer churn: monthly active counts, new registrations, deactivations."""
+    data = _compute_farmer_retention(cooperative_id, start_date, end_date)
+    result = {'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()}, 'data': data}
+    return result
+
+
+def _compute_farmer_retention(cooperative_id, start_date, end_date):
+    memberships = FarmerCooperativeMembership.objects.filter(cooperative_id=cooperative_id)
+    farmers = Farmer.objects.filter(cooperative_id=cooperative_id)
+
+    monthly = []
+    cursor = start_date
+    while cursor < end_date:
+        next_month = cursor + timedelta(days=32)
+        next_month = next_month.replace(day=1)
+
+        start_active = farmers.filter(
+            Q(date_joined__lt=cursor),
+            Q(deleted_at__isnull=True) | Q(deleted_at__gte=cursor),
+            is_active=True,
+        ).count()
+
+        new = farmers.filter(
+            date_joined__gte=cursor, date_joined__lt=next_month,
+        ).count()
+
+        deactivated = memberships.filter(
+            is_active=False,
+            left_at__gte=cursor, left_at__lt=next_month,
+        ).count()
+
+        end_active = start_active + new - deactivated
+        churn_pct = round(deactivated / start_active * 100, 2) if start_active else 0
+
+        monthly.append({
+            'month': cursor.strftime('%Y-%m'),
+            'start_count': start_active,
+            'new': new,
+            'deactivated': deactivated,
+            'end_count': end_active,
+            'churn_pct': churn_pct,
+        })
+        cursor = next_month
+
+    recent = monthly[-3:] if len(monthly) >= 3 else monthly
+    avg_churn = round(sum(m['churn_pct'] for m in recent) / len(recent), 2) if recent else 0
+    if avg_churn < 1:
+        trend = 'STABLE'
+    elif avg_churn < 3:
+        trend = 'DECLINING'
+    else:
+        trend = 'CRITICAL'
+
+    return {
+        'monthly': monthly,
+        'trend': trend,
+        'avg_monthly_churn_pct': avg_churn,
+        'net_growth': monthly[-1]['end_count'] - monthly[0]['start_count'] if len(monthly) > 1 else 0,
     }
