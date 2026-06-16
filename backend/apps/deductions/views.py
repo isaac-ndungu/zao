@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from apps.base.permissions import IsAccountantOrManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.export_mixins import CsvExportMixin
 
 from .models import Deduction, FarmInputCredit
 from .serializers import (
@@ -16,7 +17,8 @@ from .serializers import (
 )
 
 
-class DeductionViewSet(CooperativeScopedViewSet):
+class DeductionViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'deductions.csv'
     queryset = Deduction.objects.all().select_related(
         'farmer', 'cycle', 'created_by', 'cooperative',
     )

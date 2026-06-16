@@ -12,6 +12,7 @@ from apps.base.constants import UserRole
 from apps.base.permissions import IsFarmer, IsGrader, IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.export_mixins import CsvExportMixin
 
 from .models import Grade, GradeImage, GradePrice, FarmerGradeDispute
 from .serializers import (
@@ -67,7 +68,8 @@ def _reverse_inventory_contribution(delivery, was_rejected):
     coop.save(update_fields=['inventory'])
 
 
-class GradeViewSet(CooperativeScopedViewSet):
+class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'grades.csv'
     queryset = Grade.objects.all().select_related(
         'delivery__farmer', 'delivery__cooperative', 'overridden_by',
     )

@@ -5,6 +5,7 @@ from apps.base.idempotency import idempotent
 from apps.base.permissions import IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.export_mixins import CsvExportMixin
 
 from .models import Buyer, Sale
 from .serializers import (
@@ -64,7 +65,8 @@ class BuyerViewSet(CooperativeScopedViewSet):
         instance.delete()
 
 
-class SaleViewSet(CooperativeScopedViewSet):
+class SaleViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'sales.csv'
     queryset = Sale.objects.all().select_related('buyer', 'inventory', 'cooperative')
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = [

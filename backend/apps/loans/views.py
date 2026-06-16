@@ -8,6 +8,7 @@ from apps.base.constants import UserRole
 from apps.base.permissions import IsAccountant, IsAccountantOrManager, IsFarmer, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.export_mixins import CsvExportMixin
 from apps.notifications.models import Notification
 
 from .models import Loan, LoanGuarantor
@@ -24,7 +25,8 @@ from .serializers import (
 )
 
 
-class LoanViewSet(CooperativeScopedViewSet):
+class LoanViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'loans.csv'
     queryset = Loan.objects.all().select_related(
         'farmer', 'approved_by', 'cooperative',
     ).prefetch_related('repayments')

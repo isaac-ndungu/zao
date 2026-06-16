@@ -20,6 +20,7 @@ from apps.base.constants import UserRole
 from apps.base.permissions import IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.export_mixins import CsvExportMixin
 
 from .models import Farmer, FarmerCooperativeMembership
 from apps.base.idempotency import idempotent
@@ -50,7 +51,8 @@ def _create_farmer_user(farmer, cooperative_id):
     return user
 
 
-class FarmerViewSet(CooperativeScopedViewSet):
+class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'farmers.csv'
     queryset = Farmer.objects.all().select_related('cooperative', 'user')
     filter_backends = [OrderingFilter]
     ordering_fields = [
@@ -414,7 +416,8 @@ def normalize_phone_for_csv(value):
     return value
 
 
-class MembershipViewSet(CooperativeScopedViewSet):
+class MembershipViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'memberships.csv'
     queryset = FarmerCooperativeMembership.objects.all().select_related(
         'farmer', 'cooperative'
     )

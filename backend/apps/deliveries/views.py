@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from apps.base.permissions import IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
+from apps.base.export_mixins import CsvExportMixin
 from apps.base.idempotency import idempotent
 
 from .models import Delivery
@@ -26,7 +27,8 @@ from .tasks import send_bulk_delivery_sms, send_delivery_sms
 logger = logging.getLogger(__name__)
 
 
-class DeliveryViewSet(CooperativeScopedViewSet):
+class DeliveryViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'deliveries.csv'
     queryset = Delivery.objects.all().select_related('farmer', 'grader', 'cooperative')
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = [
