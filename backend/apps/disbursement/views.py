@@ -115,7 +115,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        batch.status = 'PENDING'
+        batch.status = 'PROCESSING'
         batch.approved_by = request.user
         batch.approved_at = timezone.now()
         batch.save(update_fields=['status', 'approved_by', 'approved_at'])
@@ -136,9 +136,9 @@ class DisbursementViewSet(CooperativeScopedViewSet):
     def live(self, request, pk=None):
         batch = self.get_object()
 
-        if batch.status != 'PENDING':
+        if batch.status != 'PROCESSING':
             return Response(
-                {'detail': 'Only PENDING batches can go live.'},
+                {'detail': 'Only PROCESSING batches can go live.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

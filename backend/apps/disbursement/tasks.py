@@ -163,7 +163,7 @@ def process_batch_disbursements(self, batch_id: str):
         logger.error("Batch %s not found", batch_id)
         return {'error': 'Batch not found'}
 
-    if batch.status in ('PROCESSING', 'COMPLETED', 'FAILED'):
+    if batch.status in ('COMPLETED', 'FAILED', 'PARTIALLY_COMPLETED'):
         logger.warning("Batch %s is already %s, skipping", batch_id, batch.status)
         return {'status': 'skipped', 'reason': f'Already {batch.status}'}
 
