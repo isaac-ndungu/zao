@@ -9,7 +9,6 @@ from django.contrib.postgres.search import (
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
-from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -36,17 +35,16 @@ from .serializers import (
 
 def _create_farmer_user(farmer, cooperative_id):
     email = farmer.email or f'farmer_{farmer.id}@placeholder.local'
-    user = User.objects.create_user(
+    user = User(
         email=email,
         phone_number=farmer.phone_number,
         first_name=farmer.first_name,
         last_name=farmer.last_name,
-        password=get_random_string(length=72),
         role=UserRole.FARMER,
         cooperative_id=cooperative_id,
     )
     user.set_unusable_password()
-    user.save(update_fields=['password'])
+    user.save()
     farmer.user = user
     farmer.save(update_fields=['user'])
     return user
