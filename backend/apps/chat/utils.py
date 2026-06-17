@@ -26,6 +26,12 @@ def ask_gemini(messages: list[dict]) -> str:
     if system_prompt:
         payload['system_instruction'] = {'parts': [{'text': system_prompt}]}
 
+    generation_config = {
+        'temperature': settings.GOOGLE_AI_TEMPERATURE,
+        'maxOutputTokens': settings.GOOGLE_AI_MAX_TOKENS,
+    }
+    payload['generationConfig'] = generation_config
+
     url = (
         'https://generativelanguage.googleapis.com/v1beta/models/'
         f'{settings.GOOGLE_AI_MODEL}:generateContent'
@@ -42,7 +48,7 @@ def ask_gemini(messages: list[dict]) -> str:
     )
 
     try:
-        with urlopen(req, timeout=30) as resp:
+        with urlopen(req, timeout=settings.GOOGLE_AI_TIMEOUT) as resp:
             result = json.loads(resp.read().decode('utf-8'))
             return result['candidates'][0]['content']['parts'][0]['text']
     except URLError as e:

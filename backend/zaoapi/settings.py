@@ -245,6 +245,9 @@ MPESA_CALLBACK_HMAC_SECRET = config('MPESA_CALLBACK_HMAC_SECRET', default='')
 # Google AI (Gemini)
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 GOOGLE_AI_MODEL = config('GOOGLE_AI_MODEL', default='gemini-2.5-flash')
+GOOGLE_AI_TEMPERATURE = config('GOOGLE_AI_TEMPERATURE', default=0.7, cast=float)
+GOOGLE_AI_MAX_TOKENS = config('GOOGLE_AI_MAX_TOKENS', default=4096, cast=int)
+GOOGLE_AI_TIMEOUT = config('GOOGLE_AI_TIMEOUT', default=30, cast=int)
 
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
