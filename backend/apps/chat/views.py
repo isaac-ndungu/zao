@@ -10,6 +10,7 @@ from django.conf import settings
 from .models import ChatMessage
 from .serializers import ChatMessageSerializer, ChatRequestSerializer, ChatResponseSerializer
 from .utils import ask_gemini
+from .context import build_context_string
 
 from apps.base.idempotency import idempotent
 SYSTEM_PROMPT = (
@@ -124,6 +125,11 @@ class ChatView(APIView):
 
         history = ChatMessage.objects.filter(session_id=session_id).values_list('role', 'content')
         messages = [{'role': 'system', 'content': SYSTEM_PROMPT}]
+        try:
+            context = build_context_string()
+            messages.append({'role': 'system', 'content': context})
+        except Exception:
+            pass
         for role, content in history:
             messages.append({'role': role, 'content': content})
 
