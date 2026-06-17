@@ -84,6 +84,9 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == UserRole.FARMER:
+            qs = qs.filter(delivery__farmer__user=user)
         for param in ('grade_letter',):
             val = self.request.query_params.get(param)
             if val:

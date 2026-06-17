@@ -1,6 +1,7 @@
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 
+from apps.base.constants import UserRole
 from apps.base.permissions import IsAccountantOrManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
@@ -38,9 +39,12 @@ class DeductionViewSet(CsvExportMixin, CooperativeScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        farmer = self.request.query_params.get('farmer')
-        if farmer:
-            qs = qs.filter(farmer_id=farmer)
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == UserRole.FARMER:
+            qs = qs.filter(farmer__user=user)
+        farmer_id = self.request.query_params.get('farmer')
+        if farmer_id:
+            qs = qs.filter(farmer_id=farmer_id)
         deduction_type = self.request.query_params.get('type')
         if deduction_type:
             qs = qs.filter(deduction_type=deduction_type)

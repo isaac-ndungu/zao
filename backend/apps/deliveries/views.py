@@ -9,6 +9,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.base.constants import UserRole
 from apps.base.permissions import IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
@@ -42,6 +43,9 @@ class DeliveryViewSet(CsvExportMixin, CooperativeScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == UserRole.FARMER:
+            qs = qs.filter(farmer__user=user)
         for param in ('product_type', 'status', 'shift', 'grade'):
             val = self.request.query_params.get(param)
             if val:
