@@ -378,6 +378,7 @@ REST_FRAMEWORK = {
         'analytics_staff': '30/min',
         'analytics_farmer': '10/min',
         'analytics_export': '5/hour',
+        'payment_export': '10/hour',
     },
 }
 

@@ -5,9 +5,12 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.base.constants import UserRole
+from apps.base.export_mixins import CsvExportMixin
 from apps.base.permissions import IsAccountantOrManager, IsManager
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
@@ -17,10 +20,12 @@ from .models import ComputationWarning, FarmerPayment, PaymentCycle
 from .serializers import (
     ComputationWarningSerializer,
     CyclePreviewSerializer,
+    FarmerPaymentListSerializer,
     PaymentCycleSerializer,
     PaymentCycleStatusSerializer,
 )
 from .tasks import run_payment_engine
+from .throttles import PaymentExportThrottle
 
 
 class PaymentCycleViewSet(CooperativeScopedViewSet):
@@ -342,3 +347,59 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
             ])
 
         return response
+
+
+class FarmerPaymentViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'payments.csv'
+    queryset = FarmerPayment.objects.all().select_related('farmer', 'cycle', 'cooperative')
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = [
+        'farmer__first_name', 'farmer__last_name',
+        'farmer__member_number',
+    ]
+    ordering_fields = [
+        'created_at', 'gross_amount', 'net_amount', 'payment_status',
+    ]
+    ordering = ['-created_at']
+
+    def get_serializer_class(self):
+        return FarmerPaymentListSerializer
+
+    def get_throttles(self):
+        if self.action == 'list' and self.request.query_params.get('export') == 'csv':
+            return [PaymentExportThrottle()]
+        return super().get_throttles()
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAuthenticated(), IsAccountantOrManager()]
+        return [IsAuthenticated()]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == UserRole.FARMER:
+            qs = qs.filter(farmer__user=user)
+        cycle = self.request.query_params.get('cycle')
+        if cycle:
+            qs = qs.filter(cycle_id=cycle)
+        status_param = self.request.query_params.get('status')
+        if status_param:
+            qs = qs.filter(payment_status=status_param.upper())
+        farmer_param = self.request.query_params.get('farmer')
+        if farmer_param:
+            qs = qs.filter(farmer_id=farmer_param)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        if request.query_params.get('export') == 'csv' and getattr(request.user, 'role', None) == UserRole.FARMER:
+            return Response(
+                {
+                    'detail': (
+                        'Farmers cannot export payments as CSV. '
+                        'Download your PDF statement instead.'
+                    ),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().list(request, *args, **kwargs)

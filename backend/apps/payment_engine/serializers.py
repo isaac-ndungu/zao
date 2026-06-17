@@ -5,6 +5,28 @@ from apps.cooperatives.models import Cooperative
 from .models import ComputationWarning, FarmerPayment, PaymentCycle
 
 
+class FarmerPaymentListSerializer(serializers.ModelSerializer):
+    farmer_name = serializers.SerializerMethodField()
+    member_number = serializers.SerializerMethodField()
+    cycle_name = serializers.CharField(source='cycle.name', read_only=True)
+
+    class Meta:
+        model = FarmerPayment
+        fields = [
+            'id', 'cycle', 'cycle_name', 'farmer', 'farmer_name',
+            'member_number', 'total_quantity', 'gross_amount',
+            'deductions', 'net_amount', 'withholding_tax_amount',
+            'payment_status', 'is_on_hold', 'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_farmer_name(self, obj):
+        return f'{obj.farmer.first_name} {obj.farmer.last_name}'
+
+    def get_member_number(self, obj):
+        return obj.farmer.primary_membership.member_number if obj.farmer.primary_membership else ''
+
+
 class FarmerPaymentPreviewSerializer(serializers.ModelSerializer):
     farmer_name = serializers.SerializerMethodField()
     member_number = serializers.SerializerMethodField()
