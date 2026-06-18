@@ -10,6 +10,8 @@ import {
   HiOutlineBolt,
   HiOutlineBuildingLibrary,
   HiOutlineArrowRight,
+  HiOutlineDevicePhoneMobile,
+  HiOutlineWifi,
 } from 'react-icons/hi2'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -45,14 +47,14 @@ const FEATURES = [
     iconBg: 'bg-primary-container',
     iconColor: 'text-on-primary-container',
     title: 'Digital Grading',
-    desc: 'Eliminate disputes with objective, sensor-driven grading. Ensure farmers receive exactly what their produce is worth based on real-time data.',
+    desc: 'Eliminate disputes with objective digital grading. Ensure farmers receive exactly what their produce is worth based on standardized quality definitions.',
   },
   {
     icon: HiOutlineBolt,
     iconBg: 'bg-secondary',
     iconColor: 'text-white',
-    title: 'Instant Payments',
-    desc: 'Mobile-first payments settled as soon as the produce is receipted. No more waiting weeks for harvest proceeds.',
+    title: 'Automated Payment Cycles',
+    desc: 'Payments flow through a locked, auditable lifecycle — computed, approved, and disbursed on your cooperative\'s schedule. No more waiting weeks for harvest proceeds.',
     highlighted: true,
   },
   {
@@ -61,6 +63,20 @@ const FEATURES = [
     iconColor: 'text-on-tertiary-container',
     title: 'Farmer Loans',
     desc: 'Integrated credit scoring based on delivery history. Provide input financing and emergency loans directly through the Zao ecosystem.',
+  },
+  {
+    icon: HiOutlineDevicePhoneMobile,
+    iconBg: 'bg-secondary-container',
+    iconColor: 'text-secondary',
+    title: 'USSD Self-Service',
+    desc: 'Farmers check balances, delivery history, and payment status on any phone via *384*ZAO#. No smartphone or data plan required.',
+  },
+  {
+    icon: HiOutlineWifi,
+    iconBg: 'bg-tertiary-container',
+    iconColor: 'text-on-tertiary-container',
+    title: 'Offline-First Grading',
+    desc: 'Graders record produce at rural collection points with zero connectivity. Data syncs automatically when back online. Built for low-connectivity environments.',
   },
 ]
 
@@ -198,7 +214,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto">
             <h2 className="font-display-lg text-display-lg text-primary mb-stack-md">Ready to modernize your operations?</h2>
             <p className="font-body-lg text-body-lg text-on-surface-variant mb-stack-lg">
-              Join over 500 cooperatives across East Africa leveraging Zao to increase efficiency and farmer loyalty.
+              Join hundreds of cooperatives across East Africa leveraging Zao to increase efficiency and farmer loyalty.
             </p>
             <div className="flex flex-col sm:flex-row gap-stack-md justify-center">
               <button className="px-12 py-5 bg-primary text-on-primary font-bold rounded-xl text-body-lg active:scale-95 transition-all shadow-lg hover:shadow-xl">

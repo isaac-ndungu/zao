@@ -2,21 +2,20 @@ import {
   HiOutlineArrowTrendingUp,
   HiOutlineHandRaised,
   HiOutlineBuildingLibrary,
-  HiOutlineGlobeAlt,
   HiOutlineShieldCheck,
   HiOutlineCpuChip,
   HiOutlineCommandLine,
-  HiOutlineCircleStack,
+  HiOutlineDocumentText,
   HiOutlineChartBarSquare,
 } from 'react-icons/hi2'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 
 const METRICS = [
-  { label: 'Farmers Paid', value: '1.2M+', icon: HiOutlineArrowTrendingUp, sub: '+14% YoY' },
+  { label: 'Farmers Paid', value: 'Hundreds of thousands', icon: HiOutlineArrowTrendingUp },
   { label: 'Cooperatives Served', value: '480', icon: HiOutlineHandRaised, sub: 'Across 12 Counties' },
   { label: 'Annual GTV', value: 'KSh 42B', icon: HiOutlineBuildingLibrary, sub: 'Processed Securely' },
-  { label: 'Carbon Sequestration', value: '15.4k', icon: HiOutlineGlobeAlt, sub: 'Tonnes CO2e Offset' },
+  { label: 'Audit Trail', value: '100%', icon: HiOutlineShieldCheck, sub: 'Immutable Records' },
 ]
 
 export default function About() {
@@ -28,7 +27,7 @@ export default function About() {
         <section className="relative h-[80vh] flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img
-              alt="Aerial view of lush green tea plantations in the Central Rift Valley of Kenya"
+              alt="Aerial view of lush green coffee plantations in the Central Rift Valley of Kenya"
               className="w-full h-full object-cover"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwijp4O2J_We2JK0LnqjhG7-C5ZkZNaM3Uaaxr92XEVbwlwm_PJqcUFfIQ8vzUU1RIcyFBvpCnGaLrGf7PRCAseBfAZ4N_SyN1rJeu8kq3XxuJCKNf36YSeYKQpxzIxcYUgqEOAaTJ0H5FZZdb-ZWuJutN2KiRDmels0l_U-7gikvl3oYxRDpXKBrSiKYd0qwbhYtg3JucPVH3cq_CkM5T_fRSXswMXXBfkccUghE46XtXAlBjSvaiqWxISuexqBdg_HioRAVg7Vg"
             />
@@ -71,10 +70,12 @@ export default function About() {
                     {m.label}
                   </p>
                   <p className="font-display-md text-display-md text-primary mb-stack-sm">{m.value}</p>
-                  <div className="flex items-center gap-1 text-primary">
-                    <m.icon className="w-4 h-4" />
-                    <span className="font-data-mono-sm text-data-mono-sm">{m.sub}</span>
-                  </div>
+                  {m.sub && (
+                    <div className="flex items-center gap-1 text-primary">
+                      <m.icon className="w-4 h-4" />
+                      <span className="font-data-mono-sm text-data-mono-sm">{m.sub}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -120,15 +121,15 @@ export default function About() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-surface-container-high rounded-xl p-6 flex flex-col justify-between h-48 group hover:bg-primary hover:text-white transition-all">
                     <HiOutlineShieldCheck className="w-8 h-8 mb-4" />
-                    <p className="font-body-md font-bold">100% Data Sovereignty</p>
+                    <p className="font-body-md font-bold">Immutable Audit Trail</p>
                   </div>
                   <div className="bg-white border border-[#D8F3DC] rounded-xl p-6 flex flex-col justify-between h-64 mt-8">
                     <div className="w-full bg-surface-container-lowest h-1 mb-4 rounded-full overflow-hidden">
-                      <div className="bg-primary h-full w-[99.9%]" />
+                      <div className="bg-primary h-full w-full" />
                     </div>
-                    <p className="font-data-mono text-data-mono text-primary">99.9% SYSTEM UPTIME</p>
+                    <p className="font-data-mono text-data-mono text-primary">ROLE-BASED ACCESS (6 ROLES)</p>
                     <p className="font-body-md text-on-surface-variant mt-2">
-                      Enterprise-grade infrastructure hosted on localized regional clouds for speed.
+                      Granular permissions for Farmer, Grader, Accountant, Manager, Admin, and Auditor.
                     </p>
                   </div>
                   <div className="bg-primary text-white rounded-xl p-6 flex flex-col justify-between h-64 -mt-8">
@@ -139,8 +140,8 @@ export default function About() {
                     </p>
                   </div>
                   <div className="bg-surface-container-highest rounded-xl p-6 flex flex-col justify-between h-48">
-                    <HiOutlineCircleStack className="w-8 h-8 mb-4" />
-                    <p className="font-body-md font-bold text-primary">Network Effect Analytics</p>
+                    <HiOutlineDocumentText className="w-8 h-8 mb-4" />
+                    <p className="font-body-md font-bold text-primary">KRA-Compliant Reporting</p>
                   </div>
                 </div>
               </div>
@@ -176,16 +177,16 @@ export default function About() {
                 </div>
                 <div className="mt-12 flex flex-wrap gap-12">
                   <div>
-                    <p className="font-data-mono text-primary text-headline-sm">24/7</p>
-                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant">Support</p>
+                    <p className="font-data-mono text-primary text-headline-sm">99.9%</p>
+                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant">Data Integrity</p>
                   </div>
                   <div>
-                    <p className="font-data-mono text-primary text-headline-sm">12</p>
-                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant">Offices</p>
+                    <p className="font-data-mono text-primary text-headline-sm">KRA</p>
+                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant">Tax Compliant</p>
                   </div>
                   <div>
-                    <p className="font-data-mono text-primary text-headline-sm">50+</p>
-                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant">Engineers</p>
+                    <p className="font-data-mono text-primary text-headline-sm">6</p>
+                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant">Roles</p>
                   </div>
                 </div>
               </div>

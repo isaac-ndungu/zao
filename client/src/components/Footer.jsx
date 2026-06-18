@@ -15,7 +15,6 @@ export default function Footer() {
           <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Coffee</a>
           <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Dairy</a>
           <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Honey</a>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Tea</a>
         </div>
         <div className="flex flex-col gap-stack-sm">
           <h4 className="font-label-md text-label-md uppercase text-primary font-bold">Company</h4>

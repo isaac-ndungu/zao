@@ -61,8 +61,9 @@ export default function Solutions() {
             </p>
             <ul className="space-y-stack-sm font-body-md text-body-md">
               {[
-                'Bluetooth-integrated digital scales for instant entry.',
-                'A.I. visual grading tools for quality consistency.',
+                'Weight and quality recorded digitally at the collection point.',
+                'Standardized grade definitions with rejection reasons and photo evidence.',
+                'Grade dispute resolution — farmers can challenge grades, managers resolve with full audit history.',
                 'Offline-first syncing for remote collection sites.',
               ].map((text) => (
                 <li key={text} className="flex items-start gap-2">
@@ -84,29 +85,27 @@ export default function Solutions() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-stack-lg items-center bg-surface-container rounded-xl p-stack-lg border-subtle">
           <div className="order-2 md:order-1 bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-outline-variant space-y-stack-md">
             <div className="flex justify-between items-center border-b border-outline-variant pb-2">
-              <span className="font-label-md text-label-md text-on-surface-variant">Computation Engine</span>
-              <span className="font-data-mono-sm text-data-mono-sm text-primary">LIVE_CALC_042</span>
+              <span className="font-label-md text-label-md text-on-surface-variant">Payment Lifecycle</span>
+              <span className="font-data-mono-sm text-data-mono-sm text-primary">LOCKED &amp; AUDITED</span>
             </div>
             <div className="space-y-stack-xs">
               {[
-                { label: 'Total Weight (Net)', value: '428.50 Kg', color: 'text-on-surface' },
-                { label: 'Grade Factor (AAA)', value: '1.25x', color: 'text-on-surface' },
-                { label: 'Deductions (Cess)', value: '- 14.20 KES', color: 'text-error' },
+                { label: '1. Draft', desc: 'Grades are reviewed before computation begins' },
+                { label: '2. Computing', desc: 'Engine calculates payouts from grades, rates, and deductions' },
+                { label: '3. Computed', desc: 'Payouts are ready for manager review and approval' },
+                { label: '4. Locked', desc: 'Approved payouts are frozen — no further edits allowed' },
+                { label: '5. Disbursed', desc: 'Payments sent via M-Pesa, bank transfer, or cash' },
               ].map((row) => (
                 <div key={row.label} className="flex justify-between text-body-md font-body-md py-1 border-b border-surface">
                   <span className="text-on-surface-variant">{row.label}</span>
-                  <span className={`mono-numbers font-medium ${row.color}`}>{row.value}</span>
+                  <span className="text-on-surface font-medium">{row.desc}</span>
                 </div>
               ))}
-              <div className="flex justify-between text-body-md font-body-md pt-4">
-                <span className="font-bold text-primary">Estimated Payout</span>
-                <span className="mono-numbers font-bold text-primary text-headline-sm">KSh 12,450.00</span>
-              </div>
             </div>
             <div className="bg-secondary-container p-stack-sm rounded border border-secondary text-on-secondary-container text-body-md">
               <div className="flex items-center gap-2">
                 <HiOutlineShieldCheck className="w-[18px] h-[18px]" />
-                <span>Algorithmic Audit Passed</span>
+                <span>Every step logged immutably to the audit trail</span>
               </div>
             </div>
           </div>
@@ -117,16 +116,13 @@ export default function Solutions() {
             </div>
             <h3 className="font-headline-sm text-headline-sm">Automated Computation</h3>
             <p className="font-body-md text-body-md text-on-surface-variant">
-              Our backend engine eliminates the &ldquo;waiting period&rdquo; for farmers. As soon as grading is completed, Zao calculates payouts based on real-time market rates, cooperative rules, and predefined deductions.
+              Our backend engine eliminates the &ldquo;waiting period&rdquo; for farmers. As soon as grading is completed, Zao calculates payouts based on cooperative rates, predefined deductions, and the revenue-share or fixed-price model for each produce type.
             </p>
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="p-4 bg-white/40 rounded-lg border-subtle">
-                <p className="font-display-md text-display-md text-primary">0.03s</p>
-                <p className="font-label-md text-label-md">Average Calc Time</p>
-              </div>
-              <div className="p-4 bg-white/40 rounded-lg border-subtle">
-                <p className="font-display-md text-display-md text-primary">100%</p>
-                <p className="font-label-md text-label-md">Audit Accuracy</p>
+            <div className="flex items-start gap-3 p-4 bg-white/40 rounded-lg border-subtle">
+              <HiOutlineShieldCheck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-label-md text-label-md font-bold text-primary">Grade Overrides with Audit Trail</p>
+                <p className="font-body-md text-body-md text-on-surface-variant">Manager adjustments require a reason and are logged with actor, timestamp, and before/after values.</p>
               </div>
             </div>
           </div>
@@ -138,7 +134,7 @@ export default function Solutions() {
               <HiOutlineBuildingLibrary className="w-6 h-6" />
               <h2 className="font-headline-lg text-headline-lg">03. The Payout</h2>
             </div>
-            <h3 className="font-headline-sm text-headline-sm">Disbursements at the Speed of Light</h3>
+            <h3 className="font-headline-sm text-headline-sm">Disbursements at the Right Time</h3>
             <p className="font-body-md text-body-md text-on-surface-variant">
               Liquidity is the lifeblood of farming. Zao integrates directly with M-Pesa and major regional banks to provide instant or scheduled disbursements. No more checks waiting in drawers.
             </p>

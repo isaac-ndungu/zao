@@ -36,7 +36,7 @@ export default function ForFarmers() {
             </p>
             <div className="flex flex-col sm:flex-row gap-stack-md">
               <button className="bg-primary text-on-primary px-8 py-4 rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-primary-container transition-colors shadow-lg active:scale-[0.98]">
-                Join Local Cooperative
+                Check via USSD
                 <HiOutlineArrowRight className="w-5 h-5" />
               </button>
               <button className="border-2 border-primary text-primary px-8 py-4 rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-surface-container transition-colors active:scale-[0.98]">
@@ -61,9 +61,9 @@ export default function ForFarmers() {
                 </p>
                 <ul className="space-y-4">
                   {[
-                    'SMS & Push Notifications for every delivery',
+                    'SMS delivery confirmations for every transaction',
                     'Offline mode for remote farm management',
-                    'Secure biometric login for data safety',
+                    '2FA-secured portal for data safety',
                   ].map((text) => (
                     <li key={text} className="flex items-center gap-3 font-body-md text-body-md">
                       <HiOutlineCheckCircle className="w-5 h-5 text-primary flex-shrink-0" />
@@ -82,8 +82,8 @@ export default function ForFarmers() {
                     <HiOutlineBanknotes className="w-5 h-5 text-on-surface-variant" />
                   </div>
                   <div className="bg-primary p-3 rounded-lg text-white mb-4">
-                    <div className="text-[10px] opacity-80 uppercase tracking-tight">Active Balance</div>
-                    <div className="text-xl font-bold font-data-mono">KES 42,850.00</div>
+                      <div className="text-[10px] opacity-80 uppercase tracking-tight">Active Balance</div>
+                      <div className="text-xl font-bold font-data-mono">—</div>
                   </div>
                   <div className="space-y-3">
                     <div className="text-[12px] font-bold text-on-surface-variant uppercase">Recent Harvests</div>
@@ -101,9 +101,9 @@ export default function ForFarmers() {
                     ))}
                   </div>
                   <div className="mt-4 p-2 bg-tertiary-fixed rounded border border-tertiary/20">
-                    <div className="text-[10px] font-bold text-tertiary uppercase">Loan Offer</div>
+                    <div className="text-[10px] font-bold text-tertiary uppercase">Input Loans</div>
                     <div className="text-[12px] text-on-tertiary-fixed-variant leading-tight">
-                      You qualify for an input loan of up to KES 15,000.
+                      Input loans available through your cooperative. Speak to your manager.
                     </div>
                   </div>
                 </div>
@@ -127,6 +127,16 @@ export default function ForFarmers() {
               <h3 className="font-headline-sm text-headline-sm text-primary mb-4">Easy Loan Access</h3>
               <p className="font-body-md text-body-md text-on-surface-variant">
                 Apply for agricultural input loans or emergency credit based on your delivery history. Fast approval, fair rates, no paper stress.
+              </p>
+            </div>
+
+            <div className="bg-surface-container-highest rounded-xl p-8 border border-outline-variant/30 group hover:shadow-md transition-all">
+              <div className="mb-6 h-12 w-12 bg-tertiary flex items-center justify-center rounded-lg text-on-tertiary">
+                <HiOutlineShieldCheck className="w-6 h-6" />
+              </div>
+              <h3 className="font-headline-sm text-headline-sm text-primary mb-4">Grade Dispute Resolution</h3>
+              <p className="font-body-md text-body-md text-on-surface-variant">
+                If you disagree with a grade on your delivery, file a dispute through the portal. Managers review with full audit logs for transparent resolution.
               </p>
             </div>
 
@@ -203,7 +213,7 @@ export default function ForFarmers() {
             </p>
             <div className="flex flex-col gap-4">
               <button className="bg-surface-bright text-primary px-8 py-4 rounded-lg font-bold hover:bg-white transition-all shadow-lg active:scale-95">
-                Find My Cooperative
+                Contact Your Cooperative Manager
               </button>
               <Link to="/about" className="text-white hover:underline font-body-md text-body-md">
                 Learn more about Zao security
