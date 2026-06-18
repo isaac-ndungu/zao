@@ -1,0 +1,14 @@
+# Node
+node_modules/
+client/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

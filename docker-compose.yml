@@ -73,5 +73,15 @@ services:
       redis:
         condition: service_started
 
+  client:
+    build: ./client
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - web
+
 volumes:
   postgres_data:
