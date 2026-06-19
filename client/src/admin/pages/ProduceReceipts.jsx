@@ -8,6 +8,7 @@ import Pagination from '../components/common/Pagination'
 import StatusBadge from '../components/common/StatusBadge'
 import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
+import { useToast } from '../contexts/ToastContext'
 
 const statusOptions = [
   { value: 'PENDING', label: 'Pending' },
@@ -39,6 +40,7 @@ const shiftOptions = [
 ]
 
 export default function ProduceReceipts() {
+  const { showToast } = useToast()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -50,6 +52,8 @@ export default function ProduceReceipts() {
   const [panelDelivery, setPanelDelivery] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
+  const [statusDelivery, setStatusDelivery] = useState(null)
+  const [statusTarget, setStatusTarget] = useState('')
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -75,27 +79,40 @@ export default function ProduceReceipts() {
     setPanelOpen(true)
   }
 
-  const handleForceStatus = (delivery) => {
+  const openForceStatus = (delivery) => {
+    setStatusDelivery(delivery)
+    setStatusTarget('')
+  }
+
+  const confirmForceStatus = async () => {
+    if (!statusDelivery || !statusTarget) return
+    setActionLoading(true)
+    setModalConfig({ open: false })
+    try {
+      const res = await apiFetch(`/api/admin/deliveries/${statusDelivery.id}/force-status/`, {
+        method: 'POST',
+        body: JSON.stringify({ status: statusTarget }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Delivery ${statusDelivery.batch_id} status changed to ${statusTarget}.` })
+      refetch()
+      setStatusDelivery(null)
+      setStatusTarget('')
+    } catch (e) {
+      showToast({ type: 'error', message: `Force status failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const openConfirmForceStatus = () => {
+    if (!statusTarget) return
     setModalConfig({
       open: true,
-      title: 'Force Status Change',
-      message: `Change status of delivery ${delivery.batch_id}? This is an admin override.`,
-      onConfirm: async () => {
-        setActionLoading(true)
-        setModalConfig({ open: false })
-        try {
-          const res = await apiFetch(`/api/admin/deliveries/${delivery.id}/force-status/`, {
-            method: 'POST',
-            body: JSON.stringify({ status: prompt('Enter new status (PENDING/GRADED/ACCEPTED/REJECTED/PAID):') }),
-          })
-          refetch()
-        } catch (e) {
-          console.error('Force status failed', e)
-        } finally {
-          setActionLoading(false)
-        }
-      },
-      destructive: false,
+      title: 'Confirm Status Change',
+      message: `Change delivery ${statusDelivery.batch_id} status to ${statusTarget}? This is an admin override.`,
+      onConfirm: confirmForceStatus,
+      destructive: statusTarget === 'REJECTED',
     })
   }
 
@@ -164,7 +181,7 @@ export default function ProduceReceipts() {
             <button onClick={() => handleView(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors">
               <span className="material-symbols-outlined text-[18px]">visibility</span>
             </button>
-            <button onClick={() => handleForceStatus(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
+            <button onClick={() => openForceStatus(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
               <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
             </button>
           </div>
@@ -174,6 +191,44 @@ export default function ProduceReceipts() {
       <div className="mt-2">
         <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </div>
+
+      {/* Force Status Dropdown Modal */}
+      {statusDelivery && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => { setStatusDelivery(null); setStatusTarget('') }} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-1">Force Status Change</h3>
+            <p className="text-label-md text-on-surface-variant mb-4">
+              Delivery: <span className="font-data-mono">{statusDelivery.batch_id}</span>
+            </p>
+            <select
+              value={statusTarget}
+              onChange={(e) => setStatusTarget(e.target.value)}
+              className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface mb-4"
+            >
+              <option value="">Select new status...</option>
+              {statusOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setStatusDelivery(null); setStatusTarget('') }}
+                className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={openConfirmForceStatus}
+                disabled={!statusTarget}
+                className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelDelivery(null) }} title="Delivery Details">
         {panelDelivery && (
@@ -228,7 +283,7 @@ export default function ProduceReceipts() {
               </div>
             )}
             <div className="pt-2">
-              <button onClick={() => handleForceStatus(panelDelivery)} className="w-full px-4 py-2 border border-primary text-primary rounded-lg text-label-md font-bold hover:bg-primary/5 transition-colors">
+              <button onClick={() => { setPanelOpen(false); openForceStatus(panelDelivery) }} className="w-full px-4 py-2 border border-primary text-primary rounded-lg text-label-md font-bold hover:bg-primary/5 transition-colors">
                 Force Status Change
               </button>
             </div>
