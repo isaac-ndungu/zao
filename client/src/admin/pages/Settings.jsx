@@ -1,14 +1,37 @@
 import { useAdminAuth } from '../hooks/useAdminAuth'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { apiFetch } from '../api/client'
+import { useToast } from '../contexts/ToastContext'
 
 export default function Settings() {
   const { user } = useAdminAuth()
-  const [saved, setSaved] = useState(false)
+  const { showToast } = useToast()
+  const [saving, setSaving] = useState(false)
+  const firstNameRef = useRef(null)
+  const lastNameRef = useRef(null)
+  const emailRef = useRef(null)
+  const phoneRef = useRef(null)
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaving(true)
+    try {
+      const res = await apiFetch(`/api/admin/users/${user.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          first_name: firstNameRef.current?.value || user.first_name,
+          last_name: lastNameRef.current?.value || user.last_name,
+          email: emailRef.current?.value || user.email,
+          phone_number: phoneRef.current?.value || user.phone_number,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: 'Profile updated successfully.' })
+    } catch (e) {
+      showToast({ type: 'error', message: `Failed to save: ${e.message}` })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -25,6 +48,7 @@ export default function Settings() {
             <div>
               <label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
               <input
+                ref={firstNameRef}
                 type="text"
                 defaultValue={user?.first_name || ''}
                 className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -33,6 +57,7 @@ export default function Settings() {
             <div>
               <label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
               <input
+                ref={lastNameRef}
                 type="text"
                 defaultValue={user?.last_name || ''}
                 className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -42,6 +67,7 @@ export default function Settings() {
           <div>
             <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
             <input
+              ref={emailRef}
               type="email"
               defaultValue={user?.email || ''}
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -50,6 +76,7 @@ export default function Settings() {
           <div>
             <label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
             <input
+              ref={phoneRef}
               type="tel"
               defaultValue={user?.phone_number || ''}
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -58,9 +85,10 @@ export default function Settings() {
           <div className="pt-2">
             <button
               type="submit"
-              className="px-6 py-2 bg-primary text-on-primary rounded-lg font-bold text-label-md hover:bg-primary/90 transition-colors"
+              disabled={saving}
+              className="px-6 py-2 bg-primary text-on-primary rounded-lg font-bold text-label-md hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {saved ? 'Saved!' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -81,7 +109,10 @@ export default function Settings() {
               <p className="font-body-md font-medium text-on-surface">Two-Factor Authentication</p>
               <p className="text-label-md text-on-surface-variant">Add an extra layer of security</p>
             </div>
-            <button className="px-4 py-1.5 border border-primary text-primary rounded-lg text-label-md font-bold hover:bg-primary/5 transition-colors">
+            <button
+              onClick={() => showToast({ type: 'info', message: '2FA management coming soon.' })}
+              className="px-4 py-1.5 border border-primary text-primary rounded-lg text-label-md font-bold hover:bg-primary/5 transition-colors"
+            >
               Enable
             </button>
           </div>
