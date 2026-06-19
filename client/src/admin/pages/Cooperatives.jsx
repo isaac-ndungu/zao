@@ -53,6 +53,7 @@ export default function Cooperatives() {
       const res = await apiFetch(url, { method: 'POST', ...opts })
       if (!res.ok) throw new Error(await res.text())
       showToast({ type: 'success', message: 'Cooperative updated.' })
+      setModalConfig({ open: false })
       refetch()
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
@@ -120,7 +121,7 @@ export default function Cooperatives() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><KpiSkeleton count={1} /></div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard title="Total Cooperatives" value={kpis.total} icon="groups" />
+          <KpiCard label="Total Cooperatives" value={kpis.total} icon="groups" />
         </div>
       )}
 

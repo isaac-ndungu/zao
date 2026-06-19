@@ -88,6 +88,7 @@ export default function AuditTrail() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('actor', search); if (filters.action) p.set('action', filters.action); if (filters.resource_type) p.set('resource_type', filters.resource_type); p.set('export', 'csv'); window.open(`/api/admin/audit-logs/?${p}`, '_blank') }}
       />
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">

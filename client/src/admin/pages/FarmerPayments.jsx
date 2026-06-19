@@ -69,7 +69,7 @@ export default function FarmerPayments() {
     { key: 'id', label: 'ID', render: (r) => <span className="font-data-mono text-label-md text-on-surface-variant">{r.id?.slice(0, 8)}...</span> },
     { key: 'farmer_name', label: 'Farmer', sortable: true, render: (r) => <span className="font-medium text-body-md">{r.farmer_name || r.farmer?.name || '-'}</span> },
     { key: 'cycle', label: 'Cycle', render: (r) => <span className="text-label-md text-on-surface-variant">{r.cycle_name || r.cycle?.name || '-'}</span> },
-    { key: 'amount', label: 'Amount', sortable: true, render: (r) => <span className="font-data-mono text-body-md">GHS {r.amount?.toLocaleString() || '-'}</span> },
+    { key: 'amount', label: 'Amount', sortable: true, render: (r) => <span className="font-data-mono text-body-md">KES {r.amount?.toLocaleString() || '-'}</span> },
     { key: 'status', label: 'Status', sortable: true, render: (r) => <StatusBadge status={r.status === 'held' ? 'locked' : r.status === 'paid' ? 'completed' : 'active'} label={r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : '-'} /> },
     { key: 'created_at', label: 'Date', sortable: true, render: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : '-' },
   ], [])
@@ -89,7 +89,7 @@ export default function FarmerPayments() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><KpiSkeleton count={1} /></div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <KpiCard title="Total Payments" value={kpis.total} icon="payments" />
+          <KpiCard label="Total Payments" value={kpis.total} icon="payments" />
         </div>
       )}
 
@@ -141,7 +141,7 @@ export default function FarmerPayments() {
             <StatusBadge status={panelItem.status === 'held' ? 'locked' : panelItem.status === 'paid' ? 'completed' : 'active'} label={panelItem.status ? panelItem.status.charAt(0).toUpperCase() + panelItem.status.slice(1) : '-'} />
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Farmer</p><p className="font-body-md text-on-surface">{panelItem.farmer_name || panelItem.farmer?.name || '-'}</p></div>
-              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Amount</p><p className="font-body-md text-on-surface font-data-mono">GHS {panelItem.amount?.toLocaleString() || '-'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Amount</p><p className="font-body-md text-on-surface font-data-mono">KES {panelItem.amount?.toLocaleString() || '-'}</p></div>
               <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Cycle</p><p className="font-body-md text-on-surface">{panelItem.cycle_name || panelItem.cycle?.name || '-'}</p></div>
               <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Status</p><p className="font-body-md text-on-surface">{panelItem.status || '-'}</p></div>
               <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Created</p><p className="font-body-md text-on-surface">{panelItem.created_at ? new Date(panelItem.created_at).toLocaleDateString() : '-'}</p></div>
