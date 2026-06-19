@@ -22,7 +22,8 @@ export default function TrashManagement() {
     setLoading(true)
     try {
       const res = await apiFetch('/api/admin/bin/')
-      setBinSummary(res)
+      const data = await res.json()
+      setBinSummary(data)
     } catch (e) {
       showToast({ type: 'error', message: 'Failed to fetch bin summary.' })
     } finally {
@@ -40,7 +41,8 @@ export default function TrashManagement() {
       if (!section) return
       try {
         const res = await apiFetch(section.listEndpoint)
-        setTrashData(prev => ({ ...prev, [key]: res }))
+        const data = await res.json()
+        setTrashData(prev => ({ ...prev, [key]: Array.isArray(data) ? data : data?.results || [] }))
       } catch (e) {
         showToast({ type: 'error', message: `Failed to load ${key} records.` })
       }

@@ -28,6 +28,7 @@ const roleBadgeMap = {
 
 export default function UserManagement() {
   const { showToast } = useToast()
+  const [tab, setTab] = useState('users')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -47,6 +48,9 @@ export default function UserManagement() {
   const [suLoading, setSuLoading] = useState(false)
   const [openDropdownId, setOpenDropdownId] = useState(null)
   const dropdownRef = useRef(null)
+
+  const [invitePage, setInvitePage] = useState(1)
+  const [inviteFilters, setInviteFilters] = useState({})
 
   useEffect(() => {
     const handler = (e) => {
@@ -70,6 +74,15 @@ export default function UserManagement() {
   }, [page, pageSize, search, filters, sortField, sortOrder])
 
   const { data, loading, error, refetch } = useApi(`/api/admin/users/?${query}`)
+
+  const inviteQuery = useMemo(() => {
+    const params = new URLSearchParams()
+    params.set('page', invitePage)
+    params.set('page_size', 20)
+    if (inviteFilters.status) params.set('status', inviteFilters.status)
+    return params.toString()
+  }, [invitePage, inviteFilters])
+  const { data: inviteData, loading: inviteListLoading, refetch: refetchInvites } = useApi(`/api/admin/auth/invites/?${inviteQuery}`)
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -222,6 +235,33 @@ export default function UserManagement() {
     { key: 'date_joined', label: 'Joined', sortable: true, render: (r) => r.date_joined ? new Date(r.date_joined).toLocaleDateString() : '-' },
   ], [])
 
+  const handleRevokeInvite = async (invite) => {
+    setActionLoading(true)
+    try {
+      const res = await apiFetch(`/api/admin/auth/invite/${invite.id}/revoke/`, { method: 'POST', body: JSON.stringify({ confirm: true }), headers: { 'Content-Type': 'application/json' } })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Invite for ${invite.email} revoked.` })
+      refetchInvites()
+    } catch (e) {
+      showToast({ type: 'error', message: `Revoke failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleResendInvite = async (invite) => {
+    setActionLoading(true)
+    try {
+      const res = await apiFetch(`/api/admin/auth/invite/${invite.id}/resend/`, { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Invite resent to ${invite.email}.` })
+    } catch (e) {
+      showToast({ type: 'error', message: `Resend failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   if (error) {
     return <div className="bg-error-container text-error p-4 rounded-xl">Failed to load users: {error}</div>
   }
@@ -232,106 +272,172 @@ export default function UserManagement() {
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">User Management</h2>
           <div className="flex gap-2">
-            <button onClick={() => setSuperuserModal(true)} className="flex items-center gap-2 px-3 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-              <span className="hidden sm:inline">Create Superuser</span>
-            </button>
-            <button onClick={() => setInviteModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-              <span className="material-symbols-outlined text-[16px]">person_add</span>
-              Invite User
-            </button>
+            {tab === 'users' && (
+              <>
+                <button onClick={() => setSuperuserModal(true)} className="flex items-center gap-2 px-3 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+                  <span className="hidden sm:inline">Create Superuser</span>
+                </button>
+                <button onClick={() => setInviteModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">person_add</span>
+                  Invite User
+                </button>
+              </>
+            )}
           </div>
         </div>
         <p className="text-on-surface-variant font-body-md">Manage admin users, managers, and system access.</p>
+        <div className="flex gap-1 mt-4 border-b border-outline-variant">
+          <button onClick={() => setTab('users')} className={`px-4 py-2 text-label-md font-bold border-b-2 transition-colors ${tab === 'users' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}>Users</button>
+          <button onClick={() => setTab('invites')} className={`px-4 py-2 text-label-md font-bold border-b-2 transition-colors ${tab === 'invites' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}`}>Invites</button>
+        </div>
       </header>
 
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        placeholder="Search by name, email, phone..."
-        filters={[
-          { key: 'role', label: 'Role', options: roleOptions },
-          { key: 'is_active', label: 'Status', options: [{ value: 'true', label: 'Active' }, { value: 'false', label: 'Inactive' }] },
-        ]}
-        filterValues={filters}
-        onFilterChange={setFilters}
-        onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-      />
+      {tab === 'users' ? (
+        <>
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            placeholder="Search by name, email, phone..."
+            filters={[
+              { key: 'role', label: 'Role', options: roleOptions },
+              { key: 'is_active', label: 'Status', options: [{ value: 'true', label: 'Active' }, { value: 'false', label: 'Inactive' }] },
+            ]}
+            filterValues={filters}
+            onFilterChange={setFilters}
+            onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+            onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.role) p.set('role', filters.role); if (filters.is_active) p.set('is_active', filters.is_active); p.set('export', 'csv'); window.open(`/api/admin/users/?${p}`, '_blank') }}
+          />
 
-      {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 mb-4 px-4 py-2 bg-primary-container/50 border border-primary-container rounded-lg">
-          <span className="text-label-md font-medium text-on-primary-container">{selectedIds.length} selected</span>
-          <button onClick={() => handleBulkAction('activate')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors">Activate</button>
-          <button onClick={() => handleBulkAction('deactivate')} className="px-3 py-1 text-label-md font-bold bg-error text-on-error rounded-lg hover:bg-error/90 transition-colors">Deactivate</button>
-          <button onClick={() => setSelectedIds([])} className="text-label-md text-on-surface-variant hover:text-on-surface ml-auto">Clear selection</button>
-        </div>
-      )}
-
-      {loading ? <TableSkeleton /> : (
-        <DataTable
-          columns={columns}
-          data={data?.results || []}
-          selectedIds={selectedIds}
-          onSelectionChange={setSelectedIds}
-          sortField={sortField}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          loading={false}
-          emptyMessage="No users found."
-          rowActions={(user) => (
-            <div className="relative">
-              <button
-                onClick={() => toggleDropdown(user.id)}
-                className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"
-                aria-label="User actions"
-                aria-haspopup="true"
-                aria-expanded={openDropdownId === user.id}
-              >
-                <span className="material-symbols-outlined text-[18px]">more_vert</span>
-              </button>
-              {openDropdownId === user.id && (
-                <div
-                  className="absolute right-0 top-full mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-50 py-1"
-                  role="menu"
-                >
-                  <button onClick={() => handleView(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">visibility</span>View Details
-                  </button>
-                  {user.is_active ? (
-                    <button onClick={() => handleUserAction(user, 'deactivate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
-                    </button>
-                  ) : (
-                    <button onClick={() => handleUserAction(user, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
-                    </button>
-                  )}
-                  <button onClick={() => handleUserAction(user, 'toggle-2fa')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">security</span>Toggle 2FA
-                  </button>
-                  <button onClick={() => handleUserAction(user, 'reset-password')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">key</span>Reset Password
-                  </button>
-                  <button onClick={() => handleUserAction(user, 'force-logout')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">logout</span>Force Logout
-                  </button>
-                  <button onClick={() => handleImpersonate(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">person_impersonated</span>Impersonate
-                  </button>
-                  <div className="border-t border-outline-variant my-1" />
-                  <button onClick={() => handleUserAction(user, 'delete')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">delete</span>Delete
-                  </button>
-                </div>
-              )}
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-3 mb-4 px-4 py-2 bg-primary-container/50 border border-primary-container rounded-lg">
+              <span className="text-label-md font-medium text-on-primary-container">{selectedIds.length} selected</span>
+              <button onClick={() => handleBulkAction('activate')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90 transition-colors">Activate</button>
+              <button onClick={() => handleBulkAction('deactivate')} className="px-3 py-1 text-label-md font-bold bg-error text-on-error rounded-lg hover:bg-error/90 transition-colors">Deactivate</button>
+              <button onClick={() => setSelectedIds([])} className="text-label-md text-on-surface-variant hover:text-on-surface ml-auto">Clear selection</button>
             </div>
           )}
-        />
-      )}
 
-      <div className="mt-2">
-        <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
-      </div>
+          {loading ? <TableSkeleton /> : (
+            <DataTable
+              columns={columns}
+              data={data?.results || []}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSort={handleSort}
+              loading={false}
+              emptyMessage="No users found."
+              rowActions={(user) => (
+                <div className="relative">
+                  <button
+                    onClick={() => toggleDropdown(user.id)}
+                    className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"
+                    aria-label="User actions"
+                    aria-haspopup="true"
+                    aria-expanded={openDropdownId === user.id}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                  </button>
+                  {openDropdownId === user.id && (
+                    <div
+                      className="absolute right-0 top-full mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-50 py-1"
+                      role="menu"
+                    >
+                      <button onClick={() => handleView(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">visibility</span>View Details
+                      </button>
+                      {user.is_active ? (
+                        <button onClick={() => handleUserAction(user, 'deactivate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                          <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
+                        </button>
+                      ) : (
+                        <button onClick={() => handleUserAction(user, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                          <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
+                        </button>
+                      )}
+                      <button onClick={() => handleUserAction(user, 'toggle-2fa')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">security</span>Toggle 2FA
+                      </button>
+                      <button onClick={() => handleUserAction(user, 'reset-password')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">key</span>Reset Password
+                      </button>
+                      <button onClick={() => handleUserAction(user, 'force-logout')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">logout</span>Force Logout
+                      </button>
+                      <button onClick={() => handleImpersonate(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">person_impersonated</span>Impersonate
+                      </button>
+                      <div className="border-t border-outline-variant my-1" />
+                      <button onClick={() => handleUserAction(user, 'delete')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">delete</span>Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            />
+          )}
+
+          <div className="mt-2">
+            <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
+          </div>
+        </>
+      ) : (
+        <>
+          <FilterBar
+            search=""
+            onSearchChange={() => {}}
+            placeholder=""
+            filters={[
+              { key: 'status', label: 'Status', options: [{ value: 'PENDING', label: 'Pending' }, { value: 'ACCEPTED', label: 'Accepted' }, { value: 'REVOKED', label: 'Revoked' }] },
+            ]}
+            filterValues={inviteFilters}
+            onFilterChange={setInviteFilters}
+            onClear={() => { setInviteFilters({}); setInvitePage(1) }}
+            onExport={() => { const p = new URLSearchParams(); if (inviteFilters.status) p.set('status', inviteFilters.status); p.set('export', 'csv'); window.open(`/api/admin/auth/invites/?${p}`, '_blank') }}
+          />
+          {inviteListLoading ? <TableSkeleton /> : (
+            <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-outline-variant">
+                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Email</th>
+                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Status</th>
+                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Role</th>
+                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Created</th>
+                    <th className="text-right px-4 py-3 text-label-md font-bold text-on-surface-variant">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/50">
+                  {(inviteData?.results || []).length === 0 ? (
+                    <tr><td colSpan={5} className="px-4 py-12 text-center text-body-md text-on-surface-variant">No invites found.</td></tr>
+                  ) : (inviteData?.results || []).map((inv) => (
+                    <tr key={inv.id} className="hover:bg-surface-container transition-colors">
+                      <td className="px-4 py-3 text-body-md text-on-surface">{inv.email}</td>
+                      <td className="px-4 py-3"><StatusBadge status={inv.status === 'PENDING' ? 'computing' : inv.status === 'ACCEPTED' ? 'completed' : 'error'} label={inv.status || '-'} /></td>
+                      <td className="px-4 py-3 text-label-md text-on-surface-variant">{inv.role || '-'}</td>
+                      <td className="px-4 py-3 text-label-md text-on-surface-variant">{inv.created_at ? new Date(inv.created_at).toLocaleDateString() : '-'}</td>
+                      <td className="px-4 py-3 text-right">
+                        {inv.status === 'PENDING' && (
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleResendInvite(inv)} disabled={actionLoading} className="px-2 py-1 text-[11px] font-bold text-primary hover:bg-primary-container rounded-lg transition-colors" title="Resend Invite">Resend</button>
+                            <button onClick={() => handleRevokeInvite(inv)} disabled={actionLoading} className="px-2 py-1 text-[11px] font-bold text-error hover:bg-error-container rounded-lg transition-colors" title="Revoke Invite">Revoke</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="mt-2">
+            <Pagination page={invitePage} pageSize={20} total={inviteData?.count || 0} onPageChange={setInvitePage} onPageSizeChange={() => {}} />
+          </div>
+        </>
+      )}
 
       <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelUser(null) }} title="User Details">
         {panelUser && (
