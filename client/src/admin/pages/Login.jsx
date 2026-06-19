@@ -85,14 +85,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#eaffea] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="font-display-lg text-display-lg text-primary">Zao</h1>
           <p className="text-on-surface-variant text-body-md mt-1">Admin Dashboard</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-surface-container-lowest rounded-xl shadow-lg p-8 border border-outline-variant">
           {step === 'credentials' ? (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
@@ -108,7 +108,7 @@ export default function Login() {
                   required
                   autoFocus
                   autoComplete="email"
-                  className="w-full px-3 py-2 border border-[#d8f3dc] rounded-lg text-body-md text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-[#a0a0a0]"
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-on-surface-variant/60"
                 />
               </div>
 
@@ -124,7 +124,7 @@ export default function Login() {
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"
-                  className="w-full px-3 py-2 border border-[#d8f3dc] rounded-lg text-body-md text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-[#a0a0a0]"
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-on-surface-variant/60"
                 />
               </div>
 
@@ -137,7 +137,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-[#0d452f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -161,7 +161,7 @@ export default function Login() {
                   maxLength={6}
                   autoFocus
                   inputMode="numeric"
-                  className="w-full px-3 py-2 border border-[#d8f3dc] rounded-lg text-body-md text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-[#a0a0a0] text-center tracking-[0.3em]"
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-on-surface-variant/60 text-center tracking-[0.3em]"
                 />
                 <p className="text-label-md text-on-surface-variant mt-2">
                   {otpSent
@@ -182,7 +182,7 @@ export default function Login() {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={loading}
-                    className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-[#0d452f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -193,7 +193,7 @@ export default function Login() {
                   <button
                     type="submit"
                     disabled={loading || otpCode.length !== 6}
-                    className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-[#0d452f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
