@@ -144,3 +144,15 @@ body {
 .hero-mask {
   mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
 }
+
+.funnel-stage {
+  clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%, 5% 50%);
+}
+
+.funnel-stage:first-child {
+  clip-path: polygon(0% 0%, 95% 0%, 100% 50%, 95% 100%, 0% 100%);
+}
+
+.funnel-stage:last-child {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 5% 50%);
+}

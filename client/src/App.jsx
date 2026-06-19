@@ -7,14 +7,7 @@ import { AdminAuthProvider } from './admin/contexts/AdminAuthContext'
 import AdminGuard from './admin/components/common/AdminGuard'
 import AdminLayout from './admin/layouts/AdminLayout'
 import Login from './admin/pages/Login'
-
-function DashboardPlaceholder() {
-  return (
-    <div>
-      <p className="text-headline-lg text-primary">Dashboard — Phase 3</p>
-    </div>
-  )
-}
+import Dashboard from './admin/pages/Dashboard'
 
 export default function App() {
   return (
@@ -28,7 +21,7 @@ export default function App() {
           <Route path="/admin/login" element={<Login />} />
           <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPlaceholder />} />
+            <Route path="dashboard" element={<Dashboard />} />
           </Route>
         </Routes>
       </AdminAuthProvider>
