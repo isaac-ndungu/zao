@@ -104,6 +104,7 @@ export default function FarmerPayments() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('payment_status', filters.status); if (filters.cycle) p.set('cycle', filters.cycle); p.set('export', 'csv'); window.open(`/api/admin/farmer-payments/?${p}`, '_blank') }}
       />
 
       {loading ? <TableSkeleton /> : (

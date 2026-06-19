@@ -43,6 +43,9 @@ export default function Financials() {
   const [batchPageSize, setBatchPageSize] = useState(10)
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [cycleForm, setCycleForm] = useState({ name: '', start_date: '', end_date: '' })
+  const [formLoading, setFormLoading] = useState(false)
 
   const { data: finData, loading, error } = useApi(`/api/admin/analytics/financial/?period=${period}`)
   const { data: cyclesData, loading: cyclesLoading, refetch: refetchCycles } = useApi(`/api/admin/payment-cycles/?page=${cyclePage}&page_size=${cyclePageSize}`)
@@ -88,6 +91,37 @@ export default function Financials() {
     })
   }
 
+  const handleRunComputation = async (cycle) => {
+    setActionLoading(true)
+    try {
+      const res = await apiFetch(`/api/admin/payment-cycles/${cycle.id}/run/`, { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Computation started for "${cycle.name}". Check back shortly.` })
+      refetchCycles()
+    } catch (e) {
+      showToast({ type: 'error', message: `Computation failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCreateCycle = async (e) => {
+    e.preventDefault()
+    setFormLoading(true)
+    try {
+      const res = await apiFetch('/api/admin/payment-cycles/', { method: 'POST', body: JSON.stringify(cycleForm) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Cycle "${cycleForm.name}" created.` })
+      setCreateOpen(false)
+      setCycleForm({ name: '', start_date: '', end_date: '' })
+      refetchCycles()
+    } catch (e) {
+      showToast({ type: 'error', message: `Creation failed: ${e.message}` })
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
   const cycleColumns = useMemo(() => [
     { key: 'name', label: 'Name', sortable: true, render: (r) => <span className="font-medium">{r.name}</span> },
     { key: 'status', label: 'Status', render: (r) => <StatusBadge status={cycleStatusBadge[r.status] || 'draft'} label={r.status} /> },
@@ -113,7 +147,15 @@ export default function Financials() {
   return (
     <div>
       <header className="mb-6">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">Financials</h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-headline-lg text-display-md text-primary">Financials</h2>
+          {tab === 'cycles' && (
+            <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              New Cycle
+            </button>
+          )}
+        </div>
         <p className="text-on-surface-variant font-body-md">Payment cycles, disbursement batches, and financial overview.</p>
       </header>
 
@@ -197,13 +239,14 @@ export default function Financials() {
                 loading={false}
                 emptyMessage="No payment cycles found."
                 rowActions={(cycle) => {
+                  const canRun = cycle.status === 'DRAFT'
                   const canLock = cycle.status === 'COMPUTED'
                   const canUnlock = cycle.status === 'LOCKED'
                   return (
                     <div className="flex gap-1">
+                      {canRun && <button onClick={() => handleRunComputation(cycle)} disabled={actionLoading} className="p-1.5 rounded-lg hover:bg-primary-container text-primary transition-colors" title="Run Computation"><span className="material-symbols-outlined text-[18px]">play_arrow</span></button>}
                       {canLock && <button onClick={() => handleCycleAction(cycle, 'lock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Lock"><span className="material-symbols-outlined text-[18px]">lock</span></button>}
                       {canUnlock && <button onClick={() => handleCycleAction(cycle, 'unlock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Unlock"><span className="material-symbols-outlined text-[18px]">lock_open</span></button>}
-                      <button className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"><span className="material-symbols-outlined text-[18px]">more_vert</span></button>
                     </div>
                   )
                 }}
@@ -241,6 +284,27 @@ export default function Financials() {
             </>
           )}
         </>
+      )}
+
+      {createOpen && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Payment Cycle</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Define a new payment cycle for farmer payouts.</p>
+            <form onSubmit={handleCreateCycle} className="space-y-3">
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input required value={cycleForm.name} onChange={(e) => setCycleForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. June 2026 Payout" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Start Date *</label><input type="date" required value={cycleForm.start_date} onChange={(e) => setCycleForm(f => ({ ...f, start_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">End Date *</label><input type="date" required value={cycleForm.end_date} onChange={(e) => setCycleForm(f => ({ ...f, end_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       <ConfirmModal

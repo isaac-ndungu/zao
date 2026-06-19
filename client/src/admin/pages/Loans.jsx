@@ -39,6 +39,9 @@ export default function Loans() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelItem, setPanelItem] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
+  const [createOpen, setCreateOpen] = useState(false)
+  const [loanForm, setLoanForm] = useState({ farmer: '', amount_principal: '', interest_rate: '', number_of_installments: '', purpose: '', notes: '' })
+  const [formLoading, setFormLoading] = useState(false)
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -74,6 +77,24 @@ export default function Loans() {
     }
   }
 
+  const handleCreateLoan = async (e) => {
+    e.preventDefault()
+    setFormLoading(true)
+    try {
+      const body = { ...loanForm, amount_principal: parseFloat(loanForm.amount_principal), interest_rate: parseFloat(loanForm.interest_rate), number_of_installments: parseInt(loanForm.number_of_installments) }
+      const res = await apiFetch('/api/admin/loans/', { method: 'POST', body: JSON.stringify(body) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: 'Loan created.' })
+      setCreateOpen(false)
+      setLoanForm({ farmer: '', amount_principal: '', interest_rate: '', number_of_installments: '', purpose: '', notes: '' })
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Creation failed: ${e.message}` })
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
   const handleStatusAction = (item, newStatus) => {
     const labels = { approved: 'Approve', rejected: 'Reject', defaulted: 'Mark Defaulted', completed: 'Mark Completed' }
     setModalConfig({
@@ -101,6 +122,10 @@ export default function Loans() {
       <header className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">Loans</h2>
+          <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            New Loan
+          </button>
         </div>
         <p className="text-on-surface-variant font-body-md">Manage farmer loan applications and disbursements.</p>
       </header>
@@ -123,6 +148,7 @@ export default function Loans() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('status', filters.status); p.set('export', 'csv'); window.open(`/api/admin/loans/?${p}`, '_blank') }}
       />
 
       {loading ? <TableSkeleton /> : (
@@ -192,6 +218,30 @@ export default function Loans() {
           </div>
         )}
       </SlideOutPanel>
+
+      {createOpen && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Loan</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Issue a new loan to a farmer.</p>
+            <form onSubmit={handleCreateLoan} className="space-y-3">
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer ID *</label><input required value={loanForm.farmer} onChange={(e) => setLoanForm(f => ({ ...f, farmer: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="UUID" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES) *</label><input type="number" min="0" step="0.01" required value={loanForm.amount_principal} onChange={(e) => setLoanForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%) *</label><input type="number" min="0" step="0.1" required value={loanForm.interest_rate} onChange={(e) => setLoanForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Installments *</label><input type="number" min="1" required value={loanForm.number_of_installments} onChange={(e) => setLoanForm(f => ({ ...f, number_of_installments: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Purpose</label><input value={loanForm.purpose} onChange={(e) => setLoanForm(f => ({ ...f, purpose: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Notes</label><textarea rows={2} value={loanForm.notes} onChange={(e) => setLoanForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
     </div>
