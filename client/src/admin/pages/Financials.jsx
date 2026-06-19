@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react'
+import { useContext, useMemo, useState, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
@@ -41,6 +41,10 @@ export default function Financials() {
   const [cyclePageSize, setCyclePageSize] = useState(10)
   const [batchPage, setBatchPage] = useState(1)
   const [batchPageSize, setBatchPageSize] = useState(10)
+  const [cycleSortField, setCycleSortField] = useState('name')
+  const [cycleSortOrder, setCycleSortOrder] = useState('asc')
+  const [batchSortField, setBatchSortField] = useState('id')
+  const [batchSortOrder, setBatchSortOrder] = useState('desc')
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -48,8 +52,18 @@ export default function Financials() {
   const [formLoading, setFormLoading] = useState(false)
 
   const { data: finData, loading, error } = useApi(`/api/admin/analytics/financial/?period=${period}`)
-  const { data: cyclesData, loading: cyclesLoading, refetch: refetchCycles } = useApi(`/api/admin/payment-cycles/?page=${cyclePage}&page_size=${cyclePageSize}`)
-  const { data: batchesData, loading: batchesLoading, refetch: refetchBatches } = useApi(`/api/admin/disbursement-batches/?page=${batchPage}&page_size=${batchPageSize}`)
+  const cycleQuery = useMemo(() => {
+    const p = new URLSearchParams({ page: cyclePage, page_size: cyclePageSize })
+    if (cycleSortField) p.set('ordering', cycleSortOrder === 'desc' ? `-${cycleSortField}` : cycleSortField)
+    return p.toString()
+  }, [cyclePage, cyclePageSize, cycleSortField, cycleSortOrder])
+  const batchQuery = useMemo(() => {
+    const p = new URLSearchParams({ page: batchPage, page_size: batchPageSize })
+    if (batchSortField) p.set('ordering', batchSortOrder === 'desc' ? `-${batchSortField}` : batchSortField)
+    return p.toString()
+  }, [batchPage, batchPageSize, batchSortField, batchSortOrder])
+  const { data: cyclesData, loading: cyclesLoading, refetch: refetchCycles } = useApi(`/api/admin/payment-cycles/?${cycleQuery}`)
+  const { data: batchesData, loading: batchesLoading, refetch: refetchBatches } = useApi(`/api/admin/disbursement-batches/?${batchQuery}`)
 
   const fin = finData?.data
 
@@ -104,6 +118,15 @@ export default function Financials() {
       setActionLoading(false)
     }
   }
+
+  const handleCycleSort = useCallback((field) => {
+    if (cycleSortField === field) setCycleSortOrder(o => o === 'asc' ? 'desc' : 'asc')
+    else { setCycleSortField(field); setCycleSortOrder('asc') }
+  }, [cycleSortField])
+  const handleBatchSort = useCallback((field) => {
+    if (batchSortField === field) setBatchSortOrder(o => o === 'asc' ? 'desc' : 'asc')
+    else { setBatchSortField(field); setBatchSortOrder('asc') }
+  }, [batchSortField])
 
   const handleCreateCycle = async (e) => {
     e.preventDefault()
@@ -236,6 +259,9 @@ export default function Financials() {
               <DataTable
                 columns={cycleColumns}
                 data={cyclesData?.results || []}
+                sortField={cycleSortField}
+                sortOrder={cycleSortOrder}
+                onSort={handleCycleSort}
                 loading={false}
                 emptyMessage="No payment cycles found."
                 rowActions={(cycle) => {
@@ -266,6 +292,9 @@ export default function Financials() {
               <DataTable
                 columns={batchColumns}
                 data={batchesData?.results || []}
+                sortField={batchSortField}
+                sortOrder={batchSortOrder}
+                onSort={handleBatchSort}
                 loading={false}
                 emptyMessage="No disbursement batches found."
                 rowActions={(batch) => {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
 import FilterBar from '../components/common/FilterBar'
@@ -22,6 +22,7 @@ const statusOptions = [
 const statusBadgeMap = {
   pending: 'computing',
   approved: 'active',
+  active: 'active',
   rejected: 'error',
   defaulted: 'locked',
   completed: 'completed',
@@ -42,6 +43,44 @@ export default function Loans() {
   const [createOpen, setCreateOpen] = useState(false)
   const [loanForm, setLoanForm] = useState({ farmer: '', amount_principal: '', interest_rate: '', number_of_installments: '', purpose: '', notes: '' })
   const [formLoading, setFormLoading] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editLoan, setEditLoan] = useState(null)
+  const [editForm, setEditForm] = useState({ farmer: '', amount_principal: '', interest_rate: '', number_of_installments: '', purpose: '', notes: '' })
+  const [editLoading, setEditLoading] = useState(false)
+  const [farmerSearch, setFarmerSearch] = useState('')
+  const [farmerOptions, setFarmerOptions] = useState([])
+  const [farmerSearchOpen, setFarmerSearchOpen] = useState(false)
+  const [selectedFarmerName, setSelectedFarmerName] = useState('')
+  const farmerRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (farmerRef.current && !farmerRef.current.contains(e.target)) setFarmerSearchOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    if (!farmerSearch || farmerSearch.length < 2) { setFarmerOptions([]); return }
+    const t = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/admin/farmers/?search=${encodeURIComponent(farmerSearch)}&page_size=10`)
+        if (!res.ok) return
+        const d = await res.json()
+        setFarmerOptions(d?.results || [])
+      } catch {}
+    }, 300)
+    return () => clearTimeout(t)
+  }, [farmerSearch])
+
+  const selectFarmer = (f) => {
+    setLoanForm(p => ({ ...p, farmer: f.id }))
+    setSelectedFarmerName(`${f.first_name} ${f.last_name}`)
+    setFarmerSearch('')
+    setFarmerOptions([])
+    setFarmerSearchOpen(false)
+  }
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -77,6 +116,48 @@ export default function Loans() {
     }
   }
 
+  const handleEditLoan = async (e) => {
+    e.preventDefault()
+    if (!editLoan) return
+    setEditLoading(true)
+    try {
+      const body = { ...editForm, amount_principal: parseFloat(editForm.amount_principal), interest_rate: parseFloat(editForm.interest_rate), number_of_installments: parseInt(editForm.number_of_installments) }
+      const res = await apiFetch(`/api/admin/loans/${editLoan.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: 'Loan updated.' })
+      setEditOpen(false)
+      setEditLoan(null)
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Update failed: ${e.message}` })
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  const openEditLoan = (item) => {
+    setEditLoan(item)
+    setEditForm({
+      farmer: item.farmer?.id || item.farmer || '',
+      amount_principal: item.amount_principal?.toString() || item.amount?.toString() || '',
+      interest_rate: item.interest_rate?.toString() || '',
+      number_of_installments: item.number_of_installments?.toString() || '',
+      purpose: item.purpose || '',
+      notes: item.notes || '',
+    })
+    setEditOpen(true)
+  }
+
+  const handleDisburse = (item) => {
+    setModalConfig({
+      open: true,
+      title: 'Disburse Loan',
+      message: `Disburse loan for ${item.farmer_name || item.id}?`,
+      destructive: false,
+      onConfirm: () => execAction(`/api/admin/loans/${item.id}/disburse/`),
+    })
+  }
+
   const handleCreateLoan = async (e) => {
     e.preventDefault()
     setFormLoading(true)
@@ -92,6 +173,19 @@ export default function Loans() {
       showToast({ type: 'error', message: `Creation failed: ${e.message}` })
     } finally {
       setFormLoading(false)
+    }
+  }
+
+  const handleBulkAction = async (action) => {
+    if (selectedIds.length === 0) return
+    const ids = [...selectedIds]
+    try {
+      await Promise.all(ids.map(id => apiFetch(`/api/admin/loans/${id}/${action}/`, { method: 'POST' })))
+      showToast({ type: 'success', message: `${ids.length} loans ${action}ed.` })
+      setSelectedIds([])
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Bulk action failed: ${e.message}` })
     }
   }
 
@@ -151,6 +245,15 @@ export default function Loans() {
         onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('status', filters.status); p.set('export', 'csv'); window.open(`/api/admin/loans/?${p}`, '_blank') }}
       />
 
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2 bg-primary-container/50 border border-primary-container rounded-lg">
+          <span className="text-label-md font-medium text-on-primary-container">{selectedIds.length} selected</span>
+          <button onClick={() => handleBulkAction('approve')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90">Approve</button>
+          <button onClick={() => handleBulkAction('reject')} className="px-3 py-1 text-label-md font-bold bg-error text-on-error rounded-lg hover:bg-error/90">Reject</button>
+          <button onClick={() => setSelectedIds([])} className="text-label-md text-on-surface-variant hover:text-on-surface ml-auto">Clear</button>
+        </div>
+      )}
+
       {loading ? <TableSkeleton /> : (
         <DataTable
           columns={columns}
@@ -166,12 +269,14 @@ export default function Loans() {
               <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
               {item.status === 'pending' && (
                 <>
+                  <button onClick={() => openEditLoan(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
                   <button onClick={() => handleStatusAction(item, 'approved')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
                   <button onClick={() => handleStatusAction(item, 'rejected')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>
                 </>
               )}
               {item.status === 'approved' && (
                 <>
+                  <button onClick={() => handleDisburse(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Disburse"><span className="material-symbols-outlined text-[18px]">payments</span></button>
                   <button onClick={() => handleStatusAction(item, 'defaulted')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Mark Defaulted"><span className="material-symbols-outlined text-[18px]">warning</span></button>
                   <button onClick={() => handleStatusAction(item, 'completed')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Mark Completed"><span className="material-symbols-outlined text-[18px]">task_alt</span></button>
                 </>
@@ -226,7 +331,27 @@ export default function Loans() {
             <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Loan</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Issue a new loan to a farmer.</p>
             <form onSubmit={handleCreateLoan} className="space-y-3">
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer ID *</label><input required value={loanForm.farmer} onChange={(e) => setLoanForm(f => ({ ...f, farmer: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="UUID" /></div>
+              <div ref={farmerRef} className="relative">
+                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer *</label>
+                {selectedFarmerName ? (
+                  <div className="flex items-center gap-2 w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
+                    <span className="flex-1">{selectedFarmerName}</span>
+                    <button type="button" onClick={() => { setLoanForm(f => ({ ...f, farmer: '' })); setSelectedFarmerName('') }} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined text-[16px]">close</span></button>
+                  </div>
+                ) : (
+                  <input value={farmerSearch} onChange={(e) => { setFarmerSearch(e.target.value); setFarmerSearchOpen(true) }} onFocus={() => setFarmerSearchOpen(true)} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="Search farmer by name, phone, ID..." />
+                )}
+                {farmerSearchOpen && farmerOptions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {farmerOptions.map(f => (
+                      <button key={f.id} type="button" onClick={() => selectFarmer(f)} className="flex items-center gap-3 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors text-left">
+                        <div className="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-[10px]">{f.first_name?.[0]}{f.last_name?.[0]}</div>
+                        <div><p className="font-medium">{f.first_name} {f.last_name}</p><p className="text-[11px] text-on-surface-variant">{f.phone_number || f.email || f.id_number}</p></div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES) *</label><input type="number" min="0" step="0.01" required value={loanForm.amount_principal} onChange={(e) => setLoanForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%) *</label><input type="number" min="0" step="0.1" required value={loanForm.interest_rate} onChange={(e) => setLoanForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
@@ -244,6 +369,30 @@ export default function Loans() {
       )}
 
       <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
+
+      {editOpen && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditLoan(null) }} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Loan</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Update loan details.</p>
+            <form onSubmit={handleEditLoan} className="space-y-3">
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer</label><input value={editLoan?.farmer_name || editForm.farmer} disabled className="w-full bg-surface-container/50 border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface opacity-60" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES)</label><input type="number" min="0" step="0.01" required value={editForm.amount_principal} onChange={(e) => setEditForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%)</label><input type="number" min="0" step="0.1" required value={editForm.interest_rate} onChange={(e) => setEditForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Installments</label><input type="number" min="1" required value={editForm.number_of_installments} onChange={(e) => setEditForm(f => ({ ...f, number_of_installments: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Purpose</label><input value={editForm.purpose} onChange={(e) => setEditForm(f => ({ ...f, purpose: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Notes</label><textarea rows={2} value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => { setEditOpen(false); setEditLoan(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={editLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{editLoading ? 'Saving...' : 'Save'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -26,6 +26,10 @@ export default function Cooperatives() {
   const [createOpen, setCreateOpen] = useState(false)
   const [form, setForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
   const [formLoading, setFormLoading] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
+  const [editLoading, setEditLoading] = useState(false)
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -75,6 +79,30 @@ export default function Cooperatives() {
     } catch (e) {
       showToast({ type: 'error', message: `Bulk action failed: ${e.message}` })
     }
+  }
+
+  const handleEdit = async (e) => {
+    e.preventDefault()
+    if (!editItem) return
+    setEditLoading(true)
+    try {
+      const res = await apiFetch(`/api/admin/cooperatives/${editItem.id}/`, { method: 'PATCH', body: JSON.stringify(editForm) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Cooperative ${editForm.name} updated.` })
+      setEditOpen(false)
+      setEditItem(null)
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Update failed: ${e.message}` })
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  const openEdit = (item) => {
+    setEditItem(item)
+    setEditForm({ name: item.name || '', code: item.code || '', email: item.email || '', phone_number: item.phone_number || '', address: item.address || '', registration_number: item.registration_number || '' })
+    setEditOpen(true)
   }
 
   const handleCreate = async (e) => {
@@ -158,6 +186,7 @@ export default function Cooperatives() {
           rowActions={(item) => (
             <div className="flex items-center gap-1">
               <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+              <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
               {item.is_active ? (
                 <button onClick={() => handleDeactivate(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Deactivate"><span className="material-symbols-outlined text-[18px]">block</span></button>
               ) : (
@@ -198,6 +227,30 @@ export default function Cooperatives() {
       </SlideOutPanel>
 
       <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
+
+      {editOpen && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditItem(null) }} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Cooperative</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Update cooperative details.</p>
+            <form onSubmit={handleEdit} className="space-y-3">
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input required value={editForm.name} onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Code</label><input value={editForm.code} onChange={(e) => setEditForm(f => ({ ...f, code: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number</label><input value={editForm.registration_number} onChange={(e) => setEditForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input type="tel" value={editForm.phone_number} onChange={(e) => setEditForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Address</label><textarea rows={2} value={editForm.address} onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => { setEditOpen(false); setEditItem(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={editLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{editLoading ? 'Saving...' : 'Save'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">
