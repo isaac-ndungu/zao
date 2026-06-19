@@ -9,6 +9,13 @@ const navItems = [
   { to: '/admin/financials', icon: 'payments', label: 'Financials' },
 ]
 
+const systemItems = [
+  { to: '/admin/users', icon: 'group', label: 'User Management' },
+  { to: '/admin/audit', icon: 'history', label: 'Audit Trail' },
+  { to: '/admin/trash', icon: 'delete_sweep', label: 'Trash' },
+  { to: '/admin/health', icon: 'monitor_heart', label: 'System Health' },
+]
+
 const bottomItems = [
   { to: '/admin/settings', icon: 'settings', label: 'Settings' },
   { to: '/admin/support', icon: 'help', label: 'Support' },
@@ -39,6 +46,29 @@ export default function Sidebar() {
             >
               <span className="material-symbols-outlined">{item.icon}</span>
               <span className="font-body-md text-body-md">{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="px-2 pt-2 pb-1">
+        <p className="text-[10px] uppercase font-bold text-on-primary/40 tracking-widest font-label-md">System</p>
+      </div>
+      <nav className="space-y-0.5 mb-2">
+        {systemItems.map((item) => {
+          const isActive = pathname.startsWith(item.to)
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`flex items-center gap-3 px-4 py-2 transition-colors ${
+                isActive
+                  ? 'bg-secondary-container text-on-secondary-container rounded-lg'
+                  : 'text-on-primary/60 hover:text-on-primary hover:bg-primary-fixed-dim/10 rounded-lg'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+              <span className="font-label-md text-label-md font-medium">{item.label}</span>
             </Link>
           )
         })}

@@ -48,6 +48,7 @@ const pipelineDetail = {
   rejected: 'Flagged or returned',
 }
 
+
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
@@ -60,6 +61,7 @@ export default function Dashboard() {
 
   const usersByRole = useMemo(() => {
     const roles = data?.users_by_role
+    
     if (!roles) return []
     return Object.entries(roles).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
   }, [data?.users_by_role])
