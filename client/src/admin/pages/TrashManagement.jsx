@@ -1,13 +1,17 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { apiFetch } from '../api/client'
 import ConfirmModal from '../components/common/ConfirmModal'
 import KpiCard from '../components/common/KpiCard'
 import { useToast } from '../contexts/ToastContext'
 
-const sections = [
-  { key: 'user', label: 'Users', icon: 'group', listEndpoint: '/api/admin/bin/users/', restorePrefix: '/api/admin/users', purgePrefix: '/api/admin/bin/users' },
-  { key: 'cooperative', label: 'Cooperatives', icon: 'apartment', listEndpoint: '/api/admin/bin/cooperatives/', restorePrefix: '/api/admin/cooperatives', purgePrefix: '/api/admin/bin/cooperatives' },
-]
+const sectionDefaults = {
+  user: { label: 'Users', icon: 'group', listEndpoint: '/api/admin/bin/users/', restorePrefix: '/api/admin/users', purgePrefix: '/api/admin/bin/users' },
+  cooperative: { label: 'Cooperatives', icon: 'apartment', listEndpoint: '/api/admin/bin/cooperatives/', restorePrefix: '/api/admin/cooperatives', purgePrefix: '/api/admin/bin/cooperatives' },
+  farmer: { label: 'Farmers', icon: 'agriculture', listEndpoint: '/api/admin/bin/farmers/', restorePrefix: '/api/admin/farmers', purgePrefix: '/api/admin/bin/farmers' },
+  delivery: { label: 'Deliveries', icon: 'local_shipping', listEndpoint: '/api/admin/bin/deliveries/', restorePrefix: '/api/admin/deliveries', purgePrefix: '/api/admin/bin/deliveries' },
+  loan: { label: 'Loans', icon: 'account_balance', listEndpoint: '/api/admin/bin/loans/', restorePrefix: '/api/admin/loans', purgePrefix: '/api/admin/bin/loans' },
+  paymentcycle: { label: 'Payment Cycles', icon: 'payments', listEndpoint: '/api/admin/bin/payment-cycles/', restorePrefix: '/api/admin/payment-cycles', purgePrefix: '/api/admin/bin/payment-cycles' },
+}
 
 export default function TrashManagement() {
   const { showToast } = useToast()
@@ -111,6 +115,24 @@ export default function TrashManagement() {
   const totalTrashed = binSummary
     ? Object.values(binSummary).filter(v => typeof v === 'number').reduce((s, v) => s + v, 0)
     : 0
+
+  const sections = useMemo(() => {
+    if (!binSummary) return []
+    const keys = new Set([...Object.keys(sectionDefaults), ...Object.keys(binSummary)])
+    return Array.from(keys).map(key => {
+      const def = sectionDefaults[key]
+      if (def) return { key, ...def }
+      const plural = key.endsWith('s') ? key : key + 's'
+      return {
+        key,
+        label: plural.charAt(0).toUpperCase() + plural.slice(1),
+        icon: 'delete',
+        listEndpoint: `/api/admin/bin/${key}/`,
+        restorePrefix: `/api/admin/${key}`,
+        purgePrefix: `/api/admin/bin/${key}`,
+      }
+    }).sort((a, b) => a.label.localeCompare(b.label))
+  }, [binSummary])
 
   return (
     <div>

@@ -353,9 +353,14 @@ export default function UserManagement() {
                           <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
                         </button>
                       ) : (
-                        <button onClick={() => handleUserAction(user, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                          <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
-                        </button>
+                        <>
+                          <button onClick={() => handleUserAction(user, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                            <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
+                          </button>
+                          <button onClick={() => handleUserAction(user, 'restore')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                            <span className="material-symbols-outlined text-[16px]">restore</span>Restore
+                          </button>
+                        </>
                       )}
                       <button onClick={() => handleUserAction(user, 'toggle-2fa')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
                         <span className="material-symbols-outlined text-[16px]">security</span>Toggle 2FA
