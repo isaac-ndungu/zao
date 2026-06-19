@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
+import PeriodPicker from './PeriodPicker'
 
 const appBarTabs = [
   { label: 'Analytics', path: '/admin/dashboard' },
@@ -19,7 +20,7 @@ export default function AppBar() {
   return (
     <header className="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-6 z-40">
       <div className="flex items-center gap-8">
-        <div className="relative w-80">
+        <div className="relative w-72">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
             search
           </span>
@@ -29,6 +30,8 @@ export default function AppBar() {
             type="text"
           />
         </div>
+
+        <PeriodPicker />
 
         <nav className="flex gap-6">
           {appBarTabs.map((tab) => {

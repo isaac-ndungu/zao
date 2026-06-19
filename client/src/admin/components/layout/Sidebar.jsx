@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 
 const navItems = [
   { to: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -21,8 +22,16 @@ const bottomItems = [
   { to: '/admin/support', icon: 'help', label: 'Support' },
 ]
 
+const entryLinks = [
+  { to: '/admin/users', label: 'Invite User', icon: 'person_add' },
+  { to: '/admin/ledger', label: 'Register Farmer', icon: 'agriculture' },
+  { to: '/admin/financials', label: 'New Payment Cycle', icon: 'payments' },
+]
+
 export default function Sidebar() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [entryOpen, setEntryOpen] = useState(false)
 
   return (
     <aside className="w-64 h-screen fixed left-0 top-0 bg-primary border-r border-outline-variant flex flex-col py-6 px-4 z-50">
@@ -86,10 +95,30 @@ export default function Sidebar() {
           </Link>
         ))}
 
-        <button className="w-full bg-primary-fixed text-on-primary-fixed font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 hover:opacity-90 transition-opacity">
-          <span className="material-symbols-outlined">add</span>
-          <span>New Entry</span>
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setEntryOpen(!entryOpen)}
+            onBlur={() => setTimeout(() => setEntryOpen(false), 200)}
+            className="w-full bg-primary-fixed text-on-primary-fixed font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 hover:opacity-90 transition-opacity"
+          >
+            <span className="material-symbols-outlined">add</span>
+            <span>New Entry</span>
+          </button>
+          {entryOpen && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden">
+              {entryLinks.map((link) => (
+                <button
+                  key={link.to}
+                  onClick={() => { navigate(link.to); setEntryOpen(false) }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-body-md text-on-surface hover:bg-surface-container transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{link.icon}</span>
+                  {link.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   )
