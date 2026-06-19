@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
 import KpiCard from '../components/common/KpiCard'
+import { KpiSkeleton } from '../components/common/Skeleton'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
@@ -79,6 +80,19 @@ export default function ProduceReceipts() {
     setPanelOpen(true)
   }
 
+  const handleBulkAction = async (action) => {
+    if (selectedIds.length === 0) return
+    const ids = [...selectedIds]
+    try {
+      await Promise.all(ids.map(id => apiFetch(`/api/admin/deliveries/${id}/${action}/`, { method: 'POST' })))
+      showToast({ type: 'success', message: `${ids.length} deliveries ${action}ed.` })
+      setSelectedIds([])
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Bulk action failed: ${e.message}` })
+    }
+  }
+
   const openForceStatus = (delivery) => {
     setStatusDelivery(delivery)
     setStatusTarget('')
@@ -145,12 +159,16 @@ export default function ProduceReceipts() {
         <p className="text-on-surface-variant font-body-md">Track and manage all produce deliveries across cooperatives.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <KpiCard icon="inventory_2" label="Total Deliveries" value={data?.count || 0} />
-        <KpiCard icon="grading" label="Pending Grading" value={statusCounts.PENDING || 0} />
-        <KpiCard icon="check_circle" label="Accepted" value={statusCounts.ACCEPTED || 0} />
-        <KpiCard icon="cancel" label="Rejected" value={statusCounts.REJECTED || 0} highlighted={statusCounts.REJECTED > 0} />
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><KpiSkeleton count={4} /></div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <KpiCard icon="inventory_2" label="Total Deliveries" value={data?.count || 0} />
+          <KpiCard icon="grading" label="Pending Grading" value={statusCounts.PENDING || 0} />
+          <KpiCard icon="check_circle" label="Accepted" value={statusCounts.ACCEPTED || 0} />
+          <KpiCard icon="cancel" label="Rejected" value={statusCounts.REJECTED || 0} highlighted={statusCounts.REJECTED > 0} />
+        </div>
+      )}
 
       <FilterBar
         search={search}
@@ -166,6 +184,15 @@ export default function ProduceReceipts() {
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
         onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('status', filters.status); if (filters.product_type) p.set('product_type', filters.product_type); if (filters.shift) p.set('shift', filters.shift); p.set('export', 'csv'); window.open(`/api/admin/deliveries/?${p}`, '_blank') }}
       />
+
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2 bg-primary-container/50 border border-primary-container rounded-lg">
+          <span className="text-label-md font-medium text-on-primary-container">{selectedIds.length} selected</span>
+          <button onClick={() => handleBulkAction('hold')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90">Hold</button>
+          <button onClick={() => handleBulkAction('unhold')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90">Release</button>
+          <button onClick={() => setSelectedIds([])} className="text-label-md text-on-surface-variant hover:text-on-surface ml-auto">Clear</button>
+        </div>
+      )}
 
       <DataTable
         columns={columns}

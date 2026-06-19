@@ -65,6 +65,19 @@ export default function FarmerPayments() {
   const handleHold = (item) => setModalConfig({ open: true, title: 'Hold Payment', message: `Hold payment for ${item.farmer_name || item.id}?`, destructive: false, onConfirm: () => execAction(`/api/admin/farmer-payments/${item.id}/hold/`) })
   const handleUnhold = (item) => setModalConfig({ open: true, title: 'Release Payment', message: `Release hold on payment for ${item.farmer_name || item.id}?`, destructive: false, onConfirm: () => execAction(`/api/admin/farmer-payments/${item.id}/unhold/`) })
 
+  const handleBulkAction = async (action) => {
+    if (selectedIds.length === 0) return
+    const ids = [...selectedIds]
+    try {
+      await Promise.all(ids.map(id => apiFetch(`/api/admin/farmer-payments/${id}/${action}/`, { method: 'POST' })))
+      showToast({ type: 'success', message: `${ids.length} payments ${action}ed.` })
+      setSelectedIds([])
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Bulk action failed: ${e.message}` })
+    }
+  }
+
   const columns = useMemo(() => [
     { key: 'id', label: 'ID', render: (r) => <span className="font-data-mono text-label-md text-on-surface-variant">{r.id?.slice(0, 8)}...</span> },
     { key: 'farmer_name', label: 'Farmer', sortable: true, render: (r) => <span className="font-medium text-body-md">{r.farmer_name || r.farmer?.name || '-'}</span> },
@@ -106,6 +119,15 @@ export default function FarmerPayments() {
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
         onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('payment_status', filters.status); if (filters.cycle) p.set('cycle', filters.cycle); p.set('export', 'csv'); window.open(`/api/admin/farmer-payments/?${p}`, '_blank') }}
       />
+
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2 bg-primary-container/50 border border-primary-container rounded-lg">
+          <span className="text-label-md font-medium text-on-primary-container">{selectedIds.length} selected</span>
+          <button onClick={() => handleBulkAction('hold')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90">Hold</button>
+          <button onClick={() => handleBulkAction('unhold')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90">Release</button>
+          <button onClick={() => setSelectedIds([])} className="text-label-md text-on-surface-variant hover:text-on-surface ml-auto">Clear</button>
+        </div>
+      )}
 
       {loading ? <TableSkeleton /> : (
         <DataTable

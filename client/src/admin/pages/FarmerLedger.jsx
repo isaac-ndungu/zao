@@ -30,6 +30,10 @@ export default function FarmerLedger() {
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', payment_method: 'MPESA', mpesa_number: '', bank_name: '', bank_account: '' })
   const [formLoading, setFormLoading] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editFarmer, setEditFarmer] = useState(null)
+  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', payment_method: 'MPESA', mpesa_number: '', bank_name: '', bank_account: '' })
+  const [editLoading, setEditLoading] = useState(false)
   const dropdownRef = useRef(null)
 
   useEffect(() => {
@@ -54,7 +58,7 @@ export default function FarmerLedger() {
   }, [page, pageSize, search, filters, sortField, sortOrder])
 
   const { data, loading, error, refetch } = useApi(`/api/admin/farmers/?${query}`)
-  const { data: analytics } = useApi(`/api/admin/analytics/farmers/?period=${period}`)
+  const { data: analytics, loading: analyticsLoading } = useApi(`/api/admin/analytics/farmers/?period=${period}`)
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -110,6 +114,44 @@ export default function FarmerLedger() {
     }
   }
 
+  const handleEditFarmer = async (e) => {
+    e.preventDefault()
+    if (!editFarmer) return
+    setEditLoading(true)
+    try {
+      const res = await apiFetch(`/api/admin/farmers/${editFarmer.id}/`, { method: 'PATCH', body: JSON.stringify(editForm) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Farmer ${editForm.first_name} ${editForm.last_name} updated.` })
+      setEditOpen(false)
+      setEditFarmer(null)
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Update failed: ${e.message}` })
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  const openEditFarmer = (farmer) => {
+    setEditFarmer(farmer)
+    setEditForm({
+      first_name: farmer.first_name || '',
+      last_name: farmer.last_name || '',
+      email: farmer.email || '',
+      phone_number: farmer.phone_number || '',
+      id_number: farmer.id_number || '',
+      county: farmer.county || '',
+      sub_county: farmer.sub_county || '',
+      ward: farmer.ward || '',
+      village: farmer.village || '',
+      payment_method: farmer.payment_method || 'MPESA',
+      mpesa_number: farmer.mpesa_number || '',
+      bank_name: farmer.bank_name || '',
+      bank_account: farmer.bank_account || '',
+    })
+    setEditOpen(true)
+  }
+
   const handleCreateFarmer = async (e) => {
     e.preventDefault()
     setFormLoading(true)
@@ -160,12 +202,16 @@ export default function FarmerLedger() {
         <p className="text-on-surface-variant font-body-md">Manage registered farmers across all cooperatives.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <KpiCard icon="people" label="Total Farmers" value={data?.count || 0} />
-        <KpiCard icon="person_check" label="Active" value={totalFarmers} />
-        <KpiCard icon="person_add" label="New This Period" value={newFarmers} subvalue={`Across ${regionCount} counties`} />
-        <KpiCard icon="map" label="Counties" value={regionCount} />
-      </div>
+      {analyticsLoading && !analytics ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"><KpiSkeleton count={4} /></div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <KpiCard icon="people" label="Total Farmers" value={data?.count || 0} />
+          <KpiCard icon="person_check" label="Active" value={totalFarmers} />
+          <KpiCard icon="person_add" label="New This Period" value={newFarmers} subvalue={`Across ${regionCount} counties`} />
+          <KpiCard icon="map" label="Counties" value={regionCount} />
+        </div>
+      )}
 
       <FilterBar
         search={search}
@@ -209,6 +255,9 @@ export default function FarmerLedger() {
             </button>
             {openDropdownId === farmer.id && (
               <div className="absolute right-0 top-full mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-50 py-1" role="menu">
+                <button onClick={() => { setOpenDropdownId(null); openEditFarmer(farmer) }} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                  <span className="material-symbols-outlined text-[16px]">edit</span>Edit
+                </button>
                 {farmer.is_active ? (
                   <button onClick={() => handleFarmerAction(farmer, 'deactivate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
                     <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
@@ -272,6 +321,46 @@ export default function FarmerLedger() {
       </SlideOutPanel>
 
       <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} loading={actionLoading} destructive={modalConfig.destructive} />
+
+      {editOpen && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditFarmer(null) }} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Farmer</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Update farmer details.</p>
+            <form onSubmit={handleEditFarmer} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label><input required value={editForm.first_name} onChange={(e) => setEditForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label><input required value={editForm.last_name} onChange={(e) => setEditForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input required value={editForm.phone_number} onChange={(e) => setEditForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input value={editForm.id_number} onChange={(e) => setEditForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Method</label><select value={editForm.payment_method} onChange={(e) => setEditForm(f => ({ ...f, payment_method: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"><option value="MPESA">M-Pesa</option><option value="BANK">Bank</option><option value="CASH">Cash</option></select></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County</label><input value={editForm.county} onChange={(e) => setEditForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input value={editForm.sub_county} onChange={(e) => setEditForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={editForm.ward} onChange={(e) => setEditForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input value={editForm.village} onChange={(e) => setEditForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">M-Pesa Number</label><input value={editForm.mpesa_number} onChange={(e) => setEditForm(f => ({ ...f, mpesa_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Bank Account</label><input value={editForm.bank_account} onChange={(e) => setEditForm(f => ({ ...f, bank_account: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => { setEditOpen(false); setEditFarmer(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={editLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{editLoading ? 'Saving...' : 'Save'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">
