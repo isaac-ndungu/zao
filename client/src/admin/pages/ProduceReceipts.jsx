@@ -164,6 +164,7 @@ export default function ProduceReceipts() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('status', filters.status); if (filters.product_type) p.set('product_type', filters.product_type); if (filters.shift) p.set('shift', filters.shift); p.set('export', 'csv'); window.open(`/api/admin/deliveries/?${p}`, '_blank') }}
       />
 
       <DataTable

@@ -132,6 +132,7 @@ export default function Cooperatives() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); p.set('export', 'csv'); window.open(`/api/admin/cooperatives/?${p}`, '_blank') }}
       />
 
       {selectedIds.length > 0 && (

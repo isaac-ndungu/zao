@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function FilterBar({ search, onSearchChange, filters = [], filterValues = {}, onFilterChange, onClear, placeholder = 'Search...' }) {
+export default function FilterBar({ search, onSearchChange, filters = [], filterValues = {}, onFilterChange, onClear, onExport, placeholder = 'Search...' }) {
   const [localSearch, setLocalSearch] = useState(search || '')
 
   const handleSearchChange = (e) => {
@@ -55,15 +55,27 @@ export default function FilterBar({ search, onSearchChange, filters = [], filter
           
         </select>
       ))}
-      {hasActiveFilters && (
-        <button
-          onClick={handleClear}
-          className="flex items-center gap-1 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-error transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px]">close</span>
-          Clear
-        </button>
-      )}
+      <div className="flex items-center gap-1 ml-auto">
+        {hasActiveFilters && (
+          <button
+            onClick={handleClear}
+            className="flex items-center gap-1 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-error transition-colors"
+          >
+            <span className="material-symbols-outlined text-[16px]">close</span>
+            Clear
+          </button>
+        )}
+        {onExport && (
+          <button
+            onClick={onExport}
+            className="flex items-center gap-1.5 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors"
+            title="Export CSV"
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            <span className="hidden sm:inline">Export</span>
+          </button>
+        )}
+      </div>
     </div>
   )
 }
