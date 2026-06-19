@@ -19,6 +19,9 @@ import UserManagement from './admin/pages/UserManagement'
 import AuditTrail from './admin/pages/AuditTrail'
 import TrashManagement from './admin/pages/TrashManagement'
 import HealthMonitor from './admin/pages/HealthMonitor'
+import Cooperatives from './admin/pages/Cooperatives'
+import Loans from './admin/pages/Loans'
+import FarmerPayments from './admin/pages/FarmerPayments'
 
 export default function App() {
   return (
@@ -44,6 +47,9 @@ export default function App() {
             <Route path="audit" element={<AuditTrail />} />
             <Route path="trash" element={<TrashManagement />} />
             <Route path="health" element={<HealthMonitor />} />
+            <Route path="cooperatives" element={<Cooperatives />} />
+            <Route path="loans" element={<Loans />} />
+            <Route path="farmer-payments" element={<FarmerPayments />} />
           </Route>
         </Routes>
       </AdminAuthProvider>

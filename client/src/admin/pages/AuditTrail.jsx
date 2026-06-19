@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useApi } from '../hooks/useApi'
-import KpiCard from '../components/common/KpiCard'
 import FilterBar from '../components/common/FilterBar'
+import Pagination from '../components/common/Pagination'
 
 const actionOptions = [
   { value: 'CREATE', label: 'Create' },
@@ -48,18 +48,23 @@ function formatAuditAction(action) {
 export default function AuditTrail() {
   const [filters, setFilters] = useState({})
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
     if (filters.action) params.set('action', filters.action)
     if (filters.resource_type) params.set('resource_type', filters.resource_type)
     if (search) params.set('actor', search)
+    params.set('page', page)
+    params.set('page_size', pageSize)
+    params.set('ordering', '-created_at')
     return params.toString()
-  }, [filters, search])
+  }, [filters, search, page, pageSize])
 
-  const { data, loading, error } = useApi(`/api/admin/audit-logs/?${query}`)
+  const { data, loading, error, refetch } = useApi(`/api/admin/audit-logs/?${query}`)
 
-  const logs = Array.isArray(data) ? data : data?.results || []
+  const logs = data?.results || []
 
   if (error) {
     return <div className="bg-error-container text-error p-4 rounded-xl">Failed to load audit logs: {error}</div>
@@ -82,7 +87,7 @@ export default function AuditTrail() {
         ]}
         filterValues={filters}
         onFilterChange={setFilters}
-        onClear={() => { setSearch(''); setFilters({}) }}
+        onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
       />
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
@@ -145,6 +150,10 @@ export default function AuditTrail() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-2">
+        <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </div>
     </div>
   )

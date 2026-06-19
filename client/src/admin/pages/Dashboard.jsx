@@ -1,6 +1,8 @@
 import { useContext, useMemo } from 'react'
 import { useApi } from '../hooks/useApi'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
+import KpiCard from '../components/common/KpiCard'
+import { KpiSkeleton, CardSkeleton } from '../components/common/Skeleton'
 
 const roleColors = {
   farmer: 'bg-primary',
@@ -48,7 +50,6 @@ const pipelineDetail = {
   rejected: 'Flagged or returned',
 }
 
-
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
@@ -58,10 +59,10 @@ function formatNumber(n) {
 export default function Dashboard() {
   const { period } = useContext(AdminFilterContext)
   const { data, loading, error } = useApi(`/api/admin/dashboard/?period=${period}`)
+  const { data: analytics, loading: analyticsLoading } = useApi(`/api/admin/analytics/dashboard/?period=${period}`)
 
   const usersByRole = useMemo(() => {
     const roles = data?.users_by_role
-    
     if (!roles) return []
     return Object.entries(roles).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
   }, [data?.users_by_role])
@@ -91,10 +92,27 @@ export default function Dashboard() {
     })
   }, [data?.cycle_pipeline])
 
+  const analyticsData = analytics?.data
+  const gradeDist = useMemo(() => {
+    if (!analyticsData?.production?.grade_distribution) return []
+    return Object.entries(analyticsData.production.grade_distribution).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
+  }, [analyticsData])
+
+  const totalGrade = gradeDist.reduce((s, [, v]) => s + v, 0)
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div>
+        <header className="mb-8">
+          <h2 className="font-headline-lg text-display-md text-primary mb-1">Executive Overview</h2>
+          <p className="text-on-surface-variant font-body-md">Real-time cooperative performance & operational health metrics.</p>
+        </header>
+        <KpiSkeleton count={5} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+        <CardSkeleton />
       </div>
     )
   }
@@ -114,38 +132,27 @@ export default function Dashboard() {
       <header className="mb-8">
         <h2 className="font-headline-lg text-display-md text-primary mb-1">Executive Overview</h2>
         <p className="text-on-surface-variant font-body-md">
-          Real-time cooperative performance &amp; operational health metrics.
+          Real-time cooperative performance & operational health metrics.
         </p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <KpiCard
-          icon="group"
-          label="Total Users"
-          value={formatNumber(data.total_users)}
-        />
-        <KpiCard
-          icon="agriculture"
-          label="Active Users"
-          value={formatNumber(data.active_users)}
-        />
-        <KpiCard
-          icon="grading"
-          label="Pending Gradings"
-          value={String(data.pending_gradings)}
-        />
-        <KpiCard
-          icon="inventory"
-          label="Active Deliveries"
-          value={String(data.active_deliveries)}
-        />
-        <KpiCard
-          icon="delete"
-          label="Soft Deleted"
-          value={formatNumber(data.trash_summary?.total_deleted || 0)}
-          highlighted
-        />
+        <KpiCard icon="group" label="Total Users" value={formatNumber(data.total_users)} />
+        <KpiCard icon="agriculture" label="Active Users" value={formatNumber(data.active_users)} />
+        <KpiCard icon="grading" label="Pending Gradings" value={String(data.pending_gradings)} />
+        <KpiCard icon="inventory" label="Active Deliveries" value={String(data.active_deliveries)} />
+        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(data.trash_summary?.total_deleted || 0)} highlighted />
       </div>
+
+      {/* Analytics KPIs */}
+      {analyticsData && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <KpiCard icon="payments" label="Revenue" value={analyticsData.financial?.total_revenue ? `KES ${formatNumber(analyticsData.financial.total_revenue)}` : '-'} />
+          <KpiCard icon="person" label="Active Farmers" value={analyticsData.farmers?.total_active || 0} trend={analyticsData.farmers?.new_this_period || 0} />
+          <KpiCard icon="inventory_2" label="Total Production" value={analyticsData.production?.total_kg ? `${formatNumber(analyticsData.production.total_kg)} kg` : '-'} />
+          <KpiCard icon="account_balance" label="Gross Payout" value={analyticsData.financial?.total_gross_payout ? `KES ${formatNumber(analyticsData.financial.total_gross_payout)}` : '-'} />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
@@ -224,6 +231,29 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Grade Distribution from Analytics */}
+      {gradeDist.length > 0 && (
+        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-8">
+          <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Grade Distribution</h4>
+          <div className="space-y-3">
+            {gradeDist.map(([grade, count]) => {
+              const pct = totalGrade > 0 ? (count / totalGrade) * 100 : 0
+              return (
+                <div key={grade}>
+                  <div className="flex justify-between text-label-md font-medium mb-1">
+                    <span className="capitalize">{grade.toLowerCase()}</span>
+                    <span className="font-data-mono text-on-surface-variant">{count?.toLocaleString()} kg</span>
+                  </div>
+                  <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-8">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -258,30 +288,6 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-function KpiCard({ icon, label, value, highlighted }) {
-  return (
-    <div
-      className={
-        highlighted
-          ? 'bg-primary text-on-primary p-5 rounded-xl shadow-lg border border-primary-container'
-          : 'bg-surface-container-lowest border border-outline-variant p-5 rounded-xl'
-      }
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-2 rounded-lg ${highlighted ? 'bg-white/10' : 'bg-primary/5 text-primary'}`}>
-          <span className="material-symbols-outlined text-[20px]">{icon}</span>
-        </div>
-      </div>
-      <p className={`font-label-md font-label-md mb-1 ${highlighted ? 'opacity-80' : 'text-on-surface-variant'}`}>
-        {label}
-      </p>
-      <h3 className={`font-data-mono text-headline-sm ${highlighted ? '' : 'text-on-surface'}`}>
-        {value}
-      </h3>
     </div>
   )
 }

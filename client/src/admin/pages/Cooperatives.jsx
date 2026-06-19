@@ -1,0 +1,225 @@
+import { useState, useMemo, useCallback } from 'react'
+import { useApi } from '../hooks/useApi'
+import { apiFetch } from '../api/client'
+import FilterBar from '../components/common/FilterBar'
+import DataTable from '../components/common/DataTable'
+import Pagination from '../components/common/Pagination'
+import KpiCard from '../components/common/KpiCard'
+import StatusBadge from '../components/common/StatusBadge'
+import SlideOutPanel from '../components/common/SlideOutPanel'
+import ConfirmModal from '../components/common/ConfirmModal'
+import { useToast } from '../contexts/ToastContext'
+import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
+
+export default function Cooperatives() {
+  const { showToast } = useToast()
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState({})
+  const [sortField, setSortField] = useState('name')
+  const [sortOrder, setSortOrder] = useState('asc')
+  const [selectedIds, setSelectedIds] = useState([])
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [panelItem, setPanelItem] = useState(null)
+  const [modalConfig, setModalConfig] = useState({ open: false })
+  const [createOpen, setCreateOpen] = useState(false)
+  const [form, setForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
+  const [formLoading, setFormLoading] = useState(false)
+
+  const query = useMemo(() => {
+    const params = new URLSearchParams()
+    params.set('page', page)
+    params.set('page_size', pageSize)
+    if (search) params.set('search', search)
+    if (sortField) params.set('ordering', sortOrder === 'desc' ? `-${sortField}` : sortField)
+    return params.toString()
+  }, [page, pageSize, search, sortField, sortOrder])
+
+  const { data, loading, error, refetch } = useApi(`/api/admin/cooperatives/?${query}`)
+  const { data: kpiData } = useApi('/api/admin/cooperatives/?page=1&page_size=1')
+
+  const kpis = useMemo(() => ({
+    total: kpiData?.count || 0,
+  }), [kpiData])
+
+  const handleSort = useCallback((field) => {
+    if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
+    else { setSortField(field); setSortOrder('asc') }
+  }, [sortField])
+
+  const execAction = async (url, opts = {}) => {
+    try {
+      const res = await apiFetch(url, { method: 'POST', ...opts })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: 'Cooperative updated.' })
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Action failed: ${e.message}` })
+    }
+  }
+
+  const handleActivate = (item) => setModalConfig({ open: true, title: 'Activate Cooperative', message: `Activate ${item.name}?`, destructive: false, onConfirm: () => execAction(`/api/admin/cooperatives/${item.id}/activate/`) })
+  const handleDeactivate = (item) => setModalConfig({ open: true, title: 'Deactivate Cooperative', message: `Deactivate ${item.name}?`, destructive: true, onConfirm: () => execAction(`/api/admin/cooperatives/${item.id}/deactivate/`) })
+  const handleDelete = (item) => setModalConfig({ open: true, title: 'Delete Cooperative', message: `Soft-delete ${item.name}?`, destructive: true, onConfirm: () => execAction(`/api/admin/cooperatives/${item.id}/delete/`, { body: JSON.stringify({ confirm: true }), headers: { 'Content-Type': 'application/json' } }) })
+
+  const handleBulkAction = async (action) => {
+    if (selectedIds.length === 0) return
+    try {
+      const res = await apiFetch('/api/admin/cooperatives/bulk-action/', { method: 'POST', body: JSON.stringify({ action, ids: selectedIds }) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Bulk ${action} for ${selectedIds.length} cooperatives.` })
+      setSelectedIds([])
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Bulk action failed: ${e.message}` })
+    }
+  }
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    setFormLoading(true)
+    try {
+      const res = await apiFetch('/api/admin/cooperatives/', { method: 'POST', body: JSON.stringify(form) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Cooperative ${form.name} created.` })
+      setCreateOpen(false)
+      setForm({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Creation failed: ${e.message}` })
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
+  const columns = useMemo(() => [
+    { key: 'name', label: 'Name', sortable: true, render: (r) => <span className="font-medium text-body-md">{r.name}</span> },
+    { key: 'code', label: 'Code', render: (r) => <span className="text-label-md text-on-surface-variant">{r.code || '-'}</span> },
+    { key: 'email', label: 'Email', render: (r) => <span className="text-label-md text-on-surface-variant">{r.email || '-'}</span> },
+    { key: 'phone_number', label: 'Phone', render: (r) => <span className="text-label-md text-on-surface-variant">{r.phone_number || '-'}</span> },
+    { key: 'is_active', label: 'Status', render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
+  ], [])
+
+  if (error) return <div className="bg-error-container text-error p-4 rounded-xl">Failed to load cooperatives: {error}</div>
+
+  return (
+    <div>
+      <header className="mb-6">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-headline-lg text-display-md text-primary">Cooperatives</h2>
+          <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            New Cooperative
+          </button>
+        </div>
+        <p className="text-on-surface-variant font-body-md">Manage farmer cooperatives and their members.</p>
+      </header>
+
+      {loading && !kpiData ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><KpiSkeleton count={1} /></div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <KpiCard title="Total Cooperatives" value={kpis.total} icon="groups" />
+        </div>
+      )}
+
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        placeholder="Search by name, code, email..."
+        filters={[]}
+        filterValues={filters}
+        onFilterChange={setFilters}
+        onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
+      />
+
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2 bg-primary-container/50 border border-primary-container rounded-lg">
+          <span className="text-label-md font-medium text-on-primary-container">{selectedIds.length} selected</span>
+          <button onClick={() => handleBulkAction('activate')} className="px-3 py-1 text-label-md font-bold bg-primary text-on-primary rounded-lg hover:bg-primary/90">Activate</button>
+          <button onClick={() => handleBulkAction('deactivate')} className="px-3 py-1 text-label-md font-bold bg-error text-on-error rounded-lg hover:bg-error/90">Deactivate</button>
+          <button onClick={() => setSelectedIds([])} className="text-label-md text-on-surface-variant hover:text-on-surface ml-auto">Clear</button>
+        </div>
+      )}
+
+      {loading ? <TableSkeleton /> : (
+        <DataTable
+          columns={columns}
+          data={data?.results || []}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          emptyMessage="No cooperatives found."
+          rowActions={(item) => (
+            <div className="flex items-center gap-1">
+              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+              {item.is_active ? (
+                <button onClick={() => handleDeactivate(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Deactivate"><span className="material-symbols-outlined text-[18px]">block</span></button>
+              ) : (
+                <button onClick={() => handleActivate(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Activate"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
+              )}
+              <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+            </div>
+          )}
+        />
+      )}
+
+      <div className="mt-2">
+        <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
+      </div>
+
+      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelItem(null) }} title="Cooperative Details">
+        {panelItem && (
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-headline-sm text-headline-sm text-on-surface">{panelItem.name}</h4>
+              <StatusBadge status={panelItem.is_active ? 'active' : 'inactive'} label={panelItem.is_active ? 'Active' : 'Inactive'} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Code</p><p className="font-body-md text-on-surface">{panelItem.code || '-'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Email</p><p className="font-body-md text-on-surface">{panelItem.email || '-'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Phone</p><p className="font-body-md text-on-surface">{panelItem.phone_number || '-'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Reg Number</p><p className="font-body-md text-on-surface">{panelItem.registration_number || '-'}</p></div>
+              <div className="col-span-2 p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Address</p><p className="font-body-md text-on-surface">{panelItem.address || '-'}</p></div>
+            </div>
+            <div className="pt-2 grid grid-cols-2 gap-2">
+              <button onClick={() => { setPanelOpen(false); panelItem.is_active ? handleDeactivate(panelItem) : handleActivate(panelItem) }} className={`px-4 py-2 rounded-lg text-label-md font-bold ${panelItem.is_active ? 'border border-error text-error hover:bg-error-container' : 'bg-primary text-on-primary hover:bg-primary/90'}`}>
+                {panelItem.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+              <button onClick={() => { setPanelOpen(false); handleDelete(panelItem) }} className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container">Delete</button>
+            </div>
+          </div>
+        )}
+      </SlideOutPanel>
+
+      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
+
+      {createOpen && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Cooperative</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Register a new farmer cooperative.</p>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input required value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Code</label><input value={form.code} onChange={(e) => setForm(f => ({ ...f, code: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number</label><input value={form.registration_number} onChange={(e) => setForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input type="tel" value={form.phone_number} onChange={(e) => setForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Address</label><textarea rows={2} value={form.address} onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,13 +1,14 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
-import KpiCard from '../components/common/KpiCard'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
 import StatusBadge from '../components/common/StatusBadge'
 import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
+import { useToast } from '../contexts/ToastContext'
+import { TableSkeleton } from '../components/common/Skeleton'
 
 const roleOptions = [
   { value: 'admin', label: 'Admin' },
@@ -26,6 +27,7 @@ const roleBadgeMap = {
 }
 
 export default function UserManagement() {
+  const { showToast } = useToast()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -40,6 +42,21 @@ export default function UserManagement() {
   const [inviteModal, setInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteLoading, setInviteLoading] = useState(false)
+  const [superuserModal, setSuperuserModal] = useState(false)
+  const [suForm, setSuForm] = useState({ email: '', first_name: '', last_name: '', phone_number: '', password: '' })
+  const [suLoading, setSuLoading] = useState(false)
+  const [openDropdownId, setOpenDropdownId] = useState(null)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdownId(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -68,68 +85,119 @@ export default function UserManagement() {
     setActionLoading(true)
     setModalConfig({ open: false })
     try {
-      await apiFetch(url, { method: 'POST', ...opts })
+      const res = await apiFetch(url, { method: 'POST', ...opts })
+      if (!res.ok) throw new Error(await res.text())
+      const msg = url.includes('activate') ? 'activated' : url.includes('deactivate') ? 'deactivated' : url.includes('delete') ? 'soft-deleted' : url.includes('restore') ? 'restored' : url.includes('toggle') ? '2FA toggled' : url.includes('reset') ? 'password reset' : url.includes('logout') ? 'logged out' : url.includes('impersonate') ? 'impersonated' : 'action completed'
+      showToast({ type: 'success', message: `User ${msg}.` })
       refetch()
     } catch (e) {
-      console.error('Action failed', e)
+      showToast({ type: 'error', message: `Action failed: ${e.message}` })
     } finally {
       setActionLoading(false)
     }
   }
 
-  const handleBulkAction = (action) => {
+  const handleBulkAction = async (action) => {
     if (selectedIds.length === 0) return
-    const label = action === 'activate' ? 'Activate' : 'Deactivate'
-    setModalConfig({
-      open: true,
-      title: `${label} Users`,
-      message: `${label} ${selectedIds.length} selected users?`,
-      onConfirm: () => execAction('/api/admin/users/bulk-action/', {
+    setModalConfig({ open: false })
+    setActionLoading(true)
+    try {
+      const res = await apiFetch('/api/admin/users/bulk-action/', {
+        method: 'POST',
         body: JSON.stringify({ action, ids: selectedIds }),
-        headers: { 'Content-Type': 'application/json' },
-      }),
-      destructive: action === 'deactivate',
-    })
+      })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Bulk ${action} completed for ${selectedIds.length} users.` })
+      setSelectedIds([])
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Bulk action failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   const handleUserAction = (user, action) => {
     const actionMap = {
-      activate: { title: 'Activate User', message: `Activate ${user.email}?` },
-      deactivate: { title: 'Deactivate User', message: `Deactivate ${user.email}? They will lose access.` },
-      delete: { title: 'Delete User', message: `Soft-delete ${user.email}? This can be undone.` },
-      restore: { title: 'Restore User', message: `Restore ${user.email}?` },
-      'toggle-2fa': { title: 'Toggle 2FA', message: `Toggle 2FA for ${user.email}?` },
-      'reset-password': { title: 'Reset Password', message: `Send password reset for ${user.email}?` },
+      activate: { title: 'Activate User', message: `Activate ${user.email}?`, destructive: false },
+      deactivate: { title: 'Deactivate User', message: `Deactivate ${user.email}? They will lose access.`, destructive: true },
+      delete: { title: 'Delete User', message: `Soft-delete ${user.email}? This can be undone.`, destructive: true },
+      restore: { title: 'Restore User', message: `Restore ${user.email}?`, destructive: false },
+      'toggle-2fa': { title: 'Toggle 2FA', message: `Toggle 2FA for ${user.email}?`, destructive: false },
+      'reset-password': { title: 'Reset Password', message: `Send password reset for ${user.email}?`, destructive: false },
+      'force-logout': { title: 'Force Logout', message: `Force logout ${user.email}? All sessions will be terminated.`, destructive: false },
     }
     const cfg = actionMap[action]
     if (!cfg) return
+    setOpenDropdownId(null)
     setModalConfig({
       open: true,
       ...cfg,
       onConfirm: () => execAction(`/api/admin/users/${user.id}/${action}/`, {
-        body: JSON.stringify({ confirm: true }),
+        body: JSON.stringify({ confirm: action === 'delete' }),
         headers: { 'Content-Type': 'application/json' },
       }),
-      destructive: ['deactivate', 'delete'].includes(action),
     })
+  }
+
+  const handleImpersonate = async (user) => {
+    setOpenDropdownId(null)
+    setActionLoading(true)
+    try {
+      const res = await apiFetch(`/api/admin/impersonate/${user.id}/`, { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      showToast({ type: 'success', message: `Impersonating ${user.email}. Redirecting...` })
+      setTimeout(() => window.location.href = '/', 1000)
+    } catch (e) {
+      showToast({ type: 'error', message: `Impersonation failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   const handleInvite = async (e) => {
     e.preventDefault()
     setInviteLoading(true)
     try {
-      await apiFetch('/api/admin/auth/invite/', {
+      const res = await apiFetch('/api/admin/auth/invite/', {
         method: 'POST',
         body: JSON.stringify({ email: inviteEmail }),
       })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Invite sent to ${inviteEmail}.` })
       setInviteEmail('')
       setInviteModal(false)
       refetch()
     } catch (e) {
-      console.error('Invite failed', e)
+      showToast({ type: 'error', message: `Invite failed: ${e.message}` })
     } finally {
       setInviteLoading(false)
     }
+  }
+
+  const handleCreateSuperuser = async (e) => {
+    e.preventDefault()
+    setSuLoading(true)
+    try {
+      const res = await apiFetch('/api/admin/users/create-superuser/', {
+        method: 'POST',
+        body: JSON.stringify(suForm),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Superuser ${suForm.email} created.` })
+      setSuForm({ email: '', first_name: '', last_name: '', phone_number: '', password: '' })
+      setSuperuserModal(false)
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: `Creation failed: ${e.message}` })
+    } finally {
+      setSuLoading(false)
+    }
+  }
+
+  const toggleDropdown = (id) => {
+    setOpenDropdownId(openDropdownId === id ? null : id)
   }
 
   const columns = useMemo(() => [
@@ -159,14 +227,20 @@ export default function UserManagement() {
   }
 
   return (
-    <div>
+    <div ref={dropdownRef}>
       <header className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">User Management</h2>
-          <button onClick={() => setInviteModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">person_add</span>
-            Invite User
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setSuperuserModal(true)} className="flex items-center gap-2 px-3 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
+              <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+              <span className="hidden sm:inline">Create Superuser</span>
+            </button>
+            <button onClick={() => setInviteModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
+              <span className="material-symbols-outlined text-[16px]">person_add</span>
+              Invite User
+            </button>
+          </div>
         </div>
         <p className="text-on-surface-variant font-body-md">Manage admin users, managers, and system access.</p>
       </header>
@@ -193,51 +267,67 @@ export default function UserManagement() {
         </div>
       )}
 
-      <DataTable
-        columns={columns}
-        data={data?.results || []}
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        sortField={sortField}
-        sortOrder={sortOrder}
-        onSort={handleSort}
-        loading={loading}
-        emptyMessage="No users found."
-        rowActions={(user) => (
-          <div className="flex gap-0.5">
-            <button onClick={() => handleView(user)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="View">
-              <span className="material-symbols-outlined text-[18px]">visibility</span>
-            </button>
-            <div className="relative group">
-              <button className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="More">
+      {loading ? <TableSkeleton /> : (
+        <DataTable
+          columns={columns}
+          data={data?.results || []}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          loading={false}
+          emptyMessage="No users found."
+          rowActions={(user) => (
+            <div className="relative">
+              <button
+                onClick={() => toggleDropdown(user.id)}
+                className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"
+                aria-label="User actions"
+                aria-haspopup="true"
+                aria-expanded={openDropdownId === user.id}
+              >
                 <span className="material-symbols-outlined text-[18px]">more_vert</span>
               </button>
-              <div className="absolute right-0 top-full mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                {user.is_active && (
-                  <button onClick={() => handleUserAction(user, 'deactivate')} className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
+              {openDropdownId === user.id && (
+                <div
+                  className="absolute right-0 top-full mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-50 py-1"
+                  role="menu"
+                >
+                  <button onClick={() => handleView(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">visibility</span>View Details
                   </button>
-                )}
-                {!user.is_active && (
-                  <button onClick={() => handleUserAction(user, 'activate')} className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
+                  {user.is_active ? (
+                    <button onClick={() => handleUserAction(user, 'deactivate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                      <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
+                    </button>
+                  ) : (
+                    <button onClick={() => handleUserAction(user, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                      <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
+                    </button>
+                  )}
+                  <button onClick={() => handleUserAction(user, 'toggle-2fa')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">security</span>Toggle 2FA
                   </button>
-                )}
-                <button onClick={() => handleUserAction(user, 'toggle-2fa')} className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">security</span>Toggle 2FA
-                </button>
-                <button onClick={() => handleUserAction(user, 'reset-password')} className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">key</span>Reset Password
-                </button>
-                <div className="border-t border-outline-variant my-1" />
-                <button onClick={() => handleUserAction(user, 'delete')} className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">delete</span>Delete
-                </button>
-              </div>
+                  <button onClick={() => handleUserAction(user, 'reset-password')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">key</span>Reset Password
+                  </button>
+                  <button onClick={() => handleUserAction(user, 'force-logout')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">logout</span>Force Logout
+                  </button>
+                  <button onClick={() => handleImpersonate(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">person_impersonated</span>Impersonate
+                  </button>
+                  <div className="border-t border-outline-variant my-1" />
+                  <button onClick={() => handleUserAction(user, 'delete')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
+                    <span className="material-symbols-outlined text-[16px]">delete</span>Delete
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
-      />
+          )}
+        />
+      )}
 
       <div className="mt-2">
         <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
@@ -281,11 +371,17 @@ export default function UserManagement() {
                 <p className="font-body-md text-on-surface">{panelUser.last_login ? new Date(panelUser.last_login).toLocaleDateString() : 'Never'}</p>
               </div>
             </div>
-            <div className="pt-2 flex gap-2">
-              <button onClick={() => handleUserAction(panelUser, panelUser.is_active ? 'deactivate' : 'activate')} className={`flex-1 px-4 py-2 rounded-lg text-label-md font-bold transition-colors ${panelUser.is_active ? 'border border-error text-error hover:bg-error-container' : 'bg-primary text-on-primary hover:bg-primary/90'}`}>
+            <div className="pt-2 grid grid-cols-2 gap-2">
+              <button onClick={() => handleUserAction(panelUser, panelUser.is_active ? 'deactivate' : 'activate')} className={`px-4 py-2 rounded-lg text-label-md font-bold transition-colors ${panelUser.is_active ? 'border border-error text-error hover:bg-error-container' : 'bg-primary text-on-primary hover:bg-primary/90'}`}>
                 {panelUser.is_active ? 'Deactivate' : 'Activate'}
               </button>
-              <button onClick={() => handleUserAction(panelUser, 'reset-password')} className="flex-1 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
+              <button onClick={() => handleUserAction(panelUser, 'force-logout')} className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
+                Force Logout
+              </button>
+              <button onClick={() => handleUserAction(panelUser, 'toggle-2fa')} className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
+                Toggle 2FA
+              </button>
+              <button onClick={() => handleUserAction(panelUser, 'reset-password')} className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
                 Reset Password
               </button>
             </div>
@@ -312,22 +408,49 @@ export default function UserManagement() {
             <form onSubmit={handleInvite}>
               <div className="mb-4">
                 <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                  placeholder="user@example.com"
-                />
+                <input type="email" required value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="user@example.com" />
               </div>
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setInviteModal(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">
-                  Cancel
-                </button>
-                <button type="submit" disabled={inviteLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50">
-                  {inviteLoading ? 'Sending...' : 'Send Invite'}
-                </button>
+                <button type="button" onClick={() => setInviteModal(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={inviteLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50">{inviteLoading ? 'Sending...' : 'Send Invite'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {superuserModal && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => setSuperuserModal(false)} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Superuser</h3>
+            <p className="text-body-md text-on-surface-variant mb-4">Create a new admin with full system access.</p>
+            <form onSubmit={handleCreateSuperuser} className="space-y-3">
+              <div>
+                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
+                <input type="email" required value={suForm.email} onChange={(e) => setSuForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
+                  <input type="text" required value={suForm.first_name} onChange={(e) => setSuForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+                </div>
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
+                  <input type="text" required value={suForm.last_name} onChange={(e) => setSuForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
+                <input type="tel" value={suForm.phone_number} onChange={(e) => setSuForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+              </div>
+              <div>
+                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Password</label>
+                <input type="password" required value={suForm.password} onChange={(e) => setSuForm(f => ({ ...f, password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setSuperuserModal(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={suLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50">{suLoading ? 'Creating...' : 'Create'}</button>
               </div>
             </form>
           </div>

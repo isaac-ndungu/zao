@@ -7,6 +7,8 @@ import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
 import StatusBadge from '../components/common/StatusBadge'
 import ConfirmModal from '../components/common/ConfirmModal'
+import { useToast } from '../contexts/ToastContext'
+import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 
 const tabOptions = [
   { key: 'cycles', label: 'Payment Cycles' },
@@ -32,16 +34,19 @@ const batchStatusBadge = {
 }
 
 export default function Financials() {
+  const { showToast } = useToast()
   const { period } = useContext(AdminFilterContext)
   const [tab, setTab] = useState('overview')
   const [cyclePage, setCyclePage] = useState(1)
+  const [cyclePageSize, setCyclePageSize] = useState(10)
   const [batchPage, setBatchPage] = useState(1)
+  const [batchPageSize, setBatchPageSize] = useState(10)
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
 
   const { data: finData, loading, error } = useApi(`/api/admin/analytics/financial/?period=${period}`)
-  const { data: cyclesData, refetch: refetchCycles } = useApi(`/api/admin/payment-cycles/?page=${cyclePage}&page_size=10`)
-  const { data: batchesData, refetch: refetchBatches } = useApi(`/api/admin/disbursement-batches/?page=${batchPage}&page_size=10`)
+  const { data: cyclesData, loading: cyclesLoading, refetch: refetchCycles } = useApi(`/api/admin/payment-cycles/?page=${cyclePage}&page_size=${cyclePageSize}`)
+  const { data: batchesData, loading: batchesLoading, refetch: refetchBatches } = useApi(`/api/admin/disbursement-batches/?page=${batchPage}&page_size=${batchPageSize}`)
 
   const fin = finData?.data
 
@@ -49,11 +54,13 @@ export default function Financials() {
     setActionLoading(true)
     setModalConfig({ open: false })
     try {
-      await apiFetch(url, { method: 'POST', body: JSON.stringify(body) })
+      const res = await apiFetch(url, { method: 'POST', body: JSON.stringify(body) })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: 'Action completed successfully.' })
       refetchCycles()
       refetchBatches()
     } catch (e) {
-      console.error('Action failed', e)
+      showToast({ type: 'error', message: `Action failed: ${e.message}` })
     } finally {
       setActionLoading(false)
     }
@@ -124,12 +131,16 @@ export default function Financials() {
 
       {tab === 'overview' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <KpiCard icon="payments" label="Total Revenue" value={fin?.total_revenue ? `KES ${fin.total_revenue.toLocaleString()}` : '-'} />
-            <KpiCard icon="account_balance" label="Gross Payout" value={fin?.total_gross_payout ? `KES ${fin.total_gross_payout.toLocaleString()}` : '-'} />
-            <KpiCard icon="account_balance_wallet" label="Net Payout" value={fin?.total_net_payout ? `KES ${fin.total_net_payout.toLocaleString()}` : '-'} />
-            <KpiCard icon="receipt" label="Withholding Tax" value={fin?.total_withholding_tax ? `KES ${fin.total_withholding_tax.toLocaleString()}` : 'KES 0'} />
-          </div>
+          {loading ? (
+            <KpiSkeleton count={4} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <KpiCard icon="payments" label="Total Revenue" value={fin?.total_revenue ? `KES ${fin.total_revenue.toLocaleString()}` : '-'} />
+              <KpiCard icon="account_balance" label="Gross Payout" value={fin?.total_gross_payout ? `KES ${fin.total_gross_payout.toLocaleString()}` : '-'} />
+              <KpiCard icon="account_balance_wallet" label="Net Payout" value={fin?.total_net_payout ? `KES ${fin.total_net_payout.toLocaleString()}` : '-'} />
+              <KpiCard icon="receipt" label="Withholding Tax" value={fin?.total_withholding_tax ? `KES ${fin.total_withholding_tax.toLocaleString()}` : 'KES 0'} />
+            </div>
+          )}
 
           {fin?.deductions_breakdown && Object.keys(fin.deductions_breakdown).length > 0 && (
             <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-6">
@@ -167,7 +178,7 @@ export default function Financials() {
             </div>
           )}
 
-          {!fin && (
+          {!fin && !loading && (
             <div className="text-center py-12 text-on-surface-variant">
               <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">payments</span>
               <p>No financial data available for the selected period.</p>
@@ -178,49 +189,57 @@ export default function Financials() {
 
       {tab === 'cycles' && (
         <>
-          <DataTable
-            columns={cycleColumns}
-            data={cyclesData?.results || []}
-            loading={loading}
-            emptyMessage="No payment cycles found."
-            rowActions={(cycle) => {
-              const canLock = cycle.status === 'COMPUTED'
-              const canUnlock = cycle.status === 'LOCKED'
-              return (
-                <div className="flex gap-1">
-                  {canLock && <button onClick={() => handleCycleAction(cycle, 'lock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Lock"><span className="material-symbols-outlined text-[18px]">lock</span></button>}
-                  {canUnlock && <button onClick={() => handleCycleAction(cycle, 'unlock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Unlock"><span className="material-symbols-outlined text-[18px]">lock_open</span></button>}
-                  <button className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"><span className="material-symbols-outlined text-[18px]">more_vert</span></button>
-                </div>
-              )
-            }}
-          />
-          <div className="mt-2">
-            <Pagination page={cyclePage} pageSize={10} total={cyclesData?.count || 0} onPageChange={setCyclePage} onPageSizeChange={() => {}} />
-          </div>
+          {cyclesLoading ? <TableSkeleton /> : (
+            <>
+              <DataTable
+                columns={cycleColumns}
+                data={cyclesData?.results || []}
+                loading={false}
+                emptyMessage="No payment cycles found."
+                rowActions={(cycle) => {
+                  const canLock = cycle.status === 'COMPUTED'
+                  const canUnlock = cycle.status === 'LOCKED'
+                  return (
+                    <div className="flex gap-1">
+                      {canLock && <button onClick={() => handleCycleAction(cycle, 'lock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Lock"><span className="material-symbols-outlined text-[18px]">lock</span></button>}
+                      {canUnlock && <button onClick={() => handleCycleAction(cycle, 'unlock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Unlock"><span className="material-symbols-outlined text-[18px]">lock_open</span></button>}
+                      <button className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"><span className="material-symbols-outlined text-[18px]">more_vert</span></button>
+                    </div>
+                  )
+                }}
+              />
+              <div className="mt-2">
+                <Pagination page={cyclePage} pageSize={cyclePageSize} total={cyclesData?.count || 0} onPageChange={setCyclePage} onPageSizeChange={setCyclePageSize} />
+              </div>
+            </>
+          )}
         </>
       )}
 
       {tab === 'batches' && (
         <>
-          <DataTable
-            columns={batchColumns}
-            data={batchesData?.results || []}
-            loading={loading}
-            emptyMessage="No disbursement batches found."
-            rowActions={(batch) => {
-              const canApprove = batch.status === 'PENDING'
-              return (
-                <div className="flex gap-1">
-                  {canApprove && <button onClick={() => handleBatchAction(batch, 'approve')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>}
-                  {canApprove && <button onClick={() => handleBatchAction(batch, 'reject')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-error transition-colors" title="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>}
-                </div>
-              )
-            }}
-          />
-          <div className="mt-2">
-            <Pagination page={batchPage} pageSize={10} total={batchesData?.count || 0} onPageChange={setBatchPage} onPageSizeChange={() => {}} />
-          </div>
+          {batchesLoading ? <TableSkeleton /> : (
+            <>
+              <DataTable
+                columns={batchColumns}
+                data={batchesData?.results || []}
+                loading={false}
+                emptyMessage="No disbursement batches found."
+                rowActions={(batch) => {
+                  const canApprove = batch.status === 'PENDING'
+                  return (
+                    <div className="flex gap-1">
+                      {canApprove && <button onClick={() => handleBatchAction(batch, 'approve')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>}
+                      {canApprove && <button onClick={() => handleBatchAction(batch, 'reject')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-error transition-colors" title="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>}
+                    </div>
+                  )
+                }}
+              />
+              <div className="mt-2">
+                <Pagination page={batchPage} pageSize={batchPageSize} total={batchesData?.count || 0} onPageChange={setBatchPage} onPageSizeChange={setBatchPageSize} />
+              </div>
+            </>
+          )}
         </>
       )}
 
