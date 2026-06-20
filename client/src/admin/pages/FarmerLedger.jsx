@@ -20,7 +20,7 @@ export default function FarmerLedger() {
   const location = useLocation()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(new URLSearchParams(location.search).get('search') || '')
   const [filters, setFilters] = useState({})
   const [sortField, setSortField] = useState('date_joined')
   const [sortOrder, setSortOrder] = useState('desc')
