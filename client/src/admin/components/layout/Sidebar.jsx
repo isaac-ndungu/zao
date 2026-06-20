@@ -116,7 +116,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
               {entryLinks.map((link) => (
                 <button
                   key={link.to}
-                  onMouseDown={() => { navigate(link.to); setEntryOpen(false) }}
+                  onMouseDown={() => { navigate(link.to, { state: { openModal: true } }); setEntryOpen(false) }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-body-md text-on-surface hover:bg-surface-container transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px] text-on-surface-variant">{link.icon}</span>

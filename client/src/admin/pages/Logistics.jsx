@@ -2,6 +2,9 @@ import { useContext, useMemo, useState } from 'react'
 import { useApi } from '../hooks/useApi'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
+import FilterBar from '../components/common/FilterBar'
+import { KpiSkeleton, CardSkeleton } from '../components/common/Skeleton'
+import { Link } from 'react-router-dom'
 
 export default function Logistics() {
   const { period } = useContext(AdminFilterContext)
@@ -32,7 +35,7 @@ export default function Logistics() {
   const maxRejection = rejectionReasons.length > 0 ? Math.max(...rejectionReasons.map(([, v]) => v)) : 1
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+    return <div><KpiSkeleton count={3} /><CardSkeleton /></div>
   }
 
   if (error) {
@@ -55,6 +58,17 @@ export default function Logistics() {
         </div>
         <p className="text-on-surface-variant font-body-md">Operations hub — shifts, graders, and delivery logistics.</p>
       </header>
+
+      <FilterBar
+        search={''}
+        onSearchChange={() => {}}
+        placeholder=""
+        filters={[]}
+        filterValues={{}}
+        onFilterChange={() => {}}
+        onClear={() => {}}
+        onExport={() => { const p = new URLSearchParams(); p.set('period', period); p.set('export', 'csv'); window.open(`/api/admin/analytics/operations/?${p}`, '_blank') }}
+      />
 
       {view === 'operations' && ops ? (
         <>
@@ -168,8 +182,9 @@ export default function Logistics() {
       ) : (
         /* Recent Deliveries view */
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-outline-variant">
+          <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
             <h4 className="font-headline-sm text-headline-sm text-on-surface">Recent Deliveries</h4>
+            <Link to="/admin/receipts" className="text-label-md font-bold text-primary hover:underline">View All</Link>
           </div>
           {deliveriesData?.results?.length > 0 ? (
             <div className="divide-y divide-outline-variant/50">

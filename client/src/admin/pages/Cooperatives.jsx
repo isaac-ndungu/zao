@@ -10,9 +10,16 @@ import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
+import { useLocation } from 'react-router-dom'
+
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
 
 export default function Cooperatives() {
   const { showToast } = useToast()
+  const location = useLocation()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -23,7 +30,7 @@ export default function Cooperatives() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelItem, setPanelItem] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
-  const [createOpen, setCreateOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
   const [form, setForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
   const [formLoading, setFormLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -36,9 +43,11 @@ export default function Cooperatives() {
     params.set('page', page)
     params.set('page_size', pageSize)
     if (search) params.set('search', search)
+    if (filters.status === 'active') params.set('is_active', 'true')
+    else if (filters.status === 'inactive') params.set('is_active', 'false')
     if (sortField) params.set('ordering', sortOrder === 'desc' ? `-${sortField}` : sortField)
     return params.toString()
-  }, [page, pageSize, search, sortField, sortOrder])
+  }, [page, pageSize, search, filters.status, sortField, sortOrder])
 
   const { data, loading, error, refetch } = useApi(`/api/admin/cooperatives/?${query}`)
   const { data: kpiData } = useApi('/api/admin/cooperatives/?page=1&page_size=1')
@@ -157,11 +166,13 @@ export default function Cooperatives() {
         search={search}
         onSearchChange={setSearch}
         placeholder="Search by name, code, email..."
-        filters={[]}
+        filters={[
+          { key: 'status', label: 'Status', options: statusOptions },
+        ]}
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); p.set('export', 'csv'); window.open(`/api/admin/cooperatives/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status === 'active') p.set('is_active', 'true'); else if (filters.status === 'inactive') p.set('is_active', 'false'); p.set('export', 'csv'); window.open(`/api/admin/cooperatives/?${p}`, '_blank') }}
       />
 
       {selectedIds.length > 0 && (

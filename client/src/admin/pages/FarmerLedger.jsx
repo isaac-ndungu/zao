@@ -12,9 +12,12 @@ import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 
+import { useLocation } from 'react-router-dom'
+
 export default function FarmerLedger() {
   const { showToast } = useToast()
   const { period } = useContext(AdminFilterContext)
+  const location = useLocation()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -27,7 +30,7 @@ export default function FarmerLedger() {
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
   const [openDropdownId, setOpenDropdownId] = useState(null)
-  const [createOpen, setCreateOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
   const [createForm, setCreateForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', payment_method: 'MPESA', mpesa_number: '', bank_name: '', bank_account: '' })
   const [formLoading, setFormLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)

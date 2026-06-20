@@ -3,6 +3,7 @@ import { apiFetch } from '../api/client'
 import ConfirmModal from '../components/common/ConfirmModal'
 import KpiCard from '../components/common/KpiCard'
 import { useToast } from '../contexts/ToastContext'
+import { KpiSkeleton } from '../components/common/Skeleton'
 
 const sectionDefaults = {
   user: { label: 'Users', icon: 'group', listEndpoint: '/api/admin/bin/users/', restorePrefix: '/api/admin/users', purgePrefix: '/api/admin/bin/users' },
@@ -142,9 +143,7 @@ export default function TrashManagement() {
       </header>
 
       {loading && !binSummary ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <KpiSkeleton count={4} />
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -157,6 +156,17 @@ export default function TrashManagement() {
                 highlighted={(binSummary?.[key] ?? binSummary?.[key + 's'] ?? 0) > 0}
               />
             ))}
+          </div>
+
+          <div className="flex items-center justify-end mb-4">
+            <button
+              onClick={() => { const p = new URLSearchParams(); p.set('export', 'csv'); window.open(`/api/admin/bin/?${p}`, '_blank') }}
+              className="flex items-center gap-1.5 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors"
+              title="Export CSV"
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              <span className="hidden sm:inline">Export</span>
+            </button>
           </div>
 
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">

@@ -113,7 +113,12 @@ export default function Settings() {
               <p className="font-body-md font-medium text-on-surface">Two-Factor Authentication</p>
               <p className="text-label-md text-on-surface-variant">Add an extra layer of security</p>
             </div>
-            <span className="px-3 py-1 bg-surface-container-high text-on-surface-variant rounded-full text-[11px] font-bold uppercase">Coming Soon</span>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-5 rounded-full bg-surface-container-high relative opacity-50 cursor-not-allowed">
+                <div className="w-4 h-4 bg-on-surface-variant rounded-full absolute top-0.5 left-0.5" />
+              </div>
+              <span className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Coming Soon</span>
+            </div>
           </div>
         </div>
       </div>

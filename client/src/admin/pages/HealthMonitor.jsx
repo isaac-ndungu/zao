@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { apiFetch } from '../api/client'
 import KpiCard from '../components/common/KpiCard'
+import { CardSkeleton } from '../components/common/Skeleton'
 
 function StatusIndicator({ ok, label }) {
   return (
@@ -20,30 +21,44 @@ export default function HealthMonitor() {
   const [celery, setCelery] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const intervalRef = useRef(null)
+
+  const fetchAll = async () => {
+    try {
+      const [h, m, c] = await Promise.all([
+        apiFetch('/api/admin/health/').catch(() => ({ db: false, redis: false, celery: false, worker_count: 0 })),
+        apiFetch('/api/admin/migration-health/').catch(() => ({ up_to_date: false, count: -1, unapplied_migrations: [] })),
+        apiFetch('/api/admin/celery/tasks/').catch(() => ({ active_count: 0, reserved_count: 0, scheduled_count: 0, tasks: { active: [], reserved: [], scheduled: [] } })),
+      ])
+      setHealth(h)
+      setMigrations(m)
+      setCelery(c)
+    } catch (e) {
+      setError(e.message)
+    }
+  }
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const initial = async () => {
       setLoading(true)
-      try {
-        const [h, m, c] = await Promise.all([
-          apiFetch('/api/admin/health/').catch(() => ({ db: false, redis: false, celery: false, worker_count: 0 })),
-          apiFetch('/api/admin/migration-health/').catch(() => ({ up_to_date: false, count: -1, unapplied_migrations: [] })),
-          apiFetch('/api/admin/celery/tasks/').catch(() => ({ active_count: 0, reserved_count: 0, scheduled_count: 0, tasks: { active: [], reserved: [], scheduled: [] } })),
-        ])
-        setHealth(h)
-        setMigrations(m)
-        setCelery(c)
-      } catch (e) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
+      await fetchAll()
+      setLoading(false)
     }
-    fetchAll()
+    initial()
   }, [])
 
+  useEffect(() => {
+    if (autoRefresh) {
+      intervalRef.current = setInterval(fetchAll, 30000)
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [autoRefresh])
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+    return <div><CardSkeleton /></div>
   }
 
   if (error) {
@@ -53,7 +68,20 @@ export default function HealthMonitor() {
   return (
     <div>
       <header className="mb-6">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">System Health</h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-headline-lg text-display-md text-primary">System Health</h2>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className="text-label-md text-on-surface-variant">Auto-refresh</span>
+              <button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${autoRefresh ? 'bg-primary' : 'bg-surface-container-high'}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${autoRefresh ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              </button>
+            </label>
+          </div>
+        </div>
         <p className="text-on-surface-variant font-body-md">Monitor backend services, database migrations, and task queues.</p>
       </header>
 

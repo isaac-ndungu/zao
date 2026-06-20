@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useApi } from '../hooks/useApi'
 import FilterBar from '../components/common/FilterBar'
 import Pagination from '../components/common/Pagination'
+import { TableSkeleton } from '../components/common/Skeleton'
 
 const actionOptions = [
   { value: 'CREATE', label: 'Create' },
@@ -93,9 +94,7 @@ export default function AuditTrail() {
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
         {loading ? (
-          <div className="p-8 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
+          <TableSkeleton />
         ) : logs.length === 0 ? (
           <div className="p-12 text-center">
             <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">history</span>

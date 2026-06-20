@@ -1,7 +1,9 @@
-import { useContext, useMemo } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { useApi } from '../hooks/useApi'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
+import FilterBar from '../components/common/FilterBar'
+import { KpiSkeleton, CardSkeleton } from '../components/common/Skeleton'
 
 export default function Inventory() {
   const { period } = useContext(AdminFilterContext)
@@ -24,7 +26,7 @@ export default function Inventory() {
   const totalGrade = gradeDist.reduce((s, [, v]) => s + v, 0)
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+    return <div><KpiSkeleton count={4} /><CardSkeleton /></div>
   }
 
   if (error) {
@@ -37,6 +39,17 @@ export default function Inventory() {
         <h2 className="font-headline-lg text-display-md text-primary mb-1">Inventory</h2>
         <p className="text-on-surface-variant font-body-md">Production volumes, stock levels, and grade distribution.</p>
       </header>
+
+      <FilterBar
+        search={''}
+        onSearchChange={() => {}}
+        placeholder=""
+        filters={[]}
+        filterValues={{}}
+        onFilterChange={() => {}}
+        onClear={() => {}}
+        onExport={() => { const p = new URLSearchParams(); p.set('period', period); p.set('export', 'csv'); window.open(`/api/admin/analytics/production/?${p}`, '_blank') }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <KpiCard icon="inventory" label="Running Balance" value={inventory?.running_balance?.toLocaleString() || '-'} subvalue="kg" />

@@ -7,6 +7,8 @@ import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
 import StatusBadge from '../components/common/StatusBadge'
 import ConfirmModal from '../components/common/ConfirmModal'
+import SlideOutPanel from '../components/common/SlideOutPanel'
+import FilterBar from '../components/common/FilterBar'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 
@@ -33,10 +35,13 @@ const batchStatusBadge = {
   FAILED: 'failed',
 }
 
+import { useLocation } from 'react-router-dom'
+
 export default function Financials() {
   const { showToast } = useToast()
   const { period } = useContext(AdminFilterContext)
-  const [tab, setTab] = useState('overview')
+  const location = useLocation()
+  const [tab, setTab] = useState(location.state?.openModal === true ? 'cycles' : 'overview')
   const [cyclePage, setCyclePage] = useState(1)
   const [cyclePageSize, setCyclePageSize] = useState(10)
   const [batchPage, setBatchPage] = useState(1)
@@ -47,9 +52,10 @@ export default function Financials() {
   const [batchSortOrder, setBatchSortOrder] = useState('desc')
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
-  const [createOpen, setCreateOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
   const [cycleForm, setCycleForm] = useState({ name: '', start_date: '', end_date: '' })
   const [formLoading, setFormLoading] = useState(false)
+  const [detailPanel, setDetailPanel] = useState({ open: false, item: null, type: '' })
 
   const { data: finData, loading, error } = useApi(`/api/admin/analytics/financial/?period=${period}`)
   const cycleQuery = useMemo(() => {
@@ -254,6 +260,16 @@ export default function Financials() {
 
       {tab === 'cycles' && (
         <>
+          <FilterBar
+            search={''}
+            onSearchChange={() => {}}
+            placeholder=""
+            filters={[]}
+            filterValues={{}}
+            onFilterChange={() => {}}
+            onClear={() => {}}
+            onExport={() => { const p = new URLSearchParams(); p.set('export', 'csv'); window.open(`/api/admin/payment-cycles/?${p}`, '_blank') }}
+          />
           {cyclesLoading ? <TableSkeleton /> : (
             <>
               <DataTable
@@ -264,6 +280,7 @@ export default function Financials() {
                 onSort={handleCycleSort}
                 loading={false}
                 emptyMessage="No payment cycles found."
+                onRowClick={(cycle) => setDetailPanel({ open: true, item: cycle, type: 'cycle' })}
                 rowActions={(cycle) => {
                   const canRun = cycle.status === 'DRAFT'
                   const canLock = cycle.status === 'COMPUTED'
@@ -287,6 +304,16 @@ export default function Financials() {
 
       {tab === 'batches' && (
         <>
+          <FilterBar
+            search={''}
+            onSearchChange={() => {}}
+            placeholder=""
+            filters={[]}
+            filterValues={{}}
+            onFilterChange={() => {}}
+            onClear={() => {}}
+            onExport={() => { const p = new URLSearchParams(); p.set('export', 'csv'); window.open(`/api/admin/disbursement-batches/?${p}`, '_blank') }}
+          />
           {batchesLoading ? <TableSkeleton /> : (
             <>
               <DataTable
@@ -297,6 +324,7 @@ export default function Financials() {
                 onSort={handleBatchSort}
                 loading={false}
                 emptyMessage="No disbursement batches found."
+                onRowClick={(batch) => setDetailPanel({ open: true, item: batch, type: 'batch' })}
                 rowActions={(batch) => {
                   const canApprove = batch.status === 'PENDING'
                   return (
@@ -345,6 +373,39 @@ export default function Financials() {
         loading={actionLoading}
         destructive={modalConfig.destructive}
       />
+
+      <SlideOutPanel open={detailPanel.open} onClose={() => setDetailPanel({ open: false, item: null, type: '' })} title={detailPanel.type === 'cycle' ? 'Payment Cycle Details' : 'Disbursement Batch Details'}>
+        {detailPanel.item && detailPanel.type === 'cycle' && (
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-headline-sm text-headline-sm text-on-surface">{detailPanel.item.name}</h4>
+              <StatusBadge status={cycleStatusBadge[detailPanel.item.status] || 'draft'} label={detailPanel.item.status} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Start Date</p><p className="font-body-md text-on-surface">{detailPanel.item.start_date ? new Date(detailPanel.item.start_date).toLocaleDateString() : '-'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">End Date</p><p className="font-body-md text-on-surface">{detailPanel.item.end_date ? new Date(detailPanel.item.end_date).toLocaleDateString() : '-'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Levy</p><p className="font-body-md text-on-surface font-data-mono">KES {detailPanel.item.total_levy?.toLocaleString() || '0'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Coop Fee</p><p className="font-body-md text-on-surface font-data-mono">KES {detailPanel.item.total_cooperative_fee?.toLocaleString() || '0'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Gross Payout</p><p className="font-body-md text-on-surface font-data-mono">KES {detailPanel.item.total_gross_payout?.toLocaleString() || '0'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Net Payout</p><p className="font-body-md text-on-surface font-data-mono">KES {detailPanel.item.total_net_payout?.toLocaleString() || '0'}</p></div>
+            </div>
+          </div>
+        )}
+        {detailPanel.item && detailPanel.type === 'batch' && (
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-headline-sm text-headline-sm text-on-surface">Batch {detailPanel.item.id?.slice(0, 8)}</h4>
+              <StatusBadge status={batchStatusBadge[detailPanel.item.status] || 'draft'} label={detailPanel.item.status} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Total Amount</p><p className="font-body-md text-on-surface font-data-mono">KES {detailPanel.item.total_amount?.toLocaleString() || '0'}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Transactions</p><p className="font-body-md text-on-surface">{detailPanel.item.total_transactions || 0}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Successful</p><p className="font-body-md text-on-surface text-primary font-data-mono">{detailPanel.item.successful_count || 0}</p></div>
+              <div className="p-3 bg-surface-container rounded-lg"><p className="text-[10px] uppercase font-bold text-on-surface-variant">Failed</p><p className="font-body-md text-on-surface text-error font-data-mono">{detailPanel.item.failed_count || 0}</p></div>
+            </div>
+          </div>
+        )}
+      </SlideOutPanel>
     </div>
   )
 }
