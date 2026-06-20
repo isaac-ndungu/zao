@@ -4,13 +4,39 @@ import { apiFetch } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 
 export default function Settings() {
-  const { user } = useAdminAuth()
+  const { user, refreshUser } = useAdminAuth()
   const { showToast } = useToast()
   const [form, setForm] = useState({ first_name: user?.first_name || '', last_name: user?.last_name || '', email: user?.email || '', phone_number: user?.phone_number || '' })
   const [saving, setSaving] = useState(false)
   const [pwOpen, setPwOpen] = useState(false)
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [pwSaving, setPwSaving] = useState(false)
+  const [twoFAOpen, setTwoFAOpen] = useState(false)
+  const [twoFAPassword, setTwoFAPassword] = useState('')
+  const [twoFALoading, setTwoFALoading] = useState(false)
+
+  const twoFAEnabled = user?.two_fa_enabled || false
+
+  const handleTwoFAToggle = async (e) => {
+    e.preventDefault()
+    setTwoFALoading(true)
+    try {
+      const endpoint = twoFAEnabled ? '/api/auth/2fa/disable/' : '/api/auth/2fa/enable/'
+      const res = await apiFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ password: twoFAPassword }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      showToast({ type: 'success', message: `Two-factor authentication ${twoFAEnabled ? 'disabled' : 'enabled'}.` })
+      setTwoFAOpen(false)
+      setTwoFAPassword('')
+      await refreshUser()
+    } catch (e) {
+      showToast({ type: 'error', message: `Failed: ${e.message}` })
+    } finally {
+      setTwoFALoading(false)
+    }
+  }
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -113,13 +139,61 @@ export default function Settings() {
               <p className="font-body-md font-medium text-on-surface">Two-Factor Authentication</p>
               <p className="text-label-md text-on-surface-variant">Add an extra layer of security</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-5 rounded-full bg-surface-container-high relative opacity-50 cursor-not-allowed">
-                <div className="w-4 h-4 bg-on-surface-variant rounded-full absolute top-0.5 left-0.5" />
-              </div>
-              <span className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Coming Soon</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setTwoFAOpen(true)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  twoFAEnabled ? 'bg-primary' : 'bg-surface-container-high'
+                }`}
+                aria-label="Toggle 2FA"
+              >
+                <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 shadow transition-transform ${
+                  twoFAEnabled ? 'left-[22px]' : 'left-0.5'
+                }`} />
+              </button>
+              <span className={`text-[10px] uppercase font-bold tracking-wider ${
+                twoFAEnabled ? 'text-primary' : 'text-on-surface-variant'
+              }`}>
+                {twoFAEnabled ? 'Enabled' : 'Disabled'}
+              </span>
             </div>
           </div>
+
+          {twoFAOpen && (
+            <div className="pt-2 pb-3">
+              <form onSubmit={handleTwoFAToggle} className="space-y-3">
+                <p className="text-body-md text-on-surface-variant">
+                  {twoFAEnabled
+                    ? 'Enter your password to disable two-factor authentication.'
+                    : 'Enter your password to enable two-factor authentication.'}
+                </p>
+                <div className="flex gap-3">
+                  <input
+                    type="password"
+                    required
+                    value={twoFAPassword}
+                    onChange={(e) => setTwoFAPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="flex-1 bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
+                  />
+                  <button
+                    type="submit"
+                    disabled={twoFALoading || !twoFAPassword}
+                    className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {twoFALoading ? 'Updating...' : 'Confirm'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTwoFAOpen(false); setTwoFAPassword('') }}
+                    className="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
 
