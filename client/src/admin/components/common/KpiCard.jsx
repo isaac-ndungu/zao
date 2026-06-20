@@ -1,10 +1,13 @@
-export default function KpiCard({ icon, label, value, subvalue, highlighted, trend }) {
+export default function KpiCard({ icon, label, value, subvalue, highlighted, trend, onClick }) {
+  const Wrapper = onClick ? 'button' : 'div'
   return (
-    <div
+    <Wrapper
+      onClick={onClick}
       className={
-        highlighted
+        (onClick ? 'text-left cursor-pointer transition-opacity hover:opacity-85 ' : '') +
+        (highlighted
           ? 'bg-primary text-on-primary p-5 rounded-xl border border-primary-container'
-          : 'bg-surface-container-lowest border border-outline-variant p-5 rounded-xl'
+          : 'bg-surface-container-lowest border border-outline-variant p-5 rounded-xl')
       }
     >
       <div className="flex justify-between items-start mb-4">
@@ -42,6 +45,6 @@ export default function KpiCard({ icon, label, value, subvalue, highlighted, tre
           {subvalue}
         </p>
       )}
-    </div>
+    </Wrapper>
   )
 }

@@ -47,6 +47,14 @@ const productTypeOptions = [
   { value: 'MILK', label: 'Milk' },
 ]
 
+const gradeLetterOptions = [
+  { value: 'A', label: 'A' },
+  { value: 'B', label: 'B' },
+  { value: 'C', label: 'C' },
+  { value: 'PREMIUM', label: 'Premium' },
+  { value: 'STANDARD', label: 'Standard' },
+]
+
 const shiftOptions = [
   { value: 'MORNING', label: 'Morning' },
   { value: 'AFTERNOON', label: 'Afternoon' },
@@ -72,6 +80,9 @@ export default function ProduceReceipts() {
   const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
   const [createForm, setCreateForm] = useState({ farmer: '', product_type: 'MILK', quantity_kg: '', volume_litres: '', shift: 'AM', date_delivered: '' })
   const [formLoading, setFormLoading] = useState(false)
+  const [gradeDelivery, setGradeDelivery] = useState(null)
+  const [gradeForm, setGradeForm] = useState({ grade_letter: 'A', price_per_unit: '', rejection_reason: '', override_reason: '' })
+  const [gradeLoading, setGradeLoading] = useState(false)
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerOptions, setFarmerOptions] = useState([])
   const [farmerSearchOpen, setFarmerSearchOpen] = useState(false)
@@ -192,6 +203,48 @@ export default function ProduceReceipts() {
     })
   }
 
+  const openAssignGrade = (delivery) => {
+    setGradeDelivery(delivery)
+    setGradeForm({
+      grade_letter: delivery.grade || 'A',
+      price_per_unit: '',
+      rejection_reason: '',
+      override_reason: '',
+    })
+  }
+
+  const handleAssignGrade = async (e) => {
+    e.preventDefault()
+    if (!gradeDelivery) return
+    setGradeLoading(true)
+    try {
+      const body = {}
+      if (gradeForm.rejection_reason) {
+        body.rejection_reason = gradeForm.rejection_reason
+      } else {
+        body.grade_letter = gradeForm.grade_letter
+        body.price_per_unit = gradeForm.price_per_unit ? parseFloat(gradeForm.price_per_unit) : null
+      }
+      if (gradeForm.override_reason) body.override_reason = gradeForm.override_reason
+
+      const res = await apiFetch(`/api/admin/deliveries/${gradeDelivery.id}/assign-grade/`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail || Object.values(err).flat().join(', ') || 'Assign grade failed')
+      }
+      showToast({ type: 'success', message: `Grade assigned to ${gradeDelivery.batch_id}.` })
+      setGradeDelivery(null)
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: e.message })
+    } finally {
+      setGradeLoading(false)
+    }
+  }
+
   const statusCounts = useMemo(() => {
     if (!data?.results) return { total: 0 }
     const counts = {}
@@ -271,6 +324,9 @@ export default function ProduceReceipts() {
             <button onClick={() => openForceStatus(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
               <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
             </button>
+            <button onClick={() => openAssignGrade(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Assign Grade">
+              <span className="material-symbols-outlined text-[18px]">rate_review</span>
+            </button>
           </div>
         )}
       />
@@ -313,6 +369,115 @@ export default function ProduceReceipts() {
                 Continue
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Grade Modal */}
+      {gradeDelivery && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!gradeLoading) setGradeDelivery(null) }} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface">Assign Grade</h3>
+              <button onClick={() => setGradeDelivery(null)} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={gradeLoading}>
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <p className="text-label-md text-on-surface-variant mb-4">
+              Delivery: <span className="font-data-mono">{gradeDelivery.batch_id}</span>
+            </p>
+            <form onSubmit={handleAssignGrade} className="space-y-4">
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setGradeForm(f => ({ ...f, grade_letter: f.grade_letter || 'A', rejection_reason: '' }))}
+                    className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${!gradeForm.rejection_reason ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}
+                  >
+                    Grade
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGradeForm(f => ({ ...f, rejection_reason: ' ', grade_letter: '' }))}
+                    className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${gradeForm.rejection_reason ? 'bg-error text-white' : 'bg-surface-container text-on-surface-variant'}`}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+              {!gradeForm.rejection_reason ? (
+                <>
+                  <div>
+                    <label className="block text-label-md font-bold text-on-surface mb-1.5">Grade Letter</label>
+                    <select
+                      value={gradeForm.grade_letter}
+                      onChange={(e) => setGradeForm(f => ({ ...f, grade_letter: e.target.value }))}
+                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
+                      disabled={gradeLoading}
+                    >
+                      {gradeLetterOptions.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-label-md font-bold text-on-surface mb-1.5">Price per Unit</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={gradeForm.price_per_unit}
+                      onChange={(e) => setGradeForm(f => ({ ...f, price_per_unit: e.target.value }))}
+                      placeholder="0.00"
+                      className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
+                      disabled={gradeLoading}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Rejection Reason</label>
+                  <textarea
+                    value={gradeForm.rejection_reason === ' ' ? '' : gradeForm.rejection_reason}
+                    onChange={(e) => setGradeForm(f => ({ ...f, rejection_reason: e.target.value }))}
+                    placeholder="Reason for rejection..."
+                    rows={3}
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant resize-none"
+                    disabled={gradeLoading}
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-label-md font-bold text-on-surface mb-1.5">Override Reason</label>
+                <textarea
+                  value={gradeForm.override_reason}
+                  onChange={(e) => setGradeForm(f => ({ ...f, override_reason: e.target.value }))}
+                  placeholder="Why is this being overridden?"
+                  rows={2}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant resize-none"
+                  disabled={gradeLoading}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setGradeDelivery(null)}
+                  className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-higher transition-colors"
+                  disabled={gradeLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={gradeLoading || (!gradeForm.grade_letter && !gradeForm.rejection_reason.trim())}
+                  className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {gradeLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {gradeLoading ? 'Assigning...' : 'Assign Grade'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

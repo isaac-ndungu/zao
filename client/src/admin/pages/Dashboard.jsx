@@ -1,4 +1,5 @@
 import { useContext, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApi } from '../hooks/useApi'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
@@ -57,6 +58,7 @@ function formatNumber(n) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { period } = useContext(AdminFilterContext)
   const { data, loading, error } = useApi(`/api/admin/dashboard/?period=${period}`)
   const { data: analytics, loading: analyticsLoading } = useApi(`/api/admin/analytics/dashboard/?period=${period}`)
@@ -137,20 +139,20 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <KpiCard icon="group" label="Total Users" value={formatNumber(data.total_users)} />
-        <KpiCard icon="agriculture" label="Active Users" value={formatNumber(data.active_users)} />
-        <KpiCard icon="grading" label="Pending Gradings" value={String(data.pending_gradings)} />
-        <KpiCard icon="inventory" label="Active Deliveries" value={String(data.active_deliveries)} />
-        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(data.trash_summary?.total_deleted || 0)} highlighted />
+        <KpiCard icon="group" label="Total Users" value={formatNumber(data.total_users)} onClick={() => navigate('/admin/users')} />
+        <KpiCard icon="agriculture" label="Active Users" value={formatNumber(data.active_users)} onClick={() => navigate('/admin/users')} />
+        <KpiCard icon="grading" label="Pending Gradings" value={String(data.pending_gradings)} onClick={() => navigate('/admin/receipts')} />
+        <KpiCard icon="inventory" label="Active Deliveries" value={String(data.active_deliveries)} onClick={() => navigate('/admin/receipts')} />
+        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(data.trash_summary?.total_deleted || 0)} highlighted onClick={() => navigate('/admin/trash')} />
       </div>
 
       {/* Analytics KPIs */}
       {analyticsData && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <KpiCard icon="payments" label="Revenue" value={analyticsData.financial?.total_revenue ? `KES ${formatNumber(analyticsData.financial.total_revenue)}` : '-'} />
-          <KpiCard icon="person" label="Active Farmers" value={analyticsData.farmers?.total_active || 0} trend={analyticsData.farmers?.new_this_period || 0} />
-          <KpiCard icon="inventory_2" label="Total Production" value={analyticsData.production?.total_kg ? `${formatNumber(analyticsData.production.total_kg)} kg` : '-'} />
-          <KpiCard icon="account_balance" label="Gross Payout" value={analyticsData.financial?.total_gross_payout ? `KES ${formatNumber(analyticsData.financial.total_gross_payout)}` : '-'} />
+          <KpiCard icon="payments" label="Revenue" value={analyticsData.financial?.total_revenue ? `KES ${formatNumber(analyticsData.financial.total_revenue)}` : '-'} onClick={() => navigate('/admin/financials')} />
+          <KpiCard icon="person" label="Active Farmers" value={analyticsData.farmers?.total_active || 0} trend={analyticsData.farmers?.new_this_period || 0} onClick={() => navigate('/admin/farmer-payments')} />
+          <KpiCard icon="inventory_2" label="Total Production" value={analyticsData.production?.total_kg ? `${formatNumber(analyticsData.production.total_kg)} kg` : '-'} onClick={() => navigate('/admin/inventory')} />
+          <KpiCard icon="account_balance" label="Gross Payout" value={analyticsData.financial?.total_gross_payout ? `KES ${formatNumber(analyticsData.financial.total_gross_payout)}` : '-'} onClick={() => navigate('/admin/financials')} />
         </div>
       )}
 

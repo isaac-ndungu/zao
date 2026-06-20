@@ -25,6 +25,7 @@ import FarmerPayments from './admin/pages/FarmerPayments'
 import OTPTokens from './admin/pages/OTPTokens'
 import SeasonalPatterns from './admin/pages/SeasonalPatterns'
 import FarmerRetention from './admin/pages/FarmerRetention'
+import AdminNotFound from './admin/pages/NotFound'
 
 export default function App() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="otp-tokens" element={<OTPTokens />} />
             <Route path="analytics/seasonal" element={<SeasonalPatterns />} />
             <Route path="analytics/retention" element={<FarmerRetention />} />
+            <Route path="*" element={<AdminNotFound />} />
           </Route>
         </Routes>
       </AdminAuthProvider>
