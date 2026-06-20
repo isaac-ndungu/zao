@@ -934,6 +934,65 @@ class AdminDeliveryForceStatusView(APIView):
         return Response({'detail': 'Delivery status updated.', 'status': new_status})
 
 
+class AdminDeliveryAssignGradeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminDeliveryAssignGradeSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        from django.utils import timezone
+        from apps.grading.models import Grade
+        from apps.grading.views import update_delivery_from_grade
+        from apps.grading.tasks import update_inventory_on_grade
+        from .serializers import AdminDeliveryAssignGradeSerializer
+
+        try:
+            delivery = Delivery.objects.select_related('cooperative').get(pk=pk)
+        except Delivery.DoesNotExist:
+            return Response({'detail': 'Delivery not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AdminDeliveryAssignGradeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        grade, created = Grade.objects.get_or_create(
+            delivery=delivery,
+            defaults={'cooperative': delivery.cooperative},
+        )
+
+        was_rejected = bool(grade.rejection_reason)
+
+        grade.grade_letter = serializer.validated_data.get('grade_letter', grade.grade_letter)
+        grade.price_per_unit = serializer.validated_data.get('price_per_unit', grade.price_per_unit)
+        grade.rejection_reason = serializer.validated_data.get('rejection_reason', grade.rejection_reason)
+        grade.is_overridden = True
+        grade.overridden_by = request.user
+        grade.overridden_at = timezone.now()
+        grade.override_reason = serializer.validated_data.get('override_reason', '')
+        grade.is_inventory_updated = False
+        grade.save()
+
+        if not created and was_rejected != bool(grade.rejection_reason):
+            from apps.grading.views import _reverse_inventory_contribution
+            _reverse_inventory_contribution(delivery, was_rejected)
+
+        update_delivery_from_grade(grade)
+        update_inventory_on_grade.delay(str(grade.id))
+
+        log_audit(
+            actor=request.user, resource_type='delivery', resource_id=delivery.pk,
+            action='ASSIGN_GRADE',
+            previous_value={'status': delivery.status, 'grade': delivery.grade},
+            new_value={
+                'grade_letter': grade.grade_letter,
+                'price_per_unit': str(grade.price_per_unit),
+                'rejection_reason': grade.rejection_reason,
+                'is_override': True,
+            },
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Grade assigned.', 'grade_id': str(grade.id), 'created': created})
+
+
 class AdminPaymentCycleViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericViewSet):
     queryset = PaymentCycle.objects.all().select_related('cooperative', 'locked_by').order_by('-end_date')
     serializer_class = AdminPaymentCycleSerializer

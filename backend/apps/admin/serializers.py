@@ -9,6 +9,7 @@ from apps.base.constants import UserRole
 from apps.base.models import AuditLog, AuditAction
 from apps.cooperatives.models import Cooperative
 from apps.deliveries.models import Delivery, DeliveryStatus
+from apps.grading.models import GradeLetter
 from apps.disbursement.models import DisbursementBatch
 from apps.farmers.models import Farmer
 from apps.loans.models import Loan
@@ -234,6 +235,30 @@ class AdminDeliveryCreateSerializer(serializers.ModelSerializer):
 
 class AdminForceDeliveryStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=DeliveryStatus.choices)
+
+
+class AdminDeliveryAssignGradeSerializer(serializers.Serializer):
+    grade_letter = serializers.ChoiceField(choices=GradeLetter.choices, required=False)
+    price_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    rejection_reason = serializers.CharField(required=False, allow_blank=True)
+    override_reason = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        has_grade = bool(attrs.get('grade_letter'))
+        has_rejection = bool(attrs.get('rejection_reason'))
+        if has_grade and has_rejection:
+            raise serializers.ValidationError(
+                'Cannot assign a grade letter and a rejection reason together.'
+            )
+        if not has_grade and not has_rejection:
+            raise serializers.ValidationError(
+                'Provide either grade_letter (with price_per_unit) or rejection_reason.'
+            )
+        if has_grade and not attrs.get('price_per_unit'):
+            raise serializers.ValidationError(
+                {'price_per_unit': 'Price per unit is required when assigning a grade.'}
+            )
+        return attrs
 
 
 class AdminPaymentCycleSerializer(serializers.ModelSerializer):
