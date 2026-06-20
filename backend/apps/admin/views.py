@@ -880,10 +880,15 @@ class AdminFarmerViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, Cr
         return qs
 
 
-class AdminDeliveryViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
+class AdminDeliveryViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericViewSet):
     queryset = Delivery.objects.all().select_related('farmer', 'grader', 'cooperative').order_by('-date_delivered')
-    serializer_class = AdminDeliverySerializer
     search_fields = ['batch_id', 'farmer__first_name', 'farmer__last_name', 'farmer__phone_number']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            from .serializers import AdminDeliveryCreateSerializer
+            return AdminDeliveryCreateSerializer
+        return AdminDeliverySerializer
 
     def get_queryset(self):
         include_trashed = self.request.query_params.get('include_trashed', '').lower() == 'true'
@@ -898,6 +903,9 @@ class AdminDeliveryViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, 
         if product_type:
             qs = qs.filter(product_type=product_type)
         return qs
+
+    def perform_create(self, serializer):
+        serializer.save(cooperative=serializer.validated_data['farmer'].cooperative)
 
 
 class AdminDeliveryForceStatusView(APIView):

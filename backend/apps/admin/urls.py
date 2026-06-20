@@ -84,7 +84,7 @@ urlpatterns = [
     path('farmers/bulk-action/', AdminFarmerBulkActionView.as_view()),
     path('farmers/', AdminFarmerViewSet.as_view({'get': 'list', 'post': 'create'})),
     path('farmers/<uuid:pk>/', AdminFarmerViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update'})),
-    path('deliveries/', AdminDeliveryViewSet.as_view({'get': 'list'})),
+    path('deliveries/', AdminDeliveryViewSet.as_view({'get': 'list', 'post': 'create'})),
     path('deliveries/<uuid:pk>/', AdminDeliveryViewSet.as_view({'get': 'retrieve'})),
     path('deliveries/<uuid:pk>/force-status/', AdminDeliveryForceStatusView.as_view()),
     path('payment-cycles/', AdminPaymentCycleViewSet.as_view({'get': 'list', 'post': 'create'})),

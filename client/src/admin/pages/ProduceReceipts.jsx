@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
 import KpiCard from '../components/common/KpiCard'
@@ -10,6 +10,7 @@ import StatusBadge from '../components/common/StatusBadge'
 import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
+import { useLocation } from 'react-router-dom'
 
 const statusOptions = [
   { value: 'PENDING', label: 'Pending' },
@@ -27,6 +28,18 @@ const statusBadgeMap = {
   PAID: 'paid',
 }
 
+const createProductTypeOptions = [
+  { value: 'MILK', label: 'Milk' },
+  { value: 'COFFEE_CHERRIES', label: 'Coffee Cherries' },
+  { value: 'HONEY', label: 'Honey' },
+  { value: 'OTHER', label: 'Other' },
+]
+
+const createShiftOptions = [
+  { value: 'AM', label: 'Morning' },
+  { value: 'PM', label: 'Evening' },
+]
+
 const productTypeOptions = [
   { value: 'COFFEE', label: 'Coffee' },
   { value: 'MAIZE', label: 'Maize' },
@@ -42,6 +55,7 @@ const shiftOptions = [
 
 export default function ProduceReceipts() {
   const { showToast } = useToast()
+  const location = useLocation()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -55,6 +69,34 @@ export default function ProduceReceipts() {
   const [actionLoading, setActionLoading] = useState(false)
   const [statusDelivery, setStatusDelivery] = useState(null)
   const [statusTarget, setStatusTarget] = useState('')
+  const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
+  const [createForm, setCreateForm] = useState({ farmer: '', product_type: 'MILK', quantity_kg: '', volume_litres: '', shift: 'AM', date_delivered: '' })
+  const [formLoading, setFormLoading] = useState(false)
+  const [farmerSearch, setFarmerSearch] = useState('')
+  const [farmerOptions, setFarmerOptions] = useState([])
+  const [farmerSearchOpen, setFarmerSearchOpen] = useState(false)
+  const [selectedFarmerName, setSelectedFarmerName] = useState('')
+  const farmerRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (farmerRef.current && !farmerRef.current.contains(e.target)) setFarmerSearchOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    if (!farmerSearch || farmerSearch.length < 2) { setFarmerOptions([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/admin/farmers/?search=${encodeURIComponent(farmerSearch)}&page_size=10`)
+        const data = await res.json()
+        setFarmerOptions(data?.results || [])
+      } catch { setFarmerOptions([]) }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [farmerSearch])
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -78,6 +120,39 @@ export default function ProduceReceipts() {
   const handleView = (delivery) => {
     setPanelDelivery(delivery)
     setPanelOpen(true)
+  }
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    setFormLoading(true)
+    try {
+      const body = {
+        farmer: createForm.farmer,
+        product_type: createForm.product_type,
+        quantity_kg: createForm.quantity_kg ? parseFloat(createForm.quantity_kg) : null,
+        volume_litres: createForm.volume_litres ? parseFloat(createForm.volume_litres) : null,
+        shift: createForm.shift,
+        date_delivered: createForm.date_delivered || undefined,
+      }
+      const res = await apiFetch('/api/admin/deliveries/', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail || Object.values(err).flat().join(', ') || 'Create failed')
+      }
+      showToast({ type: 'success', message: 'Delivery created successfully.' })
+      setCreateOpen(false)
+      setCreateForm({ farmer: '', product_type: 'MILK', quantity_kg: '', volume_litres: '', shift: 'AM', date_delivered: '' })
+      setSelectedFarmerName('')
+      setFarmerSearch('')
+      refetch()
+    } catch (e) {
+      showToast({ type: 'error', message: e.message })
+    } finally {
+      setFormLoading(false)
+    }
   }
 
   const openForceStatus = (delivery) => {
@@ -141,9 +216,15 @@ export default function ProduceReceipts() {
 
   return (
     <div>
-      <header className="mb-6">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">Produce Receipts</h2>
-        <p className="text-on-surface-variant font-body-md">Track and manage all produce deliveries across cooperatives.</p>
+      <header className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="font-headline-lg text-display-md text-primary mb-1">Produce Receipts</h2>
+          <p className="text-on-surface-variant font-body-md">Track and manage all produce deliveries across cooperatives.</p>
+        </div>
+        <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-label-md font-bold hover:bg-primary/90 transition-colors">
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          New Delivery
+        </button>
       </header>
 
       {loading ? (
@@ -296,6 +377,142 @@ export default function ProduceReceipts() {
           </div>
         )}
       </SlideOutPanel>
+
+      {/* Create Delivery Modal */}
+      {createOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') } }} />
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface">New Delivery</h3>
+              <button onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading}>
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div ref={farmerRef} className="relative">
+                <label className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={selectedFarmerName || farmerSearch}
+                    onChange={(e) => { setFarmerSearch(e.target.value); setSelectedFarmerName(''); setCreateForm(f => ({ ...f, farmer: '' })); setFarmerSearchOpen(true) }}
+                    onFocus={() => { if (farmerSearch.length >= 2) setFarmerSearchOpen(true) }}
+                    placeholder="Search farmer by name or phone..."
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 pr-10 text-body-md text-on-surface placeholder:text-on-surface-variant"
+                    disabled={formLoading}
+                    autoComplete="off"
+                  />
+                  {farmerSearchOpen && farmerOptions.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {farmerOptions.map(f => (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => { setSelectedFarmerName(`${f.first_name} ${f.last_name} (${f.phone || f.id.slice(0, 8)})`); setCreateForm(ff => ({ ...ff, farmer: f.id })); setFarmerSearchOpen(false); setFarmerSearch('') }}
+                          className="w-full text-left px-3 py-2 text-body-md text-on-surface hover:bg-surface-container transition-colors"
+                        >
+                          {f.first_name} {f.last_name}
+                          <span className="text-on-surface-variant text-label-sm ml-2">{f.phone}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {farmerSearchOpen && farmerSearch.length >= 2 && farmerOptions.length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg p-3 text-center text-on-surface-variant text-body-md">
+                      No farmers found.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
+                <select
+                  value={createForm.product_type}
+                  onChange={(e) => setCreateForm(f => ({ ...f, product_type: e.target.value }))}
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
+                  disabled={formLoading}
+                >
+                  {createProductTypeOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Quantity (kg)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={createForm.quantity_kg}
+                    onChange={(e) => setCreateForm(f => ({ ...f, quantity_kg: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
+                    disabled={formLoading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Volume (L)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={createForm.volume_litres}
+                    onChange={(e) => setCreateForm(f => ({ ...f, volume_litres: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
+                    disabled={formLoading}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
+                  <select
+                    value={createForm.shift}
+                    onChange={(e) => setCreateForm(f => ({ ...f, shift: e.target.value }))}
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
+                    disabled={formLoading}
+                  >
+                    {createShiftOptions.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Date Delivered</label>
+                  <input
+                    type="date"
+                    value={createForm.date_delivered}
+                    onChange={(e) => setCreateForm(f => ({ ...f, date_delivered: e.target.value }))}
+                    className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
+                    disabled={formLoading}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }}
+                  className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-higher transition-colors"
+                  disabled={formLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={formLoading || !createForm.farmer}
+                  className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {formLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {formLoading ? 'Creating...' : 'Create Delivery'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         open={modalConfig.open}

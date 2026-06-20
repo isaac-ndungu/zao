@@ -210,6 +210,28 @@ class AdminDeliverySerializer(serializers.ModelSerializer):
         return None
 
 
+class AdminDeliveryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Delivery
+        fields = [
+            'farmer', 'product_type', 'quantity_kg', 'volume_litres',
+            'shift', 'date_delivered',
+        ]
+
+    def validate_farmer(self, value):
+        if not value.is_active:
+            raise serializers.ValidationError('Farmer is not active.')
+        return value
+
+    def validate(self, attrs):
+        product = attrs.get('product_type')
+        if product == 'MILK' and not attrs.get('volume_litres'):
+            raise serializers.ValidationError({'volume_litres': 'Volume in litres is required for milk deliveries.'})
+        if product in ('COFFEE_CHERRIES', 'HONEY') and not attrs.get('quantity_kg'):
+            raise serializers.ValidationError({'quantity_kg': 'Quantity in kg is required for this product type.'})
+        return attrs
+
+
 class AdminForceDeliveryStatusSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=DeliveryStatus.choices)
 
