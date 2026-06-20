@@ -22,6 +22,7 @@ import HealthMonitor from './admin/pages/HealthMonitor'
 import Cooperatives from './admin/pages/Cooperatives'
 import Loans from './admin/pages/Loans'
 import FarmerPayments from './admin/pages/FarmerPayments'
+import OTPTokens from './admin/pages/OTPTokens'
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="cooperatives" element={<Cooperatives />} />
             <Route path="loans" element={<Loans />} />
             <Route path="farmer-payments" element={<FarmerPayments />} />
+            <Route path="otp-tokens" element={<OTPTokens />} />
           </Route>
         </Routes>
       </AdminAuthProvider>

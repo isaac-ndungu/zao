@@ -16,6 +16,7 @@ const navItems = [
 const systemItems = [
   { to: '/admin/users', icon: 'group', label: 'User Management' },
   { to: '/admin/audit', icon: 'history', label: 'Audit Trail' },
+  { to: '/admin/otp-tokens', icon: 'pin', label: 'OTP Tokens' },
   { to: '/admin/trash', icon: 'delete_sweep', label: 'Trash' },
   { to: '/admin/health', icon: 'monitor_heart', label: 'System Health' },
 ]
