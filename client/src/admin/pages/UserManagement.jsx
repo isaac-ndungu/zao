@@ -26,8 +26,11 @@ const roleBadgeMap = {
   farmer: { status: 'active', label: 'Farmer' },
 }
 
+import { useLocation } from 'react-router-dom'
+
 export default function UserManagement() {
   const { showToast } = useToast()
+  const location = useLocation()
   const [tab, setTab] = useState('users')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -40,7 +43,7 @@ export default function UserManagement() {
   const [panelUser, setPanelUser] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
-  const [inviteModal, setInviteModal] = useState(false)
+  const [inviteModal, setInviteModal] = useState(location.state?.openModal === true)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteLoading, setInviteLoading] = useState(false)
   const [superuserModal, setSuperuserModal] = useState(false)

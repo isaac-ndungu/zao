@@ -28,8 +28,11 @@ const statusBadgeMap = {
   completed: 'completed',
 }
 
+import { useLocation } from 'react-router-dom'
+
 export default function Loans() {
   const { showToast } = useToast()
+  const location = useLocation()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -40,7 +43,7 @@ export default function Loans() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelItem, setPanelItem] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
-  const [createOpen, setCreateOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
   const [loanForm, setLoanForm] = useState({ farmer: '', amount_principal: '', interest_rate: '', number_of_installments: '', purpose: '', notes: '' })
   const [formLoading, setFormLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
