@@ -23,6 +23,8 @@ import Cooperatives from './admin/pages/Cooperatives'
 import Loans from './admin/pages/Loans'
 import FarmerPayments from './admin/pages/FarmerPayments'
 import OTPTokens from './admin/pages/OTPTokens'
+import SeasonalPatterns from './admin/pages/SeasonalPatterns'
+import FarmerRetention from './admin/pages/FarmerRetention'
 
 export default function App() {
   return (
@@ -52,6 +54,8 @@ export default function App() {
             <Route path="loans" element={<Loans />} />
             <Route path="farmer-payments" element={<FarmerPayments />} />
             <Route path="otp-tokens" element={<OTPTokens />} />
+            <Route path="analytics/seasonal" element={<SeasonalPatterns />} />
+            <Route path="analytics/retention" element={<FarmerRetention />} />
           </Route>
         </Routes>
       </AdminAuthProvider>
