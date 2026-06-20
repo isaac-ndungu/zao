@@ -85,6 +85,18 @@ export function AdminAuthProvider({ children }) {
     return { success: true }
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const meRes = await apiFetch('/api/users/me/')
+      if (meRes.ok) {
+        const me = await meRes.json()
+        setUser(me)
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
+
   const logout = useCallback(async () => {
     try {
       await apiFetch('/api/auth/logout/', { method: 'POST' })
@@ -104,6 +116,7 @@ export function AdminAuthProvider({ children }) {
     requestOtp,
     verifyOtp,
     logout,
+    refreshUser,
   }
 
   return (
