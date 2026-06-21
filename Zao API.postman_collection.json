@@ -1,0 +1,6831 @@
+{
+  "info": {
+    "name": "Zao API",
+    "description": "Complete Zao platform API. Base: {{base_url}} (default http://localhost:8000).\n\nAuth: Bearer {{access_token}} on authenticated endpoints. Login via POST /api/auth/login/.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cooperative_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "farmer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "membership_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "delivery_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "grade_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "dispute_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "image_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inventory_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "route_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "buyer_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sale_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cycle_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "loan_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "batch_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "payment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deduction_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "credit_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notification_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "session_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "login_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "legal_slug",
+      "value": "privacy-policy",
+      "type": "string"
+    },
+    {
+      "key": "invite_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reset_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "version",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01  Health & Schema",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/health/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "health"
+            ],
+            "query": []
+          },
+          "description": "System health check. Public.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Health Check [Public]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/schema/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "schema"
+            ],
+            "query": []
+          },
+          "description": "OpenAPI schema JSON. Public.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "OpenAPI Schema [Public]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/docs/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "docs"
+            ],
+            "query": []
+          },
+          "description": "Swagger UI. Public.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Swagger UI [Public]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/schema/redoc/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "schema",
+              "redoc"
+            ],
+            "query": []
+          },
+          "description": "ReDoc UI. Public.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "ReDoc UI [Public]"
+        }
+      ]
+    },
+    {
+      "name": "02  Auth",
+      "item": [
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/login/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "login"
+            ],
+            "query": []
+          },
+          "description": "Login. Returns access + refresh tokens.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"manager@coop.com\", \"password\": \"user_password\"}"
+          },
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Login [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/2fa/request/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "2fa",
+              "request"
+            ],
+            "query": []
+          },
+          "description": "Request 2FA OTP via email.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"login_token\": \"{{login_token}}\"}"
+          },
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Request 2FA OTP [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/2fa/verify/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "2fa",
+              "verify"
+            ],
+            "query": []
+          },
+          "description": "Verify 2FA OTP.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"login_token\": \"{{login_token}}\", \"otp_code\": \"123456\"}"
+          },
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Verify 2FA OTP [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/farmer/request/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "farmer",
+              "request"
+            ],
+            "query": []
+          },
+          "description": "Request farmer OTP via SMS.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"phone_number\": \"0712345678\"}"
+          },
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Request Farmer OTP [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/farmer/verify/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "farmer",
+              "verify"
+            ],
+            "query": []
+          },
+          "description": "Verify farmer OTP.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"login_token\": \"{{login_token}}\", \"otp_code\": \"123456\"}"
+          },
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Verify Farmer OTP [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/refresh/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "refresh"
+            ],
+            "query": []
+          },
+          "description": "Refresh access token (reads refresh cookie).",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "Refresh Token [Public]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/logout/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "logout"
+            ],
+            "query": []
+          },
+          "description": "Logout. Blacklists refresh token.",
+          "name": "Logout [Auth]",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"refresh\": \"{{refresh_token}}\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/2fa/enable",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "2fa",
+              "enable"
+            ],
+            "query": []
+          },
+          "description": "Enable 2FA for your account (requires password).",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"password\": \"Pass123!\"}"
+          },
+          "name": "Enable 2FA [Auth]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/2fa/disable",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "2fa",
+              "disable"
+            ],
+            "query": []
+          },
+          "description": "Disable 2FA. Blocked for MANAGER/ACCOUNTANT/AUDITOR roles.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"password\": \"Pass123!\"}"
+          },
+          "name": "Disable 2FA [Auth]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/change-password",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "change-password"
+            ],
+            "query": []
+          },
+          "description": "Change password.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"current_password\": \"OldPass123!\", \"new_password\": \"NewPass123!\"}"
+          },
+          "name": "Change Password [Auth]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/password-reset/request",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "password-reset",
+              "request"
+            ],
+            "query": []
+          },
+          "description": "Request password reset OTP.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "auth": {
+            "type": "noauth"
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"user@example.com\"}"
+          },
+          "name": "Request Password Reset [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/password-reset/verify",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "password-reset",
+              "verify"
+            ],
+            "query": []
+          },
+          "description": "Verify OTP and reset password.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "auth": {
+            "type": "noauth"
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"user@example.com\", \"otp_code\": \"123456\", \"new_password\": \"NewPass123!\"}"
+          },
+          "name": "Verify Password Reset [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/invite/request-otp",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "invite",
+              "request-otp"
+            ],
+            "query": []
+          },
+          "description": "Request invite OTP (replaces old invite/accept flow).",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "auth": {
+            "type": "noauth"
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"newuser@example.com\", \"first_name\": \"New\", \"last_name\": \"User\", \"role\": \"manager\"}"
+          },
+          "name": "Request Invite OTP [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/auth/invite/verify",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "auth",
+              "invite",
+              "verify"
+            ],
+            "query": []
+          },
+          "description": "Verify invite OTP and activate account.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "auth": {
+            "type": "noauth"
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"newuser@example.com\", \"otp_code\": \"123456\", \"password\": \"SecurePass123!\", \"phone_number\": \"0714000001\"}"
+          },
+          "name": "Verify Invite OTP [Public]"
+        }
+      ]
+    },
+    {
+      "name": "03  Cooperatives",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "search",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "ordering",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List cooperatives.",
+          "name": "List Cooperatives [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives"
+            ],
+            "query": []
+          },
+          "description": "Create cooperative.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"New Coop\", \"registration_number\": \"COOP/001/2025\", \"county\": \"Nairobi\", \"produce_type\": \"COFFEE\", \"payment_model\": \"VOLUME_BASED\", \"levy_percentage\": \"2.50\", \"monthly_fee\": \"500.00\", \"prefix\": \"NC\"}"
+          },
+          "name": "Create Cooperative [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/{{cooperative_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "{{cooperative_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get cooperative.",
+          "name": "Retrieve Cooperative [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/{{cooperative_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "{{cooperative_id}}"
+            ]
+          },
+          "description": "Update cooperative.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"Updated Coop\", \"registration_number\": \"COOP/001/2025\", \"county\": \"Nairobi\", \"payment_model\": \"VOLUME_BASED\", \"levy_percentage\": \"3.00\", \"monthly_fee\": \"500.00\", \"is_active\": true, \"prefix\": \"UC\"}"
+          },
+          "name": "Update Cooperative [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/{{cooperative_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "{{cooperative_id}}"
+            ]
+          },
+          "description": "Partial update.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"levy_percentage\": \"2.75\"}"
+          },
+          "name": "Partial Update Cooperative [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/{{cooperative_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "{{cooperative_id}}"
+            ]
+          },
+          "description": "DANGER: delete + cascade.",
+          "name": "Delete Cooperative [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/me/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "me"
+            ],
+            "query": []
+          },
+          "description": "My cooperative.",
+          "name": "My Cooperative [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/stats/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "stats"
+            ],
+            "query": [
+              {
+                "key": "is_active",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "county",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "produce_type",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Cooperative stats.",
+          "name": "Cooperative Stats [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/cooperatives/enums/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "cooperatives",
+              "enums"
+            ],
+            "query": []
+          },
+          "description": "Enum choices.",
+          "name": "Enum Choices [All]"
+        }
+      ]
+    },
+    {
+      "name": "04  Users",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/users/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "search",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "role",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "is_active",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List users.",
+          "name": "List Users [Admin/Manager] (POST); [Admin/Manager] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/users/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users"
+            ],
+            "query": []
+          },
+          "description": "Create user.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"user@example.com\", \"password\": \"SecurePass123!\", \"phone_number\": \"0712345678\", \"first_name\": \"John\", \"last_name\": \"Doe\", \"role\": \"farmer\"}"
+          },
+          "name": "Create User [Admin/Manager] (POST); [Admin/Manager] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/users/{{user_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "{{user_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get user.",
+          "name": "Retrieve User [Admin/Manager] (POST); [Admin/Manager] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/users/{{user_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "{{user_id}}"
+            ]
+          },
+          "description": "Update user.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"email\": \"updated@example.com\", \"phone_number\": \"0711111111\", \"first_name\": \"Updated\", \"last_name\": \"User\", \"role\": \"manager\", \"is_active\": true}"
+          },
+          "name": "Update User [Admin/Manager] (POST); [Admin/Manager] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/users/{{user_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "{{user_id}}"
+            ]
+          },
+          "description": "Partial update.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"first_name\": \"Patched\"}"
+          },
+          "name": "Partial Update User [Admin/Manager] (POST); [Admin/Manager] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/users/{{user_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "{{user_id}}"
+            ]
+          },
+          "description": "Delete user.",
+          "name": "Delete User [Admin/Manager] (POST); [Admin/Manager] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/users/me/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "me"
+            ],
+            "query": []
+          },
+          "description": "My profile.",
+          "name": "My Profile [All]"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/users/me/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "me"
+            ]
+          },
+          "description": "Update my profile.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"first_name\": \"Updated\"}"
+          },
+          "name": "Update My Profile [All]"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/users/avatar",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "avatar"
+            ],
+            "query": []
+          },
+          "description": "Upload/update avatar (multipart/form-data).",
+          "body": {
+            "mode": "formdata",
+            "formdata": [
+              {
+                "key": "avatar",
+                "type": "file",
+                "src": ""
+              }
+            ]
+          },
+          "name": "Upload Avatar [All]",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "multipart/form-data"
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/users/avatar",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "users",
+              "avatar"
+            ],
+            "query": []
+          },
+          "description": "Delete avatar.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "name": "Delete Avatar [All]"
+        }
+      ]
+    },
+    {
+      "name": "05  Farmers",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "search",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "is_active",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List farmers.",
+          "name": "List Farmers [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers"
+            ],
+            "query": []
+          },
+          "description": "Create farmer (auto-creates User).",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"first_name\": \"Jane\", \"last_name\": \"Farmer\", \"phone_number\": \"0712345678\", \"id_number\": \"12345678\", \"email\": \"jane@example.com\", \"gender\": \"F\", \"ward\": \"Parklands\"}"
+          },
+          "name": "Create Farmer [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/{{farmer_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "{{farmer_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get farmer.",
+          "name": "Retrieve Farmer [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/{{farmer_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "{{farmer_id}}"
+            ]
+          },
+          "description": "Update farmer.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"first_name\": \"Updated\", \"last_name\": \"Farmer\", \"phone_number\": \"0711111111\", \"is_active\": true}"
+          },
+          "name": "Update Farmer [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/{{farmer_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "{{farmer_id}}"
+            ]
+          },
+          "description": "Partial update.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"village\": \"New Village\"}"
+          },
+          "name": "Partial Update Farmer [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/{{farmer_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "{{farmer_id}}"
+            ]
+          },
+          "description": "Delete farmer.",
+          "name": "Delete Farmer [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/lookup/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "lookup"
+            ],
+            "query": [
+              {
+                "key": "phone",
+                "value": "0712345678",
+                "description": "Phone number (required)"
+              }
+            ]
+          },
+          "description": "Lookup by phone.",
+          "name": "Lookup Farmer by Phone [Manager]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/me/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "me"
+            ],
+            "query": []
+          },
+          "description": "My farmer profile.",
+          "name": "My Farmer Profile [All]"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/me/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "me"
+            ]
+          },
+          "description": "Update my profile.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"phone_number\": \"0711111111\"}"
+          },
+          "name": "Update My Profile [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/stats/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "stats"
+            ],
+            "query": []
+          },
+          "description": "Farmer stats.",
+          "name": "Farmer Stats [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/import_template/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "import_template"
+            ],
+            "query": []
+          },
+          "description": "Download CSV template.",
+          "name": "Download CSV Template [All]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/import_csv/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "import_csv"
+            ],
+            "query": []
+          },
+          "description": "Import CSV (multipart).",
+          "name": "Import Farmers from CSV [Manager]",
+          "body": {
+            "mode": "formdata",
+            "formdata": [
+              {
+                "key": "file",
+                "type": "file",
+                "src": "",
+                "description": "CSV file with farmer data"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Memberships",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "20",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List memberships.",
+              "name": "List Memberships [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships"
+                ],
+                "query": []
+              },
+              "description": "Add membership.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"cooperative\": \"{{cooperative_id}}\"}"
+              },
+              "name": "Create Membership [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/{{membership_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships",
+                  "{{membership_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get membership.",
+              "name": "Retrieve Membership [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/{{membership_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships",
+                  "{{membership_id}}"
+                ]
+              },
+              "description": "Update membership.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"is_active\": true}"
+              },
+              "name": "Update Membership [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "DELETE",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/{{membership_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships",
+                  "{{membership_id}}"
+                ]
+              },
+              "description": "Delete membership.",
+              "name": "Delete Membership [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "PATCH",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/{{membership_id}}/deactivate/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships",
+                  "{{membership_id}}",
+                  "deactivate"
+                ]
+              },
+              "description": "Deactivate membership.",
+              "name": "Deactivate Membership [Manager] (POST); [All] (GET)",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "PATCH",
+              "url": {
+                "raw": "{{base_url}}/api/farmers/{{farmer_id}}/memberships/{{membership_id}}/reactivate/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "farmers",
+                  "{{farmer_id}}",
+                  "memberships",
+                  "{{membership_id}}",
+                  "reactivate"
+                ]
+              },
+              "description": "Reactivate membership.",
+              "name": "Reactivate Membership [Manager] (POST); [All] (GET)",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/farmers/map",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "farmers",
+              "map"
+            ],
+            "query": []
+          },
+          "description": "Farmer map data (cooperative-scoped).",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "name": "Farmer Map Data [All]"
+        }
+      ]
+    },
+    {
+      "name": "06  Deliveries",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "status",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "farmer",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "date_from",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "date_to",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List deliveries.",
+          "name": "List Deliveries [Manager/Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries"
+            ],
+            "query": []
+          },
+          "description": "Create delivery.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"farmer\": \"{{farmer_id}}\", \"product_type\": \"COFFEE\", \"gross_weight\": \"50.00\", \"container_weight\": \"2.00\", \"net_weight\": \"48.00\"}"
+          },
+          "name": "Create Delivery [Manager/Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/{{delivery_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "{{delivery_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get delivery.",
+          "name": "Retrieve Delivery [Manager/Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/{{delivery_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "{{delivery_id}}"
+            ]
+          },
+          "description": "Update delivery.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"gross_weight\": \"55.00\", \"net_weight\": \"53.00\"}"
+          },
+          "name": "Update Delivery [Manager/Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/{{delivery_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "{{delivery_id}}"
+            ]
+          },
+          "description": "Partial update.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"notes\": \"Updated\"}"
+          },
+          "name": "Partial Update Delivery [Manager/Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/{{delivery_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "{{delivery_id}}"
+            ]
+          },
+          "description": "Delete delivery.",
+          "name": "Delete Delivery [Manager/Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/sync/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "sync"
+            ],
+            "query": []
+          },
+          "description": "Sync offline deliveries.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "[{\"local_id\":\"local-001\",\"farmer\":\"{{farmer_id}}\",\"product_type\":\"COFFEE\",\"gross_weight\":\"50.00\",\"container_weight\":\"2.00\",\"net_weight\":\"48.00\"}]"
+          },
+          "name": "Sync Offline Deliveries [Manager/Grader]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/map/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "map"
+            ],
+            "query": [
+              {
+                "key": "date",
+                "value": "",
+                "description": "YYYY-MM-DD"
+              },
+              {
+                "key": "grade",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Map view.",
+          "name": "Delivery Map Data [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/summary/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "summary"
+            ],
+            "query": [
+              {
+                "key": "farmer",
+                "value": "",
+                "description": "UUID"
+              },
+              {
+                "key": "date_from",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "date_to",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "product_type",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Delivery summary.",
+          "name": "Delivery Summary [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deliveries/batches/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deliveries",
+              "batches"
+            ],
+            "query": [
+              {
+                "key": "batch_id",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "date_from",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "date_to",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Batch summary.",
+          "name": "Batch Summary [All]"
+        }
+      ]
+    },
+    {
+      "name": "07  Grading",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/grades/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "delivery",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List grades.",
+          "name": "List Grades [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/grades/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades"
+            ],
+            "query": []
+          },
+          "description": "Create grade.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"delivery\": \"{{delivery_id}}\", \"grade_letter\": \"A\", \"moisture_content\": \"11.5\", \"defects\": \"2\"}"
+          },
+          "name": "Create Grade [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get grade.",
+          "name": "Retrieve Grade [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}"
+            ]
+          },
+          "description": "Update grade.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"grade_letter\": \"B\", \"moisture_content\": \"12.0\"}"
+          },
+          "name": "Update Grade [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}"
+            ]
+          },
+          "description": "Partial update.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"moisture_content\": \"11.8\"}"
+          },
+          "name": "Partial Update Grade [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}"
+            ]
+          },
+          "description": "Delete grade (reverses inventory).",
+          "name": "Delete Grade [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/override/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}",
+              "override"
+            ],
+            "query": []
+          },
+          "description": "Override grade.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"grade_letter\": \"A\", \"reason\": \"Re-assessment\"}"
+          },
+          "name": "Override Grade [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/grades/prices/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "prices"
+            ],
+            "query": []
+          },
+          "description": "List grade prices.",
+          "name": "List Grade Prices [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/grades/prices/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "prices"
+            ],
+            "query": []
+          },
+          "description": "Create grade price.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"grade_letter\": \"A\", \"price_per_kg\": \"150.00\", \"product_type\": \"COFFEE\"}"
+          },
+          "name": "Create Grade Price [Admin] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/images/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}",
+              "images"
+            ],
+            "query": []
+          },
+          "description": "List images.",
+          "name": "List Grade Images [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/images/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}",
+              "images"
+            ],
+            "query": []
+          },
+          "description": "Upload image (multipart).",
+          "name": "Upload Grade Image [Grader] (POST); [All] (GET)",
+          "body": {
+            "mode": "formdata",
+            "formdata": [
+              {
+                "key": "image",
+                "type": "file",
+                "src": "",
+                "description": "Grade image file"
+              }
+            ]
+          }
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/images/{{image_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}",
+              "images",
+              "{{image_id}}"
+            ]
+          },
+          "description": "Delete image.",
+          "name": "Delete Grade Image [Grader] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/grades/{{grade_id}}/dispute/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "grades",
+              "{{grade_id}}",
+              "dispute"
+            ],
+            "query": []
+          },
+          "description": "Submit dispute.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"reason\": \"Moisture incorrect\", \"requested_grade\": \"A\"}"
+          },
+          "name": "Submit Grade Dispute [Farmer]"
+        },
+        {
+          "name": "Disputes",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/disputes/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "disputes"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "20",
+                    "description": ""
+                  },
+                  {
+                    "key": "status",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List disputes.",
+              "name": "List Disputes [All]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/disputes/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "disputes"
+                ],
+                "query": []
+              },
+              "description": "Create dispute.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"grade\": \"{{grade_id}}\", \"reason\": \"Incorrect grading\"}"
+              },
+              "name": "Create Dispute [All]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/disputes/{{dispute_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "disputes",
+                  "{{dispute_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get dispute.",
+              "name": "Retrieve Dispute [All]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/disputes/{{dispute_id}}/resolve/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "disputes",
+                  "{{dispute_id}}",
+                  "resolve"
+                ],
+                "query": []
+              },
+              "description": "Resolve dispute.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"resolution\": \"RESOLVED\", \"notes\": \"Re-graded\"}"
+              },
+              "name": "Resolve Dispute [Manager]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08  Inventory",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/inventory/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "inventory"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "product_type",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List inventory.",
+          "name": "List Inventory [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/inventory/{{inventory_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "inventory",
+              "{{inventory_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get item.",
+          "name": "Retrieve Inventory Item [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/inventory/summary/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "inventory",
+              "summary"
+            ],
+            "query": [
+              {
+                "key": "product_type",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "grade",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Summary.",
+          "name": "Inventory Summary [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/inventory/alerts/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "inventory",
+              "alerts"
+            ],
+            "query": [
+              {
+                "key": "threshold",
+                "value": "100",
+                "description": "Qty threshold"
+              },
+              {
+                "key": "product_type",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Low stock alerts.",
+          "name": "Low Stock Alerts [All]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/inventory/alerts/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "inventory",
+              "alerts"
+            ],
+            "query": []
+          },
+          "name": "Create Inventory Alert [All]",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"product\": \"Milk\", \"quantity\": 100}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "09  Routes",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/routes/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List routes.",
+          "name": "List Routes [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/routes/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes"
+            ],
+            "query": []
+          },
+          "description": "Create route.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"Central Route\", \"day_of_week\": 1}"
+          },
+          "name": "Create Route [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/routes/{{route_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes",
+              "{{route_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get route.",
+          "name": "Retrieve Route [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/routes/{{route_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes",
+              "{{route_id}}"
+            ]
+          },
+          "description": "Update route.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"Updated Route\", \"day_of_week\": 2, \"is_active\": true}"
+          },
+          "name": "Update Route [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/routes/{{route_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes",
+              "{{route_id}}"
+            ]
+          },
+          "description": "Partial update.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"description\": \"Updated\"}"
+          },
+          "name": "Partial Update Route [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/routes/{{route_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes",
+              "{{route_id}}"
+            ]
+          },
+          "description": "Delete route.",
+          "name": "Delete Route [Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/routes/{{route_id}}/assign-stops/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "routes",
+              "{{route_id}}",
+              "assign-stops"
+            ],
+            "query": []
+          },
+          "description": "Assign stops.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"farmer_ids\": [\"{{farmer_id}}\"]}"
+          },
+          "name": "Assign Stops to Route [Manager]"
+        }
+      ]
+    },
+    {
+      "name": "10  Sales",
+      "item": [
+        {
+          "name": "Buyers",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/buyers/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "buyers"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "20",
+                    "description": ""
+                  },
+                  {
+                    "key": "search",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List buyers.",
+              "name": "List Buyers [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/buyers/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "buyers"
+                ],
+                "query": []
+              },
+              "description": "Create buyer.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"name\": \"Java Coffee\", \"contact_person\": \"John\", \"phone_number\": \"0712345678\"}"
+              },
+              "name": "Create Buyer [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/buyers/{{buyer_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "buyers",
+                  "{{buyer_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get buyer.",
+              "name": "Retrieve Buyer [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/buyers/{{buyer_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "buyers",
+                  "{{buyer_id}}"
+                ]
+              },
+              "description": "Update buyer.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"name\": \"Updated Buyer\", \"phone_number\": \"0711111111\"}"
+              },
+              "name": "Update Buyer [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "DELETE",
+              "url": {
+                "raw": "{{base_url}}/api/buyers/{{buyer_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "buyers",
+                  "{{buyer_id}}"
+                ]
+              },
+              "description": "Delete buyer.",
+              "name": "Delete Buyer [Manager] (POST); [All] (GET)"
+            }
+          ]
+        },
+        {
+          "name": "Sales",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/sales/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "sales"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "20",
+                    "description": ""
+                  },
+                  {
+                    "key": "buyer",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "date_from",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "date_to",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List sales.",
+              "name": "List Sales [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/sales/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "sales"
+                ],
+                "query": []
+              },
+              "description": "Create sale.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"buyer\": \"{{buyer_id}}\", \"product_type\": \"COFFEE\", \"quantity_kg\": \"500.00\", \"price_per_kg\": \"180.00\", \"grade\": \"A\"}"
+              },
+              "name": "Create Sale [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/sales/{{sale_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "sales",
+                  "{{sale_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get sale.",
+              "name": "Retrieve Sale [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/sales/{{sale_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "sales",
+                  "{{sale_id}}"
+                ]
+              },
+              "description": "Update sale.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"quantity_kg\": \"550.00\", \"price_per_kg\": \"175.00\"}"
+              },
+              "name": "Update Sale [Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "PATCH",
+              "url": {
+                "raw": "{{base_url}}/api/sales/{{sale_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "sales",
+                  "{{sale_id}}"
+                ],
+                "query": []
+              },
+              "name": "Partial Update Sale [Manager] (POST); [All] (GET)",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"quantity_kg\": \"550.00\"}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "DELETE",
+              "url": {
+                "raw": "{{base_url}}/api/sales/{{sale_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "sales",
+                  "{{sale_id}}"
+                ]
+              },
+              "description": "Delete sale.",
+              "name": "Delete Sale [Manager] (POST); [All] (GET)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11  Payment Engine",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "status",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List cycles.",
+          "name": "List Payment Cycles [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine"
+            ],
+            "query": []
+          },
+          "description": "Create cycle.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"June 2026\", \"start_date\": \"2026-06-01\", \"end_date\": \"2026-06-30\"}"
+          },
+          "name": "Create Payment Cycle [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get cycle.",
+          "name": "Retrieve Payment Cycle [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}"
+            ],
+            "query": []
+          },
+          "name": "Partial Update Payment Cycle [Accountant/Manager] (POST); [All] (GET)",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"Updated Cycle\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}"
+            ]
+          },
+          "description": "Update cycle.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"name\": \"Updated Cycle\", \"start_date\": \"2026-06-01\", \"end_date\": \"2026-06-30\"}"
+          },
+          "name": "Update Payment Cycle [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}"
+            ]
+          },
+          "description": "Delete DRAFT cycle.",
+          "name": "Delete Payment Cycle [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/run/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "run"
+            ],
+            "query": []
+          },
+          "description": "Run computation (Celery task).",
+          "name": "Run Payment Computation [Accountant/Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/preview/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "preview"
+            ],
+            "query": []
+          },
+          "description": "Preview computed payments.",
+          "name": "Preview Payments [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/lock/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "lock"
+            ],
+            "query": []
+          },
+          "description": "Lock COMPUTED cycle.",
+          "name": "Lock Payment Cycle [Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/unlock/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "unlock"
+            ],
+            "query": []
+          },
+          "description": "Unlock LOCKED cycle.",
+          "name": "Unlock Payment Cycle [Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/status/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "status"
+            ],
+            "query": []
+          },
+          "description": "Cycle status + Celery info.",
+          "name": "Cycle Status [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/hold/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "hold"
+            ],
+            "query": []
+          },
+          "description": "Hold farmer payment.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"farmer_payment_id\": \"{{payment_id}}\", \"hold_reason\": \"Pending verification\"}"
+          },
+          "name": "Hold Farmer Payment [Accountant/Manager]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/release/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "release"
+            ],
+            "query": []
+          },
+          "description": "Release held payment.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"farmer_payment_id\": \"{{payment_id}}\"}"
+          },
+          "name": "Release Held Payment [Accountant/Manager]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/task-status/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "task-status"
+            ],
+            "query": []
+          },
+          "description": "Task status.",
+          "name": "Celery Task Status [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/payment-engine/{{cycle_id}}/export/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "payment-engine",
+              "{{cycle_id}}",
+              "export"
+            ],
+            "query": []
+          },
+          "description": "Export CSV.",
+          "name": "Export CSV [Accountant/Manager]"
+        }
+      ]
+    },
+    {
+      "name": "12  Loans",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/loans/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "farmer",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "status",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List loans.",
+          "name": "List Loans [Farmer/Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans"
+            ],
+            "query": []
+          },
+          "description": "Create loan.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"farmer\": \"{{farmer_id}}\", \"amount\": \"50000.00\", \"interest_rate\": \"5.00\", \"repayment_period_months\": 12, \"purpose\": \"Farm inputs\"}"
+          },
+          "name": "Create Loan [Farmer/Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get loan.",
+          "name": "Retrieve Loan [Farmer/Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}"
+            ],
+            "query": []
+          },
+          "name": "Partial Update Loan [Farmer/Accountant/Manager] (POST); [All] (GET)",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"amount\": \"60000.00\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}"
+            ]
+          },
+          "description": "Update loan.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"amount\": \"60000.00\", \"interest_rate\": \"4.50\"}"
+          },
+          "name": "Update Loan [Farmer/Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}"
+            ]
+          },
+          "description": "Delete loan.",
+          "name": "Delete Loan [Farmer/Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/approve/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}",
+              "approve"
+            ],
+            "query": []
+          },
+          "description": "Approve loan.",
+          "name": "Approve Loan [Accountant/Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"approved_by\": \"manager\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/disburse/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}",
+              "disburse"
+            ],
+            "query": []
+          },
+          "description": "Disburse loan.",
+          "name": "Disburse Loan [Accountant]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/add_guarantor/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}",
+              "add_guarantor"
+            ],
+            "query": []
+          },
+          "description": "Add guarantor.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"guarantor_id\": \"{{farmer_id}}\"}"
+          },
+          "name": "Add Guarantor [Accountant/Manager]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/remove_guarantor/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}",
+              "remove_guarantor"
+            ],
+            "query": []
+          },
+          "description": "Remove guarantor.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"guarantor_id\": \"{{farmer_id}}\"}"
+          },
+          "name": "Remove Guarantor [Accountant/Manager]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/mark_completed/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}",
+              "mark_completed"
+            ],
+            "query": []
+          },
+          "description": "Mark completed.",
+          "name": "Mark Loan Completed [Accountant]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/loans/{{loan_id}}/mark_defaulted/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "loans",
+              "{{loan_id}}",
+              "mark_defaulted"
+            ],
+            "query": []
+          },
+          "description": "Mark defaulted (notifies guarantors).",
+          "name": "Mark Loan Defaulted [Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "13  Disbursements",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "status",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List batches.",
+          "name": "List Disbursement Batches [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements"
+            ],
+            "query": []
+          },
+          "description": "Create batch.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"payment_cycle\": \"{{cycle_id}}\"}"
+          },
+          "name": "Create Disbursement Batch [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get batch.",
+          "name": "Retrieve Batch [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}"
+            ]
+          },
+          "description": "Update batch.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "name": "Update Batch [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}"
+            ]
+          },
+          "description": "Delete batch (PENDING/FAILED only).",
+          "name": "Delete Batch [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/initiate/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "initiate"
+            ],
+            "query": []
+          },
+          "description": "Initiate from LOCKED cycle.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"payment_cycle\": \"{{cycle_id}}\"}"
+          },
+          "name": "Initiate from Locked Cycle [Accountant/Manager]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/approve/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}",
+              "approve"
+            ],
+            "query": []
+          },
+          "description": "Approve batch.",
+          "name": "Approve Batch [Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/live/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}",
+              "live"
+            ],
+            "query": []
+          },
+          "description": "Send to M-Pesa (Daraja B2C).",
+          "name": "Send to M-Pesa [Accountant/Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/retry_failed/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}",
+              "retry_failed"
+            ],
+            "query": []
+          },
+          "description": "Retry failed transactions.",
+          "name": "Retry Failed Transactions [Accountant/Manager]",
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/csv/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}",
+              "csv"
+            ],
+            "query": []
+          },
+          "description": "Download CSV.",
+          "name": "Download Batch CSV [Accountant/Manager]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/confirm_manual/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}",
+              "confirm_manual"
+            ],
+            "query": []
+          },
+          "description": "Confirm manual payments.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"transaction_ids\": [\"<uuid>\"], \"notes\": \"Bank transfer\"}"
+          },
+          "name": "Confirm Manual Payments [Accountant/Manager]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/disbursements/{{batch_id}}/transactions/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "disbursements",
+              "{{batch_id}}",
+              "transactions"
+            ],
+            "query": [
+              {
+                "key": "status",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "payment_method",
+                "value": "",
+                "description": "MPESA,BANK,CASH"
+              }
+            ]
+          },
+          "description": "List transactions.",
+          "name": "List Transactions [Accountant/Manager] (POST); [All] (GET)"
+        }
+      ]
+    },
+    {
+      "name": "14  Deductions",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deductions/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deductions"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "farmer",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "deduction_type",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List deductions.",
+          "name": "List Deductions [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/deductions/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deductions"
+            ],
+            "query": []
+          },
+          "description": "Create deduction.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"farmer\": \"{{farmer_id}}\", \"deduction_type\": \"LOAN_REPAYMENT\", \"amount\": \"5000.00\", \"cycle\": \"{{cycle_id}}\"}"
+          },
+          "name": "Create Deduction [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/deductions/{{deduction_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deductions",
+              "{{deduction_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get deduction.",
+          "name": "Retrieve Deduction [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PUT",
+          "url": {
+            "raw": "{{base_url}}/api/deductions/{{deduction_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deductions",
+              "{{deduction_id}}"
+            ]
+          },
+          "description": "Update deduction.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"amount\": \"5500.00\"}"
+          },
+          "name": "Update Deduction [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "method": "PATCH",
+          "url": {
+            "raw": "{{base_url}}/api/deductions/{{deduction_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deductions",
+              "{{deduction_id}}"
+            ],
+            "query": []
+          },
+          "name": "Partial Update Deduction [Accountant/Manager] (POST); [All] (GET)",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"amount\": \"5500.00\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "url": {
+            "raw": "{{base_url}}/api/deductions/{{deduction_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "deductions",
+              "{{deduction_id}}"
+            ]
+          },
+          "description": "Delete (DRAFT cycles only).",
+          "name": "Delete Deduction [Accountant/Manager] (POST); [All] (GET)"
+        },
+        {
+          "name": "Farm Input Credits",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/deductions/farm-input-credits/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "deductions",
+                  "farm-input-credits"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "20",
+                    "description": ""
+                  },
+                  {
+                    "key": "farmer",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List credits.",
+              "name": "List Farm Input Credits [Accountant/Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/deductions/farm-input-credits/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "deductions",
+                  "farm-input-credits"
+                ],
+                "query": []
+              },
+              "description": "Create credit.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"farmer\": \"{{farmer_id}}\", \"input_type\": \"FERTILIZER\", \"quantity\": \"10\", \"unit_cost\": \"2500.00\", \"total_cost\": \"25000.00\"}"
+              },
+              "name": "Create Farm Input Credit [Accountant/Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/deductions/farm-input-credits/{{credit_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "deductions",
+                  "farm-input-credits",
+                  "{{credit_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get credit.",
+              "name": "Retrieve Farm Input Credit [Accountant/Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/deductions/farm-input-credits/{{credit_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "deductions",
+                  "farm-input-credits",
+                  "{{credit_id}}"
+                ]
+              },
+              "description": "Update credit.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"quantity\": \"15\", \"total_cost\": \"37500.00\"}"
+              },
+              "name": "Update Farm Input Credit [Accountant/Manager] (POST); [All] (GET)"
+            },
+            {
+              "method": "DELETE",
+              "url": {
+                "raw": "{{base_url}}/api/deductions/farm-input-credits/{{credit_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "deductions",
+                  "farm-input-credits",
+                  "{{credit_id}}"
+                ]
+              },
+              "description": "Delete (unless COMPLETED).",
+              "name": "Delete Farm Input Credit [Accountant/Manager] (POST); [All] (GET)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "15  Statements",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/statements/annual-report/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "statements",
+              "annual-report"
+            ],
+            "query": [
+              {
+                "key": "year",
+                "value": "2026",
+                "description": "Year (required)"
+              }
+            ]
+          },
+          "description": "Annual report JSON.",
+          "name": "Annual Report [Accountant/Manager]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/statements/statement/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "statements",
+              "statement"
+            ],
+            "query": [
+              {
+                "key": "farmer_id",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "cycle_id",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Farmer payment PDF.",
+          "name": "Farmer Payment Statement PDF [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/statements/statement/latest/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "statements",
+              "statement",
+              "latest"
+            ],
+            "query": [
+              {
+                "key": "download",
+                "value": "true",
+                "description": ""
+              }
+            ]
+          },
+          "description": "My latest statement PDF.",
+          "name": "My Latest Statement PDF [Farmer]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/statements/statement/history/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "statements",
+              "statement",
+              "history"
+            ],
+            "query": [
+              {
+                "key": "farmer_id",
+                "value": "",
+                "description": ""
+              },
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Payment history JSON.",
+          "name": "Payment History [All]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/statements/report/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "statements",
+              "report"
+            ],
+            "query": [
+              {
+                "key": "cycle_id",
+                "value": "{{cycle_id}}",
+                "description": "Required"
+              },
+              {
+                "key": "download",
+                "value": "true",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Season report PDF.",
+          "name": "Season Report PDF [Accountant/Manager]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/statements/kra-report/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "statements",
+              "kra-report"
+            ],
+            "query": [
+              {
+                "key": "year",
+                "value": "2026",
+                "description": "Required"
+              },
+              {
+                "key": "download",
+                "value": "true",
+                "description": ""
+              }
+            ]
+          },
+          "description": "KRA report PDF.",
+          "name": "KRA Withholding Tax Report [Accountant/Manager]"
+        },
+        {
+          "name": "Audit Logs",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/statements/audit/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "statements",
+                  "audit"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "20",
+                    "description": ""
+                  },
+                  {
+                    "key": "action",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "actor",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List audit logs.",
+              "name": "List Audit Logs [Manager/Auditor]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/statements/audit/{{user_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "statements",
+                  "audit",
+                  "{{user_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get audit log entry.",
+              "name": "Retrieve Audit Log Entry [Manager/Auditor]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "16  Chat",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/chat/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "chat"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              },
+              {
+                "key": "session_id",
+                "value": "",
+                "description": ""
+              }
+            ]
+          },
+          "description": "Chat history.",
+          "name": "Chat History [All]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/chat/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "chat"
+            ],
+            "query": []
+          },
+          "description": "Send message.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\"message\": \"How many deliveries this month?\", \"session_id\": \"{{session_id}}\"}"
+          },
+          "name": "Send Message [All]"
+        }
+      ]
+    },
+    {
+      "name": "17  Notifications",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/notifications/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "notifications"
+            ],
+            "query": [
+              {
+                "key": "page",
+                "value": "1",
+                "description": ""
+              },
+              {
+                "key": "page_size",
+                "value": "20",
+                "description": ""
+              }
+            ]
+          },
+          "description": "List notifications.",
+          "name": "List Notifications [Staff]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/notifications/{{notification_id}}/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "notifications",
+              "{{notification_id}}"
+            ],
+            "query": []
+          },
+          "description": "Get notification.",
+          "name": "Retrieve Notification [Staff]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/callback/ussd/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "callback",
+              "ussd"
+            ],
+            "query": []
+          },
+          "description": "USSD callback (Africa's Talking).",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "USSD Callback [USSD Gateway]",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"sessionId\": \"abc123\", \"phoneNumber\": \"254712345678\", \"text\": \"1\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "18  Admin",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/auth/revoke-all-sessions/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "auth",
+                  "revoke-all-sessions"
+                ],
+                "query": []
+              },
+              "description": "Revoke all my sessions.",
+              "name": "Revoke All Sessions [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/impersonate/{{user_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "impersonate",
+                  "{{user_id}}"
+                ],
+                "query": []
+              },
+              "description": "Impersonate user (15min JWT).",
+              "name": "Impersonate User [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/create-superuser/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "create-superuser"
+                ],
+                "query": []
+              },
+              "description": "Create superuser.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\": \"new.admin@zao.app\", \"password\": \"SecurePass123!\", \"phone_number\": \"0712345678\", \"first_name\": \"New\", \"last_name\": \"Admin\"}"
+              },
+              "name": "Create Superuser [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/auth/invite",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "auth",
+                  "invite"
+                ],
+                "query": []
+              },
+              "description": "Create invite (replaces old /api/auth/invite/).",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\": \"newmanager@coop.co.ke\", \"first_name\": \"Peter\", \"last_name\": \"Kiprop\", \"role\": \"manager\"}"
+              },
+              "name": "Create Invite [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/auth/invites",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "auth",
+                  "invites"
+                ],
+                "query": []
+              },
+              "description": "List invites (paginated, filterable by email/role/status).",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "name": "List Invites [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/auth/invites/{{user_id}}",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "auth",
+                  "invites",
+                  "{{user_id}}"
+                ],
+                "query": []
+              },
+              "description": "Invite detail.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "name": "Invite Detail [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/auth/invite/{{user_id}}/revoke",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "auth",
+                  "invite",
+                  "{{user_id}}",
+                  "revoke"
+                ],
+                "query": []
+              },
+              "description": "Revoke invite.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "name": "Revoke Invite [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/auth/invite/{{user_id}}/resend",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "auth",
+                  "invite",
+                  "{{user_id}}",
+                  "resend"
+                ],
+                "query": []
+              },
+              "description": "Resend invite email.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "name": "Resend Invite [SuperAdmin]"
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "search",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "role",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "is_active",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List all users.",
+              "name": "List All Users [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users"
+                ],
+                "query": []
+              },
+              "description": "Create user.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\": \"new@example.com\", \"password\": \"SecurePass123!\", \"phone_number\": \"0712345678\", \"first_name\": \"New\", \"last_name\": \"User\", \"role\": \"manager\"}"
+              },
+              "name": "Create User [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get user.",
+              "name": "Get User [SuperAdmin]"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}"
+                ]
+              },
+              "description": "Update user.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"email\": \"updated@example.com\", \"phone_number\": \"0711111111\", \"first_name\": \"Updated\", \"last_name\": \"Name\", \"role\": \"manager\", \"is_active\": true}"
+              },
+              "name": "Update User [SuperAdmin]"
+            },
+            {
+              "method": "PATCH",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}"
+                ]
+              },
+              "description": "Partial update.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"first_name\": \"Patched\"}"
+              },
+              "name": "Partial Update User [SuperAdmin]"
+            },
+            {
+              "method": "DELETE",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}"
+                ]
+              },
+              "description": "Delete user (no superusers).",
+              "name": "Delete User [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/activate/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "activate"
+                ],
+                "query": []
+              },
+              "description": "Activate user.",
+              "name": "Activate User [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/deactivate/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "deactivate"
+                ],
+                "query": []
+              },
+              "description": "Deactivate user.",
+              "name": "Deactivate User [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{\"notify\": true}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/reset-password/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "reset-password"
+                ],
+                "query": []
+              },
+              "description": "Reset password.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"new_password\": \"NewSecurePass456!\"}"
+              },
+              "name": "Reset Password [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/toggle-2fa/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "toggle-2fa"
+                ],
+                "query": []
+              },
+              "description": "Toggle 2FA.",
+              "name": "Toggle 2FA [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/force-logout/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "force-logout"
+                ],
+                "query": []
+              },
+              "description": "Force logout.",
+              "name": "Force Logout [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/delete/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "delete"
+                ],
+                "query": []
+              },
+              "name": "Soft-Delete User [SuperAdmin]",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"confirm\": true}"
+              }
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/{{user_id}}/restore/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "{{user_id}}",
+                  "restore"
+                ],
+                "query": []
+              },
+              "name": "Restore User [SuperAdmin]",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"confirm\": true}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cooperatives",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "search",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "is_active",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List all cooperatives.",
+              "name": "List All Cooperatives [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives"
+                ],
+                "query": []
+              },
+              "description": "Create cooperative.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"name\": \"New Coop\", \"registration_number\": \"COOP/001/2025\", \"county\": \"Nairobi\", \"produce_type\": \"COFFEE\", \"payment_model\": \"VOLUME_BASED\", \"levy_percentage\": \"2.50\", \"monthly_fee\": \"500.00\", \"prefix\": \"NC\"}"
+              },
+              "name": "Create Cooperative [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get cooperative.",
+              "name": "Get Cooperative [SuperAdmin]"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}"
+                ]
+              },
+              "description": "Update.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"name\": \"Updated\", \"registration_number\": \"COOP/001/2025\", \"levy_percentage\": \"3.00\"}"
+              },
+              "name": "Update Cooperative [SuperAdmin]"
+            },
+            {
+              "method": "PATCH",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}"
+                ]
+              },
+              "description": "Partial update.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"levy_percentage\": \"2.75\"}"
+              },
+              "name": "Partial Update Cooperative [SuperAdmin]"
+            },
+            {
+              "method": "DELETE",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}"
+                ]
+              },
+              "description": "DANGER: hard delete + cascade.",
+              "name": "Delete Cooperative [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/activate/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}",
+                  "activate"
+                ],
+                "query": []
+              },
+              "description": "Activate.",
+              "name": "Activate Cooperative [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/deactivate/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}",
+                  "deactivate"
+                ],
+                "query": []
+              },
+              "description": "Deactivate.",
+              "name": "Deactivate Cooperative [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/delete/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}",
+                  "delete"
+                ],
+                "query": []
+              },
+              "name": "Soft-Delete Cooperative [SuperAdmin]",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"confirm\": true}"
+              }
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/{{cooperative_id}}/restore/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "{{cooperative_id}}",
+                  "restore"
+                ],
+                "query": []
+              },
+              "name": "Restore Cooperative [SuperAdmin]",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"confirm\": true}"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Farmers",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmers/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmers"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "search",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "is_active",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List all farmers.",
+              "name": "List All Farmers [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmers/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmers"
+                ],
+                "query": []
+              },
+              "description": "Create farmer.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"cooperative\": \"{{cooperative_id}}\", \"first_name\": \"Jane\", \"last_name\": \"Farmer\", \"phone_number\": \"0711111111\", \"id_number\": \"12345678\"}"
+              },
+              "name": "Create Farmer [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmers/{{farmer_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmers",
+                  "{{farmer_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get farmer.",
+              "name": "Get Farmer [SuperAdmin]"
+            },
+            {
+              "method": "PUT",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmers/{{farmer_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmers",
+                  "{{farmer_id}}"
+                ]
+              },
+              "description": "Update.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"first_name\": \"Updated\", \"last_name\": \"Farmer\", \"phone_number\": \"0711111111\"}"
+              },
+              "name": "Update Farmer [SuperAdmin]"
+            },
+            {
+              "method": "PATCH",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmers/{{farmer_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmers",
+                  "{{farmer_id}}"
+                ]
+              },
+              "description": "Partial update.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"ward\": \"New Ward\"}"
+              },
+              "name": "Partial Update Farmer [SuperAdmin]"
+            }
+          ]
+        },
+        {
+          "name": "Deliveries",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/deliveries/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "deliveries"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "status",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List all deliveries.",
+              "name": "List All Deliveries [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/deliveries/{{delivery_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "deliveries",
+                  "{{delivery_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get delivery.",
+              "name": "Get Delivery [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/deliveries/{{delivery_id}}/force-status/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "deliveries",
+                  "{{delivery_id}}",
+                  "force-status"
+                ],
+                "query": []
+              },
+              "description": "Force status.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"status\": \"ACCEPTED\"}"
+              },
+              "name": "Force Delivery Status [SuperAdmin]"
+            }
+          ]
+        },
+        {
+          "name": "Payment Cycles",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/payment-cycles/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "payment-cycles"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "status",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List cycles.",
+              "name": "List All Cycles [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/payment-cycles/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "payment-cycles"
+                ],
+                "query": []
+              },
+              "description": "Create cycle.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"name\": \"June 2026\", \"cooperative\": \"{{cooperative_id}}\", \"start_date\": \"2026-06-01\", \"end_date\": \"2026-06-30\"}"
+              },
+              "name": "Create Cycle [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/payment-cycles/{{cycle_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "payment-cycles",
+                  "{{cycle_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get cycle.",
+              "name": "Get Cycle [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/payment-cycles/{{cycle_id}}/lock/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "payment-cycles",
+                  "{{cycle_id}}",
+                  "lock"
+                ],
+                "query": []
+              },
+              "description": "Lock.",
+              "name": "Lock Cycle [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/payment-cycles/{{cycle_id}}/unlock/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "payment-cycles",
+                  "{{cycle_id}}",
+                  "unlock"
+                ],
+                "query": []
+              },
+              "description": "Unlock.",
+              "name": "Unlock Cycle [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Disbursement Batches",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/disbursement-batches/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "disbursement-batches"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "status",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List batches.",
+              "name": "List All Batches [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/disbursement-batches/{{batch_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "disbursement-batches",
+                  "{{batch_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get batch.",
+              "name": "Get Batch [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/disbursement-batches/{{batch_id}}/approve/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "disbursement-batches",
+                  "{{batch_id}}",
+                  "approve"
+                ],
+                "query": []
+              },
+              "description": "Approve.",
+              "name": "Approve Batch [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/disbursement-batches/{{batch_id}}/reject/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "disbursement-batches",
+                  "{{batch_id}}",
+                  "reject"
+                ],
+                "query": []
+              },
+              "description": "Reject.",
+              "name": "Reject Batch [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Farmer Payments",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmer-payments/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmer-payments"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "status",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List payments.",
+              "name": "List All Payments [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmer-payments/{{payment_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmer-payments",
+                  "{{payment_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get payment.",
+              "name": "Get Payment [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmer-payments/{{payment_id}}/hold/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmer-payments",
+                  "{{payment_id}}",
+                  "hold"
+                ],
+                "query": []
+              },
+              "description": "Toggle hold.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"hold\": true, \"reason\": \"Pending verification\"}"
+              },
+              "name": "Toggle Payment Hold [SuperAdmin]"
+            }
+          ]
+        },
+        {
+          "name": "Loans",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/loans/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "loans"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "status",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List loans.",
+              "name": "List All Loans [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/loans/{{loan_id}}/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "loans",
+                  "{{loan_id}}"
+                ],
+                "query": []
+              },
+              "description": "Get loan.",
+              "name": "Get Loan [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/loans/{{loan_id}}/approve/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "loans",
+                  "{{loan_id}}",
+                  "approve"
+                ],
+                "query": []
+              },
+              "description": "Approve.",
+              "name": "Approve Loan [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/loans/{{loan_id}}/reject/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "loans",
+                  "{{loan_id}}",
+                  "reject"
+                ],
+                "query": []
+              },
+              "description": "Reject.",
+              "name": "Reject Loan [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/loans/{{loan_id}}/mark-defaulted/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "loans",
+                  "{{loan_id}}",
+                  "mark-defaulted"
+                ],
+                "query": []
+              },
+              "description": "Mark defaulted.",
+              "name": "Mark Loan Defaulted [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/loans/{{loan_id}}/mark-completed/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "loans",
+                  "{{loan_id}}",
+                  "mark-completed"
+                ],
+                "query": []
+              },
+              "description": "Mark completed.",
+              "name": "Mark Loan Completed [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "OTP Tokens",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/otp-tokens/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "otp-tokens"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "List OTPs.",
+              "name": "List OTP Tokens [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/otp-tokens/{{user_id}}/invalidate-all/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "otp-tokens",
+                  "{{user_id}}",
+                  "invalidate-all"
+                ],
+                "query": []
+              },
+              "description": "Invalidate all for user.",
+              "name": "Invalidate All OTPs [SuperAdmin]",
+              "body": {
+                "mode": "raw",
+                "raw": "{}"
+              },
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Bulk Actions",
+          "item": [
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/users/bulk-action/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "users",
+                  "bulk-action"
+                ],
+                "query": []
+              },
+              "description": "Bulk act/deact users.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"action\": \"deactivate\", \"ids\": [\"<uuid1>\", \"<uuid2>\"]}"
+              },
+              "name": "Bulk Action Users [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/cooperatives/bulk-action/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "cooperatives",
+                  "bulk-action"
+                ],
+                "query": []
+              },
+              "description": "Bulk act/deact coops.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"action\": \"activate\", \"ids\": [\"<uuid1>\"]}"
+              },
+              "name": "Bulk Action Cooperatives [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/farmers/bulk-action/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "farmers",
+                  "bulk-action"
+                ],
+                "query": []
+              },
+              "description": "Bulk act/deact farmers.",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"action\": \"deactivate\", \"ids\": [\"<uuid1>\"]}"
+              },
+              "name": "Bulk Action Farmers [SuperAdmin]"
+            }
+          ]
+        },
+        {
+          "name": "System",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/dashboard/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "dashboard"
+                ],
+                "query": [
+                  {
+                    "key": "period",
+                    "value": "30d",
+                    "description": "7d,30d,90d or empty"
+                  }
+                ]
+              },
+              "description": "Dashboard.",
+              "name": "Dashboard [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/audit-logs/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "audit-logs"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  },
+                  {
+                    "key": "action",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "actor",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "Audit logs.",
+              "name": "Audit Logs [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/health/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "health"
+                ],
+                "query": []
+              },
+              "description": "Health check.",
+              "name": "Health Check [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/migration-health/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "migration-health"
+                ],
+                "query": []
+              },
+              "description": "Migration health.",
+              "name": "Migration Health [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/celery/tasks/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "celery",
+                  "tasks"
+                ],
+                "query": [
+                  {
+                    "key": "task_id",
+                    "value": "",
+                    "description": ""
+                  },
+                  {
+                    "key": "state",
+                    "value": "",
+                    "description": ""
+                  }
+                ]
+              },
+              "description": "Celery tasks detail.",
+              "name": "Celery Tasks [SuperAdmin]"
+            }
+          ]
+        },
+        {
+          "name": "Trash (Bin)",
+          "item": [
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/bin/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "bin"
+                ],
+                "query": []
+              },
+              "name": "Bin Summary [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/bin/users/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "bin",
+                  "users"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  }
+                ]
+              },
+              "name": "List Trashed Users [SuperAdmin]"
+            },
+            {
+              "method": "GET",
+              "url": {
+                "raw": "{{base_url}}/api/admin/bin/cooperatives/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "bin",
+                  "cooperatives"
+                ],
+                "query": [
+                  {
+                    "key": "page",
+                    "value": "1",
+                    "description": ""
+                  },
+                  {
+                    "key": "page_size",
+                    "value": "50",
+                    "description": ""
+                  }
+                ]
+              },
+              "name": "List Trashed Cooperatives [SuperAdmin]"
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/bin/users/{{user_id}}/purge/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "bin",
+                  "users",
+                  "{{user_id}}",
+                  "purge"
+                ],
+                "query": []
+              },
+              "name": "Purge User [SuperAdmin]",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"confirm\": true}"
+              }
+            },
+            {
+              "method": "POST",
+              "url": {
+                "raw": "{{base_url}}/api/admin/bin/cooperatives/{{cooperative_id}}/purge/",
+                "host": [
+                  "{{base_url}}"
+                ],
+                "path": [
+                  "api",
+                  "admin",
+                  "bin",
+                  "cooperatives",
+                  "{{cooperative_id}}",
+                  "purge"
+                ],
+                "query": []
+              },
+              "name": "Purge Cooperative [SuperAdmin]",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\"confirm\": true}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "19  Callbacks",
+      "item": [
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/callback/mpesa/result/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "callback",
+              "mpesa",
+              "result"
+            ],
+            "query": []
+          },
+          "description": "M-Pesa B2C result callback.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "M-Pesa Result Callback [M-Pesa IP]",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"Result\": {\"ResultType\": 0, \"ResultCode\": 0, \"ResultDesc\": \"Success\"}}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/callback/mpesa/timeout/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "callback",
+              "mpesa",
+              "timeout"
+            ],
+            "query": []
+          },
+          "description": "M-Pesa B2C timeout callback.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "M-Pesa Timeout Callback [M-Pesa IP]",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"Result\": {\"ResultType\": 0, \"ResultCode\": 1, \"ResultDesc\": \"Timeout\"}}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/callback/ussd/",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "callback",
+              "ussd"
+            ],
+            "query": []
+          },
+          "description": "USSD callback.",
+          "auth": {
+            "type": "noauth"
+          },
+          "name": "USSD Callback [USSD Gateway]",
+          "body": {
+            "mode": "raw",
+            "raw": "{\"sessionId\": \"abc123\", \"phoneNumber\": \"254712345678\", \"text\": \"1\"}"
+          },
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "20  Legal",
+      "item": [
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/legal/{{legal_slug}}",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "legal",
+              "{{legal_slug}}"
+            ],
+            "query": []
+          },
+          "description": "Get latest active legal document.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "name": "Get Latest Document [Public]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/legal/{{legal_slug}}/versions",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "legal",
+              "{{legal_slug}}",
+              "versions"
+            ],
+            "query": []
+          },
+          "description": "List all versions of a legal document.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "name": "List Versions [Public]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/legal/{{legal_slug}}/{{version}}",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "legal",
+              "{{legal_slug}}",
+              "{{version}}"
+            ],
+            "query": []
+          },
+          "description": "Get specific version of a legal document.",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "name": "Get Version [Public]"
+        },
+        {
+          "method": "POST",
+          "url": {
+            "raw": "{{base_url}}/api/legal/{{legal_slug}}/accept",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "legal",
+              "{{legal_slug}}",
+              "accept"
+            ],
+            "query": []
+          },
+          "description": "Accept a legal document (requires auth).",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{}"
+          },
+          "name": "Accept Document [Auth]"
+        },
+        {
+          "method": "GET",
+          "url": {
+            "raw": "{{base_url}}/api/legal/pending-acceptance",
+            "host": [
+              "{{base_url}}"
+            ],
+            "path": [
+              "api",
+              "legal",
+              "pending-acceptance"
+            ],
+            "query": []
+          },
+          "description": "List documents pending acceptance for the current user (requires auth).",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "name": "Pending Acceptances [Auth]"
+        }
+      ],
+      "description": {
+        "text": ""
+      }
+    }
+  ]
+}

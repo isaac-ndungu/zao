@@ -733,10 +733,10 @@ class AdminDashboardView(APIView):
 
 class AdminAuditLogView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
-    serializer_class = AuditLogSerializer
 
     def get(self, request):
-        qs = AuditLog.objects.select_related('actor').order_by('-created_at')
+        qs = AuditLog.objects.select_related('actor')
+
         resource_type = request.query_params.get('resource_type')
         if resource_type:
             qs = qs.filter(resource_type=resource_type)
@@ -749,12 +749,18 @@ class AdminAuditLogView(APIView):
         actor = request.query_params.get('actor')
         if actor:
             qs = qs.filter(actor_id=actor)
-        limit = request.query_params.get('limit', '200')
-        try:
-            limit = int(limit)
-        except ValueError:
-            limit = 200
-        return Response(AuditLogSerializer(qs[:limit], many=True).data)
+
+        ordering = request.query_params.get('ordering', '-created_at')
+        qs = qs.order_by(ordering)
+
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = AuditLogSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = AuditLogSerializer(qs, many=True)
+        return Response(serializer.data)
 
 
 class AdminHealthView(APIView):
