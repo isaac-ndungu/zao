@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv } from '../api/client'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
@@ -187,7 +187,7 @@ export default function Cooperatives() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status === 'active') p.set('is_active', 'true'); else if (filters.status === 'inactive') p.set('is_active', 'false'); p.set('export', 'csv'); window.open(`/api/admin/cooperatives/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status === 'active') p.set('is_active', 'true'); else if (filters.status === 'inactive') p.set('is_active', 'false'); p.set('export', 'csv'); exportCsv(`/api/admin/cooperatives/?${p}`) }}
       />
 
       {selectedIds.length > 0 && (

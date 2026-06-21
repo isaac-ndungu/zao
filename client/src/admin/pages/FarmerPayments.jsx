@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv } from '../api/client'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
@@ -131,7 +131,7 @@ export default function FarmerPayments() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('payment_status', filters.status); if (filters.cycle) p.set('cycle', filters.cycle); p.set('export', 'csv'); window.open(`/api/admin/farmer-payments/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('payment_status', filters.status); if (filters.cycle) p.set('cycle', filters.cycle); p.set('export', 'csv'); exportCsv(`/api/admin/farmer-payments/?${p}`) }}
       />
 
       {selectedIds.length > 0 && (

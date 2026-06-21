@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv } from '../api/client'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
@@ -121,7 +121,7 @@ export default function OTPTokens() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-        onExport={() => { const p = new URLSearchParams(); if (search) p.set('user', search); if (filters.purpose) p.set('purpose', filters.purpose); if (filters.is_used) p.set('is_used', filters.is_used); p.set('export', 'csv'); window.open(`/api/admin/otp-tokens/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('user', search); if (filters.purpose) p.set('purpose', filters.purpose); if (filters.is_used) p.set('is_used', filters.is_used); p.set('export', 'csv'); exportCsv(`/api/admin/otp-tokens/?${p}`) }}
       />
 
       {loading ? <TableSkeleton /> : (

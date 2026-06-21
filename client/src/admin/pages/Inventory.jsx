@@ -1,5 +1,6 @@
 import { useContext, useMemo, useState } from 'react'
 import { useApi } from '../hooks/useApi'
+import { exportCsv } from '../api/client'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
 import FilterBar from '../components/common/FilterBar'
@@ -48,7 +49,7 @@ export default function Inventory() {
         filterValues={{}}
         onFilterChange={() => {}}
         onClear={() => {}}
-        onExport={() => { const p = new URLSearchParams(); p.set('period', period); p.set('export', 'csv'); window.open(`/api/admin/analytics/production/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); p.set('period', period); p.set('export', 'csv'); exportCsv(`/api/admin/analytics/production/?${p}`) }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

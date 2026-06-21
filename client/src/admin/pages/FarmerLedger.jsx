@@ -1,6 +1,6 @@
 import { useContext, useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv } from '../api/client'
 import KpiCard from '../components/common/KpiCard'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
@@ -237,7 +237,7 @@ export default function FarmerLedger() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.is_active) p.set('is_active', filters.is_active); p.set('export', 'csv'); window.open(`/api/admin/farmers/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.is_active) p.set('is_active', filters.is_active); p.set('export', 'csv'); exportCsv(`/api/admin/farmers/?${p}`) }}
       />
 
       {selectedIds.length > 0 && (

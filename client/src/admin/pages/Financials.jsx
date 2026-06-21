@@ -1,6 +1,6 @@
 import { useContext, useMemo, useState, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv } from '../api/client'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
 import DataTable from '../components/common/DataTable'
@@ -270,7 +270,7 @@ export default function Financials() {
             filterValues={{}}
             onFilterChange={() => {}}
             onClear={() => {}}
-            onExport={() => { const p = new URLSearchParams(); p.set('export', 'csv'); window.open(`/api/admin/payment-cycles/?${p}`, '_blank') }}
+            onExport={() => { const p = new URLSearchParams(); p.set('export', 'csv'); exportCsv(`/api/admin/payment-cycles/?${p}`) }}
           />
           {cyclesLoading ? <TableSkeleton /> : (
             <>
@@ -314,7 +314,7 @@ export default function Financials() {
             filterValues={{}}
             onFilterChange={() => {}}
             onClear={() => {}}
-            onExport={() => { const p = new URLSearchParams(); p.set('export', 'csv'); window.open(`/api/admin/disbursement-batches/?${p}`, '_blank') }}
+            onExport={() => { const p = new URLSearchParams(); p.set('export', 'csv'); exportCsv(`/api/admin/disbursement-batches/?${p}`) }}
           />
           {batchesLoading ? <TableSkeleton /> : (
             <>

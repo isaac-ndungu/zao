@@ -63,3 +63,20 @@ export async function apiFetch(url, options = {}) {
 
   return res
 }
+
+export async function exportCsv(url) {
+  const res = await apiFetch(url)
+  if (!res.ok) throw new Error(`Export failed: ${res.status}`)
+  const disposition = res.headers.get('Content-Disposition') || ''
+  const match = disposition.match(/filename="?(.+?)"?$/)
+  const filename = match ? match[1] : 'export.csv'
+  const blob = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(blobUrl)
+}

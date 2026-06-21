@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv } from '../api/client'
 import KpiCard from '../components/common/KpiCard'
 import { KpiSkeleton } from '../components/common/Skeleton'
 import FilterBar from '../components/common/FilterBar'
@@ -313,7 +313,7 @@ export default function ProduceReceipts() {
         filterValues={filters}
         onFilterChange={setFilters}
         onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('status', filters.status); if (filters.product_type) p.set('product_type', filters.product_type); if (filters.shift) p.set('shift', filters.shift); p.set('export', 'csv'); window.open(`/api/admin/deliveries/?${p}`, '_blank') }}
+        onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.status) p.set('status', filters.status); if (filters.product_type) p.set('product_type', filters.product_type); if (filters.shift) p.set('shift', filters.shift); p.set('export', 'csv'); exportCsv(`/api/admin/deliveries/?${p}`) }}
       />
 
       <DataTable
