@@ -37,6 +37,7 @@ export default function Cooperatives() {
   const [editItem, setEditItem] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
   const [editLoading, setEditLoading] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -62,12 +63,12 @@ export default function Cooperatives() {
   }, [sortField])
 
   const execAction = async (url, opts = {}) => {
+    setActionLoading(true)
     try {
       const res = await apiFetch(url, { method: 'POST', ...opts })
       if (!res.ok) throw new Error(await res.text())
       const msg = url.includes('activate') ? 'activated' : url.includes('deactivate') ? 'deactivated' : url.includes('delete') ? 'deleted' : url.includes('restore') ? 'restored' : 'updated'
       showToast({ type: 'success', message: `Cooperative ${msg}.` })
-      setModalConfig({ open: false })
       refetch()
       const result = await res.json().catch(() => ({}))
       if (panelItem && typeof result === 'object') {
@@ -79,8 +80,11 @@ export default function Cooperatives() {
           setPanelItem(prev => ({ ...prev, ...safeUpdates }))
         }
       }
+      setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -248,7 +252,7 @@ export default function Cooperatives() {
         )}
       </SlideOutPanel>
 
-      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
+      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} loading={actionLoading} destructive={modalConfig.destructive} />
 
       {editOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">

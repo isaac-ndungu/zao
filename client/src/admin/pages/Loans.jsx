@@ -55,6 +55,7 @@ export default function Loans() {
   const [farmerSearchOpen, setFarmerSearchOpen] = useState(false)
   const [selectedFarmerName, setSelectedFarmerName] = useState('')
   const farmerRef = useRef(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     const handler = (e) => {
@@ -108,11 +109,11 @@ export default function Loans() {
   }, [sortField])
 
   const execAction = async (url) => {
+    setActionLoading(true)
     try {
       const res = await apiFetch(url, { method: 'POST' })
       if (!res.ok) throw new Error(await res.text())
       showToast({ type: 'success', message: 'Loan updated.' })
-      setModalConfig({ open: false })
       refetch()
       const result = await res.json().catch(() => ({}))
       if (panelItem && typeof result === 'object') {
@@ -124,8 +125,11 @@ export default function Loans() {
           setPanelItem(prev => ({ ...prev, ...safeUpdates }))
         }
       }
+      setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -381,7 +385,7 @@ export default function Loans() {
         </div>
       )}
 
-      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
+      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} loading={actionLoading} destructive={modalConfig.destructive} />
 
       {editOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">

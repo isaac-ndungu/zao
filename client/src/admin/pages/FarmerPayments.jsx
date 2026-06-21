@@ -23,6 +23,7 @@ export default function FarmerPayments() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [panelItem, setPanelItem] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
+  const [actionLoading, setActionLoading] = useState(false)
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -51,11 +52,11 @@ export default function FarmerPayments() {
   }, [sortField])
 
   const execAction = async (url) => {
+    setActionLoading(true)
     try {
       const res = await apiFetch(url, { method: 'POST' })
       if (!res.ok) throw new Error(await res.text())
       showToast({ type: 'success', message: 'Payment updated.' })
-      setModalConfig({ open: false })
       refetch()
       const result = await res.json().catch(() => ({}))
       if (panelItem && typeof result === 'object') {
@@ -67,8 +68,11 @@ export default function FarmerPayments() {
           setPanelItem(prev => ({ ...prev, ...safeUpdates }))
         }
       }
+      setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -190,7 +194,7 @@ export default function FarmerPayments() {
         )}
       </SlideOutPanel>
 
-      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} destructive={modalConfig.destructive} />
+      <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} loading={actionLoading} destructive={modalConfig.destructive} />
     </div>
   )
 }

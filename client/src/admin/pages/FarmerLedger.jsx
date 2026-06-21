@@ -75,7 +75,6 @@ export default function FarmerLedger() {
 
   const execAction = async (url, opts = {}) => {
     setActionLoading(true)
-    setModalConfig({ open: false })
     try {
       const res = await apiFetch(url, { method: 'POST', ...opts })
       if (!res.ok) throw new Error(await res.text())
@@ -93,6 +92,7 @@ export default function FarmerLedger() {
           setPanelFarmer(prev => ({ ...prev, ...safeUpdates }))
         }
       }
+      setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
     } finally {

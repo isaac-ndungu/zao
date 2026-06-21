@@ -174,7 +174,6 @@ export default function ProduceReceipts() {
   const confirmForceStatus = async () => {
     if (!statusDelivery || !statusTarget) return
     setActionLoading(true)
-    setModalConfig({ open: false })
     try {
       const res = await apiFetch(`/api/admin/deliveries/${statusDelivery.id}/force-status/`, {
         method: 'POST',
@@ -195,6 +194,7 @@ export default function ProduceReceipts() {
       }
       setStatusDelivery(null)
       setStatusTarget('')
+      setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Force status failed: ${e.message}` })
     } finally {

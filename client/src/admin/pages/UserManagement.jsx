@@ -99,7 +99,6 @@ export default function UserManagement() {
 
   const execAction = async (url, opts = {}) => {
     setActionLoading(true)
-    setModalConfig({ open: false })
     try {
       const res = await apiFetch(url, { method: 'POST', ...opts })
       if (!res.ok) throw new Error(await res.text())
@@ -116,6 +115,7 @@ export default function UserManagement() {
           setPanelUser(prev => ({ ...prev, ...safeUpdates }))
         }
       }
+      setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
     } finally {
