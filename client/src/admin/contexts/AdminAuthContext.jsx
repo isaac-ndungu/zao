@@ -12,9 +12,10 @@ export function AdminAuthProvider({ children }) {
     ;(async () => {
       try {
         // Try refreshing token on mount to check if user is already logged in
-        const res = await apiFetch('/api/auth/token/refresh/', {
+        const res = await apiFetch('/api/auth/refresh/', {
           method: 'POST',
           requireAuth: false,
+          credentials: 'include',
         })
 
         if (!res.ok) {
@@ -22,7 +23,12 @@ export function AdminAuthProvider({ children }) {
           return
         }
 
-        const { access } = await res.json()
+        const _data = await res.json().catch(() => ({}))
+        const { access } = _data || {}
+        if (!access) {
+          setLoading(false)
+          return
+        }
         setAccessToken(access)
         
         // Fetch current user info after refreshing token
@@ -46,7 +52,7 @@ export function AdminAuthProvider({ children }) {
       body: JSON.stringify({ email, password }),
       requireAuth: false,
     })
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
       throw { ...data, status: res.status }
     }
@@ -76,7 +82,7 @@ export function AdminAuthProvider({ children }) {
       body: JSON.stringify({ login_token: loginToken, otp_code: otpCode }),
       requireAuth: false,
     })
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
       throw { ...data, status: res.status }
     }

@@ -6,6 +6,8 @@ export function useApi(url, options = {}) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const fetchId = useRef(0)
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   const refetch = useCallback(async () => {
     if (!url) return
@@ -13,7 +15,7 @@ export function useApi(url, options = {}) {
     setLoading(true)
     setError(null)
     try {
-      const res = await apiFetch(url, options)
+      const res = await apiFetch(url, optionsRef.current)
       if (id !== fetchId.current) return
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
@@ -26,10 +28,9 @@ export function useApi(url, options = {}) {
     } finally {
       if (id === fetchId.current) setLoading(false)
     }
-  }, [url, options])
+  }, [url])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (url) refetch()
   }, [url, refetch])
 

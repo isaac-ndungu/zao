@@ -19,12 +19,13 @@ async function refreshAccessToken() {
   refreshPromise = (async () => {
     // Attempt to refresh the access token
     try {
-      const res = await fetch('/api/auth/token/refresh/', { method: 'POST' })
+      const res = await fetch('/api/auth/refresh/', { method: 'POST', credentials: 'include' })
       if (!res.ok) {
         accessToken = null
         return null
       }
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      if (!data.access) return null
       accessToken = data.access
       return data.access
     } finally {
