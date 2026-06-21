@@ -26,7 +26,7 @@ export default function ForFarmers() {
           <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(234, 255, 234, 0) 0%, #eaffea 100%)' }} />
         </div>
         <div className="relative z-10 max-w-7xl mx-auto w-full px-container-margin pb-stack-lg">
-          <div className="max-w-2xl bg-surface-container-lowest/80 backdrop-blur-md p-stack-lg rounded-xl border border-outline-variant/30">
+          <div className="max-w-2xl bg-white/75 backdrop-blur-lg p-8 rounded-3xl border border-white/50 shadow-2xl">
             <span className="text-primary font-label-md text-label-md uppercase tracking-widest mb-stack-xs block">
               Zao Farmer Portal
             </span>
@@ -99,40 +99,40 @@ export default function ForFarmers() {
               </div>
             </div>
 
-            <div className="bg-surface-container-highest rounded-xl p-8 border border-outline-variant/30 group hover:shadow-md transition-all">
-              <div className="mb-6 h-12 w-12 bg-primary flex items-center justify-center rounded-lg text-on-primary">
+            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-8 border border-outline-variant/20 shadow-sm group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+              <div className="mb-6 h-12 w-12 bg-primary flex items-center justify-center rounded-xl text-on-primary shadow-md shadow-primary/20 transition-transform duration-300 group-hover:scale-110">
                 <HiOutlineBanknotes className="w-6 h-6" />
               </div>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-4">Real-time Payment Tracking</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
                 No more guessing games. See exactly when your cooperative processes your payments and track them directly to your bank or mobile wallet.
               </p>
             </div>
 
-            <div className="bg-surface-container-highest rounded-xl p-8 border border-outline-variant/30 group hover:shadow-md transition-all">
-              <div className="mb-6 h-12 w-12 bg-secondary flex items-center justify-center rounded-lg text-on-secondary">
+            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-8 border border-outline-variant/20 shadow-sm group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+              <div className="mb-6 h-12 w-12 bg-secondary flex items-center justify-center rounded-xl text-on-secondary shadow-md shadow-secondary/20 transition-transform duration-300 group-hover:scale-110">
                 <HiOutlineBuildingLibrary className="w-6 h-6" />
               </div>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-4">Easy Loan Access</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
                 Apply for agricultural input loans or emergency credit based on your delivery history. Fast approval, fair rates, no paper stress.
               </p>
             </div>
 
-            <div className="bg-surface-container-highest rounded-xl p-8 border border-outline-variant/30 group hover:shadow-md transition-all">
-              <div className="mb-6 h-12 w-12 bg-tertiary flex items-center justify-center rounded-lg text-on-tertiary">
+            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-8 border border-outline-variant/20 shadow-sm group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+              <div className="mb-6 h-12 w-12 bg-tertiary flex items-center justify-center rounded-xl text-on-tertiary shadow-md shadow-tertiary/20 transition-transform duration-300 group-hover:scale-110">
                 <HiOutlineShieldCheck className="w-6 h-6" />
               </div>
               <h3 className="font-headline-sm text-headline-sm text-primary mb-4">Grade Dispute Resolution</h3>
-              <p className="font-body-md text-body-md text-on-surface-variant">
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
                 If you disagree with a grade on your delivery, file a dispute through the portal. Managers review with full audit logs for transparent resolution.
               </p>
             </div>
 
-            <div className="md:col-span-3 glass-panel rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="md:col-span-3 bg-white/70 backdrop-blur-md rounded-3xl p-8 border border-outline-variant/20 shadow-md flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="flex-1">
                 <h3 className="font-headline-lg text-headline-lg text-primary mb-4">Digital Delivery History</h3>
-                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+                <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl leading-relaxed">
                   A complete, tamper-proof record of every delivery you've ever made. Perfect for business planning and securing financing from external lenders.
                 </p>
               </div>
@@ -140,10 +140,10 @@ export default function ForFarmers() {
                 <table className="w-full text-left border-collapse min-w-[500px]">
                   <thead>
                     <tr className="bg-primary text-white">
-                      <th className="p-3 font-label-md text-label-md rounded-tl-lg">DATE</th>
+                      <th className="p-3 font-label-md text-label-md rounded-tl-xl">DATE</th>
                       <th className="p-3 font-label-md text-label-md">PRODUCE</th>
                       <th className="p-3 font-label-md text-label-md">QUANTITY</th>
-                      <th className="p-3 font-label-md text-label-md rounded-tr-lg">STATUS</th>
+                      <th className="p-3 font-label-md text-label-md rounded-tr-xl">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="font-data-mono-sm text-data-mono-sm">
@@ -176,7 +176,7 @@ export default function ForFarmers() {
               </div>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md p-stack-lg rounded-xl border border-white/20 text-center">
+          <div className="bg-white/15 backdrop-blur-lg p-8 rounded-2xl border border-white/25 text-center shadow-xl">
             <h3 className="font-headline-sm text-headline-sm mb-4">Ready to upgrade your farm management?</h3>
             <p className="font-body-md text-body-md mb-8 opacity-80">
               Contact your cooperative manager today to get your Zao Farmer Portal login credentials.

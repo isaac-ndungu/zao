@@ -78,29 +78,33 @@ export default function About() {
               </div>
               <div className="lg:col-span-7">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-surface-container-high rounded-xl p-6 flex flex-col justify-between h-48 group hover:bg-primary hover:text-white transition-all">
-                    <HiOutlineShieldCheck className="w-8 h-8 mb-4" />
-                    <p className="font-body-md font-bold">Immutable Audit Trail</p>
+                  <div className="bg-white/60 backdrop-blur-sm border border-outline-variant/15 rounded-2xl p-6 flex flex-col justify-between h-48 shadow-sm group hover:-translate-y-1 hover:shadow-lg hover:bg-primary transition-all duration-300">
+                    <HiOutlineShieldCheck className="w-8 h-8 text-primary group-hover:text-white transition-colors duration-300" />
+                    <p className="font-body-md font-bold text-on-surface group-hover:text-white transition-colors duration-300">Immutable Audit Trail</p>
                   </div>
-                  <div className="bg-white border border-[#D8F3DC] rounded-xl p-6 flex flex-col justify-between h-64 mt-8">
-                    <div className="w-full bg-surface-container-lowest h-1 mb-4 rounded-full overflow-hidden">
+                  <div className="bg-white/80 backdrop-blur-md border border-outline-variant/20 rounded-2xl p-6 flex flex-col justify-between h-64 shadow-md hover:-translate-y-1 hover:shadow-lg transition-all duration-300 mt-8">
+                    <div className="w-full bg-primary/10 h-1.5 mb-4 rounded-full overflow-hidden">
                       <div className="bg-primary h-full w-full" />
                     </div>
-                    <p className="font-data-mono text-data-mono text-primary">ROLE-BASED ACCESS (6 ROLES)</p>
-                    <p className="font-body-md text-on-surface-variant mt-2">
-                      Granular permissions for Farmer, Grader, Accountant, Manager, Admin, and Auditor.
-                    </p>
+                    <div>
+                      <p className="font-data-mono text-data-mono text-primary font-bold">ROLE-BASED ACCESS (6 ROLES)</p>
+                      <p className="font-body-md text-on-surface-variant mt-2 leading-relaxed">
+                        Granular permissions for Farmer, Grader, Accountant, Manager, Admin, and Auditor.
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-primary text-white rounded-xl p-6 flex flex-col justify-between h-64 -mt-8">
-                    <HiOutlineCommandLine className="w-8 h-8 mb-4" />
-                    <h5 className="font-headline-sm">Open API</h5>
-                    <p className="font-body-md opacity-80">
-                      Seamlessly integrate with national agricultural registries and financial institutions.
-                    </p>
+                  <div className="bg-gradient-to-br from-primary to-secondary text-white rounded-2xl p-6 flex flex-col justify-between h-64 shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-300 border border-primary-container/10 -mt-8 group">
+                    <HiOutlineCommandLine className="w-8 h-8 mb-4 transition-transform duration-350 group-hover:scale-110" />
+                    <div>
+                      <h5 className="font-headline-sm mb-1">Open API</h5>
+                      <p className="font-body-md opacity-80 leading-relaxed">
+                        Seamlessly integrate with national agricultural registries and financial institutions.
+                      </p>
+                    </div>
                   </div>
-                  <div className="bg-surface-container-highest rounded-xl p-6 flex flex-col justify-between h-48">
-                    <HiOutlineDocumentText className="w-8 h-8 mb-4" />
-                    <p className="font-body-md font-bold text-primary">KRA-Compliant Reporting</p>
+                  <div className="bg-white/60 backdrop-blur-sm border border-outline-variant/15 rounded-2xl p-6 flex flex-col justify-between h-48 shadow-sm group hover:-translate-y-1 hover:shadow-lg hover:bg-secondary transition-all duration-300">
+                    <HiOutlineDocumentText className="w-8 h-8 text-primary group-hover:text-white transition-colors duration-300" />
+                    <p className="font-body-md font-bold text-primary group-hover:text-white transition-colors duration-300">KRA-Compliant Reporting</p>
                   </div>
                 </div>
               </div>
@@ -117,7 +121,7 @@ export default function About() {
                   alt="Hand sorting green coffee beans"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuATCDs6jDTFnW9DVPK6Mr_Ke1OspoaJ0dX-fHozj66ySw0ch-F9KjtB3C11f_DosnlvUbvjHon029XfWrsapU7YL3EH8VoI5SLBeoeavRhaAYS3P8YcY1TO-71GbHQUkoANGfCKmzkrDmzAgAGMyW5cY_4mqusGRk0sMn5_SdMBLAwyrS1XvRLGw1EtYxdtzAj2e3lzkBfbPF5-XNRqiGSHXFH6k3NBPQn91c7n3TGR6UPbZx1b7lNRc48Qd8tFfQcbYjMXTDF_ygg"
                 />
-                <div className="absolute bottom-8 left-8 right-8 glass-card p-6 rounded-lg">
+                <div className="absolute bottom-8 left-8 right-8 bg-white/80 backdrop-blur-md p-6 rounded-2xl border border-white/40 shadow-xl">
                   <p className="font-data-mono text-data-mono text-primary mb-2">FIELD LOG: ELDORET HUB</p>
                   <p className="font-body-md text-on-surface italic">
                     &ldquo;The transparency we've gained through Zao has returned trust to the cooperative board meetings.&rdquo;

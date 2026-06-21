@@ -31,7 +31,7 @@ export default function Solutions() {
           </p>
         </section>
 
-        <section className="hidden lg:flex justify-between items-center px-12 py-8 bg-surface-container-low rounded-xl border-subtle">
+: update UI components and pages        <section className="hidden lg:flex justify-between items-center px-12 py-8 bg-white/60 backdrop-blur-md rounded-2xl border border-outline-variant/20 shadow-sm">
           {['The Gate', 'The Engine', 'The Payout', 'Operations'].map((step, i) => (
             <div key={step} className={`flex flex-col items-center space-y-2 text-center ${i === 0 ? 'group cursor-pointer' : 'opacity-50'}`}>
               <div
@@ -82,8 +82,8 @@ export default function Solutions() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-stack-lg items-center bg-surface-container rounded-xl p-stack-lg border-subtle">
-          <div className="order-2 md:order-1 bg-surface-container-lowest p-stack-md rounded-lg shadow-sm border border-outline-variant space-y-stack-md">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-white/40 backdrop-blur-md rounded-3xl p-8 border border-outline-variant/15 shadow-sm">
+          <div className="order-2 md:order-1 bg-white/95 p-6 rounded-2xl shadow-md border border-outline-variant/25 space-y-4">
             <div className="flex justify-between items-center border-b border-outline-variant pb-2">
               <span className="font-label-md text-label-md text-on-surface-variant">Payment Lifecycle</span>
               <span className="font-data-mono-sm text-data-mono-sm text-primary">LOCKED &amp; AUDITED</span>
@@ -118,11 +118,11 @@ export default function Solutions() {
             <p className="font-body-md text-body-md text-on-surface-variant">
               Our backend engine eliminates the &ldquo;waiting period&rdquo; for farmers. As soon as grading is completed, Zao calculates payouts based on cooperative rates, predefined deductions, and the revenue-share or fixed-price model for each produce type.
             </p>
-            <div className="flex items-start gap-3 p-4 bg-white/40 rounded-lg border-subtle">
+            <div className="flex items-start gap-3 p-5 bg-white/70 backdrop-blur-sm rounded-xl border border-outline-variant/20 shadow-sm">
               <HiOutlineShieldCheck className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-label-md text-label-md font-bold text-primary">Grade Overrides with Audit Trail</p>
-                <p className="font-body-md text-body-md text-on-surface-variant">Manager adjustments require a reason and are logged with actor, timestamp, and before/after values.</p>
+                <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">Manager adjustments require a reason and are logged with actor, timestamp, and before/after values.</p>
               </div>
             </div>
           </div>
@@ -138,37 +138,37 @@ export default function Solutions() {
             <p className="font-body-md text-body-md text-on-surface-variant">
               Liquidity is the lifeblood of farming. Zao integrates directly with M-Pesa and major regional banks to provide instant or scheduled disbursements. No more checks waiting in drawers.
             </p>
-            <div className="flex flex-wrap gap-stack-md pt-4">
-              <div className="flex items-center gap-3 px-stack-md py-3 bg-surface-container-highest rounded-xl border border-outline-variant w-full sm:w-auto">
-                <div className="w-10 h-10 bg-[#34B43C] rounded flex items-center justify-center font-bold text-white text-sm">
+            <div className="flex flex-wrap gap-4 pt-4">
+              <div className="flex items-center gap-4 px-6 py-4 bg-white/70 backdrop-blur-md rounded-2xl border border-outline-variant/25 w-full sm:w-auto shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                <div className="w-10 h-10 bg-[#34B43C] rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-sm">
                   M
                 </div>
                 <div>
-                  <p className="font-label-md text-label-md font-bold">M-Pesa Integration</p>
-                  <p className="font-data-mono-sm text-data-mono-sm">Instant Mobile Transfer</p>
+                  <p className="font-label-md text-label-md font-bold text-primary">M-Pesa Integration</p>
+                  <p className="font-data-mono-sm text-data-mono-sm text-on-surface-variant">Instant Mobile Transfer</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 px-stack-md py-3 bg-surface-container-highest rounded-xl border border-outline-variant w-full sm:w-auto">
-                <div className="w-10 h-10 bg-primary rounded flex items-center justify-center text-white">
+              <div className="flex items-center gap-4 px-6 py-4 bg-white/70 backdrop-blur-md rounded-2xl border border-outline-variant/25 w-full sm:w-auto shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-sm">
                   <HiOutlineBuildingLibrary className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="font-label-md text-label-md font-bold">Bank Disbursement</p>
-                  <p className="font-data-mono-sm text-data-mono-sm">EFT &amp; RTGS Ready</p>
+                  <p className="font-label-md text-label-md font-bold text-primary">Bank Disbursement</p>
+                  <p className="font-data-mono-sm text-data-mono-sm text-on-surface-variant">EFT &amp; RTGS Ready</p>
                 </div>
               </div>
             </div>
           </div>
-          <div className="col-span-12 md:col-span-6 grid grid-cols-2 gap-stack-md">
-            <div className="col-span-2 sm:col-span-1 bg-primary text-on-primary p-stack-md rounded-xl space-y-4">
-              <HiOutlineDocumentText className="w-10 h-10" />
+          <div className="col-span-12 md:col-span-6 grid grid-cols-2 gap-4">
+            <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-primary to-secondary text-white p-6 rounded-2xl shadow-md hover:-translate-y-1 hover:shadow-lg transition-all duration-300 border border-primary-container/10 space-y-4">
+              <HiOutlineDocumentText className="w-10 h-10 opacity-90" />
               <h4 className="font-headline-sm text-headline-sm leading-tight">Digital Receipts</h4>
-              <p className="font-body-md text-body-md opacity-80">Farmers receive SMS alerts with detailed breakdown of every cent earned.</p>
+              <p className="font-body-md text-body-md opacity-80 leading-relaxed">Farmers receive SMS alerts with detailed breakdown of every cent earned.</p>
             </div>
-            <div className="col-span-2 sm:col-span-1 bg-surface-container-high p-stack-md rounded-xl space-y-4 border-subtle">
+            <div className="col-span-2 sm:col-span-1 bg-white/90 backdrop-blur-md p-6 rounded-2xl space-y-4 border border-outline-variant/25 shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
               <HiOutlineCurrencyDollar className="w-10 h-10 text-tertiary" />
-              <h4 className="font-headline-sm text-headline-sm leading-tight">Loan Offsets</h4>
-              <p className="font-body-md text-body-md text-on-surface-variant">Automated deduction of input loans, fertilizer credits, and member fees.</p>
+              <h4 className="font-headline-sm text-headline-sm leading-tight text-primary">Loan Offsets</h4>
+              <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">Automated deduction of input loans, fertilizer credits, and member fees.</p>
             </div>
           </div>
         </section>
@@ -202,13 +202,13 @@ export default function Solutions() {
               { icon: HiOutlineArchiveBox, title: 'Stock Control', desc: 'Real-time inventory levels across multiple warehouses and processing zones.' },
               { icon: HiOutlineDocumentText, title: 'Compliance Reporting', desc: 'Automated regulatory and audit reports for government and fair-trade bodies.' },
             ].map((item) => (
-              <div key={item.title} className="p-stack-md bg-surface-container-low border-subtle rounded-xl flex items-start gap-stack-md">
-                <div className="w-10 h-10 rounded bg-primary-container flex-shrink-0 flex items-center justify-center text-on-primary-container">
-                  <item.icon className="w-5 h-5" />
+              <div key={item.title} className="p-6 bg-white/60 backdrop-blur-sm border border-outline-variant/15 rounded-2xl flex items-start gap-4 hover:bg-white/90 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary">
+                  <item.icon className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="font-headline-sm text-headline-sm text-on-surface">{item.title}</p>
-                  <p className="font-body-md text-body-md text-on-surface-variant">{item.desc}</p>
+                  <p className="font-headline-sm text-headline-sm text-on-surface mb-1 font-semibold">{item.title}</p>
+                  <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}

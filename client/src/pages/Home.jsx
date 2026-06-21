@@ -98,18 +98,20 @@ export default function Home() {
               {FEATURES.map((f) => (
                 <div
                   key={f.title}
-                  className={`flex gap-stack-md p-stack-md rounded-xl transition-colors group ${
-                    f.highlighted ? 'bg-surface-container-high shadow-sm border border-outline-variant' : 'hover:bg-surface-container-low'
+                  className={`flex gap-6 p-6 rounded-2xl transition-all duration-300 group border ${
+                    f.highlighted
+                      ? 'bg-white/90 backdrop-blur-md shadow-md border-primary/20 hover:-translate-y-1 hover:shadow-xl hover:border-primary/30'
+                      : 'bg-white/50 backdrop-blur-sm border-outline-variant/15 hover:bg-white/80 hover:-translate-y-1 hover:shadow-lg'
                   }`}
                 >
                   <div
-                    className={`flex-shrink-0 w-12 h-12 ${f.iconBg} rounded-lg flex items-center justify-center ${f.iconColor}`}
+                    className={`flex-shrink-0 w-12 h-12 ${f.iconBg} rounded-xl flex items-center justify-center ${f.iconColor} transition-transform duration-300 group-hover:scale-110`}
                   >
                     <f.icon className="w-6 h-6" />
                   </div>
                   <div>
                     <h3 className="font-headline-sm text-headline-sm text-primary mb-1">{f.title}</h3>
-                    <p className="font-body-md text-body-md text-on-surface-variant">{f.desc}</p>
+                    <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">{f.desc}</p>
                   </div>
                 </div>
               ))}
@@ -122,7 +124,7 @@ export default function Home() {
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwijp4O2J_We2JK0LnqjhG7-C5ZkZNaM3Uaaxr92XEVbwlwm_PJqcUFfIQ8vzUU1RIcyFBvpCnGaLrGf7PRCAseBfAZ4N_SyN1rJeu8kq3XxuJCKNf36YSeYKQpxzIxcYUgqEOAaTJ0H5FZZdb-ZWuJutN2KiRDmels0l_U-7gikvl3oYxRDpXKBrSiKYd0qwbhYtg3JucPVH3cq_CkM5T_fRSXswMXXBfkccUghE46XtXAlBjSvaiqWxISuexqBdg_HioRAVg7Vg"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent flex items-end p-stack-lg">
-                  <div className="bg-white/90 backdrop-blur p-stack-md rounded-xl max-w-xs shadow-xl">
+                  <div className="bg-white/80 backdrop-blur-md p-6 rounded-2xl max-w-xs shadow-[0_12px_40px_rgba(0,0,0,0.08)] border border-white/40">
                     <p className="font-body-md text-body-md text-primary font-bold italic">
                       &ldquo;Zao transformed our coffee cooperative from paper ledgers to a 100% digital operation in just 30 days.&rdquo;
                     </p>

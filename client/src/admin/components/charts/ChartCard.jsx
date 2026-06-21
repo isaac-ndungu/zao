@@ -2,7 +2,7 @@ import { CHART_DEFAULTS } from './chartTheme'
 
 export default function ChartCard({ title, subtitle, action, children, empty, emptyMessage = 'No data available.' }) {
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
+    <div className="bg-white/70 backdrop-blur-md border border-outline-variant/35 p-6 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
       {(title || action) && (
         <div className="flex items-center justify-between mb-6">
           <div>
