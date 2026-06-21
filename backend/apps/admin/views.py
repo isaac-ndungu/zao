@@ -1596,7 +1596,7 @@ class AdminUserBulkActionView(APIView):
             count = users.count()
             users.update(is_active=False)
         log_audit(
-            actor=request.user, resource_type='user', resource_id='bulk',
+            actor=request.user, resource_type='user', resource_id=None,
             action=AuditAction.ADMIN_ACTION,
             new_value={'action': action, 'count': count},
             ip_address=request.META.get('REMOTE_ADDR'),
@@ -1625,6 +1625,12 @@ class AdminCooperativeBulkActionView(APIView):
             coops = coops.exclude(is_active=False)
             count = coops.count()
             coops.update(is_active=False)
+        log_audit(
+            actor=request.user, resource_type='cooperative', resource_id=None,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'action': action, 'count': count},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
         return Response({'detail': f'{count} cooperatives {action}d.', 'count': count})
 
 
@@ -1649,6 +1655,12 @@ class AdminFarmerBulkActionView(APIView):
             farmers = farmers.exclude(is_active=False)
             count = farmers.count()
             farmers.update(is_active=False)
+        log_audit(
+            actor=request.user, resource_type='farmer', resource_id=None,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'action': action, 'count': count},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
         return Response({'detail': f'{count} farmers {action}d.', 'count': count})
 
 

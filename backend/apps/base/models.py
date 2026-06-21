@@ -130,7 +130,7 @@ class AuditLog(CooperativeScopedModel):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
     )
     resource_type = models.CharField(max_length=100)
-    resource_id = models.UUIDField()
+    resource_id = models.UUIDField(null=True, blank=True)
     action = models.CharField(
         max_length=50,
         choices=AuditAction.choices,
