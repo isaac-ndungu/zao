@@ -44,7 +44,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
   useEffect(() => { onClose(); setEntryOpen(false) }, [pathname])
 
   const sidebarContent = (
-    <aside className="w-64 h-full bg-primary flex flex-col py-6 px-4">
+    <aside className="w-64 h-full bg-primary flex flex-col py-6 px-4 overflow-y-auto">
       <div className="mb-10 px-2">
         <h1 className="font-headline-lg text-headline-lg font-bold text-on-primary">Zao Operations</h1>
       </div>
