@@ -40,10 +40,10 @@ export default function Support() {
             <span className="material-symbols-outlined text-[16px]">mail</span>
             Email Support
           </a>
-          <button disabled className="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant/40 rounded-lg text-label-md font-bold cursor-not-allowed">
+          <a href="/api/docs/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
             <span className="material-symbols-outlined text-[16px]">description</span>
             View Docs
-          </button>
+          </a>
         </div>
       </div>
     </div>
