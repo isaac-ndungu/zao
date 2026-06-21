@@ -1,10 +1,12 @@
-import { useContext, useMemo, useState } from 'react'
+import { useContext, useMemo } from 'react'
 import { useApi } from '../hooks/useApi'
 import { exportCsv } from '../api/client'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
 import FilterBar from '../components/common/FilterBar'
-import { KpiSkeleton, CardSkeleton } from '../components/common/Skeleton'
+import { KpiSkeleton } from '../components/common/Skeleton'
+import PieChartCard from '../components/charts/PieChartCard'
+import BarChartCard from '../components/charts/BarChartCard'
 
 export default function Inventory() {
   const { period } = useContext(AdminFilterContext)
@@ -14,20 +16,34 @@ export default function Inventory() {
   const production = prodData?.data
   const inventory = dashData?.data?.inventory
 
-  const gradeDist = useMemo(() => {
+  const gradePie = useMemo(() => {
     if (!production?.grade_distribution) return []
-    return Object.entries(production.grade_distribution).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
+    return Object.entries(production.grade_distribution)
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([key, val]) => ({ name: key.toLowerCase(), value: Number(val) }))
   }, [production])
 
-  const productBreakdown = useMemo(() => {
+  const productPie = useMemo(() => {
     if (!production?.by_product_type) return []
-    return Object.entries(production.by_product_type).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
+    return Object.entries(production.by_product_type)
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([key, val]) => ({ name: key.toLowerCase(), value: Number(val) }))
   }, [production])
 
-  const totalGrade = gradeDist.reduce((s, [, v]) => s + v, 0)
+  const monthlyData = useMemo(() => {
+    if (!production?.monthly_series) return []
+    return Object.entries(production.monthly_series)
+      .slice(-12)
+      .map(([month, types]) => ({
+        month,
+        kg: Object.values(types).reduce((s, v) => s + v, 0),
+      }))
+  }, [production])
 
   if (loading) {
-    return <div><KpiSkeleton count={4} /><CardSkeleton /></div>
+    return <div><KpiSkeleton count={4} /><div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl h-80 animate-pulse mt-6" /></div>
   }
 
   if (error) {
@@ -61,74 +77,40 @@ export default function Inventory() {
 
       {production && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Grade Distribution */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
-            <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Grade Distribution</h4>
-            {gradeDist.length === 0 ? (
-              <p className="text-on-surface-variant text-body-md">No grade data available.</p>
-            ) : (
-              <div className="space-y-3">
-                {gradeDist.map(([grade, count]) => {
-                  const pct = totalGrade > 0 ? (count / totalGrade) * 100 : 0
-                  return (
-                    <div key={grade}>
-                      <div className="flex justify-between text-label-md font-medium mb-1">
-                        <span className="capitalize">{grade.toLowerCase()}</span>
-                        <span className="font-data-mono text-on-surface-variant">{count?.toLocaleString()} kg</span>
-                      </div>
-                      <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Product Type Breakdown */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
-            <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">By Product Type</h4>
-            {productBreakdown.length === 0 ? (
-              <p className="text-on-surface-variant text-body-md">No product data available.</p>
-            ) : (
-              <div className="space-y-4">
-                {productBreakdown.map(([type, qty]) => (
-                  <div key={type} className="flex items-center justify-between p-3 bg-surface-container rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                      <span className="capitalize font-medium">{type.toLowerCase()}</span>
-                    </div>
-                    <span className="font-data-mono text-on-surface">{qty?.toLocaleString()} kg</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {gradePie.length > 0 && (
+            <PieChartCard
+              title="Grade Distribution"
+              data={gradePie}
+              dataKey="value"
+              nameKey="name"
+              height={300}
+              showPercent
+              emptyMessage="No grade data available."
+            />
+          )}
+          {productPie.length > 0 && (
+            <PieChartCard
+              title="By Product Type"
+              data={productPie}
+              dataKey="value"
+              nameKey="name"
+              height={300}
+              showPercent
+              emptyMessage="No product data available."
+            />
+          )}
         </div>
       )}
 
-      {/* Monthly Series (simplified) */}
-      {production?.monthly_series && production.monthly_series.length > 0 && (
-        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-6">
-          <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Monthly Production</h4>
-          <div className="space-y-2">
-            {production.monthly_series.slice(-12).map((month) => (
-              <div key={month.month} className="flex items-center gap-4">
-                <span className="text-label-md font-medium text-on-surface-variant w-24">{month.month}</span>
-                <div className="flex-1 h-6 bg-surface-container rounded-lg overflow-hidden flex">
-                  <div
-                    className="h-full bg-primary transition-all"
-                    style={{ width: `${Math.min(100, (month.kg / Math.max(...production.monthly_series.map(m => m.kg))) * 100)}%` }}
-                  />
-                </div>
-                <span className="font-data-mono text-label-md text-on-surface-variant w-20 text-right">
-                  {month.kg?.toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+      {monthlyData.length > 0 && (
+        <BarChartCard
+          title="Monthly Production"
+          data={monthlyData}
+          categoryKey="month"
+          dataKeys={['kg']}
+          height={350}
+          emptyMessage="No monthly production data available."
+        />
       )}
 
       {!production && (

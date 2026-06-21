@@ -67,9 +67,11 @@ export default function AppBar({ onMenuClick }) {
           />
         </form>
 
-        <div className="hidden md:block flex-shrink-0">
-          <PeriodPicker />
-        </div>
+        {['/admin/dashboard', '/admin/ledger', '/admin/financials', '/admin/inventory', '/admin/logistics', '/admin/analytics/seasonal', '/admin/analytics/retention'].some(p => pathname.startsWith(p)) && (
+          <div className="hidden md:block flex-shrink-0">
+            <PeriodPicker />
+          </div>
+        )}
 
         <nav className="hidden xl:flex gap-6 ml-auto">
           {appBarTabs.map((tab) => {

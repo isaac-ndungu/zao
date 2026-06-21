@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useApi } from '../hooks/useApi'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import KpiCard from '../components/common/KpiCard'
-import { KpiSkeleton, CardSkeleton } from '../components/common/Skeleton'
+import { KpiSkeleton } from '../components/common/Skeleton'
+import BarChartCard from '../components/charts/BarChartCard'
+import PieChartCard from '../components/charts/PieChartCard'
+import { CATEGORICAL_COLORS } from '../components/charts/chartTheme'
 
 const roleColors = {
   farmer: 'bg-primary',
@@ -69,20 +72,11 @@ export default function Dashboard() {
     return Object.entries(roles).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
   }, [data?.users_by_role])
 
-  const maxRoleCount = useMemo(() => {
-    if (!usersByRole.length) return 0
-    return Math.max(...usersByRole.map(([, v]) => v))
-  }, [usersByRole])
-
   const deliveriesByStatus = useMemo(() => {
     const statuses = data?.deliveries_by_status
     if (!statuses) return []
     return Object.entries(statuses).filter(([, v]) => v > 0)
   }, [data?.deliveries_by_status])
-
-  const totalDeliveries = useMemo(() => {
-    return deliveriesByStatus.reduce((s, [, v]) => s + v, 0)
-  }, [deliveriesByStatus])
 
   const cyclePipeline = useMemo(() => {
     const pipe = data?.cycle_pipeline
@@ -100,8 +94,6 @@ export default function Dashboard() {
     return Object.entries(analyticsData.production.grade_distribution).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
   }, [analyticsData])
 
-  const totalGrade = gradeDist.reduce((s, [, v]) => s + v, 0)
-
   if (loading) {
     return (
       <div>
@@ -111,10 +103,10 @@ export default function Dashboard() {
         </header>
         <KpiSkeleton count={5} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <CardSkeleton />
-          <CardSkeleton />
+          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl h-48 animate-pulse" />
+          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl h-48 animate-pulse" />
         </div>
-        <CardSkeleton />
+        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl h-48 animate-pulse" />
       </div>
     )
   }
@@ -157,139 +149,50 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h4 className="font-headline-sm text-headline-sm">Users by Role</h4>
-          </div>
-          <div className="space-y-6">
-            {usersByRole.length === 0 ? (
-              <p className="text-on-surface-variant text-body-md">No user data available.</p>
-            ) : usersByRole.map(([role, count]) => {
-              const pct = maxRoleCount > 0 ? (count / maxRoleCount) * 100 : 0
-              return (
-                <div key={role} className="space-y-2">
-                  <div className="flex justify-between text-label-md font-medium">
-                    <span>{roleLabels[role] || role}</span>
-                    <span className="font-data-mono">{formatNumber(count)}</span>
-                  </div>
-                  <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${roleColors[role] || 'bg-outline-variant'}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <BarChartCard
+          title="Users by Role"
+          data={usersByRole.map(([name, value]) => ({ name: roleLabels[name] || name, value }))}
+          categoryKey="name"
+          dataKey="value"
+          orientation="horizontal"
+          height={220}
+          emptyMessage="No user data available."
+          colorMap={Object.fromEntries(Object.entries(roleColors).map(([k, v]) => [roleLabels[k] || k, v === 'bg-outline-variant' ? '#9ca3af' : v === 'bg-primary' ? CATEGORICAL_COLORS[0] : v === 'bg-secondary' ? CATEGORICAL_COLORS[2] : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3] : v === 'bg-tertiary' ? CATEGORICAL_COLORS[4] : CATEGORICAL_COLORS[5]]))}
+        />
 
-        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
-          <div className="flex justify-between items-center mb-6">
-            <h4 className="font-headline-sm text-headline-sm">Deliveries by Status</h4>
-            {totalDeliveries > 0 && (
-              <div className="flex gap-2">
-                {deliveriesByStatus.map(([status]) => (
-                  <span key={status} className="flex items-center gap-1 text-[10px] uppercase font-bold text-on-surface-variant">
-                    <span className={`w-2 h-2 rounded-full ${statusColors[status] || 'bg-outline'}`} />
-                    {statusLabels[status] || status}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          {deliveriesByStatus.length === 0 ? (
-            <p className="text-on-surface-variant text-body-md">No delivery data available.</p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <div className="relative h-12 flex rounded-lg overflow-hidden border border-outline-variant/20">
-                {deliveriesByStatus.map(([status, count]) => {
-                  const pct = totalDeliveries > 0 ? (count / totalDeliveries) * 100 : 0
-                  return (
-                    <div
-                      key={status}
-                      className={`h-full ${statusColors[status] || 'bg-outline-variant'} flex items-center justify-center text-on-primary font-data-mono text-[11px]`}
-                      style={{ width: `${pct}%` }}
-                    >
-                      {pct >= 15 ? `${Math.round(pct)}%` : ''}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div className="p-3 bg-surface border border-outline-variant rounded-lg">
-                  <p className="text-[10px] uppercase font-bold text-on-surface-variant opacity-60">Total Deliveries</p>
-                  <p className="font-data-mono text-lg text-primary">{totalDeliveries}</p>
-                </div>
-                <div className="p-3 bg-surface border border-outline-variant rounded-lg">
-                  <p className="text-[10px] uppercase font-bold text-on-surface-variant opacity-60">Completed</p>
-                  <p className="font-data-mono text-lg text-primary">
-                    {data.deliveries_by_status?.completed || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <PieChartCard
+          title="Deliveries by Status"
+          data={deliveriesByStatus.map(([name, value]) => ({ name: statusLabels[name] || name, value }))}
+          dataKey="value"
+          categoryKey="name"
+          height={280}
+          emptyMessage="No delivery data available."
+          colorMap={Object.fromEntries(Object.entries(statusColors).map(([k, v]) => [statusLabels[k] || k, v === 'bg-primary' ? CATEGORICAL_COLORS[0] : v === 'bg-secondary' ? '#059669' : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3] : v === 'bg-error' ? '#dc2626' : CATEGORICAL_COLORS[5]]))}
+        />
       </div>
 
-      {/* Grade Distribution from Analytics */}
       {gradeDist.length > 0 && (
-        <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-8">
-          <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Grade Distribution</h4>
-          <div className="space-y-3">
-            {gradeDist.map(([grade, count]) => {
-              const pct = totalGrade > 0 ? (count / totalGrade) * 100 : 0
-              return (
-                <div key={grade}>
-                  <div className="flex justify-between text-label-md font-medium mb-1">
-                    <span className="capitalize">{grade.toLowerCase()}</span>
-                    <span className="font-data-mono text-on-surface-variant">{count?.toLocaleString()} kg</span>
-                  </div>
-                  <div className="h-2 w-full bg-surface-container rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <BarChartCard
+          title="Grade Distribution"
+          data={gradeDist.map(([name, value]) => ({ name: name.toLowerCase(), value }))}
+          categoryKey="name"
+          dataKey="value"
+          orientation="horizontal"
+          height={220}
+          emptyMessage="No grade data available."
+        />
       )}
 
-      <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h4 className="font-headline-sm text-headline-sm mb-1">Cycle Pipeline</h4>
-            <p className="text-label-md text-on-surface-variant">
-              Flow of items through the current processing cycle.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-4 gap-0 relative overflow-hidden h-32 items-center px-4">
-          {cyclePipeline.map((stage, i) => (
-            <div
-              key={stage.key}
-              className={`funnel-stage ${stage.color} h-24 flex flex-col items-center justify-center ${i > 0 ? 'border-l border-white/20' : ''}`}
-            >
-              <span className={`text-[10px] font-bold uppercase ${stage.textColor}`}>
-                {stage.label}
-              </span>
-              <span className={`font-data-mono text-headline-sm ${stage.valueColor}`}>
-                {formatNumber(stage.value)}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-4 gap-4 mt-6 text-center">
-          {cyclePipeline.map((stage) => (
-            <div key={stage.key} className="text-[11px] text-on-surface-variant">
-              {pipelineDetail[stage.key]}
-            </div>
-          ))}
-        </div>
-      </div>
+      <BarChartCard
+        title="Cycle Pipeline"
+        subtitle="Flow of items through the current processing cycle."
+        data={cyclePipeline.map(s => ({ name: s.label, value: s.value }))}
+        categoryKey="name"
+        dataKey="value"
+        orientation="horizontal"
+        height={220}
+        emptyMessage="No cycle data available."
+      />
     </div>
   )
 }

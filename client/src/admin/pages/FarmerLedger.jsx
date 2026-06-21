@@ -11,6 +11,8 @@ import ConfirmModal from '../components/common/ConfirmModal'
 import { AdminFilterContext } from '../contexts/AdminFilterContext'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
+import LineChartCard from '../components/charts/LineChartCard'
+import BarChartCard from '../components/charts/BarChartCard'
 
 import { useLocation } from 'react-router-dom'
 
@@ -62,6 +64,22 @@ export default function FarmerLedger() {
 
   const { data, loading, error, refetch } = useApi(`/api/admin/farmers/?${query}`)
   const { data: analytics, loading: analyticsLoading } = useApi(`/api/admin/analytics/farmers/?period=${period}`)
+
+  const registrationTrend = useMemo(() => {
+    if (!analytics?.data?.registration_monthly_series) return []
+    return Object.entries(analytics.data.registration_monthly_series).map(([month, count]) => ({
+      month,
+      registered: count,
+    }))
+  }, [analytics])
+
+  const countyData = useMemo(() => {
+    if (!analytics?.data?.by_county) return []
+    return Object.entries(analytics.data.by_county)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([key, val]) => ({ county: key, farmers: Number(val) }))
+  }, [analytics])
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -226,6 +244,32 @@ export default function FarmerLedger() {
           <KpiCard icon="map" label="Counties" value={regionCount} />
         </div>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {registrationTrend.length > 0 && (
+          <LineChartCard
+            title="Farmer Registration Trend"
+            data={registrationTrend}
+            xKey="month"
+            lines={[
+              { key: 'registered', name: 'New Farmers', color: '#2563eb' },
+            ]}
+            height={280}
+            emptyMessage="No registration trend data available."
+          />
+        )}
+        {countyData.length > 0 && (
+          <BarChartCard
+            title="Farmers by County (Top 10)"
+            data={countyData}
+            categoryKey="county"
+            dataKeys={['farmers']}
+            layout="horizontal"
+            height={280}
+            emptyMessage="No county data available."
+          />
+        )}
+      </div>
 
       <FilterBar
         search={search}

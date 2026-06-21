@@ -11,6 +11,9 @@ import SlideOutPanel from '../components/common/SlideOutPanel'
 import FilterBar from '../components/common/FilterBar'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
+import LineChartCard from '../components/charts/LineChartCard'
+import PieChartCard from '../components/charts/PieChartCard'
+import BarChartCard from '../components/charts/BarChartCard'
 
 const tabOptions = [
   { key: 'cycles', label: 'Payment Cycles' },
@@ -74,6 +77,35 @@ export default function Financials() {
   const { data: batchesData, loading: batchesLoading, refetch: refetchBatches } = useApi(`/api/admin/disbursement-batches/?${batchQuery}`)
 
   const fin = finData?.data
+
+  const deductionsPie = useMemo(() => {
+    if (!fin?.deductions_breakdown) return []
+    return Object.entries(fin.deductions_breakdown).map(([key, val]) => ({
+      name: key.replace(/_/g, ' '),
+      value: Number(val),
+    }))
+  }, [fin])
+
+  const payoutLineData = useMemo(() => {
+    if (!fin?.payout_monthly_series) return []
+    return Object.entries(fin.payout_monthly_series)
+      .slice(-12)
+      .map(([month, vals]) => ({
+        month,
+        gross: vals.gross,
+        net: vals.net,
+      }))
+  }, [fin])
+
+  const efficiencyCycleData = useMemo(() => {
+    if (!effData?.data?.cycles) return []
+    return effData.data.cycles.map(c => ({
+      name: c.cycle_name,
+      computation: c.computation_days,
+      approval: c.approval_days,
+      disbursement: c.disbursement_days,
+    }))
+  }, [effData])
 
   const execAction = async (url, body = {}) => {
     setActionLoading(true)
@@ -215,43 +247,35 @@ export default function Financials() {
             </div>
           )}
 
-          {fin?.deductions_breakdown && Object.keys(fin.deductions_breakdown).length > 0 && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-6">
-              <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Deductions Breakdown</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(fin.deductions_breakdown).map(([key, val]) => (
-                  <div key={key} className="p-3 bg-surface-container rounded-lg">
-                    <p className="text-[10px] uppercase font-bold text-on-surface-variant">{key.replace(/_/g, ' ')}</p>
-                    <p className="font-data-mono text-headline-sm text-on-surface">KES {Number(val).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {deductionsPie.length > 0 && (
+              <PieChartCard
+                title="Deductions Breakdown"
+                data={deductionsPie}
+                dataKey="value"
+                nameKey="name"
+                height={300}
+                showPercent
+                emptyMessage="No deductions data available."
+              />
+            )}
+            {payoutLineData.length > 0 && (
+              <LineChartCard
+                title="Monthly Payout Trend"
+                data={payoutLineData}
+                xKey="month"
+                lines={[
+                  { key: 'gross', name: 'Gross Payout', color: '#2563eb' },
+                  { key: 'net', name: 'Net Payout', color: '#059669' },
+                ]}
+                yFormatter={(v) => `KES ${(v / 1000).toFixed(0)}k`}
+                height={300}
+                emptyMessage="No payout data available."
+              />
+            )}
+          </div>
 
-          {fin?.payout_monthly_series && fin.payout_monthly_series.length > 0 && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
-              <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Monthly Payout Trend</h4>
-              <div className="space-y-2">
-                {fin.payout_monthly_series.slice(-12).map((m) => {
-                  const maxVal = Math.max(...fin.payout_monthly_series.map(x => x.amount))
-                  return (
-                    <div key={m.month} className="flex items-center gap-4">
-                      <span className="text-label-md font-medium text-on-surface-variant w-24">{m.month}</span>
-                      <div className="flex-1 h-6 bg-surface-container rounded-lg overflow-hidden">
-                        <div className="h-full bg-primary transition-all" style={{ width: `${(m.amount / maxVal) * 100}%` }} />
-                      </div>
-                      <span className="font-data-mono text-label-md text-on-surface-variant w-28 text-right">
-                        KES {m.amount?.toLocaleString()}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {!fin && !loading && (
+          {!fin && !loading && deductionsPie.length === 0 && payoutLineData.length === 0 && (
             <div className="text-center py-12 text-on-surface-variant">
               <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">payments</span>
               <p>No financial data available for the selected period.</p>
@@ -355,45 +379,20 @@ export default function Financials() {
                 <KpiCard icon="replay" label="Cycle Count" value={effData?.data?.averages?.cycle_count || 0} />
               </div>
 
-              {effData?.data?.cycles?.length > 0 && (
-                <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mb-6">
-                  <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Cycle Timeline</h4>
-                  <div className="space-y-4">
-                    {effData.data.cycles.map((c, i) => {
-                      const total = c.total_days || 1
-                      const compPct = (c.computation_days / total) * 100
-                      const apprPct = (c.approval_days / total) * 100
-                      const disbPct = (c.disbursement_days / total) * 100
-                      return (
-                        <div key={i}>
-                          <div className="flex justify-between text-label-md font-medium mb-1.5">
-                            <span className="text-on-surface">{c.cycle_name}</span>
-                            <span className="text-on-surface-variant">{c.total_days} days · <StatusBadge status={c.status?.toLowerCase() === 'completed' ? 'completed' : c.status?.toLowerCase() === 'locked' ? 'locked' : 'draft'} label={c.status} /></span>
-                          </div>
-                          <div className="h-6 w-full bg-surface-container rounded-lg overflow-hidden flex">
-                            {c.computation_days > 0 && <div className="h-full bg-primary transition-all" style={{ width: `${compPct}%` }} title={`Computation: ${c.computation_days}d`} />}
-                            {c.approval_days > 0 && <div className="h-full bg-primary-fixed transition-all" style={{ width: `${apprPct}%` }} title={`Approval: ${c.approval_days}d`} />}
-                            {c.disbursement_days > 0 && <div className="h-full bg-secondary transition-all" style={{ width: `${disbPct}%` }} title={`Disbursement: ${c.disbursement_days}d`} />}
-                          </div>
-                          <div className="flex gap-4 mt-1 text-[10px] text-on-surface-variant">
-                            {c.computation_days > 0 && <span>Computation: {c.computation_days}d</span>}
-                            {c.approval_days > 0 && <span>Approval: {c.approval_days}d</span>}
-                            {c.disbursement_days > 0 && <span>Disbursement: {c.disbursement_days}d</span>}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="flex gap-4 mt-4 pt-3 border-t border-outline-variant/50">
-                    <span className="flex items-center gap-1.5 text-label-md text-on-surface-variant"><span className="w-3 h-3 rounded-sm bg-primary" /> Computation</span>
-                    <span className="flex items-center gap-1.5 text-label-md text-on-surface-variant"><span className="w-3 h-3 rounded-sm bg-primary-fixed" /> Approval</span>
-                    <span className="flex items-center gap-1.5 text-label-md text-on-surface-variant"><span className="w-3 h-3 rounded-sm bg-secondary" /> Disbursement</span>
-                  </div>
-                </div>
+              {efficiencyCycleData.length > 0 && (
+                <BarChartCard
+                  title="Cycle Timeline"
+                  data={efficiencyCycleData}
+                  categoryKey="name"
+                  dataKeys={['computation', 'approval', 'disbursement']}
+                  stacked
+                  height={400}
+                  emptyMessage="No cycle timeline data available."
+                />
               )}
 
               {effData?.data?.cycles?.length > 0 && (
-                <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
+                <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl mt-6">
                   <h4 className="font-headline-sm text-headline-sm text-on-surface mb-4">Cycle Details</h4>
                   <div className="overflow-x-auto">
                     <table className="w-full">

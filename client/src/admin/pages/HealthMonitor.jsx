@@ -27,9 +27,9 @@ export default function HealthMonitor() {
   const fetchAll = async () => {
     try {
       const [h, m, c] = await Promise.all([
-        apiFetch('/api/admin/health/').catch(() => ({ db: false, redis: false, celery: false, worker_count: 0 })),
-        apiFetch('/api/admin/migration-health/').catch(() => ({ up_to_date: false, count: -1, unapplied_migrations: [] })),
-        apiFetch('/api/admin/celery/tasks/').catch(() => ({ active_count: 0, reserved_count: 0, scheduled_count: 0, tasks: { active: [], reserved: [], scheduled: [] } })),
+        apiFetch('/api/admin/health/').then(r => r.json()).catch(() => ({ db: false, redis: false, celery: false, worker_count: 0 })),
+        apiFetch('/api/admin/migration-health/').then(r => r.json()).catch(() => ({ up_to_date: false, count: -1, unapplied_migrations: [] })),
+        apiFetch('/api/admin/celery/tasks/').then(r => r.json()).catch(() => ({ active_count: 0, reserved_count: 0, scheduled_count: 0, tasks: { active: [], reserved: [], scheduled: [] } })),
       ])
       setHealth(h)
       setMigrations(m)
@@ -77,7 +77,7 @@ export default function HealthMonitor() {
                 onClick={() => setAutoRefresh(!autoRefresh)}
                 className={`relative w-10 h-5 rounded-full transition-colors ${autoRefresh ? 'bg-primary' : 'bg-surface-container-high'}`}
               >
-                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${autoRefresh ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${autoRefresh ? 'left-[22px]' : 'left-0.5'}`} />
               </button>
             </label>
           </div>

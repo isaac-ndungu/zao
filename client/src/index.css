@@ -49,13 +49,13 @@
   --color-outline-variant: #bfc9c1;
   --color-on-primary-fixed: #002114;
 
-  --font-display-md: "Instrument Serif", serif;
+  --font-display-md: "Merriweather", serif;
   --font-data-mono: "DM Mono", monospace;
   --font-body-lg: "DM Sans", sans-serif;
   --font-label-md: "DM Sans", sans-serif;
   --font-data-mono-sm: "DM Mono", monospace;
-  --font-headline-lg: "Instrument Serif", serif;
-  --font-display-lg: "Instrument Serif", serif;
+  --font-headline-lg: "Merriweather", serif;
+  --font-display-lg: "Merriweather", serif;
   --font-body-md: "DM Sans", sans-serif;
   --font-headline-sm: "DM Sans", sans-serif;
 
