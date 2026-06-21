@@ -170,6 +170,8 @@ class LegalAcceptanceMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
+            if request.user.role == 'admin':
+                return self.get_response(request)
             path = request.path_info
             if not any(path.startswith(p) for p in self.SAFE_PATHS):
                 from apps.legal.models import LegalDocument, LegalAcceptance

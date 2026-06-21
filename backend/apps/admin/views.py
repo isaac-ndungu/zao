@@ -66,6 +66,7 @@ from .serializers import (
     AdminInviteSerializer,
     AdminDashboardSerializer,
     AdminDeliverySerializer,
+    AdminDeliveryAssignGradeSerializer,
     AdminDisbursementBatchSerializer,
     AdminFarmerPaymentHoldSerializer,
     AdminFarmerPaymentSerializer,
@@ -944,7 +945,6 @@ class AdminDeliveryAssignGradeView(APIView):
         from apps.grading.models import Grade
         from apps.grading.views import update_delivery_from_grade
         from apps.grading.tasks import update_inventory_on_grade
-        from .serializers import AdminDeliveryAssignGradeSerializer
 
         try:
             delivery = Delivery.objects.select_related('cooperative').get(pk=pk)
