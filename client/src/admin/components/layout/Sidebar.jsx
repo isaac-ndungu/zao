@@ -47,7 +47,6 @@ export default function Sidebar({ mobileOpen, onClose }) {
     <aside className="w-64 h-full bg-primary flex flex-col py-6 px-4">
       <div className="mb-10 px-2">
         <h1 className="font-headline-lg text-headline-lg font-bold text-on-primary">Zao Operations</h1>
-        <p className="text-on-primary/60 font-label-md text-label-md">Central Rift Coop</p>
       </div>
 
       <nav className="flex-1 space-y-1">

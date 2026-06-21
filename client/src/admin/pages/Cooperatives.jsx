@@ -65,9 +65,20 @@ export default function Cooperatives() {
     try {
       const res = await apiFetch(url, { method: 'POST', ...opts })
       if (!res.ok) throw new Error(await res.text())
-      showToast({ type: 'success', message: 'Cooperative updated.' })
+      const msg = url.includes('activate') ? 'activated' : url.includes('deactivate') ? 'deactivated' : url.includes('delete') ? 'deleted' : url.includes('restore') ? 'restored' : 'updated'
+      showToast({ type: 'success', message: `Cooperative ${msg}.` })
       setModalConfig({ open: false })
       refetch()
+      const result = await res.json().catch(() => ({}))
+      if (panelItem && typeof result === 'object') {
+        const { detail, message, error, status, ...updates } = result
+        const safeUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([, v]) => v !== null && typeof v !== 'object')
+        )
+        if (Object.keys(safeUpdates).length > 0) {
+          setPanelItem(prev => ({ ...prev, ...safeUpdates }))
+        }
+      }
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
     }

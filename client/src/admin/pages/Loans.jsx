@@ -114,6 +114,16 @@ export default function Loans() {
       showToast({ type: 'success', message: 'Loan updated.' })
       setModalConfig({ open: false })
       refetch()
+      const result = await res.json().catch(() => ({}))
+      if (panelItem && typeof result === 'object') {
+        const { detail, message, error, status, ...updates } = result
+        const safeUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([, v]) => v !== null && typeof v !== 'object')
+        )
+        if (Object.keys(safeUpdates).length > 0) {
+          setPanelItem(prev => ({ ...prev, ...safeUpdates }))
+        }
+      }
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
     }

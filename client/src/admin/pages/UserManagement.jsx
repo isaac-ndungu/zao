@@ -106,6 +106,16 @@ export default function UserManagement() {
       const msg = url.includes('activate') ? 'activated' : url.includes('deactivate') ? 'deactivated' : url.includes('delete') ? 'soft-deleted' : url.includes('restore') ? 'restored' : url.includes('toggle') ? '2FA toggled' : url.includes('reset') ? 'password reset' : url.includes('logout') ? 'logged out' : url.includes('impersonate') ? 'impersonated' : 'action completed'
       showToast({ type: 'success', message: `User ${msg}.` })
       refetch()
+      const result = await res.json().catch(() => ({}))
+      if (panelUser && typeof result === 'object') {
+        const { detail, message, error, status, ...updates } = result
+        const safeUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([, v]) => v !== null && typeof v !== 'object')
+        )
+        if (Object.keys(safeUpdates).length > 0) {
+          setPanelUser(prev => ({ ...prev, ...safeUpdates }))
+        }
+      }
     } catch (e) {
       showToast({ type: 'error', message: `Action failed: ${e.message}` })
     } finally {

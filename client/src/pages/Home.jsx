@@ -1,45 +1,13 @@
 import { Link } from 'react-router-dom'
 import {
-  HiOutlineUsers,
-  HiOutlineBanknotes,
-  HiOutlineArrowPath,
-  HiOutlineArrowTrendingUp,
-  HiOutlineCheckCircle,
-  HiOutlineStar,
   HiOutlineChartBarSquare,
   HiOutlineBolt,
   HiOutlineBuildingLibrary,
-  HiOutlineArrowRight,
   HiOutlineDevicePhoneMobile,
   HiOutlineWifi,
 } from 'react-icons/hi2'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-
-const KPIS = [
-  {
-    label: 'Active Farmers',
-    value: '12,482',
-    icon: HiOutlineUsers,
-    trend: '+14% this month',
-    trendIcon: HiOutlineArrowTrendingUp,
-    trendColor: 'text-secondary',
-  },
-  {
-    label: 'Payments Processed',
-    value: 'KES 42.8M',
-    icon: HiOutlineBanknotes,
-    note: 'Real-time settlement',
-    noteIcon: HiOutlineCheckCircle,
-  },
-  {
-    label: 'Produce Graded',
-    value: '850 Tons',
-    icon: HiOutlineArrowPath,
-    note: '98% Grade A quality',
-    noteIcon: HiOutlineStar,
-  },
-]
 
 const FEATURES = [
   {
@@ -116,26 +84,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-stack-lg px-container-margin max-w-7xl mx-auto -mt-24 relative z-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-stack-md">
-            {KPIS.map((kpi) => (
-              <div key={kpi.label} className="glass-card p-stack-lg rounded-xl shadow-sm">
-                <div className="flex items-center justify-between mb-stack-sm">
-                  <span className="font-label-md text-label-md text-on-surface-variant uppercase">{kpi.label}</span>
-                  <kpi.icon className="w-6 h-6 text-primary" />
-                </div>
-                <div className="font-display-md text-display-md text-primary">{kpi.value}</div>
-                <div className="flex items-center gap-1 mt-stack-xs">
-                  {kpi.trendIcon && <kpi.trendIcon className={`w-4 h-4 ${kpi.trendColor || 'text-secondary'}`} />}
-                  {kpi.noteIcon && <kpi.noteIcon className="w-4 h-4 text-secondary" />}
-                  <span className={`font-data-mono-sm text-data-mono-sm ${kpi.trendColor || 'text-on-surface-variant'}`}>
-                    {kpi.trend || kpi.note}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+
 
         <section className="py-stack-lg px-container-margin max-w-7xl mx-auto">
           <div className="text-center mb-stack-lg">
@@ -184,31 +133,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-surface-container-lowest py-stack-lg px-container-margin">
-          <div className="max-w-7xl mx-auto bg-primary rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-2xl">
-            <div className="md:w-1/2 h-[400px] md:h-auto overflow-hidden">
-              <img
-                className="w-full h-full object-cover"
-                alt="Kenyan farmer with tablet"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIjhoCVtedmXupuPZX32Gtlx4WrDlCxhSCfey3bNal1VNk-iwXs8Vt6t3accaIg8ieozij83-2FY1SGpNQqSQIa-DJD6QC1r2HStvv2nohZLaSPK1VnRpw-3nmn_fjSPVYJtlgtdJ0h6IvyAdb5ahqnlJ_JjE7_NW7qaYtnMQ02VNwtQ4lTacWyDvhp5hHn0qIdnA176u6ME9y8RRJQB0sTOArhznt3b6c0RLzFF5CpS3QfWNTa4tsXLJmdxNgTVNalupic8vzmnM"
-              />
-            </div>
-            <div className="md:w-1/2 p-stack-lg md:p-16 flex flex-col justify-center text-white">
-              <HiOutlineChartBarSquare className="w-16 h-16 text-tertiary-fixed mb-stack-md" />
-              <h2 className="font-display-md text-display-md mb-stack-md">
-                &ldquo;Since joining the Zao network, my income is visible and my payments are certain. I can finally plan for my family's
-                future.&rdquo;
-              </h2>
-              <div className="flex items-center gap-stack-md">
-                <div className="h-px w-12 bg-secondary-fixed" />
-                <div>
-                  <p className="font-headline-sm text-headline-sm">Samuel Mwangi</p>
-                  <p className="font-body-md text-body-md text-secondary-fixed">Smallholder Coffee Farmer, Nyeri County</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+
 
         <section className="py-24 text-center px-container-margin bg-surface-bright">
           <div className="max-w-3xl mx-auto">

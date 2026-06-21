@@ -164,7 +164,7 @@ class AdminUserActivateView(APIView):
             new_value={'is_active': True},
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': 'User activated.'})
+        return Response({'detail': 'User activated.', 'is_active': True})
 
 
 class AdminUserDeactivateView(APIView):
@@ -204,7 +204,7 @@ class AdminUserDeactivateView(APIView):
             new_value={'is_active': False, 'notify': notify},
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': 'User deactivated.', 'notify': notify})
+        return Response({'detail': 'User deactivated.', 'is_active': False, 'notify': notify})
 
 
 class AdminUserResetPasswordView(APIView):
@@ -474,7 +474,7 @@ class AdminCooperativeActivateView(APIView):
             new_value={'is_active': True},
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': 'Cooperative activated.'})
+        return Response({'detail': 'Cooperative activated.', 'is_active': True})
 
 
 class AdminCooperativeDeactivateView(APIView):
@@ -506,6 +506,7 @@ class AdminCooperativeDeactivateView(APIView):
             )
         return Response({
             'detail': 'Cooperative deactivated.',
+            'is_active': False,
             'deactivated_users': deactivated_count,
         })
 

@@ -183,6 +183,16 @@ export default function ProduceReceipts() {
       if (!res.ok) throw new Error(await res.text())
       showToast({ type: 'success', message: `Delivery ${statusDelivery.batch_id} status changed to ${statusTarget}.` })
       refetch()
+      const result = await res.json().catch(() => ({}))
+      if (panelDelivery && typeof result === 'object') {
+        const { detail, message, error, status, ...updates } = result
+        const safeUpdates = Object.fromEntries(
+          Object.entries(updates).filter(([, v]) => v !== null && typeof v !== 'object')
+        )
+        if (Object.keys(safeUpdates).length > 0) {
+          setPanelDelivery(prev => ({ ...prev, ...safeUpdates }))
+        }
+      }
       setStatusDelivery(null)
       setStatusTarget('')
     } catch (e) {

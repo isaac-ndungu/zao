@@ -1,22 +1,11 @@
 import {
-  HiOutlineArrowTrendingUp,
-  HiOutlineHandRaised,
-  HiOutlineBuildingLibrary,
   HiOutlineShieldCheck,
   HiOutlineCpuChip,
   HiOutlineCommandLine,
   HiOutlineDocumentText,
-  HiOutlineChartBarSquare,
 } from 'react-icons/hi2'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-
-const METRICS = [
-  { label: 'Farmers Paid', value: 'Hundreds of thousands', icon: HiOutlineArrowTrendingUp },
-  { label: 'Cooperatives Served', value: '480', icon: HiOutlineHandRaised, sub: 'Across 12 Counties' },
-  { label: 'Annual GTV', value: 'KSh 42B', icon: HiOutlineBuildingLibrary, sub: 'Processed Securely' },
-  { label: 'Audit Trail', value: '100%', icon: HiOutlineShieldCheck, sub: 'Immutable Records' },
-]
 
 export default function About() {
   return (
@@ -50,37 +39,7 @@ export default function About() {
           </div>
         </section>
 
-        <section className="py-24 bg-surface-container-low">
-          <div className="max-w-7xl mx-auto px-container-margin">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-stack-lg">
-              <div className="max-w-xl">
-                <h2 className="font-headline-lg text-headline-lg text-primary mb-stack-sm">Our Impact</h2>
-                <p className="font-body-md text-body-md text-on-surface-variant">
-                  Tangible results driving rural prosperity through data-driven cooperative management.
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-data-mono text-data-mono text-primary font-bold">LATEST UPDATE: NOV 2024</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {METRICS.map((m) => (
-                <div key={m.label} className="bg-white border border-[#D8F3DC] p-8 hover:shadow-md transition-shadow">
-                  <p className="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider mb-stack-xs">
-                    {m.label}
-                  </p>
-                  <p className="font-display-md text-display-md text-primary mb-stack-sm">{m.value}</p>
-                  {m.sub && (
-                    <div className="flex items-center gap-1 text-primary">
-                      <m.icon className="w-4 h-4" />
-                      <span className="font-data-mono-sm text-data-mono-sm">{m.sub}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         <section className="py-24">
           <div className="max-w-7xl mx-auto px-container-margin">

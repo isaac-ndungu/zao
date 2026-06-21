@@ -87,18 +87,7 @@ export default function ForFarmers() {
                   </div>
                   <div className="space-y-3">
                     <div className="text-[12px] font-bold text-on-surface-variant uppercase">Recent Harvests</div>
-                    {[
-                      { produce: 'Coffee (Cherry)', date: 'AUG 14, 2024', qty: '82.5 KG' },
-                      { produce: 'Dairy (Morning)', date: 'AUG 13, 2024', qty: '12.0 L' },
-                    ].map((h) => (
-                      <div key={h.produce} className="bg-white p-2 rounded border border-surface-variant flex justify-between items-center">
-                        <div>
-                          <div className="text-[12px] font-bold text-on-surface">{h.produce}</div>
-                          <div className="text-[10px] text-on-surface-variant font-data-mono">{h.date}</div>
-                        </div>
-                        <div className="text-[12px] font-bold text-secondary">{h.qty}</div>
-                      </div>
-                    ))}
+                    <div className="text-sm text-on-surface-variant">No recent harvests</div>
                   </div>
                   <div className="mt-4 p-2 bg-tertiary-fixed rounded border border-tertiary/20">
                     <div className="text-[10px] font-bold text-tertiary uppercase">Input Loans</div>
@@ -158,28 +147,9 @@ export default function ForFarmers() {
                     </tr>
                   </thead>
                   <tbody className="font-data-mono-sm text-data-mono-sm">
-                    {[
-                      { date: '2024-08-12', produce: 'Dairy (Morning)', qty: '14.5 L', status: 'VERIFIED' },
-                      { date: '2024-08-11', produce: 'Cherry A1', qty: '120.0 KG', status: 'VERIFIED' },
-                      { date: '2024-08-10', produce: 'Dairy (Evening)', qty: '8.2 L', status: 'PENDING' },
-                    ].map((row, i) => (
-                      <tr key={row.date} className={i % 2 === 0 ? 'bg-white border-b border-surface-variant' : 'bg-surface-container-low border-b border-surface-variant'}>
-                        <td className="p-3">{row.date}</td>
-                        <td className="p-3">{row.produce}</td>
-                        <td className="p-3">{row.qty}</td>
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] ${
-                              row.status === 'VERIFIED'
-                                ? 'bg-secondary-container text-on-secondary-container'
-                                : 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
-                            }`}
-                          >
-                            {row.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    <tr>
+                      <td colSpan={4} className="p-3 text-center text-on-surface-variant">No delivery records yet</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
