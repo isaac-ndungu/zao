@@ -68,7 +68,7 @@ export default function FilterBar({ search, onSearchChange, filters = [], filter
         {onExport && (
           <button
             onClick={onExport}
-            className="flex items-center gap-1.5 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
             title="Export CSV"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>

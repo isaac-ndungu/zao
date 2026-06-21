@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useApi } from '../hooks/useApi'
-import { apiFetch } from '../api/client'
+import { apiFetch, exportCsv, setAccessToken } from '../api/client'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
@@ -173,6 +173,14 @@ export default function UserManagement() {
       const res = await apiFetch(`/api/admin/impersonate/${user.id}/`, { method: 'POST' })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
+      setAccessToken(data.access_token)
+      sessionStorage.setItem('impersonation', JSON.stringify({
+        access_token: data.access_token,
+        expires_at: Date.now() + (data.expires_in || 900) * 1000,
+        user_id: data.user_id,
+        role: data.role,
+        cooperative_id: data.cooperative_id,
+      }))
       showToast({ type: 'success', message: `Impersonating ${user.email}. Redirecting...` })
       setTimeout(() => window.location.href = '/', 1000)
     } catch (e) {
@@ -319,7 +327,7 @@ export default function UserManagement() {
             filterValues={filters}
             onFilterChange={setFilters}
             onClear={() => { setSearch(''); setFilters({}); setPage(1) }}
-            onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.role) p.set('role', filters.role); if (filters.is_active) p.set('is_active', filters.is_active); p.set('export', 'csv'); window.open(`/api/admin/users/?${p}`, '_blank') }}
+            onExport={() => { const p = new URLSearchParams(); if (search) p.set('search', search); if (filters.role) p.set('role', filters.role); if (filters.is_active) p.set('is_active', filters.is_active); p.set('export', 'csv'); exportCsv(`/api/admin/users/?${p}`) }}
           />
 
           {selectedIds.length > 0 && (
@@ -385,7 +393,7 @@ export default function UserManagement() {
                         <span className="material-symbols-outlined text-[16px]">logout</span>Force Logout
                       </button>
                       <button onClick={() => handleImpersonate(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">person_impersonated</span>Impersonate
+                        <span className="material-symbols-outlined text-[16px]">switch_account</span>Impersonate
                       </button>
                       <div className="border-t border-outline-variant my-1" />
                       <button onClick={() => handleUserAction(user, 'delete')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
@@ -414,7 +422,7 @@ export default function UserManagement() {
             filterValues={inviteFilters}
             onFilterChange={setInviteFilters}
             onClear={() => { setInviteFilters({}); setInvitePage(1) }}
-            onExport={() => { const p = new URLSearchParams(); if (inviteFilters.status) p.set('status', inviteFilters.status); p.set('export', 'csv'); window.open(`/api/admin/auth/invites/?${p}`, '_blank') }}
+            onExport={() => { const p = new URLSearchParams(); if (inviteFilters.status) p.set('status', inviteFilters.status); p.set('export', 'csv'); exportCsv(`/api/admin/auth/invites/?${p}`) }}
           />
           {inviteListLoading ? <TableSkeleton /> : (
             <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">

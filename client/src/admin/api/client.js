@@ -80,3 +80,23 @@ export async function exportCsv(url) {
   document.body.removeChild(a)
   URL.revokeObjectURL(blobUrl)
 }
+
+export function getImpersonation() {
+  try {
+    const raw = sessionStorage.getItem('impersonation')
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (Date.now() >= data.expires_at) {
+      sessionStorage.removeItem('impersonation')
+      return null
+    }
+    return data
+  } catch {
+    sessionStorage.removeItem('impersonation')
+    return null
+  }
+}
+
+export function clearImpersonation() {
+  sessionStorage.removeItem('impersonation')
+}

@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
-import { apiFetch, setAccessToken, clearAccessToken } from '../api/client'
+import { apiFetch, setAccessToken, clearAccessToken, getImpersonation, clearImpersonation } from '../api/client'
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const AdminAuthContext = createContext(null)
@@ -11,6 +11,20 @@ export function AdminAuthProvider({ children }) {
   useEffect(() => {
     ;(async () => {
       try {
+        const imp = getImpersonation()
+        if (imp) {
+          setAccessToken(imp.access_token)
+          const meRes = await apiFetch('/api/users/me/')
+          if (meRes.ok) {
+            const me = await meRes.json()
+            me.is_impersonated = true
+            setUser(me)
+            setLoading(false)
+            return
+          }
+          clearImpersonation()
+        }
+
         // Try refreshing token on mount to check if user is already logged in
         const res = await apiFetch('/api/auth/refresh/', {
           method: 'POST',
@@ -104,6 +118,7 @@ export function AdminAuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(async () => {
+    clearImpersonation()
     try {
       await apiFetch('/api/auth/logout/', { method: 'POST' })
     } catch {
@@ -113,16 +128,24 @@ export function AdminAuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  const stopImpersonation = useCallback(() => {
+    clearImpersonation()
+    clearAccessToken()
+    window.location.href = '/'
+  }, [])
+
   const value = {
     user,
     loading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
+    isImpersonated: user?.is_impersonated || false,
     login,
     requestOtp,
     verifyOtp,
     logout,
     refreshUser,
+    stopImpersonation,
   }
 
   return (
