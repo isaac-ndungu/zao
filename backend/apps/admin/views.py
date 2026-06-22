@@ -589,6 +589,223 @@ class AdminCooperativePurgeView(APIView):
         return Response({'detail': 'Cooperative permanently purged.'})
 
 
+class AdminFarmerBinView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminFarmerSerializer
+
+    def get(self, request):
+        qs = Farmer.objects.trashed_only().select_related('cooperative').order_by('-deleted_at')
+        return Response(AdminFarmerSerializer(qs[:200], many=True).data)
+
+
+class AdminFarmerRestoreView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminRestoreConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        serializer = AdminRestoreConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            farmer = Farmer.objects.all_with_trashed().get(pk=pk)
+        except Farmer.DoesNotExist:
+            return Response({'detail': 'Farmer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not farmer.deleted_at:
+            return Response({'detail': 'Farmer is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        farmer.restore()
+        log_audit(
+            actor=request.user, resource_type='farmer', resource_id=farmer.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'restored': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Farmer restored.', 'restored_at': farmer.restored_at})
+
+
+class AdminDeliveryBinView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminDeliverySerializer
+
+    def get(self, request):
+        qs = Delivery.objects.trashed_only().select_related(
+            'cooperative', 'farmer', 'grader',
+        ).order_by('-deleted_at')
+        return Response(AdminDeliverySerializer(qs[:200], many=True).data)
+
+
+class AdminDeliveryRestoreView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminRestoreConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        serializer = AdminRestoreConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            delivery = Delivery.objects.all_with_trashed().get(pk=pk)
+        except Delivery.DoesNotExist:
+            return Response({'detail': 'Delivery not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not delivery.deleted_at:
+            return Response({'detail': 'Delivery is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        delivery.restore()
+        log_audit(
+            actor=request.user, resource_type='delivery', resource_id=delivery.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'restored': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Delivery restored.', 'restored_at': delivery.restored_at})
+
+
+class AdminDeliveryPurgeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    throttle_classes = [SuperAdminSensitiveThrottle]
+    serializer_class = AdminPurgeConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            delivery = Delivery.objects.all_with_trashed().get(pk=pk)
+        except Delivery.DoesNotExist:
+            return Response({'detail': 'Delivery not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not delivery.deleted_at:
+            return Response({'detail': 'Delivery is not deleted. Soft-delete first.'}, status=status.HTTP_400_BAD_REQUEST)
+        if hasattr(delivery, 'grade_record') and delivery.grade_record is not None:
+            return Response(
+                {'detail': 'Cannot purge a graded delivery. Delete the grade record first.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        delivery.hard_delete()
+        log_audit(
+            actor=request.user, resource_type='delivery', resource_id=pk,
+            action=AuditAction.ADMIN_PURGE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Delivery permanently purged.'})
+
+
+class AdminLoanBinView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminLoanSerializer
+
+    def get(self, request):
+        qs = Loan.objects.trashed_only().select_related(
+            'cooperative', 'farmer',
+        ).order_by('-deleted_at')
+        return Response(AdminLoanSerializer(qs[:200], many=True).data)
+
+
+class AdminLoanRestoreView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminRestoreConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        serializer = AdminRestoreConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            loan = Loan.objects.all_with_trashed().get(pk=pk)
+        except Loan.DoesNotExist:
+            return Response({'detail': 'Loan not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not loan.deleted_at:
+            return Response({'detail': 'Loan is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        loan.restore()
+        log_audit(
+            actor=request.user, resource_type='loan', resource_id=loan.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'restored': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Loan restored.', 'restored_at': loan.restored_at})
+
+
+class AdminLoanPurgeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    throttle_classes = [SuperAdminSensitiveThrottle]
+    serializer_class = AdminPurgeConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            loan = Loan.objects.all_with_trashed().get(pk=pk)
+        except Loan.DoesNotExist:
+            return Response({'detail': 'Loan not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not loan.deleted_at:
+            return Response({'detail': 'Loan is not deleted. Soft-delete first.'}, status=status.HTTP_400_BAD_REQUEST)
+        if loan.disbursed_at is not None or loan.repayments.exists():
+            return Response(
+                {'detail': 'Cannot purge a disbursed or repaid loan. It has associated financial records.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        loan.hard_delete()
+        log_audit(
+            actor=request.user, resource_type='loan', resource_id=pk,
+            action=AuditAction.ADMIN_PURGE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Loan permanently purged.'})
+
+
+class AdminPaymentCycleBinView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminPaymentCycleSerializer
+
+    def get(self, request):
+        qs = PaymentCycle.objects.trashed_only().select_related('cooperative').order_by('-deleted_at')
+        return Response(AdminPaymentCycleSerializer(qs[:200], many=True).data)
+
+
+class AdminPaymentCycleRestoreView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminRestoreConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        serializer = AdminRestoreConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            cycle = PaymentCycle.objects.all_with_trashed().get(pk=pk)
+        except PaymentCycle.DoesNotExist:
+            return Response({'detail': 'Payment cycle not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not cycle.deleted_at:
+            return Response({'detail': 'Payment cycle is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        cycle.restore()
+        log_audit(
+            actor=request.user, resource_type='payment_cycle', resource_id=cycle.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'restored': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Payment cycle restored.', 'restored_at': cycle.restored_at})
+
+
+class AdminPaymentCyclePurgeView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    throttle_classes = [SuperAdminSensitiveThrottle]
+    serializer_class = AdminPurgeConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            cycle = PaymentCycle.objects.all_with_trashed().get(pk=pk)
+        except PaymentCycle.DoesNotExist:
+            return Response({'detail': 'Payment cycle not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not cycle.deleted_at:
+            return Response({'detail': 'Payment cycle is not deleted. Soft-delete first.'}, status=status.HTTP_400_BAD_REQUEST)
+        if cycle.farmer_payments.exists():
+            return Response(
+                {'detail': 'Cannot purge a payment cycle that has farmer payments. Delete farmer payments first.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        cycle.hard_delete()
+        log_audit(
+            actor=request.user, resource_type='payment_cycle', resource_id=pk,
+            action=AuditAction.ADMIN_PURGE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Payment cycle permanently purged.'})
+
+
 class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminDashboardSerializer

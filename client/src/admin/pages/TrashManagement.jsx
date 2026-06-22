@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { apiFetch } from '../api/client'
 import ConfirmModal from '../components/common/ConfirmModal'
-import KpiCard from '../components/common/KpiCard'
 import { useToast } from '../contexts/ToastContext'
-import { KpiSkeleton } from '../components/common/Skeleton'
 
 const sectionDefaults = {
   user: { label: 'Users', icon: 'group', listEndpoint: '/api/admin/bin/users/', restorePrefix: '/api/admin/users', purgePrefix: '/api/admin/bin/users' },
@@ -14,29 +12,46 @@ const sectionDefaults = {
   paymentcycle: { label: 'Payment Cycles', icon: 'payments', listEndpoint: '/api/admin/bin/payment-cycles/', restorePrefix: '/api/admin/payment-cycles', purgePrefix: '/api/admin/bin/payment-cycles' },
 }
 
+const sections = Object.keys(sectionDefaults)
+  .map(key => ({ key, ...sectionDefaults[key] }))
+  .sort((a, b) => a.label.localeCompare(b.label))
+
 export default function TrashManagement() {
   const { showToast } = useToast()
   const [expanded, setExpanded] = useState(null)
   const [binSummary, setBinSummary] = useState(null)
   const [trashData, setTrashData] = useState({})
+  const [searchFilters, setSearchFilters] = useState({})
   const [loading, setLoading] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
 
-  const fetchSummary = useCallback(async () => {
-    setLoading(true)
+  const refetchSummary = async () => {
     try {
       const res = await apiFetch('/api/admin/bin/')
       const data = await res.json()
       setBinSummary(data)
-    } catch (e) {
+    } catch {
       showToast({ type: 'error', message: 'Failed to fetch bin summary.' })
-    } finally {
-      setLoading(false)
     }
-  }, [showToast])
+  }
 
-  useEffect(() => { fetchSummary() }, [fetchSummary])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      try {
+        const res = await apiFetch('/api/admin/bin/')
+        const data = await res.json()
+        if (!cancelled) setBinSummary(data)
+      } catch {
+        if (!cancelled) showToast({ type: 'error', message: 'Failed to fetch bin summary.' })
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [showToast])
 
   const toggleSection = async (key) => {
     if (expanded === key) { setExpanded(null); return }
@@ -48,7 +63,7 @@ export default function TrashManagement() {
         const res = await apiFetch(section.listEndpoint)
         const data = await res.json()
         setTrashData(prev => ({ ...prev, [key]: Array.isArray(data) ? data : data?.results || [] }))
-      } catch (e) {
+      } catch {
         showToast({ type: 'error', message: `Failed to load ${key} records.` })
       }
     }
@@ -71,9 +86,9 @@ export default function TrashManagement() {
             ...prev,
             [section.key]: Array.isArray(prev[section.key]) ? prev[section.key].filter(i => i.id !== item.id) : [],
           }))
-          fetchSummary()
+          refetchSummary()
           showToast({ type: 'success', message: `${section.label} restored.` })
-        } catch (e) {
+        } catch {
           showToast({ type: 'error', message: `Failed to restore ${section.label.toLowerCase()}.` })
         } finally {
           setActionLoadingId(null)
@@ -101,9 +116,9 @@ export default function TrashManagement() {
             ...prev,
             [section.key]: Array.isArray(prev[section.key]) ? prev[section.key].filter(i => i.id !== item.id) : [],
           }))
-          fetchSummary()
+          refetchSummary()
           showToast({ type: 'success', message: `${section.label} permanently deleted.` })
-        } catch (e) {
+        } catch {
           showToast({ type: 'error', message: `Failed to purge ${section.label.toLowerCase()}.` })
         } finally {
           setActionLoadingId(null)
@@ -114,26 +129,23 @@ export default function TrashManagement() {
   }
 
   const totalTrashed = binSummary
-    ? Object.values(binSummary).filter(v => typeof v === 'number').reduce((s, v) => s + v, 0)
+    ? Object.keys(sectionDefaults).reduce((s, key) => s + ((binSummary[key] ?? binSummary[key + 's'] ?? 0)), 0)
     : 0
 
-  const sections = useMemo(() => {
-    if (!binSummary) return []
-    const keys = new Set([...Object.keys(sectionDefaults), ...Object.keys(binSummary)])
-    return Array.from(keys).map(key => {
-      const def = sectionDefaults[key]
-      if (def) return { key, ...def }
-      const plural = key.endsWith('s') ? key : key + 's'
-      return {
-        key,
-        label: plural.charAt(0).toUpperCase() + plural.slice(1),
-        icon: 'delete',
-        listEndpoint: `/api/admin/bin/${key}/`,
-        restorePrefix: `/api/admin/${key}`,
-        purgePrefix: `/api/admin/bin/${key}`,
-      }
-    }).sort((a, b) => a.label.localeCompare(b.label))
-  }, [binSummary])
+  const itemsForSection = (section) => {
+    const items = trashData[section.key]
+    if (!Array.isArray(items)) return items
+    const search = (searchFilters[section.key] || '').toLowerCase()
+    if (!search) return items
+    return items.filter(item => {
+      const name = item.first_name ? `${item.first_name} ${item.last_name}` : item.name || item.email || item.id
+      return name.toLowerCase().includes(search) || (item.email || '').toLowerCase().includes(search) || (item.id || '').toLowerCase().includes(search)
+    })
+  }
+
+  const canPurge = (sectionKey) => {
+    return sectionKey !== 'farmer'
+  }
 
   return (
     <div>
@@ -143,19 +155,33 @@ export default function TrashManagement() {
       </header>
 
       {loading && !binSummary ? (
-        <KpiSkeleton count={4} />
+        <div className="flex gap-2 mb-6">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-8 w-24 bg-surface-container-high rounded-full animate-pulse" />
+          ))}
+        </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {sections.map(({ key, label, icon }) => (
-              <KpiCard
-                key={key}
-                icon={icon}
-                label={label}
-                value={binSummary?.[key] ?? binSummary?.[key + 's'] ?? 0}
-                highlighted={(binSummary?.[key] ?? binSummary?.[key + 's'] ?? 0) > 0}
-              />
-            ))}
+          <div className="flex flex-wrap gap-2 mb-6">
+            {sections.map(({ key, label, icon }) => {
+              const count = binSummary?.[key] ?? binSummary?.[key + 's'] ?? 0
+              return (
+                <div
+                  key={key}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold ${
+                    count > 0
+                      ? 'bg-error-container text-error'
+                      : 'bg-surface-container-high text-on-surface-variant'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">{icon}</span>
+                  <span>{label}</span>
+                  <span className={`ml-0.5 min-w-[14px] text-center ${count > 0 ? '' : 'text-outline'}`}>
+                    {count}
+                  </span>
+                </div>
+              )
+            })}
           </div>
 
           <div className="flex items-center justify-end mb-4">
@@ -196,42 +222,61 @@ export default function TrashManagement() {
                     </button>
                     {expanded === section.key && (
                       <div className="px-6 pb-4">
+                        <div className="relative mb-3">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-outline">search</span>
+                          <input
+                            type="text"
+                            placeholder={`Search ${section.label.toLowerCase()}...`}
+                            value={searchFilters[section.key] || ''}
+                            onChange={e => setSearchFilters(prev => ({ ...prev, [section.key]: e.target.value }))}
+                            className="w-full pl-9 pr-3 py-2 bg-surface-container rounded-lg text-body-sm text-on-surface placeholder:text-outline border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
                         {trashData[section.key] && Array.isArray(trashData[section.key]) && trashData[section.key].length > 0 ? (
-                          <div className="space-y-2">
-                            {trashData[section.key].map((item) => (
-                              <div key={item.id} className="flex items-center justify-between p-3 bg-surface-container rounded-lg">
-                                <div>
-                                  <p className="font-body-md font-medium text-on-surface">
-                                    {item.first_name ? `${item.first_name} ${item.last_name}` : item.name || item.email || item.id}
-                                  </p>
-                                  <p className="text-label-md text-on-surface-variant">
-                                    {item.email || item.phone_number || item.registration_number || `ID: ${item.id?.slice(0, 8)}...`}
-                                  </p>
-                                  {item.deleted_at && (
-                                    <p className="text-[10px] text-on-surface-variant">
-                                      Deleted: {new Date(item.deleted_at).toLocaleDateString()}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleRestore(item, section)}
-                                    disabled={actionLoadingId === item.id}
-                                    className="px-3 py-1.5 text-[11px] font-bold bg-primary-container text-primary rounded-lg hover:bg-primary-fixed transition-colors disabled:opacity-50"
-                                  >
-                                    {actionLoadingId === item.id ? '...' : 'Restore'}
-                                  </button>
-                                  <button
-                                    onClick={() => handlePurge(item, section)}
-                                    disabled={actionLoadingId === item.id}
-                                    className="px-3 py-1.5 text-[11px] font-bold bg-error-container text-error rounded-lg hover:bg-error/10 transition-colors disabled:opacity-50"
-                                  >
-                                    {actionLoadingId === item.id ? '...' : 'Purge'}
-                                  </button>
-                                </div>
+                          (() => {
+                            const filtered = itemsForSection(section)
+                            return filtered.length > 0 ? (
+                              <div className="space-y-2">
+                                {filtered.map((item) => (
+                                  <div key={item.id} className="flex items-center justify-between p-3 bg-surface-container rounded-lg">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="font-body-md font-medium text-on-surface truncate">
+                                        {item.first_name ? `${item.first_name} ${item.last_name}` : item.name || item.email || item.id}
+                                      </p>
+                                      <p className="text-label-md text-on-surface-variant truncate">
+                                        {item.email || item.phone_number || item.registration_number || `ID: ${item.id?.slice(0, 8)}...`}
+                                      </p>
+                                      {item.deleted_at && (
+                                        <p className="text-[10px] text-on-surface-variant">
+                                          Deleted: {new Date(item.deleted_at).toLocaleDateString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-2 shrink-0 ml-3">
+                                      <button
+                                        onClick={() => handleRestore(item, section)}
+                                        disabled={actionLoadingId === item.id}
+                                        className="px-3 py-1.5 text-[11px] font-bold bg-primary-container text-primary rounded-lg hover:bg-primary-fixed transition-colors disabled:opacity-50"
+                                      >
+                                        {actionLoadingId === item.id ? '...' : 'Restore'}
+                                      </button>
+                                      {canPurge(section.key) && (
+                                        <button
+                                          onClick={() => handlePurge(item, section)}
+                                          disabled={actionLoadingId === item.id}
+                                          className="px-3 py-1.5 text-[11px] font-bold bg-error-container text-error rounded-lg hover:bg-error/10 transition-colors disabled:opacity-50"
+                                        >
+                                          {actionLoadingId === item.id ? '...' : 'Purge'}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
+                            ) : (
+                              <p className="text-center text-body-sm text-on-surface-variant py-4">No matches found.</p>
+                            )
+                          })()
                         ) : (
                           <div className="flex items-center justify-center py-4">
                             <div className="animate-spin rounded-full h-5 w-5 border-b border-primary" />
