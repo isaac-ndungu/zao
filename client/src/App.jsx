@@ -38,7 +38,7 @@ const SeasonalPatterns = lazy(() => import('./admin/pages/SeasonalPatterns'))
 const FarmerRetention = lazy(() => import('./admin/pages/FarmerRetention'))
 const AdminNotFound = lazy(() => import('./admin/pages/NotFound'))
 
-// Farmer pages (placeholder - built out in Phase 4)
+// Farmer pages 
 const FarmerDashboard = lazy(() => import('./farmer/pages/Dashboard'))
 
 function SuspenseFallback() {
@@ -133,22 +133,22 @@ export default function App() {
             <Route path="*" element={<SuspenseWrapper><AdminNotFound /></SuspenseWrapper>} />
           </Route>
 
-          {/* Manager dashboard (Phase 1) */}
+          {/* Manager dashboard }
           <Route path="/manager/*" element={<RolePlaceholder roles={['manager']} />} />
 
-          {/* Grader dashboard (Phase 1) */}
+          {/* Grader dashboard */}
           <Route path="/grader/*" element={<RolePlaceholder roles={['grader']} />} />
 
-          {/* Accountant dashboard (Phase 3) */}
+          {/* Accountant dashboard  */}
           <Route path="/accountant/*" element={<RolePlaceholder roles={['accountant']} />} />
 
-          {/* Internal auditor dashboard (Phase 5) */}
+          {/* Internal auditor dashboard */}
           <Route path="/auditor/*" element={<RolePlaceholder roles={['auditor']} />} />
 
-          {/* External auditor dashboard (Phase 5) */}
+          {/* External auditor dashboard */}
           <Route path="/external-auditor/*" element={<RolePlaceholder roles={['external_auditor']} />} />
 
-          {/* Farmer dashboard (Phase 4) */}
+          {/* Farmer dashboard  */}
           <Route path="/farmer" element={<FarmerRoutes />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<SuspenseWrapper><FarmerDashboard /></SuspenseWrapper>} />
