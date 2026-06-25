@@ -65,6 +65,16 @@ const MyGrades = lazy(() => import('./grader/pages/MyGrades'))
 const GraderSync = lazy(() => import('./grader/pages/Sync'))
 const GraderSettings = lazy(() => import('./grader/pages/Settings'))
 
+// Accountant pages
+const AccountantLayout = lazy(() => import('./accountant/AccountantLayout'))
+const AccountantDashboard = lazy(() => import('./accountant/pages/Dashboard'))
+const AccountantCycles = lazy(() => import('./accountant/pages/Cycles'))
+const AccountantDisbursements = lazy(() => import('./accountant/pages/Disbursements'))
+const AccountantLoans = lazy(() => import('./accountant/pages/Loans'))
+const AccountantDeductions = lazy(() => import('./accountant/pages/Deductions'))
+const AccountantReports = lazy(() => import('./accountant/pages/Reports'))
+const AccountantSettings = lazy(() => import('./accountant/pages/Settings'))
+
 function SuspenseFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -197,8 +207,23 @@ export default function App() {
             <Route path="settings" element={<SuspenseWrapper><GraderSettings /></SuspenseWrapper>} />
           </Route>
 
-          {/* Accountant dashboard  */}
-          <Route path="/accountant/*" element={<RolePlaceholder roles={['accountant']} />} />
+          {/* Accountant dashboard */}
+          <Route path="/accountant" element={
+            <RoleGuard roles={['accountant']}>
+              <LegalAcceptanceGate>
+                <AccountantLayout />
+              </LegalAcceptanceGate>
+            </RoleGuard>
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<SuspenseWrapper><AccountantDashboard /></SuspenseWrapper>} />
+            <Route path="cycles" element={<SuspenseWrapper><AccountantCycles /></SuspenseWrapper>} />
+            <Route path="disbursements" element={<SuspenseWrapper><AccountantDisbursements /></SuspenseWrapper>} />
+            <Route path="loans" element={<SuspenseWrapper><AccountantLoans /></SuspenseWrapper>} />
+            <Route path="deductions" element={<SuspenseWrapper><AccountantDeductions /></SuspenseWrapper>} />
+            <Route path="reports" element={<SuspenseWrapper><AccountantReports /></SuspenseWrapper>} />
+            <Route path="settings" element={<SuspenseWrapper><AccountantSettings /></SuspenseWrapper>} />
+          </Route>
 
           {/* Internal auditor dashboard */}
           <Route path="/auditor/*" element={<RolePlaceholder roles={['auditor']} />} />
