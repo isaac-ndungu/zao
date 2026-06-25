@@ -14,4 +14,12 @@ export default defineConfig({
       usePolling: true,
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        farmer: 'farmer/index.html',
+      },
+    },
+  },
 })
