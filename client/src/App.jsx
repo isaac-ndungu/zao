@@ -57,6 +57,14 @@ const ManagerReports = lazy(() => import('./manager/pages/Reports'))
 const ManagerRoutes = lazy(() => import('./manager/pages/Routes'))
 const ManagerSettings = lazy(() => import('./manager/pages/Settings'))
 
+// Grader pages
+const GraderLayout = lazy(() => import('./grader/GraderLayout'))
+const GraderDashboard = lazy(() => import('./grader/pages/Dashboard'))
+const Grade = lazy(() => import('./grader/pages/Grade'))
+const MyGrades = lazy(() => import('./grader/pages/MyGrades'))
+const GraderSync = lazy(() => import('./grader/pages/Sync'))
+const GraderSettings = lazy(() => import('./grader/pages/Settings'))
+
 function SuspenseFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -174,7 +182,20 @@ export default function App() {
           </Route>
 
           {/* Grader dashboard */}
-          <Route path="/grader/*" element={<RolePlaceholder roles={['grader']} />} />
+          <Route path="/grader" element={
+            <RoleGuard roles={['grader']}>
+              <LegalAcceptanceGate>
+                <GraderLayout />
+              </LegalAcceptanceGate>
+            </RoleGuard>
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<SuspenseWrapper><GraderDashboard /></SuspenseWrapper>} />
+            <Route path="grade" element={<SuspenseWrapper><Grade /></SuspenseWrapper>} />
+            <Route path="my-grades" element={<SuspenseWrapper><MyGrades /></SuspenseWrapper>} />
+            <Route path="sync" element={<SuspenseWrapper><GraderSync /></SuspenseWrapper>} />
+            <Route path="settings" element={<SuspenseWrapper><GraderSettings /></SuspenseWrapper>} />
+          </Route>
 
           {/* Accountant dashboard  */}
           <Route path="/accountant/*" element={<RolePlaceholder roles={['accountant']} />} />
