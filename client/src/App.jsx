@@ -41,6 +41,22 @@ const AdminNotFound = lazy(() => import('./admin/pages/NotFound'))
 // Farmer pages 
 const FarmerDashboard = lazy(() => import('./farmer/pages/Dashboard'))
 
+// Manager pages
+const ManagerLayout = lazy(() => import('./manager/ManagerLayout'))
+const ManagerDashboard = lazy(() => import('./manager/pages/Dashboard'))
+const Farmers = lazy(() => import('./manager/pages/Farmers'))
+const Deliveries = lazy(() => import('./manager/pages/Deliveries'))
+const GradingQueue = lazy(() => import('./manager/pages/GradingQueue'))
+const Cycles = lazy(() => import('./manager/pages/Cycles'))
+const ManagerDisbursements = lazy(() => import('./manager/pages/Disbursements'))
+const ManagerLoans = lazy(() => import('./manager/pages/Loans'))
+const SalesBuyers = lazy(() => import('./manager/pages/SalesBuyers'))
+const ManagerInventory = lazy(() => import('./manager/pages/Inventory'))
+const ManagerDeductions = lazy(() => import('./manager/pages/Deductions'))
+const ManagerReports = lazy(() => import('./manager/pages/Reports'))
+const ManagerRoutes = lazy(() => import('./manager/pages/Routes'))
+const ManagerSettings = lazy(() => import('./manager/pages/Settings'))
+
 function SuspenseFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -133,8 +149,29 @@ export default function App() {
             <Route path="*" element={<SuspenseWrapper><AdminNotFound /></SuspenseWrapper>} />
           </Route>
 
-          {/* Manager dashboard }
-          <Route path="/manager/*" element={<RolePlaceholder roles={['manager']} />} />
+          {/* Manager dashboard */}
+          <Route path="/manager" element={
+            <RoleGuard roles={['manager']}>
+              <LegalAcceptanceGate>
+                <ManagerLayout />
+              </LegalAcceptanceGate>
+            </RoleGuard>
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<SuspenseWrapper><ManagerDashboard /></SuspenseWrapper>} />
+            <Route path="farmers" element={<SuspenseWrapper><Farmers /></SuspenseWrapper>} />
+            <Route path="deliveries" element={<SuspenseWrapper><Deliveries /></SuspenseWrapper>} />
+            <Route path="grading" element={<SuspenseWrapper><GradingQueue /></SuspenseWrapper>} />
+            <Route path="cycles" element={<SuspenseWrapper><Cycles /></SuspenseWrapper>} />
+            <Route path="disbursements" element={<SuspenseWrapper><ManagerDisbursements /></SuspenseWrapper>} />
+            <Route path="loans" element={<SuspenseWrapper><ManagerLoans /></SuspenseWrapper>} />
+            <Route path="sales" element={<SuspenseWrapper><SalesBuyers /></SuspenseWrapper>} />
+            <Route path="inventory" element={<SuspenseWrapper><ManagerInventory /></SuspenseWrapper>} />
+            <Route path="deductions" element={<SuspenseWrapper><ManagerDeductions /></SuspenseWrapper>} />
+            <Route path="reports" element={<SuspenseWrapper><ManagerReports /></SuspenseWrapper>} />
+            <Route path="routes" element={<SuspenseWrapper><ManagerRoutes /></SuspenseWrapper>} />
+            <Route path="settings" element={<SuspenseWrapper><ManagerSettings /></SuspenseWrapper>} />
+          </Route>
 
           {/* Grader dashboard */}
           <Route path="/grader/*" element={<RolePlaceholder roles={['grader']} />} />
