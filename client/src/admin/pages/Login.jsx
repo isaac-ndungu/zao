@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAdminAuth } from '../hooks/useAdminAuth'
+import { useAuth, getLoginRedirect } from '../../shared/hooks/useAuth'
+import OTPInput from '../../shared/components/OTPInput'
+import ForcePasswordChange from '../../shared/components/ForcePasswordChange'
 
 export default function Login() {
-  const { login, requestOtp, verifyOtp, isAuthenticated, isAdmin, logout } = useAdminAuth()
+  const auth = useAuth()
+  const { login, requestOtp, verifyOtp, isAuthenticated } = auth
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -14,12 +17,13 @@ export default function Login() {
   const [loginToken, setLoginToken] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [mustChangePassword, setMustChangePassword] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated && isAdmin) {
-      navigate('/admin/dashboard', { replace: true })
+    if (isAuthenticated) {
+      navigate(getLoginRedirect(auth.role), { replace: true })
     }
-  }, [isAuthenticated, isAdmin, navigate])
+  }, [isAuthenticated, auth.role, navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -32,16 +36,11 @@ export default function Login() {
         setStep('otp')
         setOtpSent(false)
       } else {
-        if (result.user.role !== 'admin') {
-          await logout()
-          setError('You do not have access to the admin dashboard.')
-          return
-        }
-        navigate('/admin/dashboard', { replace: true })
+        navigate(getLoginRedirect(result.user.role), { replace: true })
       }
     } catch (err) {
       if (err.must_change_password) {
-        setError(err.detail || 'You must change your password before continuing.')
+        setMustChangePassword(true)
       } else {
         setError(err.detail || err.message || 'Invalid credentials.')
       }
@@ -68,13 +67,26 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await verifyOtp(loginToken, otpCode)
-      navigate('/admin/dashboard', { replace: true })
+      const result = await verifyOtp(loginToken, otpCode)
+      if (result?.user) {
+        navigate(getLoginRedirect(result.user.role), { replace: true })
+      }
     } catch (err) {
       setError(err.detail || err.message || 'Invalid or expired OTP.')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (mustChangePassword) {
+    return (
+      <ForcePasswordChange
+        onComplete={() => {
+          setMustChangePassword(false)
+          navigate(getLoginRedirect(auth.role), { replace: true })
+        }}
+      />
+    )
   }
 
   const backToCredentials = () => {
@@ -89,7 +101,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="font-display-lg text-display-lg text-primary">Zao</h1>
-          <p className="text-on-surface-variant text-body-md mt-1">Admin Dashboard</p>
+          <p className="text-on-surface-variant text-body-md mt-1">Sign In</p>
         </div>
 
         <div className="bg-surface-container-lowest rounded-xl shadow-lg p-8 border border-outline-variant">
@@ -129,9 +141,7 @@ export default function Login() {
               </div>
 
               {error && (
-                <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">
-                  {error}
-                </div>
+                <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">{error}</div>
               )}
 
               <button
@@ -139,9 +149,7 @@ export default function Login() {
                 disabled={loading}
                 className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                )}
+                {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
@@ -151,17 +159,12 @@ export default function Login() {
                 <label htmlFor="otp" className="block text-label-md text-on-surface-variant mb-1">
                   Verification Code
                 </label>
-                <input
-                  id="otp"
-                  type="text"
+                <OTPInput
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
-                  required
-                  maxLength={6}
+                  onChange={setOtpCode}
+                  onSubmit={handleOtpSubmit}
+                  error={error}
                   autoFocus
-                  inputMode="numeric"
-                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-on-surface-variant/60 text-center tracking-[0.3em]"
                 />
                 <p className="text-label-md text-on-surface-variant mt-2">
                   {otpSent
@@ -170,10 +173,8 @@ export default function Login() {
                 </p>
               </div>
 
-              {error && (
-                <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">
-                  {error}
-                </div>
+              {error && !otpCode && (
+                <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">{error}</div>
               )}
 
               <div className="flex gap-3">
@@ -184,9 +185,7 @@ export default function Login() {
                     disabled={loading}
                     className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {loading && (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                    )}
+                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                     {loading ? 'Sending...' : 'Send Code'}
                   </button>
                 ) : (
@@ -195,9 +194,7 @@ export default function Login() {
                     disabled={loading || otpCode.length !== 6}
                     className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {loading && (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                    )}
+                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                     {loading ? 'Verifying...' : 'Verify'}
                   </button>
                 )}

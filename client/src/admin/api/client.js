@@ -1,5 +1,6 @@
 let accessToken = null
 let refreshPromise = null
+let onSessionExpired = null
 
 export function getAccessToken() {
   return accessToken
@@ -13,11 +14,18 @@ export function clearAccessToken() {
   accessToken = null
 }
 
+/**
+ * Register a callback invoked when session refresh fails permanently.
+ * Typically used by AuthContext to redirect to login.
+ */
+export function setOnSessionExpired(cb) {
+  onSessionExpired = cb
+}
+
 async function refreshAccessToken() {
   if (refreshPromise) return refreshPromise
 
   refreshPromise = (async () => {
-    // Attempt to refresh the access token
     try {
       const res = await fetch('/api/auth/refresh/', { method: 'POST', credentials: 'include' })
       if (!res.ok) {
@@ -36,11 +44,9 @@ async function refreshAccessToken() {
   return refreshPromise
 }
 
-// Wrapper around fetch to automatically include access token and handle refresh
 export async function apiFetch(url, options = {}) {
   const { requireAuth = true, headers = {}, ...rest } = options
 
-// Build headers, including Authorization if required and access token is available
   const config = {
     headers: { 'Content-Type': 'application/json', ...headers },
     ...rest,
@@ -54,10 +60,12 @@ export async function apiFetch(url, options = {}) {
 
   if (res.status === 401 && requireAuth && accessToken) {
     const newToken = await refreshAccessToken()
-    
+
     if (newToken) {
       config.headers['Authorization'] = `Bearer ${newToken}`
       res = await fetch(url, config)
+    } else {
+      onSessionExpired?.()
     }
   }
 
@@ -73,9 +81,11 @@ export async function exportCsv(url) {
   const blob = await res.blob()
   const blobUrl = URL.createObjectURL(blob)
   const a = document.createElement('a')
+
   a.href = blobUrl
   a.download = filename
   document.body.appendChild(a)
+  
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(blobUrl)
