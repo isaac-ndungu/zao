@@ -13,7 +13,8 @@ class UserRole(models.TextChoices):
     ACCOUNTANT = 'accountant', 'Accountant'
     GRADER = 'grader', 'Grader'
     FARMER = 'farmer', 'Farmer'
-    AUDITOR = 'auditor', 'Auditor'
+    AUDITOR = 'auditor', 'Internal Auditor'
+    EXTERNAL_AUDITOR = 'external_auditor', 'External Auditor'
 
 
 KENYA_COUNTIES = [

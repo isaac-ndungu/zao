@@ -93,6 +93,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'apps.base.middleware.TenantMiddleware',
     'apps.base.middleware.LegalAcceptanceMiddleware',
+    'apps.base.middleware.ForcePasswordChangeMiddleware',
     'apps.admin.middleware.SuperAdminIPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

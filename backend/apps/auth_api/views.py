@@ -402,7 +402,7 @@ class Disable2FAView(APIView):
         if not user.two_fa_enabled:
             return Response({'detail': '2FA is not enabled.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.AUDITOR):
+        if user.role in (UserRole.MANAGER, UserRole.ACCOUNTANT, UserRole.AUDITOR, UserRole.EXTERNAL_AUDITOR):
             return Response(
                 {'detail': '2FA cannot be disabled for your role.'},
                 status=status.HTTP_400_BAD_REQUEST,

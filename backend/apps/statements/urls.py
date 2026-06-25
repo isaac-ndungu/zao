@@ -4,6 +4,7 @@ from rest_framework.routers import SimpleRouter
 from .views import (
     AnnualReportView,
     AuditLogViewSet,
+    ExternalAuditLogViewSet,
     FarmerPaymentHistoryView,
     KRAReportPDFView,
     LatestStatementPDFView,
@@ -13,6 +14,7 @@ from .views import (
 
 router = SimpleRouter()
 router.register('audit', AuditLogViewSet)
+router.register('external-audit', ExternalAuditLogViewSet)
 
 urlpatterns = [
     path('annual-report/', AnnualReportView.as_view(), name='annual-report'),
@@ -22,3 +24,4 @@ urlpatterns = [
     path('report/', SeasonReportPDFView.as_view(), name='season-report'),
     path('kra-report/', KRAReportPDFView.as_view(), name='kra-report'),
 ] + router.urls
+

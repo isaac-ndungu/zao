@@ -196,3 +196,43 @@ class LegalAcceptanceMiddleware:
                         status=403,
                     )
         return self.get_response(request)
+
+
+class ForcePasswordChangeMiddleware:
+    """Block authenticated users who have must_change_password=True.
+
+    Returns 403 with {"must_change_password": true} on every authenticated
+    API request until the user changes their password via the change-password
+    endpoint. Frontend-only gates are insufficient because API clients can
+    bypass them.
+
+    Must be placed after AuthenticationMiddleware and TenantMiddleware.
+    """
+
+    SAFE_PATHS = {
+        '/api/auth/change-password/',
+        '/api/auth/logout/',
+        '/api/auth/refresh/',
+        '/api/health/',
+        '/api/schema/',
+        '/api/docs/',
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if (
+            request.user.is_authenticated
+            and getattr(request.user, 'must_change_password', False)
+        ):
+            path = request.path_info
+            if not any(path.startswith(p) for p in self.SAFE_PATHS):
+                return JsonResponse(
+                    {
+                        'must_change_password': True,
+                        'detail': 'You must change your password before continuing.',
+                    },
+                    status=403,
+                )
+        return self.get_response(request)

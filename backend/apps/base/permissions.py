@@ -38,6 +38,10 @@ class IsAuditor(IsRole):
     role = UserRole.AUDITOR
 
 
+class IsExternalAuditor(IsRole):
+    role = UserRole.EXTERNAL_AUDITOR
+
+
 class IsInRoles(BasePermission):
     roles = []
 
@@ -59,6 +63,16 @@ class IsStaff(IsInRoles):
 
 class IsAdminOrAuditor(IsInRoles):
     roles = [UserRole.ADMIN, UserRole.AUDITOR]
+
+
+class IsInternalAuditor(IsInRoles):
+    """Full read access: internal auditors and admins only. External auditors are excluded."""
+    roles = [UserRole.AUDITOR, UserRole.ADMIN]
+
+
+class IsAnyAuditor(IsInRoles):
+    """Statements/report access: both internal and external auditors, plus admins."""
+    roles = [UserRole.AUDITOR, UserRole.EXTERNAL_AUDITOR, UserRole.ADMIN]
 
 
 class IsManagerOrGrader(IsInRoles):

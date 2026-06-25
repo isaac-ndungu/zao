@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.base.models import AuditLog
-from apps.base.permissions import IsAccountantOrManager, IsFarmer, IsManagerOrAuditor
+from apps.base.permissions import IsAccountantOrManager, IsFarmer, IsManagerOrAuditor, IsAnyAuditor, IsExternalAuditor
 from apps.deductions.models import Deduction
 from apps.deliveries.models import Delivery
 from apps.farmers.models import Farmer
@@ -179,7 +179,7 @@ class FarmerPaymentHistoryView(APIView):
 
 
 class SeasonReportPDFView(APIView):
-    permission_classes = [IsAuthenticated, IsAccountantOrManager]
+    permission_classes = [IsAuthenticated, IsAccountantOrManager | IsAnyAuditor]
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
@@ -213,7 +213,7 @@ class SeasonReportPDFView(APIView):
 
 
 class KRAReportPDFView(APIView):
-    permission_classes = [IsAuthenticated, IsAccountantOrManager]
+    permission_classes = [IsAuthenticated, IsAccountantOrManager | IsAnyAuditor]
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
@@ -255,7 +255,7 @@ class KRAReportPDFView(APIView):
 
 
 class AnnualReportView(APIView):
-    permission_classes = [IsAuthenticated, IsAccountantOrManager]
+    permission_classes = [IsAuthenticated, IsAccountantOrManager | IsAnyAuditor]
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
@@ -428,3 +428,32 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
         if resource_id:
             qs = qs.filter(resource_id=resource_id)
         return qs
+
+
+# Financial action constants used by the external auditor filter.
+_FINANCIAL_ACTIONS = {
+    'LOCK', 'UNLOCK', 'RUN', 'DISBURSE',
+    'CREATE', 'UPDATE', 'DELETE',
+}
+_FINANCIAL_RESOURCE_TYPES = {
+    'PaymentCycle', 'FarmerPayment', 'Deduction', 'Loan',
+    'DisbursementBatch', 'DisbursementTransaction', 'Sale', 'FarmInputCredit',
+}
+
+
+class ExternalAuditLogViewSet(AuditLogViewSet):
+    """Read-only audit log restricted to financial actions only.
+
+    Registered at a separate URL. External auditors only have access to this
+    endpoint; internal auditors use the standard /audit/ URL. No conditionals
+    inside the queryset — the filtering is always applied unconditionally.
+    """
+
+    permission_classes = [IsAuthenticated, IsExternalAuditor]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(
+            action__in=_FINANCIAL_ACTIONS,
+            resource_type__in=_FINANCIAL_RESOURCE_TYPES,
+        )
