@@ -1,0 +1,97 @@
+import { apiFetch } from '../../admin/api/client'
+import * as offlineQueue from './offlineQueue'
+
+function chunk(arr, size) {
+  const result = []
+  for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size))
+  return result
+}
+
+class SyncManager {
+  constructor() {
+    this._interval = null
+  }
+
+  async syncAll() {
+    if (!navigator.onLine) return { synced: 0, failed: 0 }
+
+    const pending = await offlineQueue.getPendingDeliveries()
+    if (pending.length === 0) return { synced: 0, failed: 0 }
+
+    const batches = chunk(pending, 50)
+    let synced = 0
+    let failed = 0
+
+    for (const batch of batches) {
+      const payload = {
+        deliveries: batch.map(d => ({
+          local_id: d.local_id,
+          farmer: d.farmer_id,
+          product_type: d.product_type,
+          quantity_kg: d.quantity_kg,
+          volume_litres: d.volume_litres,
+          shift: d.shift,
+          quality_metrics: d.quality_metrics,
+          latitude: d.latitude,
+          longitude: d.longitude,
+          status: 'PENDING',
+        })),
+      }
+
+      try {
+        const res = await apiFetch('/api/deliveries/sync/', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data.synced) {
+            for (const s of data.synced) {
+              await offlineQueue.markSynced(s.local_id)
+            }
+            synced += data.synced.length
+          }
+        } else if (res.status === 409) {
+          const errData = await res.json()
+          if (errData.conflicts) {
+            for (const c of errData.conflicts) {
+              await offlineQueue.markSynced(c.local_id)
+            }
+            synced += errData.conflicts.length
+          }
+        } else {
+          for (const d of batch) {
+            await offlineQueue.markFailed(d.local_id, 'Server error')
+          }
+          failed += batch.length
+        }
+      } catch (e) {
+        for (const d of batch) {
+          await offlineQueue.markFailed(d.local_id, e.message)
+        }
+        failed += batch.length
+      }
+    }
+
+    await offlineQueue.deleteSynced()
+    return { synced, failed }
+  }
+
+  startAutoSync(intervalMs = 30000) {
+    this.stopAutoSync()
+    this._interval = setInterval(() => {
+      if (navigator.onLine) this.syncAll()
+    }, intervalMs)
+  }
+
+  stopAutoSync() {
+    if (this._interval) {
+      clearInterval(this._interval)
+      this._interval = null
+    }
+  }
+}
+
+const syncManager = new SyncManager()
+export default syncManager
