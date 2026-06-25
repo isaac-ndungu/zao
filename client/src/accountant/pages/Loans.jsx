@@ -1,0 +1,265 @@
+import { useState, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useApi } from '../../admin/hooks/useApi'
+import { apiFetch } from '../../admin/api/client'
+import { useToast } from '../../admin/contexts/ToastContext'
+import { TableSkeleton } from '../../admin/components/common/Skeleton'
+import DataTable from '../../admin/components/common/DataTable'
+
+function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
+
+const statusColors = {
+  PENDING: 'badge-warning', APPROVED: 'badge-info', DISBURSED: 'badge-success',
+  COMPLETED: 'badge-primary', DEFAULTED: 'badge-error', WRITTEN_OFF: 'badge-error',
+}
+
+function LoanDetailPanel({ loan, onClose, onAction }) {
+  const [addingGuarantor, setAddingGuarantor] = useState(false)
+  const [guarantorPhone, setGuarantorPhone] = useState('')
+  const [guarantorName, setGuarantorName] = useState('')
+  const [actionLoading, setActionLoading] = useState(null)
+
+  const handleAction = async (action) => {
+    setActionLoading(action)
+    try {
+      const res = await apiFetch(`/api/loans/${loan.id}/${action}/`, { method: 'POST' })
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Failed to ${action}`) }
+      onAction()
+      showToast({ type: 'success', message: `Loan ${action.replace('_', ' ')}d.` })
+    } catch (err) { showToast({ type: 'error', message: err.message }) }
+    finally { setActionLoading(null) }
+  }
+
+  const handleAddGuarantor = async (e) => {
+    e.preventDefault()
+    setActionLoading('guarantor')
+    try {
+      const res = await apiFetch(`/api/loans/${loan.id}/add_guarantor/`, {
+        method: 'POST',
+        body: JSON.stringify({ phone_number: guarantorPhone, full_name: guarantorName }),
+      })
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to add guarantor') }
+      showToast({ type: 'success', message: 'Guarantor added.' })
+      setAddingGuarantor(false)
+      setGuarantorPhone('')
+      setGuarantorName('')
+      onAction()
+    } catch (err) { showToast({ type: 'error', message: err.message }) }
+    finally { setActionLoading(null) }
+  }
+
+  const { showToast } = useToast()
+
+  const canDisburse = loan.status === 'APPROVED' && (loan.guarantors?.length || 0) >= 1
+
+  return (
+    <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="font-headline-sm text-headline-sm text-on-surface">Loan #{loan.id}</h3>
+          <p className="text-body-md text-on-surface-variant">{loan.farmer_name || loan.farmer?.full_name || `Farmer #${loan.farmer}`}</p>
+        </div>
+        <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div><p className="text-label-md text-on-surface-variant">Amount</p><p className="text-body-md font-bold">{formatKes(loan.amount)}</p></div>
+        <div><p className="text-label-md text-on-surface-variant">Balance</p><p className="text-body-md font-bold">{formatKes(loan.balance)}</p></div>
+        <div><p className="text-label-md text-on-surface-variant">Status</p><span className={`badge ${statusColors[loan.status] || 'badge-default'}`}>{loan.status}</span></div>
+        <div><p className="text-label-md text-on-surface-variant">Interest Rate</p><p className="text-body-md">{loan.interest_rate ? `${loan.interest_rate}%` : '-'}</p></div>
+        <div><p className="text-label-md text-on-surface-variant">Created</p><p className="text-body-md">{loan.created_at ? new Date(loan.created_at).toLocaleDateString() : '-'}</p></div>
+        <div><p className="text-label-md text-on-surface-variant">Due Date</p><p className="text-body-md">{loan.due_date ? new Date(loan.due_date).toLocaleDateString() : '-'}</p></div>
+      </div>
+
+      <div>
+        <p className="text-label-md text-on-surface-variant mb-2">Purpose</p>
+        <p className="text-body-md">{loan.purpose || '-'}</p>
+      </div>
+
+      <div>
+        <div className="flex justify-between items-center mb-3">
+          <p className="text-label-md text-on-surface-variant font-bold">Guarantors ({loan.guarantors?.length || 0})</p>
+          <button onClick={() => setAddingGuarantor(true)} disabled={actionLoading === 'guarantor'} className="text-primary text-label-md font-bold hover:underline disabled:opacity-50">+ Add</button>
+        </div>
+        {loan.guarantors?.length > 0 ? (
+          <div className="space-y-2">
+            {loan.guarantors.map((g, i) => (
+              <div key={i} className="flex justify-between bg-surface-container rounded-lg px-4 py-2">
+                <span className="text-body-md">{g.full_name || g.name || `Guarantor #${i + 1}`}</span>
+                <span className="text-body-md text-on-surface-variant">{g.phone_number}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-body-md text-on-surface-variant italic">No guarantors yet</p>
+        )}
+      </div>
+
+      {addingGuarantor && (
+        <form onSubmit={handleAddGuarantor} className="bg-surface-container rounded-xl p-4 space-y-3">
+          <input value={guarantorName} onChange={(e) => setGuarantorName(e.target.value)} placeholder="Full name" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface" />
+          <input value={guarantorPhone} onChange={(e) => setGuarantorPhone(e.target.value)} placeholder="Phone number (0712345678)" pattern="^0\d{9}$" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface" />
+          <div className="flex gap-2">
+            <button type="submit" disabled={actionLoading === 'guarantor'} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{actionLoading === 'guarantor' ? 'Adding...' : 'Add'}</button>
+            <button type="button" onClick={() => { setAddingGuarantor(false); setGuarantorPhone(''); setGuarantorName('') }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+          </div>
+        </form>
+      )}
+
+      <div className="pt-4 border-t border-outline-variant space-y-3">
+        {loan.status === 'APPROVED' && (
+          <button onClick={() => handleAction('disburse')} disabled={!canDisburse || actionLoading} className={`w-full py-2 rounded-lg text-label-md font-bold transition-colors ${canDisburse ? 'bg-success-container text-on-success-container hover:bg-success-container/80' : 'bg-surface-container text-on-surface-variant cursor-not-allowed'}`}>
+            {actionLoading === 'disburse' ? '...' : canDisburse ? 'Disburse Loan' : 'Add Guarantor First'}
+          </button>
+        )}
+        {loan.status === 'DISBURSED' && (
+          <button onClick={() => handleAction('mark_completed')} disabled={actionLoading} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">
+            {actionLoading === 'mark_completed' ? '...' : 'Mark Completed'}
+          </button>
+        )}
+        {(loan.status === 'APPROVED' || loan.status === 'DISBURSED') && (
+          <button onClick={() => handleAction('mark_defaulted')} disabled={actionLoading} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50">
+            {actionLoading === 'mark_defaulted' ? '...' : 'Mark Defaulted'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function AccountantLoans() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const search = searchParams.get('search') || ''
+  const selectedId = searchParams.get('selected')
+  const { showToast } = useToast()
+  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({ farmer: '', amount: '', purpose: '', interest_rate: '10', due_date: '' })
+  const [saving, setSaving] = useState(false)
+
+  const queryParams = new URLSearchParams({ page, page_size: '20' })
+  if (search) queryParams.set('search', search)
+  if (statusFilter) queryParams.set('status', statusFilter)
+
+  const { data, loading, error, refetch } = useApi(`/api/loans/?${queryParams}`)
+  const { data: farmers } = useApi('/api/farmers/?page=1&page_size=100')
+
+  const loans = data?.results || data || []
+  const totalCount = data?.count || loans.length
+
+  const selectedLoan = selectedId ? loans.find((l) => String(l.id) === selectedId) || data?.results?.find((l) => String(l.id) === selectedId) : null
+
+  const handleSearch = useCallback((e) => {
+    e.preventDefault()
+    const fd = new FormData(e.target)
+    const q = fd.get('search')
+    setSearchParams(q ? { search: q } : {})
+    setPage(1)
+  }, [setSearchParams])
+
+  const handleCreate = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await apiFetch('/api/loans/', { method: 'POST', body: JSON.stringify(formData) })
+      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create loan') }
+      showToast({ type: 'success', message: 'Loan created.' })
+      setShowForm(false)
+      setFormData({ farmer: '', amount: '', purpose: '', interest_rate: '10', due_date: '' })
+      refetch()
+    } catch (err) { showToast({ type: 'error', message: err.message }) }
+    finally { setSaving(false) }
+  }
+
+  const statuses = ['', 'PENDING', 'APPROVED', 'DISBURSED', 'COMPLETED', 'DEFAULTED', 'WRITTEN_OFF']
+
+  const columns = [
+    { header: 'ID', accessor: 'id', sortable: true },
+    { header: 'Farmer', accessor: (l) => l.farmer_name || l.farmer?.full_name || `#${l.farmer}`, sortable: true },
+    { header: 'Amount', accessor: (l) => formatKes(l.amount), sortable: true },
+    { header: 'Balance', accessor: (l) => formatKes(l.balance) },
+    { header: 'Status', accessor: (l) => <span className={`badge ${statusColors[l.status] || 'badge-default'}`}>{l.status}</span> },
+    { header: 'Due', accessor: (l) => l.due_date ? new Date(l.due_date).toLocaleDateString() : '-' },
+    { header: 'Created', accessor: (l) => l.created_at ? new Date(l.created_at).toLocaleDateString() : '-' },
+  ]
+
+  return (
+    <div>
+      <header className="mb-6 flex justify-between items-start">
+        <div>
+          <h2 className="font-headline-lg text-display-md text-primary mb-1">Loans</h2>
+          <p className="text-on-surface-variant font-body-md">{totalCount} loans</p>
+        </div>
+        <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">+ New Loan</button>
+      </header>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+              <input name="search" defaultValue={search} placeholder="Search farmers..." className="flex-1 px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+            </form>
+            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+              {statuses.map((s) => <option key={s} value={s}>{s || 'All Statuses'}</option>)}
+            </select>
+          </div>
+
+          {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <p className="text-error">Failed to load loans.</p> : (
+            <DataTable
+              columns={columns}
+              data={loans}
+              onRowClick={(l) => setSearchParams({ ...Object.fromEntries(searchParams.entries()), selected: String(l.id) })}
+              page={page}
+              totalPages={Math.ceil(totalCount / 20)}
+              onPageChange={setPage}
+            />
+          )}
+        </div>
+
+        {selectedLoan && (
+          <div className="w-full lg:w-[400px] shrink-0">
+            <LoanDetailPanel
+              loan={selectedLoan}
+              onClose={() => setSearchParams({ ...Object.fromEntries(searchParams.entries()), selected: undefined })}
+              onAction={refetch}
+            />
+          </div>
+        )}
+      </div>
+
+      {showForm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowForm(false)}>
+          <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-headline-sm text-headline-sm mb-4">Create Loan</h3>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
+                <select value={formData.farmer} onChange={(e) => setFormData(p => ({ ...p, farmer: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+                  <option value="">Select farmer...</option>
+                  {farmers?.results?.map((f) => <option key={f.id} value={f.id}>{f.full_name} ({f.phone_number})</option>)}
+                </select>
+              </div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Amount (KES)</label>
+                <input type="number" min="1" value={formData.amount} onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              </div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Interest Rate (%)</label>
+                <input type="number" step="0.1" min="0" value={formData.interest_rate} onChange={(e) => setFormData(p => ({ ...p, interest_rate: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              </div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Purpose</label>
+                <textarea value={formData.purpose} onChange={(e) => setFormData(p => ({ ...p, purpose: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              </div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Due Date</label>
+                <input type="date" value={formData.due_date} onChange={(e) => setFormData(p => ({ ...p, due_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>
+                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
