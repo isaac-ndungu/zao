@@ -421,12 +421,24 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
         resource_type = self.request.query_params.get('resource_type')
         action = self.request.query_params.get('action')
         resource_id = self.request.query_params.get('resource_id')
+        action_category = self.request.query_params.get('action_category')
+        date_from = self.request.query_params.get('date_from')
+        date_to = self.request.query_params.get('date_to')
         if resource_type:
             qs = qs.filter(resource_type=resource_type)
         if action:
             qs = qs.filter(action=action)
         if resource_id:
             qs = qs.filter(resource_id=resource_id)
+        if action_category == 'financial':
+            qs = qs.filter(
+                action__in=_FINANCIAL_ACTIONS,
+                resource_type__in=_FINANCIAL_RESOURCE_TYPES,
+            )
+        if date_from:
+            qs = qs.filter(created_at__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__lte=date_to)
         return qs
 
 
