@@ -5,6 +5,7 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import ErrorState from '../../shared/components/ErrorState'
 
 const statusColors = {
   DRAFT: 'badge-default', ACTIVE: 'badge-info', LOCKED: 'badge-warning',
@@ -41,11 +42,13 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
               clearInterval(pollRef.current)
               setRunProgress({ status: 'completed', message: 'Cycle completed successfully!' })
               setRunning(false)
+              showToast({ type: 'success', message: 'Cycle run completed.' })
               onAction()
             } else if (status.status === 'FAILED') {
               clearInterval(pollRef.current)
               setRunProgress({ status: 'failed', message: status.error || 'Cycle run failed' })
               setRunning(false)
+              showToast({ type: 'error', message: status.error || 'Cycle run failed' })
             } else {
               setRunProgress({ status: 'processing', message: status.message || `Processing... (${status.processed || 0}/${status.total || '?'})` })
             }
@@ -83,7 +86,7 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
           <h3 className="font-headline-sm text-headline-sm text-on-surface">{cycle.name}</h3>
           <p className="text-body-md text-on-surface-variant">Cycle #{cycle.id}</p>
         </div>
-        <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <button onClick={onClose} aria-label="Close panel" className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -226,7 +229,7 @@ export default function AccountantCycles() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 min-w-0">
-          {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <p className="text-error">Failed to load cycles.</p> : (
+          {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
             <DataTable
               columns={columns}
               data={cycles}

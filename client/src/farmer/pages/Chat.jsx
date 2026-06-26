@@ -59,7 +59,7 @@ export default function FarmerChat() {
   return (
     <div className="flex flex-col h-[calc(100vh-100px)]">
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate('/farmer/dashboard')} className="p-1">
+        <button onClick={() => navigate('/farmer/dashboard')} aria-label="Back to dashboard" className="p-1">
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <div className="w-9 h-9 rounded-full bg-info-container flex items-center justify-center">

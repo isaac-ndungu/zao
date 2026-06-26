@@ -77,7 +77,7 @@ export default function AppBar({ onMenuClick }) {
       <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
         <NotificationBell />
 
-        <button className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors hidden sm:block">
+        <button aria-label="Legal history" className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors hidden sm:block">
           <span className="material-symbols-outlined">history_edu</span>
         </button>
 

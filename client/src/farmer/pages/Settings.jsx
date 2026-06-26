@@ -41,7 +41,7 @@ export default function FarmerSettings() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/farmer/profile')} className="p-1">
+        <button onClick={() => navigate('/farmer/profile')} aria-label="Back to profile" className="p-1">
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <h2 className="text-lg font-bold">{t('settings')}</h2>

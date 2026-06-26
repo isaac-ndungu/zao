@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFarmerAuth } from '../context/FarmerAuthContext'
 import useFarmerApi from '../hooks/useFarmerApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import NotificationBell from '../components/NotificationBell'
@@ -12,7 +13,7 @@ export default function FarmerProfile() {
   const navigate = useNavigate()
   const { logout } = useFarmerAuth()
   const { showToast } = useToast()
-  const { data: profile, loading, refetch } = useFarmerApi('/api/farmers/me/')
+  const { data: profile, loading, error, refetch } = useFarmerApi('/api/farmers/me/')
 
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
@@ -42,6 +43,7 @@ export default function FarmerProfile() {
     finally { setSaving(false) }
   }
 
+  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   if (loading) return <div className="text-center py-12"><CardSkeleton lines={6} /></div>
 
   return (
@@ -50,7 +52,7 @@ export default function FarmerProfile() {
         <h2 className="text-lg font-bold">{t('profile')}</h2>
         <div className="flex items-center gap-3">
           <NotificationBell />
-          <button onClick={() => navigate('/farmer/settings')} className="p-1">
+          <button onClick={() => navigate('/farmer/settings')} aria-label="Settings" className="p-1">
             <span className="material-symbols-outlined text-on-surface-variant">settings</span>
           </button>
         </div>

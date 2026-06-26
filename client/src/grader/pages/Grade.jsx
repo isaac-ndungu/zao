@@ -7,6 +7,7 @@ import { useToast } from '../../admin/contexts/ToastContext'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
+import ErrorState from '../../shared/components/ErrorState'
 
 const gradeOptions = ['PREMIUM', 'STANDARD', 'A', 'B', 'C']
 
@@ -20,7 +21,7 @@ export default function Grade() {
   const [queueSearch, setQueueSearch] = useState('')
 
   const { data: pricesData } = useApi('/api/grades/prices/')
-  const { data: pendingData, loading, refetch } = useApi(`/api/deliveries/?status=PENDING&page=${page}&page_size=10&ordering=-date_delivered`)
+  const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page=${page}&page_size=10&ordering=-date_delivered`)
 
   const prices = pricesData?.results || pricesData || []
   const priceMap = {}
@@ -60,7 +61,7 @@ export default function Grade() {
             </button>
           </div>
 
-          {loading ? <TableSkeleton rows={8} cols={5} /> : (
+          {loading ? <TableSkeleton rows={8} cols={5} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
             <>
               <DataTable
                 columns={[
@@ -303,6 +304,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
               <button
                 type="button"
                 onClick={() => handlePhotoRemove(i)}
+                aria-label={`Remove photo ${i + 1}`}
                 className="absolute top-0 right-0 bg-error text-on-error rounded-bl-lg p-0.5"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>

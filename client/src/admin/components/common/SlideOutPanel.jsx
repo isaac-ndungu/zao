@@ -1,6 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import useFocusTrap from '../../../shared/hooks/useFocusTrap'
 
 export default function SlideOutPanel({ open, onClose, title, children, width = 'max-w-lg' }) {
+  const focusRef = useRef(null)
+  useFocusTrap(focusRef)
+
   useEffect(() => {
     if (!open) return
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -22,6 +26,7 @@ export default function SlideOutPanel({ open, onClose, title, children, width = 
         />
       )}
       <div
+        ref={focusRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}

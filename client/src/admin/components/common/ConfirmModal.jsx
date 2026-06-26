@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
+import useFocusTrap from '../../../shared/hooks/useFocusTrap'
 
 export default function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel, loading, destructive }) {
   const confirmRef = useRef(null)
+  const focusRef = useRef(null)
+  useFocusTrap(focusRef)
 
   useEffect(() => {
     if (!open) return
@@ -19,6 +22,7 @@ export default function ConfirmModal({ open, title, message, confirmLabel = 'Con
 
   return (
     <div
+      ref={focusRef}
       className="fixed inset-0 z-[60] flex items-center justify-center"
       role="dialog"
       aria-modal="true"
