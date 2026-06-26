@@ -75,6 +75,22 @@ const AccountantDeductions = lazy(() => import('./accountant/pages/Deductions'))
 const AccountantReports = lazy(() => import('./accountant/pages/Reports'))
 const AccountantSettings = lazy(() => import('./accountant/pages/Settings'))
 
+// Auditor pages
+const AuditorLayout = lazy(() => import('./auditor/AuditorLayout'))
+const AuditorDashboard = lazy(() => import('./auditor/pages/Dashboard'))
+const AuditorAuditLog = lazy(() => import('./auditor/pages/AuditLog'))
+const AuditorFinancial = lazy(() => import('./auditor/pages/Financial'))
+const AuditorProduction = lazy(() => import('./auditor/pages/Production'))
+const AuditorLoans = lazy(() => import('./auditor/pages/Loans'))
+const AuditorReports = lazy(() => import('./auditor/pages/Reports'))
+const AuditorSettings = lazy(() => import('./auditor/pages/Settings'))
+
+// External auditor pages
+const ExternalAuditorLayout = lazy(() => import('./external-auditor/ExternalAuditorLayout'))
+const ExternalFinancialStatements = lazy(() => import('./external-auditor/pages/FinancialStatements'))
+const ExternalAuditTrail = lazy(() => import('./external-auditor/pages/AuditTrail'))
+const ExternalLoanPortfolio = lazy(() => import('./external-auditor/pages/LoanPortfolio'))
+
 function SuspenseFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -226,10 +242,36 @@ export default function App() {
           </Route>
 
           {/* Internal auditor dashboard */}
-          <Route path="/auditor/*" element={<RolePlaceholder roles={['auditor']} />} />
+          <Route path="/auditor" element={
+            <RoleGuard roles={['auditor']}>
+              <LegalAcceptanceGate>
+                <AuditorLayout />
+              </LegalAcceptanceGate>
+            </RoleGuard>
+          }>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<SuspenseWrapper><AuditorDashboard /></SuspenseWrapper>} />
+            <Route path="audit-log" element={<SuspenseWrapper><AuditorAuditLog /></SuspenseWrapper>} />
+            <Route path="financial" element={<SuspenseWrapper><AuditorFinancial /></SuspenseWrapper>} />
+            <Route path="production" element={<SuspenseWrapper><AuditorProduction /></SuspenseWrapper>} />
+            <Route path="loans" element={<SuspenseWrapper><AuditorLoans /></SuspenseWrapper>} />
+            <Route path="reports" element={<SuspenseWrapper><AuditorReports /></SuspenseWrapper>} />
+            <Route path="settings" element={<SuspenseWrapper><AuditorSettings /></SuspenseWrapper>} />
+          </Route>
 
           {/* External auditor dashboard */}
-          <Route path="/external-auditor/*" element={<RolePlaceholder roles={['external_auditor']} />} />
+          <Route path="/external-auditor" element={
+            <RoleGuard roles={['external_auditor']}>
+              <LegalAcceptanceGate>
+                <ExternalAuditorLayout />
+              </LegalAcceptanceGate>
+            </RoleGuard>
+          }>
+            <Route index element={<Navigate to="financial-statements" replace />} />
+            <Route path="financial-statements" element={<SuspenseWrapper><ExternalFinancialStatements /></SuspenseWrapper>} />
+            <Route path="audit-trail" element={<SuspenseWrapper><ExternalAuditTrail /></SuspenseWrapper>} />
+            <Route path="loan-portfolio" element={<SuspenseWrapper><ExternalLoanPortfolio /></SuspenseWrapper>} />
+          </Route>
 
           {/* Farmer dashboard  */}
           <Route path="/farmer" element={<FarmerRoutes />}>
