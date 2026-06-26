@@ -6,6 +6,7 @@ import AdminLayout from './admin/layouts/AdminLayout'
 import RoleGuard from './shared/components/RoleGuard'
 import DashboardLayout from './shared/components/DashboardLayout'
 import LegalAcceptanceGate from './shared/components/LegalAcceptanceGate'
+import ErrorBoundary from './shared/components/ErrorBoundary'
 
 // Public pages
 const Home = lazy(() => import('./pages/Home'))
@@ -125,7 +126,9 @@ function RolePlaceholder({ roles }) {
 function AdminRoutes() {
   return (
     <AdminGuard>
-      <AdminLayout />
+      <ErrorBoundary>
+        <AdminLayout />
+      </ErrorBoundary>
     </AdminGuard>
   )
 }
@@ -134,7 +137,9 @@ function FarmerRoutes() {
   return (
     <RoleGuard roles={['farmer']}>
       <LegalAcceptanceGate>
-        <DashboardLayout />
+        <ErrorBoundary>
+          <DashboardLayout />
+        </ErrorBoundary>
       </LegalAcceptanceGate>
     </RoleGuard>
   )
@@ -187,7 +192,9 @@ export default function App() {
           <Route path="/manager" element={
             <RoleGuard roles={['manager']}>
               <LegalAcceptanceGate>
-                <ManagerLayout />
+                <ErrorBoundary>
+                  <ManagerLayout />
+                </ErrorBoundary>
               </LegalAcceptanceGate>
             </RoleGuard>
           }>
@@ -211,7 +218,9 @@ export default function App() {
           <Route path="/grader" element={
             <RoleGuard roles={['grader']}>
               <LegalAcceptanceGate>
-                <GraderLayout />
+                <ErrorBoundary>
+                  <GraderLayout />
+                </ErrorBoundary>
               </LegalAcceptanceGate>
             </RoleGuard>
           }>
@@ -227,7 +236,9 @@ export default function App() {
           <Route path="/accountant" element={
             <RoleGuard roles={['accountant']}>
               <LegalAcceptanceGate>
-                <AccountantLayout />
+                <ErrorBoundary>
+                  <AccountantLayout />
+                </ErrorBoundary>
               </LegalAcceptanceGate>
             </RoleGuard>
           }>
@@ -245,7 +256,9 @@ export default function App() {
           <Route path="/auditor" element={
             <RoleGuard roles={['auditor']}>
               <LegalAcceptanceGate>
-                <AuditorLayout />
+                <ErrorBoundary>
+                  <AuditorLayout />
+                </ErrorBoundary>
               </LegalAcceptanceGate>
             </RoleGuard>
           }>
@@ -263,7 +276,9 @@ export default function App() {
           <Route path="/external-auditor" element={
             <RoleGuard roles={['external_auditor']}>
               <LegalAcceptanceGate>
-                <ExternalAuditorLayout />
+                <ErrorBoundary>
+                  <ExternalAuditorLayout />
+                </ErrorBoundary>
               </LegalAcceptanceGate>
             </RoleGuard>
           }>
