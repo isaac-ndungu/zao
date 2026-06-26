@@ -56,6 +56,8 @@ export default function FarmerLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const sessionExpired = new URLSearchParams(window.location.search).get('expired') === '1'
+
   useEffect(() => {
     if (isAuthenticated || getToken()) navigate('/farmer/dashboard', { replace: true })
   }, [isAuthenticated, navigate])
@@ -94,6 +96,12 @@ export default function FarmerLogin() {
           <h1 className="text-2xl font-bold text-primary mb-1">Zao Farmer</h1>
           <p className="text-on-surface-variant text-sm">Sign in to your account</p>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-4 px-4 py-3 bg-warning-container text-on-warning-container rounded-xl text-sm text-center border border-warning">
+            Your session has expired. Please sign in again.
+          </div>
+        )}
 
         <div className="bg-surface-container rounded-xl shadow-lg p-6 border border-outline-variant">
           {step === 'phone' ? (

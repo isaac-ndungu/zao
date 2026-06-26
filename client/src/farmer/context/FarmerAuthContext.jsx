@@ -30,7 +30,7 @@ export function FarmerAuthProvider({ children }) {
     setOnSessionExpired(() => {
       setUserState(null)
       storeUser(null)
-      window.location.href = '/farmer/login'
+      window.location.href = '/farmer/login?expired=1'
     })
   }, [])
 

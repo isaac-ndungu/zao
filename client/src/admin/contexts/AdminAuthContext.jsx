@@ -34,7 +34,7 @@ export function AdminAuthProvider({ children }) {
   const handleSessionExpired = useCallback(() => {
     setUser(null)
     clearAccessToken()
-    window.location.href = '/admin/login'
+    window.location.href = '/admin/login?expired=1'
   }, [])
 
   useEffect(() => {

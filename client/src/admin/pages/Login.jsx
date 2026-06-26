@@ -19,6 +19,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [mustChangePassword, setMustChangePassword] = useState(false)
 
+  const sessionExpired = new URLSearchParams(window.location.search).get('expired') === '1'
+
   useEffect(() => {
     if (isAuthenticated) {
       navigate(getLoginRedirect(auth.role), { replace: true })
@@ -103,6 +105,12 @@ export default function Login() {
           <h1 className="font-display-lg text-display-lg text-primary">Zao</h1>
           <p className="text-on-surface-variant text-body-md mt-1">Sign In</p>
         </div>
+
+        {sessionExpired && (
+          <div className="mb-4 px-4 py-3 bg-warning-container text-on-warning-container rounded-xl text-body-md text-center border border-warning">
+            Your session has expired. Please sign in again.
+          </div>
+        )}
 
         <div className="bg-surface-container-lowest rounded-xl shadow-lg p-8 border border-outline-variant">
           {step === 'credentials' ? (
