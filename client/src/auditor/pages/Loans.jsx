@@ -1,4 +1,5 @@
 import { useApi } from '../../admin/hooks/useApi'
+import ErrorState from '../../shared/components/ErrorState'
 import KpiCard from '../../admin/components/common/KpiCard'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 
@@ -10,7 +11,7 @@ function formatKes(n) {
 }
 
 export default function AuditorLoans() {
-  const { data: loanData, loading } = useApi('/api/analytics/loans/')
+  const { data: loanData, loading, error, refetch } = useApi('/api/analytics/loans/')
 
   const loans = loanData?.data || loanData || {}
 
@@ -21,6 +22,10 @@ export default function AuditorLoans() {
         <KpiSkeleton count={6} />
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   }
 
   return (

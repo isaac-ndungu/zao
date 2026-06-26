@@ -1,4 +1,5 @@
 import { useApi } from '../../admin/hooks/useApi'
+import ErrorState from '../../shared/components/ErrorState'
 import KpiCard from '../../admin/components/common/KpiCard'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 
@@ -16,7 +17,7 @@ function formatNumber(n) {
 }
 
 export default function AuditorProduction() {
-  const { data: prodData, loading } = useApi('/api/analytics/production/')
+  const { data: prodData, loading, error, refetch } = useApi('/api/analytics/production/')
 
   const prod = prodData?.data || prodData || {}
 
@@ -27,6 +28,10 @@ export default function AuditorProduction() {
         <KpiSkeleton count={6} />
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   }
 
   const productBreakdown = prod.product_breakdown || []

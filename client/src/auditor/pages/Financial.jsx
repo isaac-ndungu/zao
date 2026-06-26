@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
+import ErrorState from '../../shared/components/ErrorState'
 import KpiCard from '../../admin/components/common/KpiCard'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 import LineChartCard from '../../admin/components/charts/LineChartCard'
@@ -14,7 +15,7 @@ function formatKes(n) {
 
 export default function AuditorFinancial() {
   const navigate = useNavigate()
-  const { data: finData, loading } = useApi('/api/analytics/financial/')
+  const { data: finData, loading, error, refetch } = useApi('/api/analytics/financial/')
 
   const fin = finData?.data || finData || {}
   const financial = fin
@@ -39,6 +40,10 @@ export default function AuditorFinancial() {
         <KpiSkeleton count={6} />
       </div>
     )
+  }
+
+  if (error) {
+    return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   }
 
   return (

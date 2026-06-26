@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
 
@@ -18,7 +19,7 @@ export default function ExternalAuditTrail() {
   if (dateFrom) queryParams.set('date_from', dateFrom)
   if (dateTo) queryParams.set('date_to', dateTo)
 
-  const { data, loading, error } = useApi(`/api/statements/external-audit/?${queryParams}`)
+  const { data, loading, error, refetch } = useApi(`/api/statements/external-audit/?${queryParams}`)
 
   const logs = data?.results || data || []
   const totalCount = data?.count || logs.length
@@ -91,7 +92,7 @@ export default function ExternalAuditTrail() {
         </div>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={5} /> : error ? <p className="text-error">Failed to load audit trail.</p> : (
+      {loading ? <TableSkeleton rows={10} cols={5} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
         <DataTable
           columns={columns}
           data={logs}

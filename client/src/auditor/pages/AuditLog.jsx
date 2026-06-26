@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
 
@@ -26,7 +27,7 @@ export default function AuditorAuditLog() {
   if (dateFrom) queryParams.set('date_from', dateFrom)
   if (dateTo) queryParams.set('date_to', dateTo)
 
-  const { data, loading, error } = useApi(`/api/audit/?${queryParams}`)
+  const { data, loading, error, refetch } = useApi(`/api/audit/?${queryParams}`)
 
   const logs = data?.results || data || []
   const totalCount = data?.count || logs.length
@@ -101,7 +102,7 @@ export default function AuditorAuditLog() {
         </div>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={6} /> : error ? <p className="text-error">Failed to load audit log.</p> : (
+      {loading ? <TableSkeleton rows={10} cols={6} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
         <DataTable
           columns={columns}
           data={logs}
