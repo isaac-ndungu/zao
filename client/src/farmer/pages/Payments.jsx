@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useFarmerApi from '../hooks/useFarmerApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import { ListSkeleton } from '../components/LoadingSkeleton'
@@ -12,8 +13,9 @@ const statusColors = { PENDING: 'bg-warning-container text-warning', PAID: 'bg-s
 export default function FarmerPayments() {
   const { showToast } = useToast()
   const [downloadId, setDownloadId] = useState(null)
-  const { data: profile } = useFarmerApi('/api/farmers/me/')
-  const { data, loading } = useFarmerApi(profile?.id ? `/api/statements/statement/history/?farmer_id=${profile.id}` : null)
+  const { data: profile, error: profileError, refetch: refetchProfile } = useFarmerApi('/api/farmers/me/')
+  const { data, loading, error: dataError, refetch } = useFarmerApi(profile?.id ? `/api/statements/statement/history/?farmer_id=${profile.id}` : null)
+  const apiError = profileError || dataError
 
   const payments = data?.payments || []
   const latestPayment = payments[0] || null
@@ -45,6 +47,7 @@ export default function FarmerPayments() {
     finally { setDownloadId(null) }
   }
 
+  if (apiError) return <ErrorState message={apiError} action={{ label: 'Retry', onClick: refetch || refetchProfile }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('payments')}</h2><ListSkeleton count={4} /></div>
 
   return (

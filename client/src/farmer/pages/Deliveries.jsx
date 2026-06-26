@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useFarmerApi from '../hooks/useFarmerApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { ListSkeleton } from '../components/LoadingSkeleton'
 import { t } from '../i18n'
 
@@ -16,13 +17,14 @@ const productIcons = {
 export default function FarmerDeliveries() {
   const [selected, setSelected] = useState(null)
   const [page, setPage] = useState(1)
-  const { data, loading } = useFarmerApi(`/api/deliveries/?page=${page}&page_size=20&ordering=-date_delivered`)
+  const { data, loading, error, refetch } = useFarmerApi(`/api/deliveries/?page=${page}&page_size=20&ordering=-date_delivered`)
 
   const deliveries = data?.results || data || []
   const total = data?.count || deliveries.length
   const pageSize = 20
   const totalPages = Math.ceil(total / pageSize)
 
+  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('deliveries')}</h2><ListSkeleton count={4} /></div>
 
   return (

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useFarmerApi from '../hooks/useFarmerApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import { ListSkeleton } from '../components/LoadingSkeleton'
@@ -18,7 +19,7 @@ export default function FarmerLoans() {
   const [showApply, setShowApply] = useState(false)
   const [form, setForm] = useState({ amount_principal: '', interest_rate: '10', number_of_installments: '12', notes: '' })
   const [saving, setSaving] = useState(false)
-  const { data, loading, refetch } = useFarmerApi('/api/loans/?ordering=-created_at')
+  const { data, loading, error, refetch } = useFarmerApi('/api/loans/?ordering=-created_at')
 
   const loans = data?.results || data || []
 
@@ -44,6 +45,7 @@ export default function FarmerLoans() {
     finally { setSaving(false) }
   }
 
+  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('loans') || 'Loans'}</h2><ListSkeleton count={3} /></div>
 
   return (

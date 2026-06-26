@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import useFarmerApi from '../hooks/useFarmerApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import { ListSkeleton } from '../components/LoadingSkeleton'
@@ -14,7 +15,7 @@ export default function FarmerGrades() {
   const [disputeReason, setDisputeReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const { data, loading, refetch } = useFarmerApi(`/api/grades/?page=${page}&page_size=20&ordering=-created_at`)
+  const { data, loading, error, refetch } = useFarmerApi(`/api/grades/?page=${page}&page_size=20&ordering=-created_at`)
 
   const grades = data?.results || data || []
   const total = data?.count || grades.length
@@ -38,6 +39,7 @@ export default function FarmerGrades() {
     finally { setSubmitting(false) }
   }
 
+  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('grades')}</h2><ListSkeleton count={4} /></div>
 
   return (

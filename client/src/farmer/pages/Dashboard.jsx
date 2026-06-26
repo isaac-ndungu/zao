@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import useFarmerApi from '../hooks/useFarmerApi'
+import ErrorState from '../../shared/components/ErrorState'
 import { useFarmerAuth } from '../context/FarmerAuthContext'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
@@ -18,10 +19,11 @@ export default function FarmerDashboard() {
   const navigate = useNavigate()
   const { user } = useFarmerAuth()
   const { showToast } = useToast()
-  const { data: profile, loading: profileLoading } = useFarmerApi('/api/farmers/me/')
-  const { data: history, loading: historyLoading } = useFarmerApi(profile?.id ? `/api/statements/statement/history/?farmer_id=${profile.id}` : null)
-  const { data: deliveries, loading: delLoading } = useFarmerApi('/api/deliveries/?page=1&page_size=5&ordering=-date_delivered')
-  const { data: loans, loading: loansLoading } = useFarmerApi('/api/loans/?status=ACTIVE')
+  const { data: profile, loading: profileLoading, error: profileError, refetch: refetchProfile } = useFarmerApi('/api/farmers/me/')
+  const { data: history, loading: historyLoading, error: historyError } = useFarmerApi(profile?.id ? `/api/statements/statement/history/?farmer_id=${profile.id}` : null)
+  const { data: deliveries, loading: delLoading, error: delError } = useFarmerApi('/api/deliveries/?page=1&page_size=5&ordering=-date_delivered')
+  const { data: loans, loading: loansLoading, error: loansError } = useFarmerApi('/api/loans/?status=ACTIVE')
+  const apiError = profileError || historyError || delError || loansError
 
   const loading = profileLoading || historyLoading || delLoading || loansLoading
 
@@ -52,6 +54,10 @@ export default function FarmerDashboard() {
         <div className="mt-6 space-y-3"><CardSkeleton /><CardSkeleton /></div>
       </div>
     )
+  }
+
+  if (apiError) {
+    return <ErrorState message={apiError} action={{ label: 'Retry', onClick: refetchProfile }} />
   }
 
   return (
