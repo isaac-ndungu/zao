@@ -6,6 +6,7 @@ import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import StatusBadge from '../../admin/components/common/StatusBadge'
 import KpiCard from '../../admin/components/common/KpiCard'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Inventory() {
   const [page, setPage] = useState(1)
@@ -17,7 +18,7 @@ export default function Inventory() {
   const params = new URLSearchParams({ page, page_size: pageSize })
   if (productFilter) params.set('product_type', productFilter)
 
-  const { data, loading } = useApi(`/api/inventory/?${params}`)
+  const { data, loading, error, refetch } = useApi(`/api/inventory/?${params}`)
   const { data: summary, loading: summaryLoading } = useApi('/api/inventory/summary/')
   const { data: alerts } = useApi('/api/inventory/alerts/')
 
@@ -83,7 +84,9 @@ export default function Inventory() {
         </select>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={9} /> : (
+      {loading ? <TableSkeleton rows={10} cols={9} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

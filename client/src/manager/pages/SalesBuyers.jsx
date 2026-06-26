@@ -8,6 +8,7 @@ import StatusBadge from '../../admin/components/common/StatusBadge'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function SalesBuyers() {
   const [tab, setTab] = useState('sales')
@@ -49,7 +50,7 @@ function SalesSection() {
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
 
-  const { data, loading, refetch } = useApi(`/api/sales/?${params}`)
+  const { data, loading, error, refetch } = useApi(`/api/sales/?${params}`)
 
   const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
 
@@ -95,7 +96,9 @@ function SalesSection() {
         </button>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={10} /> : (
+      {loading ? <TableSkeleton rows={10} cols={10} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}
@@ -369,7 +372,7 @@ function BuyersSection() {
   const queryParams = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
   if (search) queryParams.set('search', search)
 
-  const { data, loading, refetch } = useApi(`/api/buyers/?${queryParams}`)
+  const { data, loading, error, refetch } = useApi(`/api/buyers/?${queryParams}`)
 
   const handleSort = (key) => {
     if (sortField === key) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -460,7 +463,9 @@ function BuyersSection() {
         </button>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={7} /> : (
+      {loading ? <TableSkeleton rows={10} cols={7} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

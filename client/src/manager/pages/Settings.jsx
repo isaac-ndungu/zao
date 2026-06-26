@@ -3,15 +3,17 @@ import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Settings() {
-  const { data: coop, loading, refetch } = useApi('/api/cooperatives/me/')
+  const { data: coop, loading, error, refetch } = useApi('/api/cooperatives/me/')
   const [editing, setEditing] = useState(null)
   const [formData, setFormData] = useState({})
   const [saving, setSaving] = useState(false)
   const { showToast } = useToast()
 
   if (loading) return <div className="max-w-2xl mx-auto"><KpiSkeleton count={4} /></div>
+  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
 
   const startEdit = (field) => {
     setEditing(field)

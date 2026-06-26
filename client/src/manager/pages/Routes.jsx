@@ -7,6 +7,7 @@ import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Routes() {
   const [page, setPage] = useState(1)
@@ -24,7 +25,7 @@ export default function Routes() {
   const queryParams = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
   if (search) queryParams.set('search', search)
 
-  const { data, loading, refetch } = useApi(`/api/routes/?${queryParams}`)
+  const { data, loading, error, refetch } = useApi(`/api/routes/?${queryParams}`)
 
   const handleSort = (key) => {
     if (sortField === key) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -108,7 +109,9 @@ export default function Routes() {
         </form>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={4} /> : (
+      {loading ? <TableSkeleton rows={10} cols={4} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

@@ -4,6 +4,7 @@ import { useApi } from '../../admin/hooks/useApi'
 import KpiCard from '../../admin/components/common/KpiCard'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 import StatusBadge from '../../admin/components/common/StatusBadge'
+import ErrorState from '../../shared/components/ErrorState'
 
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -13,8 +14,8 @@ function formatNumber(n) {
 
 export default function ManagerDashboard() {
   const navigate = useNavigate()
-  const { data: analytics, loading: analyticsLoading } = useApi('/api/analytics/dashboard/')
-  const { data: deliveriesSummary } = useApi('/api/deliveries/summary/')
+  const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch: refetchAnalytics } = useApi('/api/analytics/dashboard/')
+  const { data: deliveriesSummary, error: deliveriesError } = useApi('/api/deliveries/summary/')
   const { data: farmersStats } = useApi('/api/farmers/stats/')
   const { data: coop } = useApi('/api/cooperatives/me/')
   const { data: recentDeliveries } = useApi('/api/deliveries/?page=1&page_size=5&ordering=-date_delivered')
@@ -61,6 +62,9 @@ export default function ManagerDashboard() {
       </div>
     )
   }
+
+  if (analyticsError)
+    return <ErrorState message={analyticsError} action={{ label: 'Retry', onClick: refetchAnalytics }} />
 
   return (
     <div>

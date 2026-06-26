@@ -6,6 +6,7 @@ import Pagination from '../../admin/components/common/Pagination'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import StatusBadge from '../../admin/components/common/StatusBadge'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Deductions() {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ export default function Deductions() {
   const params = new URLSearchParams({ page, page_size: pageSize })
   if (typeFilter) params.set('type', typeFilter)
 
-  const { data, loading } = useApi(`/api/deductions/?${params}`)
+  const { data, loading, error, refetch } = useApi(`/api/deductions/?${params}`)
 
   const items = data?.results || []
   const total = data?.count || 0
@@ -53,7 +54,9 @@ export default function Deductions() {
         </select>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={7} /> : (
+      {loading ? <TableSkeleton rows={10} cols={7} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

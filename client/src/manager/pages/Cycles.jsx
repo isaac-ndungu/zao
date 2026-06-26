@@ -9,6 +9,7 @@ import KpiCard from '../../admin/components/common/KpiCard'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Cycles() {
   const [page, setPage] = useState(1)
@@ -20,7 +21,7 @@ export default function Cycles() {
 
   const sortParam = sortField.startsWith('-') ? sortField : sortField
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
-  const { data, loading, refetch } = useApi(`/api/payment-engine/?${params}`)
+  const { data, loading, error, refetch } = useApi(`/api/payment-engine/?${params}`)
 
   const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
 
@@ -75,7 +76,9 @@ export default function Cycles() {
         <KpiCard icon="check_circle" label="Completed" value={String(completedCount)} />
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={8} /> : (
+      {loading ? <TableSkeleton rows={10} cols={8} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

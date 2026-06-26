@@ -8,6 +8,7 @@ import StatusBadge from '../../admin/components/common/StatusBadge'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function GradingQueue() {
   const [tab, setTab] = useState('recent')
@@ -28,13 +29,13 @@ export default function GradingQueue() {
   ]
 
   const gradesParams = new URLSearchParams({ page, page_size: pageSize })
-  const { data: grades, loading: gradesLoading, refetch: refetchGrades } = useApi(tab === 'recent' ? `/api/grades/?${gradesParams}` : null)
+  const { data: grades, loading: gradesLoading, error: gradesError, refetch: refetchGrades } = useApi(tab === 'recent' ? `/api/grades/?${gradesParams}` : null)
 
   const awaitingParams = new URLSearchParams({ page, page_size: pageSize, status: 'PENDING' })
-  const { data: awaitingDeliveries, loading: awaitingLoading } = useApi(tab === 'awaiting' ? `/api/deliveries/?${awaitingParams}` : null)
+  const { data: awaitingDeliveries, loading: awaitingLoading, error: awaitingError } = useApi(tab === 'awaiting' ? `/api/deliveries/?${awaitingParams}` : null)
 
   const disputesParams = new URLSearchParams({ page, page_size: pageSize })
-  const { data: disputes, loading: disputesLoading, refetch: refetchDisputes } = useApi(tab === 'disputes' ? `/api/disputes/?${disputesParams}` : null)
+  const { data: disputes, loading: disputesLoading, error: disputesError, refetch: refetchDisputes } = useApi(tab === 'disputes' ? `/api/disputes/?${disputesParams}` : null)
 
   const handleOverride = async () => {
     if (!showOverride) return
@@ -96,6 +97,8 @@ export default function GradingQueue() {
 
   const currentData = tab === 'recent' ? grades : tab === 'awaiting' ? awaitingDeliveries : disputes
   const currentLoading = tab === 'recent' ? gradesLoading : tab === 'awaiting' ? awaitingLoading : disputesLoading
+  const currentError = tab === 'recent' ? gradesError : tab === 'awaiting' ? awaitingError : disputesError
+  const currentRefetch = tab === 'recent' ? refetchGrades : tab === 'awaiting' ? undefined : refetchDisputes
   const currentColumns = tab === 'recent' ? gradeColumns : tab === 'awaiting' ? awaitingColumns : disputeColumns
 
   return (
@@ -117,7 +120,9 @@ export default function GradingQueue() {
         ))}
       </div>
 
-      {currentLoading ? <TableSkeleton rows={8} cols={6} /> : (
+      {currentLoading ? <TableSkeleton rows={8} cols={6} /> : currentError ? (
+        <ErrorState message={currentError} action={{ label: 'Retry', onClick: currentRefetch }} />
+      ) : (
         <>
           <DataTable
             columns={currentColumns}

@@ -9,6 +9,7 @@ import StatusBadge from '../../admin/components/common/StatusBadge'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Farmers() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -32,7 +33,7 @@ export default function Farmers() {
   const queryParams = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
   if (search) queryParams.set('search', search)
 
-  const { data, loading, refetch } = useApi(`/api/farmers/?${queryParams}`)
+  const { data, loading, error, refetch } = useApi(`/api/farmers/?${queryParams}`)
   const { data: stats } = useApi('/api/farmers/stats/')
   const { data: counties } = useApi('/api/cooperatives/enums/')
 
@@ -202,7 +203,9 @@ export default function Farmers() {
         )}
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={7} /> : (
+      {loading ? <TableSkeleton rows={10} cols={7} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

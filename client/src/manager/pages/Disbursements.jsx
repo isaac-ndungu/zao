@@ -8,6 +8,7 @@ import StatusBadge from '../../admin/components/common/StatusBadge'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Disbursements() {
   const [page, setPage] = useState(1)
@@ -22,7 +23,7 @@ export default function Disbursements() {
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
 
-  const { data, loading, refetch } = useApi(`/api/disbursements/?${params}`)
+  const { data, loading, error, refetch } = useApi(`/api/disbursements/?${params}`)
 
   const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
 
@@ -91,7 +92,9 @@ export default function Disbursements() {
         </select>
       </div>
 
-      {loading ? <TableSkeleton rows={10} cols={7} /> : (
+      {loading ? <TableSkeleton rows={10} cols={7} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}

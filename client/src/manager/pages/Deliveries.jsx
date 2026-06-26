@@ -9,6 +9,7 @@ import KpiCard from '../../admin/components/common/KpiCard'
 import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
+import ErrorState from '../../shared/components/ErrorState'
 
 export default function Deliveries() {
   const [page, setPage] = useState(1)
@@ -29,7 +30,7 @@ export default function Deliveries() {
   if (statusFilter) params.set('status', statusFilter)
   if (productFilter) params.set('product_type', productFilter)
 
-  const { data, loading, refetch } = useApi(`/api/deliveries/?${params}`)
+  const { data, loading, error, refetch } = useApi(`/api/deliveries/?${params}`)
   const { data: summary } = useApi('/api/deliveries/summary/')
   const { data: mapData } = useApi(showMap ? '/api/deliveries/map/' : null)
 
@@ -151,7 +152,9 @@ export default function Deliveries() {
         </div>
       )}
 
-      {loading ? <TableSkeleton rows={10} cols={8} /> : (
+      {loading ? <TableSkeleton rows={10} cols={8} /> : error ? (
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+      ) : (
         <>
           <DataTable
             columns={columns}
