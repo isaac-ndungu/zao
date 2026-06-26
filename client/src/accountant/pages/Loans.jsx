@@ -5,6 +5,7 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import ErrorState from '../../shared/components/ErrorState'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
 
@@ -59,7 +60,7 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Loan #{loan.id}</h3>
           <p className="text-body-md text-on-surface-variant">{loan.farmer_name || loan.farmer?.full_name || `Farmer #${loan.farmer}`}</p>
         </div>
-        <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <button onClick={onClose} aria-label="Close panel" className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -206,7 +207,7 @@ export default function AccountantLoans() {
             </select>
           </div>
 
-          {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <p className="text-error">Failed to load loans.</p> : (
+          {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
             <DataTable
               columns={columns}
               data={loans}

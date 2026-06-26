@@ -3,6 +3,7 @@ import { useApi } from '../../admin/hooks/useApi'
 import KpiCard from '../../admin/components/common/KpiCard'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 import LineChartCard from '../../admin/components/charts/LineChartCard'
+import ErrorState from '../../shared/components/ErrorState'
 import PieChartCard from '../../admin/components/charts/PieChartCard'
 
 function formatKes(n) {
@@ -20,7 +21,7 @@ function formatNumber(n) {
 
 export default function AccountantDashboard() {
   const navigate = useNavigate()
-  const { data: finData, loading: finLoading } = useApi('/api/analytics/financial/')
+  const { data: finData, loading: finLoading, error, refetch } = useApi('/api/analytics/financial/')
   const { data: dashData, loading: dashLoading } = useApi('/api/analytics/dashboard/')
 
   const loading = finLoading || dashLoading
@@ -51,6 +52,15 @@ export default function AccountantDashboard() {
         <header className="mb-8"><h2 className="font-headline-lg text-display-md text-primary mb-1">Financial Dashboard</h2><p className="text-on-surface-variant font-body-md">Period overview</p></header>
         <KpiSkeleton count={6} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6"><KpiSkeleton count={2} /></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div>
+        <header className="mb-8"><h2 className="font-headline-lg text-display-md text-primary mb-1">Financial Dashboard</h2><p className="text-on-surface-variant font-body-md">Period overview</p></header>
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
       </div>
     )
   }

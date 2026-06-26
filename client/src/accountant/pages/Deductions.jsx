@@ -5,6 +5,7 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import ErrorState from '../../shared/components/ErrorState'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
 
@@ -23,8 +24,8 @@ export default function AccountantDeductions() {
   const qp = new URLSearchParams({ page, page_size: '20' })
   if (typeFilter) qp.set('type', typeFilter)
 
-  const { data: dedData, loading: dedLoading } = useApi(tab === 'deductions' ? `/api/deductions/?${qp}` : null)
-  const { data: creditsData, loading: creditsLoading } = useApi(tab === 'credits' ? `/api/credits/?${qp}` : null)
+  const { data: dedData, loading: dedLoading, error: dedError, refetch: dedRefetch } = useApi(tab === 'deductions' ? `/api/deductions/?${qp}` : null)
+  const { data: creditsData, loading: creditsLoading, error: creditsError, refetch: creditsRefetch } = useApi(tab === 'credits' ? `/api/credits/?${qp}` : null)
   const { data: farmers } = useApi('/api/farmers/?page=1&page_size=100')
   const { data: stats } = useApi('/api/analytics/financial/')
 
@@ -101,7 +102,7 @@ export default function AccountantDeductions() {
             </select>
           </div>
 
-          {dedLoading ? <TableSkeleton rows={10} cols={6} /> : (
+          {dedLoading ? <TableSkeleton rows={10} cols={6} /> : dedError ? <ErrorState message={dedError} action={{ label: 'Retry', onClick: dedRefetch }} /> : (
             <DataTable columns={dedColumns} data={deductions} page={page} totalPages={Math.ceil(totalCount / 20)} onPageChange={setPage} />
           )}
         </>
@@ -113,7 +114,7 @@ export default function AccountantDeductions() {
             <button onClick={() => setShowCreditForm(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">+ New Farm Input Credit</button>
           </div>
 
-          {creditsLoading ? <TableSkeleton rows={10} cols={5} /> : (
+          {creditsLoading ? <TableSkeleton rows={10} cols={5} /> : creditsError ? <ErrorState message={creditsError} action={{ label: 'Retry', onClick: creditsRefetch }} /> : (
             <DataTable columns={creditColumns} data={credits} page={page} totalPages={Math.ceil(totalCount / 20)} onPageChange={setPage} />
           )}
 
