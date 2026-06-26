@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useApi } from '../../admin/hooks/useApi'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
+import ErrorState from '../../shared/components/ErrorState'
 import StatusBadge from '../../admin/components/common/StatusBadge'
 
 export default function MyGrades() {
   const [page, setPage] = useState(1)
-  const { data, loading } = useApi(`/api/grades/?page=${page}&page_size=20&ordering=-created_at`)
+  const { data, loading, error, refetch } = useApi(`/api/grades/?page=${page}&page_size=20&ordering=-created_at`)
 
   const grades = data?.results || []
   const total = data?.count || 0
@@ -17,6 +18,17 @@ export default function MyGrades() {
           <h2 className="font-headline-lg text-display-md text-primary mb-1">My Grades</h2>
         </header>
         <TableSkeleton rows={6} cols={4} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div>
+        <header className="mb-6">
+          <h2 className="font-headline-lg text-display-md text-primary mb-1">My Grades</h2>
+        </header>
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
       </div>
     )
   }

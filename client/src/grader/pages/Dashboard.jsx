@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
+import ErrorState from '../../shared/components/ErrorState'
 
 function timeSince(dateStr) {
   if (!dateStr) return ''
@@ -14,7 +15,7 @@ function timeSince(dateStr) {
 
 export default function GraderDashboard() {
   const navigate = useNavigate()
-  const { data: pendingData, loading } = useApi(`/api/deliveries/?status=PENDING&page_size=50&ordering=-date_delivered`)
+  const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page_size=50&ordering=-date_delivered`)
   const { data: summary } = useApi('/api/deliveries/summary/')
   const { data: gradedToday } = useApi(`/api/grades/?page_size=1`)
 
@@ -30,6 +31,18 @@ export default function GraderDashboard() {
           <p className="text-on-surface-variant font-body-md">Pending deliveries queue</p>
         </header>
         <KpiSkeleton count={3} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div>
+        <header className="mb-8">
+          <h2 className="font-headline-lg text-display-md text-primary mb-1">Grader Dashboard</h2>
+          <p className="text-on-surface-variant font-body-md">Pending deliveries queue</p>
+        </header>
+        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
       </div>
     )
   }
