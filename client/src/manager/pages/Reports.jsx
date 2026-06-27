@@ -21,10 +21,10 @@ export default function Reports() {
   const navigate = useNavigate()
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <header className="mb-8">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">Reports</h2>
-        <p className="text-on-surface-variant font-body-md">Export data and view summaries</p>
+        <h2 className="text-3xl font-bold text-on-surface mb-1">Reports</h2>
+        <p className="text-sm text-on-surface-variant">Export data and view summaries</p>
       </header>
 
       <section className="mb-8">
@@ -34,7 +34,7 @@ export default function Reports() {
             <button
               key={card.to}
               onClick={() => navigate(card.to)}
-              className="text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:bg-surface-container-high transition-colors"
+              className="text-left bg-surface-container rounded-2xl border border-outline-variant/40 p-5 shadow-sm hover:bg-surface-container-high transition-colors"
             >
               <span className="material-symbols-outlined text-primary text-[32px] mb-2">{card.icon}</span>
               <h4 className="font-headline-sm text-title-md text-on-surface mb-1">{card.label}</h4>
@@ -51,7 +51,7 @@ export default function Reports() {
             <button
               key={card.label}
               onClick={() => exportCsv(card.endpoint)}
-              className="text-left bg-surface-container-lowest border border-outline-variant rounded-xl p-5 hover:bg-surface-container-high transition-colors"
+              className="text-left bg-surface-container rounded-2xl border border-outline-variant/40 p-5 shadow-sm hover:bg-surface-container-high transition-colors"
             >
               <div className="flex items-center gap-3 mb-2">
                 <span className="material-symbols-outlined text-primary">{card.icon}</span>

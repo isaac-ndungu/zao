@@ -34,7 +34,7 @@ export default function Deliveries() {
   const { data: summary } = useApi('/api/deliveries/summary/')
   const { data: mapData } = useApi(showMap ? '/api/deliveries/map/' : null)
 
-  const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
+  const handleSort = (key) => setSortField((prev) => (prev === key ? `-${key}` : key))
 
   const searchFarmer = useCallback(async (q) => {
     setFarmerSearch(q)
@@ -70,7 +70,7 @@ export default function Deliveries() {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
-  const withLocationCount = mapData?.filter(m => m.latitude && m.longitude)?.length || 0
+  const withLocationCount = mapData?.filter((m) => m.latitude && m.longitude)?.length || 0
   const totalMapItems = mapData?.length || 0
 
   const columns = [
@@ -91,13 +91,13 @@ export default function Deliveries() {
   const totalDeliveries = summary?.total || 0
 
   return (
-    <div>
-      <header className="mb-6 flex items-center justify-between flex-wrap gap-4">
+    <div className="max-w-7xl mx-auto">
+      <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="font-headline-lg text-display-md text-primary mb-1">Deliveries</h2>
-          <p className="text-on-surface-variant font-body-md">{totalDeliveries} total</p>
+          <h2 className="text-3xl font-bold text-on-surface mb-1">Deliveries</h2>
+          <p className="text-sm text-on-surface-variant">{totalDeliveries} total</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button onClick={() => setShowMap(!showMap)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">map</span>Map View
           </button>
@@ -135,7 +135,7 @@ export default function Deliveries() {
       </div>
 
       {showMap && (
-        <div className="mb-6 bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
+        <div className="mb-6 bg-surface-container rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-headline-sm text-headline-sm text-on-surface">Delivery Map</h3>
             <span className="text-label-md text-on-surface-variant">

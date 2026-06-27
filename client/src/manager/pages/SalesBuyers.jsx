@@ -14,10 +14,10 @@ export default function SalesBuyers() {
   const [tab, setTab] = useState('sales')
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <header className="mb-6">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">Sales & Buyers</h2>
-        <p className="text-on-surface-variant font-body-md">Manage sales and buyer records</p>
+        <h2 className="text-3xl font-bold text-on-surface mb-1">Sales & Buyers</h2>
+        <p className="text-sm text-on-surface-variant">Manage sales and buyer records</p>
       </header>
 
       <div className="flex gap-1 mb-6 bg-surface-container rounded-lg p-1 w-fit">
@@ -429,18 +429,21 @@ function BuyersSection() {
     },
   ]
 
-  const buyerFormFields = ['name', 'contact_person', 'phone_number', 'email', 'kra_pin', 'physical_address'].map(f => ({
-    key: f,
-    label: f.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    required: f === 'name',
-  }))
+  const buyerFormFields = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'contact_person', label: 'Contact Person' },
+    { key: 'phone_number', label: 'Phone' },
+    { key: 'email', label: 'Email' },
+    { key: 'kra_pin', label: 'KRA PIN' },
+    { key: 'physical_address', label: 'Physical Address', textarea: true },
+  ]
 
   const buyerForm = (defaults = {}, onSubmit, submitLabel) => (
     <form onSubmit={onSubmit} className="space-y-4">
-      {buyerFormFields.map(({ key, label, required }) => (
+      {buyerFormFields.map(({ key, label, required, textarea }) => (
         <div key={key}>
           <label className="block text-label-md text-on-surface-variant mb-1 capitalize">{label}</label>
-          {key === 'physical_address' ? (
+          {textarea ? (
             <textarea name={key} defaultValue={defaults[key] || ''} rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           ) : (
             <input name={key} defaultValue={defaults[key] || ''} required={required} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />

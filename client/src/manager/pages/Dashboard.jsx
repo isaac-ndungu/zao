@@ -15,7 +15,7 @@ function formatNumber(n) {
 export default function ManagerDashboard() {
   const navigate = useNavigate()
   const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch: refetchAnalytics } = useApi('/api/analytics/dashboard/')
-  const { data: deliveriesSummary, error: deliveriesError } = useApi('/api/deliveries/summary/')
+  const { data: deliveriesSummary } = useApi('/api/deliveries/summary/')
   const { data: farmersStats } = useApi('/api/farmers/stats/')
   const { data: coop } = useApi('/api/cooperatives/me/')
   const { data: recentDeliveries } = useApi('/api/deliveries/?page=1&page_size=5&ordering=-date_delivered')
@@ -30,23 +30,44 @@ export default function ManagerDashboard() {
   const activeFarmers = farmersStats?.active || 0
   const pendingDisputesCount = pendingDisputes?.count || pendingDisputes?.results?.length || 0
   const pendingDisbursementCount = pendingDisbursements?.count || pendingDisbursements?.results?.length || 0
-  const todayDeliveries = deliveriesSummary?.by_status ? Object.values(deliveriesSummary.by_status).reduce((a, b) => a + b, 0) : 0
+  const todayDeliveries = deliveriesSummary?.by_status
+    ? Object.values(deliveriesSummary.by_status).reduce((a, b) => a + b, 0)
+    : 0
 
   const recentActivities = useMemo(() => {
     const items = []
     if (recentDeliveries?.results) {
       recentDeliveries.results.slice(0, 5).forEach((d) => {
-        items.push({ id: `del-${d.id}`, type: 'delivery', date: d.date_delivered, text: `${d.farmer_name || 'Farmer'} — ${d.quantity_kg || d.volume_litres}kg`, status: d.status })
+        items.push({
+          id: `del-${d.id}`,
+          type: 'delivery',
+          date: d.date_delivered,
+          text: `${d.farmer_name || 'Farmer'} — ${d.quantity_kg || d.volume_litres}kg`,
+          status: d.status,
+        })
       })
     }
     if (recentGrades?.results) {
       recentGrades.results.slice(0, 5).forEach((g) => {
-        items.push({ id: `grade-${g.id}`, type: 'grade', date: g.created_at, text: `Grade ${g.grade_letter} — ${g.delivery?.batch_id || ''}`, status: g.grade_letter })
+        items.push({
+          id: `grade-${g.id}`,
+          type: 'grade',
+          date: g.created_at,
+          text: `Grade ${g.grade_letter} — ${g.delivery?.batch_id || ''}`,
+          status: g.grade_letter,
+        })
       })
     }
     if (recentCycles?.results) {
       const cycle = recentCycles.results[0]
-      if (cycle) items.push({ id: `cycle-${cycle.id}`, type: 'cycle', date: cycle.updated_at, text: `Cycle: ${cycle.name}`, status: cycle.status })
+      if (cycle)
+        items.push({
+          id: `cycle-${cycle.id}`,
+          type: 'cycle',
+          date: cycle.updated_at,
+          text: `Cycle: ${cycle.name}`,
+          status: cycle.status,
+        })
     }
     return items.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10)
   }, [recentDeliveries, recentGrades, recentCycles])
@@ -55,8 +76,8 @@ export default function ManagerDashboard() {
     return (
       <div>
         <header className="mb-8">
-          <h2 className="font-headline-lg text-display-md text-primary mb-1">Dashboard</h2>
-          {coop?.name && <p className="text-on-surface-variant font-body-md">{coop.name}</p>}
+          <h2 className="text-3xl font-bold text-on-surface mb-2">Dashboard</h2>
+          {coop?.name && <p className="text-on-surface-variant">{coop.name}</p>}
         </header>
         <KpiSkeleton count={6} />
       </div>
@@ -67,15 +88,15 @@ export default function ManagerDashboard() {
     return <ErrorState message={analyticsError} action={{ label: 'Retry', onClick: refetchAnalytics }} />
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <header className="mb-8">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">
+        <h2 className="text-3xl font-bold text-on-surface mb-1">
           {coop ? `Welcome, ${coop.name}` : 'Dashboard'}
         </h2>
-        <p className="text-on-surface-variant font-body-md">Cooperative management overview</p>
+        <p className="text-on-surface-variant text-sm">Cooperative management overview</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <KpiCard icon="agriculture" label="Total Farmers" value={formatNumber(totalFarmers)} onClick={() => navigate('/manager/farmers')} />
         <KpiCard icon="person" label="Active Farmers" value={formatNumber(activeFarmers)} trend={activeFarmers > 0 ? 100 : 0} onClick={() => navigate('/manager/farmers')} />
         <KpiCard icon="grading" label="Pending Gradings" value={String(pendingGradings)} highlighted={pendingGradings > 0} onClick={() => navigate('/manager/grading')} />
@@ -85,7 +106,7 @@ export default function ManagerDashboard() {
       </div>
 
       {ad && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <KpiCard icon="payments" label="Revenue" value={ad.financial?.total_revenue ? `KES ${formatNumber(ad.financial.total_revenue)}` : '-'} onClick={() => navigate('/manager/reports')} />
           <KpiCard icon="inventory_2" label="Production" value={ad.production?.total_kg ? `${formatNumber(ad.production.total_kg)} kg` : '-'} onClick={() => navigate('/manager/inventory')} />
           <KpiCard icon="account_balance" label="Gross Payout" value={ad.financial?.total_gross_payout ? `KES ${formatNumber(ad.financial.total_gross_payout)}` : '-'} onClick={() => navigate('/manager/cycles')} />
@@ -94,22 +115,24 @@ export default function ManagerDashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Recent Activity</h3>
+        <div className="lg:col-span-2 bg-surface-container rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-on-surface mb-4">Recent Activity</h3>
           {recentActivities.length === 0 ? (
-            <p className="text-on-surface-variant text-body-md">No recent activity.</p>
+            <p className="text-on-surface-variant text-sm">No recent activity.</p>
           ) : (
             <div className="space-y-3">
               {recentActivities.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 py-2 border-b border-outline-variant/50 last:border-0">
-                  <span className={`material-symbols-outlined text-[18px] ${
-                    item.type === 'delivery' ? 'text-primary' : item.type === 'grade' ? 'text-secondary' : 'text-tertiary'
-                  }`}>
+                <div key={item.id} className="flex items-center gap-4 py-2 border-b border-outline-variant/20 last:border-0">
+                  <span
+                    className={`material-symbols-outlined text-xl ${
+                      item.type === 'delivery' ? 'text-primary' : item.type === 'grade' ? 'text-secondary' : 'text-tertiary'
+                    }`}
+                  >
                     {item.type === 'delivery' ? 'local_shipping' : item.type === 'grade' ? 'grading' : 'payments'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-body-md text-on-surface truncate">{item.text}</p>
-                    <p className="text-label-md text-on-surface-variant">
+                    <p className="text-sm text-on-surface truncate">{item.text}</p>
+                    <p className="text-xs text-on-surface-variant">
                       {item.date ? new Date(item.date).toLocaleDateString() : ''}
                     </p>
                   </div>
@@ -120,24 +143,36 @@ export default function ManagerDashboard() {
           )}
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Quick Actions</h3>
+        <div className="bg-surface-container rounded-2xl border border-outline-variant/40 p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-on-surface mb-4">Quick Actions</h3>
           <div className="space-y-3">
-            <button onClick={() => navigate('/manager/farmers')} className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left">
+            <button
+              onClick={() => navigate('/manager/farmers')}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
+            >
               <span className="material-symbols-outlined text-primary">person_add</span>
-              <span className="text-body-md text-on-surface font-medium">Register Farmer</span>
+              <span className="text-sm font-medium text-on-surface">Register Farmer</span>
             </button>
-            <button onClick={() => navigate('/manager/deliveries')} className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left">
+            <button
+              onClick={() => navigate('/manager/deliveries')}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
+            >
               <span className="material-symbols-outlined text-primary">add_circle</span>
-              <span className="text-body-md text-on-surface font-medium">Record Delivery</span>
+              <span className="text-sm font-medium text-on-surface">Record Delivery</span>
             </button>
-            <button onClick={() => navigate('/manager/loans')} className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left">
+            <button
+              onClick={() => navigate('/manager/loans')}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
+            >
               <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
-              <span className="text-body-md text-on-surface font-medium">Review Loans</span>
+              <span className="text-sm font-medium text-on-surface">Review Loans</span>
             </button>
-            <button onClick={() => navigate('/manager/disbursements')} className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left">
+            <button
+              onClick={() => navigate('/manager/disbursements')}
+              className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
+            >
               <span className="material-symbols-outlined text-primary">check_circle</span>
-              <span className="text-body-md text-on-surface font-medium">Approve Disbursements</span>
+              <span className="text-sm font-medium text-on-surface">Approve Disbursements</span>
               {pendingDisbursementCount > 0 && (
                 <span className="ml-auto bg-error text-on-error text-[10px] font-bold px-2 py-0.5 rounded-full">
                   {pendingDisbursementCount}

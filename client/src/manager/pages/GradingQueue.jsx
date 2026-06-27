@@ -102,10 +102,10 @@ export default function GradingQueue() {
   const currentColumns = tab === 'recent' ? gradeColumns : tab === 'awaiting' ? awaitingColumns : disputeColumns
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <header className="mb-6">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">Grading Queue</h2>
-        <p className="text-on-surface-variant font-body-md">Monitor grades, pending deliveries, and disputes</p>
+        <h2 className="text-3xl font-bold text-on-surface mb-1">Grading Queue</h2>
+        <p className="text-sm text-on-surface-variant">Monitor grades, pending deliveries, and disputes</p>
       </header>
 
       <div className="flex gap-1 mb-6 bg-surface-container rounded-lg p-1 w-fit">
@@ -141,7 +141,7 @@ export default function GradingQueue() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(detailItem).filter(([k]) => !['id', 'delivery'].includes(k)).map(([k, v]) => (
-                <div key={k}><p className="text-label-md text-on-surface-variant capitalize">{k.replace('_',' ')}</p><p className="text-body-md text-on-surface font-medium">{v !== null && v !== undefined ? String(v) : '-'}</p></div>
+                <div key={k}><p className="text-label-md text-on-surface-variant capitalize">{k.replace('_', ' ')}</p><p className="text-body-md text-on-surface font-medium">{v !== null && v !== undefined ? String(v) : '-'}</p></div>
               ))}
             </div>
           </div>
@@ -151,7 +151,7 @@ export default function GradingQueue() {
       <SlideOutPanel open={!!showOverride} onClose={() => setShowOverride(null)} title="Override Grade" width="max-w-md">
         <div className="space-y-4">
           <div><label className="block text-label-md text-on-surface-variant mb-1">Grade Letter</label><select value={overrideData.grade_letter} onChange={(e) => setOverrideData(p => ({ ...p, grade_letter: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="PREMIUM">Premium</option><option value="STANDARD">Standard</option></select></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Reason</label><textarea value={overrideData.override_reason} onChange={(e) => setOverrideData(p => ({ ...p, override_reason: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+          <div><label className="block text-label-md text-on-surface-variant mb-1">Reason</label><textarea value={overrideData.override_reason} onChange={(e) => setOverrideData(p => ({ ...p, override_reason: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
           <button onClick={handleOverride} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Override Grade</button>
         </div>
       </SlideOutPanel>
@@ -159,7 +159,7 @@ export default function GradingQueue() {
       <SlideOutPanel open={!!showResolve} onClose={() => setShowResolve(null)} title="Resolve Dispute" width="max-w-md">
         <div className="space-y-4">
           <div><label className="block text-label-md text-on-surface-variant mb-1">Status</label><select value={resolveData.status} onChange={(e) => setResolveData(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="RESOLVED">Resolved</option><option value="REJECTED">Rejected</option></select></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label><textarea value={resolveData.resolution_notes} onChange={(e) => setResolveData(p => ({ ...p, resolution_notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+          <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label><textarea value={resolveData.resolution_notes} onChange={(e) => setResolveData(p => ({ ...p, resolution_notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
           <button onClick={handleResolve} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Submit Resolution</button>
         </div>
       </SlideOutPanel>

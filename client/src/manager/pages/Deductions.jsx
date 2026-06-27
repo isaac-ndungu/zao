@@ -38,10 +38,10 @@ export default function Deductions() {
   ]
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <header className="mb-6">
-        <h2 className="font-headline-lg text-display-md text-primary mb-1">Deductions</h2>
-        <p className="text-on-surface-variant font-body-md">{total} total</p>
+        <h2 className="text-3xl font-bold text-on-surface mb-1">Deductions</h2>
+        <p className="text-sm text-on-surface-variant">{total} total</p>
       </header>
 
       <div className="mb-4">

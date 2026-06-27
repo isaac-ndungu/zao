@@ -39,11 +39,11 @@ export default function Inventory() {
   ]
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto">
       <header className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="font-headline-lg text-display-md text-primary mb-1">Inventory</h2>
-          <p className="text-on-surface-variant font-body-md">{total} batches</p>
+          <h2 className="text-3xl font-bold text-on-surface mb-1">Inventory</h2>
+          <p className="text-sm text-on-surface-variant">{total} batches</p>
         </div>
         <button onClick={() => setShowAlerts(!showAlerts)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]">warning</span>
@@ -104,8 +104,7 @@ export default function Inventory() {
             <div className="grid grid-cols-2 gap-4">
               {['batch_id', 'product_type', 'grade', 'unit', 'quantity_in', 'quantity_out', 'running_balance', 'is_sold', 'created_at'].map(f => (
                 <div key={f}><p className="text-label-md text-on-surface-variant capitalize">{f.replace(/_/g, ' ')}</p><p className="text-body-md text-on-surface font-medium">
-                  {f === 'is_sold' ? (detailItem[f] ? 'Sold' : 'Available')
-                    : String(detailItem[f] ?? '-')}
+                  {f === 'is_sold' ? (detailItem[f] ? 'Sold' : 'Available') : String(detailItem[f] ?? '-')}
                 </p></div>
               ))}
             </div>
