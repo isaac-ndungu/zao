@@ -14,7 +14,7 @@ from .views import (
 
 router = SimpleRouter()
 router.register('audit', AuditLogViewSet)
-router.register('external-audit', ExternalAuditLogViewSet)
+router.register('external-audit', ExternalAuditLogViewSet, basename='external-auditlog')
 
 urlpatterns = [
     path('annual-report/', AnnualReportView.as_view(), name='annual-report'),
