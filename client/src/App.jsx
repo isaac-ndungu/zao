@@ -51,6 +51,7 @@ const FarmerLoans = lazy(() => import('./farmer/pages/Loans'))
 const FarmerProfile = lazy(() => import('./farmer/pages/Profile'))
 const FarmerChat = lazy(() => import('./farmer/pages/Chat'))
 const FarmerSettings = lazy(() => import('./farmer/pages/Settings'))
+const FarmerNotifications = lazy(() => import('./farmer/pages/Notifications'))
 
 // Manager pages
 const ManagerLayout = lazy(() => import('./manager/ManagerLayout'))
@@ -301,6 +302,7 @@ export default function App() {
                 <Route path="profile" element={<SuspenseWrapper><FarmerProfile /></SuspenseWrapper>} />
                 <Route path="chat" element={<SuspenseWrapper><FarmerChat /></SuspenseWrapper>} />
                 <Route path="settings" element={<SuspenseWrapper><FarmerSettings /></SuspenseWrapper>} />
+                <Route path="notifications" element={<SuspenseWrapper><FarmerNotifications /></SuspenseWrapper>} />
               </Route>
             </Route>
           </Route>

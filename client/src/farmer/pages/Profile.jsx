@@ -57,7 +57,7 @@ export default function FarmerProfile() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold">{t('profile')}</h2>
         <div className="flex items-center gap-3">
-          <NotificationBell />
+          <NotificationBell viewAllPath="/farmer/notifications" />
           <button onClick={() => navigate('/farmer/settings')} aria-label={t('settings')} className="p-1">
             <span className="material-symbols-outlined text-on-surface-variant">settings</span>
           </button>

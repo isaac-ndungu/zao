@@ -68,7 +68,7 @@ export default function FarmerDashboard() {
       <div>
         <div className="flex justify-between items-center mb-6">
           <div className="animate-pulse bg-gray-200 rounded-lg h-8 w-40" />
-          <NotificationBell />
+          <NotificationBell viewAllPath="/farmer/notifications" />
         </div>
         <KpiSkeleton />
         <div className="mt-6 space-y-3"><CardSkeleton /><CardSkeleton /></div>
@@ -94,7 +94,7 @@ export default function FarmerDashboard() {
             </p>
           )}
         </div>
-        <NotificationBell />
+        <NotificationBell viewAllPath="/farmer/notifications" />
       </div>
 
       {/* Today's deliveries summary */}
