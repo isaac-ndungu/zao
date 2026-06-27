@@ -1,41 +1,76 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFarmerAuth } from '../context/FarmerAuthContext'
 import { getToken } from '../api/client'
 
 function OTPInput({ value, onChange, onSubmit, error, autoFocus }) {
-  const handleChange = (val) => {
-    const digits = val.replace(/\D/g, '').slice(0, 6)
+  const inputRefs = useRef([])
+
+  const handleChange = (newValue) => {
+    const digits = newValue.replace(/\D/g, '').slice(0, 6)
     onChange(digits)
-    if (digits.length === 6) setTimeout(() => onSubmit?.(), 100)
+    if (digits.length === 6) {
+      setTimeout(() => onSubmit?.(), 100)
+    }
+  }
+
+  const focusNext = (index) => {
+    if (index < 5) inputRefs.current[index + 1]?.focus()
+  }
+
+  const focusPrev = (index) => {
+    if (index > 0) inputRefs.current[index - 1]?.focus()
+  }
+
+  const handleInputChange = (index, char) => {
+    const digit = char.replace(/\D/g, '')
+    if (!digit) return
+    const newValue = value.split('')
+    newValue[index] = digit
+    handleChange(newValue.join(''))
+    focusNext(index)
+  }
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace') {
+      if (value[index]) {
+        // Clear current cell
+        const newValue = value.split('')
+        newValue[index] = ''
+        handleChange(newValue.join(''))
+      } else {
+        focusPrev(index)
+      }
+    } else if (e.key === 'ArrowLeft') {
+      focusPrev(index)
+    } else if (e.key === 'ArrowRight') {
+      focusNext(index)
+    }
+  }
+
+  const handlePaste = (e) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData.getData('text/plain')
+    const digits = pastedData.replace(/\D/g, '').slice(0, 6)
+    handleChange(digits)
+    // Focus last filled cell or first empty
+    const nextIndex = Math.min(digits.length, 5)
+    inputRefs.current[nextIndex]?.focus()
   }
 
   return (
     <div>
-      <div className="flex gap-2 justify-center mb-2">
+      <div className="flex gap-2 justify-center mb-2" onPaste={handlePaste}>
         {Array.from({ length: 6 }).map((_, i) => (
           <input
             key={i}
+            ref={(el) => (inputRefs.current[i] = el)}
             type="tel"
+            inputMode="numeric"
             maxLength={1}
             value={value[i] || ''}
-            onChange={(e) => {
-              const newVal = value.split('')
-              newVal[i] = e.target.value.replace(/\D/g, '')
-              handleChange(newVal.join(''))
-              if (e.target.value && i < 5) {
-                const next = document.querySelector(`[data-otp="${i + 1}"]`)
-                next?.focus()
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Backward' && !value[i] && i > 0) {
-                const prev = document.querySelector(`[data-otp="${i - 1}"]`)
-                prev?.focus()
-              }
-            }}
-            data-otp={i}
-            ref={(el) => { if (i === 0 && autoFocus) el?.focus() }}
+            onChange={(e) => handleInputChange(i, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(i, e)}
             className="w-11 h-12 text-center text-xl font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
           />
         ))}
@@ -55,6 +90,7 @@ export default function FarmerLogin() {
   const [step, setStep] = useState('phone')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const ignoreRef = useRef(false)
 
   const sessionExpired = new URLSearchParams(window.location.search).get('expired') === '1'
 
@@ -66,13 +102,18 @@ export default function FarmerLogin() {
     e.preventDefault()
     setError('')
     setLoading(true)
+    ignoreRef.current = false // new request, reset ignore flag
     try {
       const result = await farmerLogin(phoneNumber)
+      if (ignoreRef.current) return // user went back while waiting
       setLoginToken(result.loginToken)
       setStep('otp')
     } catch (err) {
+      if (ignoreRef.current) return
       setError(err.detail || err.message || 'Failed to send OTP.')
-    } finally { setLoading(false) }
+    } finally {
+      if (!ignoreRef.current) setLoading(false)
+    }
   }
 
   const handleVerifyOtp = async () => {
@@ -133,7 +174,17 @@ export default function FarmerLogin() {
               <button type="submit" disabled={loading || otpCode.length !== 6} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full">
                 {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" /> Verifying...</> : 'Verify'}
               </button>
-              <button type="button" onClick={() => { setStep('phone'); setError(''); setOtpCode('') }} className="w-full text-center text-sm text-primary font-medium hover:underline mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('phone')
+                  setError('')
+                  setOtpCode('')
+                  setLoading(false)         // stop loading spinner
+                  ignoreRef.current = true  // ignore any in‑flight OTP request
+                }}
+                className="w-full text-center text-sm text-primary font-medium hover:underline mt-2"
+              >
                 Back to login
               </button>
             </form>

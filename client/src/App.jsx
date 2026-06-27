@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AdminAuthProvider } from './admin/contexts/AdminAuthContext'
 import AdminGuard from './admin/components/common/AdminGuard'
 import AdminLayout from './admin/layouts/AdminLayout'
@@ -7,6 +7,8 @@ import RoleGuard from './shared/components/RoleGuard'
 import DashboardLayout from './shared/components/DashboardLayout'
 import LegalAcceptanceGate from './shared/components/LegalAcceptanceGate'
 import ErrorBoundary from './shared/components/ErrorBoundary'
+import { FarmerAuthProvider } from './farmer/context/FarmerAuthContext'
+import { ToastProvider } from './farmer/components/Toast'
 
 // Public pages
 const Home = lazy(() => import('./pages/Home'))
@@ -100,29 +102,6 @@ function SuspenseFallback() {
   )
 }
 
-function PlaceholderPage({ title }) {
-  return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="font-headline-lg text-headline-lg text-primary mb-4">{title}</h1>
-        <p className="text-body-md text-on-surface-variant">This dashboard is coming soon.</p>
-      </div>
-    </div>
-  )
-}
-
-function RolePlaceholder({ roles }) {
-  return (
-    <RoleGuard roles={roles}>
-      <LegalAcceptanceGate>
-        <DashboardLayout>
-          <PlaceholderPage title={`${roles[0]?.charAt(0).toUpperCase() + roles[0]?.slice(1)} Dashboard`} />
-        </DashboardLayout>
-      </LegalAcceptanceGate>
-    </RoleGuard>
-  )
-}
-
 function AdminRoutes() {
   return (
     <AdminGuard>
@@ -162,7 +141,6 @@ export default function App() {
 
           {/* Login pages */}
           <Route path="/admin/login" element={<SuspenseWrapper><Login /></SuspenseWrapper>} />
-          <Route path="/farmer/login" element={<SuspenseWrapper><FarmerLogin /></SuspenseWrapper>} />
 
           {/* Super-admin / Admin routes */}
           <Route path="/admin" element={<AdminRoutes />}>
@@ -289,9 +267,14 @@ export default function App() {
           </Route>
 
           {/* Farmer dashboard  */}
-          <Route path="/farmer" element={<FarmerRoutes />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<SuspenseWrapper><FarmerDashboard /></SuspenseWrapper>} />
+          <Route element={<FarmerAuthProvider><Outlet /></FarmerAuthProvider>}>
+            <Route element={<ToastProvider><Outlet /></ToastProvider>}>
+              <Route path="/farmer/login" element={<SuspenseWrapper><FarmerLogin /></SuspenseWrapper>} />
+              <Route path="/farmer" element={<FarmerRoutes />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<SuspenseWrapper><FarmerDashboard /></SuspenseWrapper>} />
+              </Route>
+            </Route>
           </Route>
 
           {/* Catch-all */}
