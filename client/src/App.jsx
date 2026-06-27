@@ -9,6 +9,7 @@ import LegalAcceptanceGate from './shared/components/LegalAcceptanceGate'
 import ErrorBoundary from './shared/components/ErrorBoundary'
 import { FarmerAuthProvider } from './farmer/context/FarmerAuthContext'
 import { ToastProvider } from './farmer/components/Toast'
+import BottomNav from './farmer/components/BottomNav'
 
 // Public pages
 const Home = lazy(() => import('./pages/Home'))
@@ -35,7 +36,7 @@ const TrashManagement = lazy(() => import('./admin/pages/TrashManagement'))
 const HealthMonitor = lazy(() => import('./admin/pages/HealthMonitor'))
 const Cooperatives = lazy(() => import('./admin/pages/Cooperatives'))
 const Loans = lazy(() => import('./admin/pages/Loans'))
-const FarmerPayments = lazy(() => import('./admin/pages/FarmerPayments'))
+const AdminFarmerPayments = lazy(() => import('./admin/pages/FarmerPayments'))
 const OTPTokens = lazy(() => import('./admin/pages/OTPTokens'))
 const SeasonalPatterns = lazy(() => import('./admin/pages/SeasonalPatterns'))
 const FarmerRetention = lazy(() => import('./admin/pages/FarmerRetention'))
@@ -43,6 +44,13 @@ const AdminNotFound = lazy(() => import('./admin/pages/NotFound'))
 
 // Farmer pages 
 const FarmerDashboard = lazy(() => import('./farmer/pages/Dashboard'))
+const FarmerDeliveries = lazy(() => import('./farmer/pages/Deliveries'))
+const FarmerPayments = lazy(() => import('./farmer/pages/Payments'))
+const FarmerGrades = lazy(() => import('./farmer/pages/Grades'))
+const FarmerLoans = lazy(() => import('./farmer/pages/Loans'))
+const FarmerProfile = lazy(() => import('./farmer/pages/Profile'))
+const FarmerChat = lazy(() => import('./farmer/pages/Chat'))
+const FarmerSettings = lazy(() => import('./farmer/pages/Settings'))
 
 // Manager pages
 const ManagerLayout = lazy(() => import('./manager/ManagerLayout'))
@@ -112,12 +120,25 @@ function AdminRoutes() {
   )
 }
 
-function FarmerRoutes() {
+// Farmer mobile layout with bottom navigation
+function FarmerLayoutWithNav() {
+  return (
+    <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
+      <div className="px-4 pt-4">
+        <Outlet />   {/* Renders the matched child route (dashboard, deliveries, etc.) */}
+      </div>
+      <BottomNav />
+    </div>
+  )
+}
+
+// Authenticated farmer layout with role guard, legal gate, etc.
+function FarmerAuthenticatedLayout() {
   return (
     <RoleGuard roles={['farmer']}>
       <LegalAcceptanceGate>
         <ErrorBoundary>
-          <DashboardLayout />
+          <FarmerLayoutWithNav />
         </ErrorBoundary>
       </LegalAcceptanceGate>
     </RoleGuard>
@@ -159,7 +180,7 @@ export default function App() {
             <Route path="health" element={<SuspenseWrapper><HealthMonitor /></SuspenseWrapper>} />
             <Route path="cooperatives" element={<SuspenseWrapper><Cooperatives /></SuspenseWrapper>} />
             <Route path="loans" element={<SuspenseWrapper><Loans /></SuspenseWrapper>} />
-            <Route path="farmer-payments" element={<SuspenseWrapper><FarmerPayments /></SuspenseWrapper>} />
+            <Route path="farmer-payments" element={<SuspenseWrapper><AdminFarmerPayments /></SuspenseWrapper>} />
             <Route path="otp-tokens" element={<SuspenseWrapper><OTPTokens /></SuspenseWrapper>} />
             <Route path="analytics/seasonal" element={<SuspenseWrapper><SeasonalPatterns /></SuspenseWrapper>} />
             <Route path="analytics/retention" element={<SuspenseWrapper><FarmerRetention /></SuspenseWrapper>} />
@@ -266,13 +287,20 @@ export default function App() {
             <Route path="loan-portfolio" element={<SuspenseWrapper><ExternalLoanPortfolio /></SuspenseWrapper>} />
           </Route>
 
-          {/* Farmer dashboard  */}
+          {/* Farmer auth */}
           <Route element={<FarmerAuthProvider><Outlet /></FarmerAuthProvider>}>
             <Route element={<ToastProvider><Outlet /></ToastProvider>}>
               <Route path="/farmer/login" element={<SuspenseWrapper><FarmerLogin /></SuspenseWrapper>} />
-              <Route path="/farmer" element={<FarmerRoutes />}>
+              <Route path="/farmer" element={<FarmerAuthenticatedLayout />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<SuspenseWrapper><FarmerDashboard /></SuspenseWrapper>} />
+                <Route path="deliveries" element={<SuspenseWrapper><FarmerDeliveries /></SuspenseWrapper>} />
+                <Route path="payments" element={<SuspenseWrapper><FarmerPayments /></SuspenseWrapper>} />
+                <Route path="grades" element={<SuspenseWrapper><FarmerGrades /></SuspenseWrapper>} />
+                <Route path="loans" element={<SuspenseWrapper><FarmerLoans /></SuspenseWrapper>} />
+                <Route path="profile" element={<SuspenseWrapper><FarmerProfile /></SuspenseWrapper>} />
+                <Route path="chat" element={<SuspenseWrapper><FarmerChat /></SuspenseWrapper>} />
+                <Route path="settings" element={<SuspenseWrapper><FarmerSettings /></SuspenseWrapper>} />
               </Route>
             </Route>
           </Route>

@@ -118,14 +118,7 @@ export default function Farmers() {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
-  const handleBulkAction = async (action) => {
-    try {
-      const res = await apiFetch('/api/farmers/bulk/', { method: 'POST', body: JSON.stringify({ action, ids: selectedIds }) })
-      if (!res.ok) throw new Error('Bulk action failed')
-      showToast({ type: 'success', message: `Bulk ${action} completed for ${selectedIds.length} farmers.` })
-      setSelectedIds([]); refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-  }
+
 
   const columns = [
     { key: 'member_number', label: 'Member #', sortable: true },
@@ -194,13 +187,7 @@ export default function Farmers() {
           <input name="search" defaultValue={search} placeholder="Search farmers..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"/>
           <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
         </form>
-        {selectedIds.length > 0 && (
-          <div className="flex gap-2">
-            <span className="text-label-md text-on-surface-variant self-center">{selectedIds.length} selected</span>
-            <button onClick={() => handleBulkAction('activate')} className="px-3 py-1.5 bg-primary-container text-on-primary-container rounded-lg text-label-md font-bold">Activate</button>
-            <button onClick={() => handleBulkAction('deactivate')} className="px-3 py-1.5 bg-surface-container-high text-on-surface-variant rounded-lg text-label-md font-bold">Deactivate</button>
-          </div>
-        )}
+
       </div>
 
       {loading ? <TableSkeleton rows={10} cols={7} /> : error ? (

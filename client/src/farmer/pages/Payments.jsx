@@ -8,7 +8,12 @@ import { t } from '../i18n'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
 
-const statusColors = { PENDING: 'bg-warning-container text-warning', PAID: 'bg-success-container text-success', FAILED: 'bg-error-container text-error', CANCELLED: 'bg-gray-200 text-gray-500' }
+const statusColors = {
+  PENDING: 'bg-warning-container text-warning',
+  PAID: 'bg-success-container text-success',
+  FAILED: 'bg-error-container text-error',
+  CANCELLED: 'bg-gray-200 text-gray-500'
+}
 
 export default function FarmerPayments() {
   const { showToast } = useToast()
@@ -19,18 +24,24 @@ export default function FarmerPayments() {
 
   const payments = data?.payments || []
   const latestPayment = payments[0] || null
+  const thisYear = new Date().getFullYear()
+  const yearlyEarnings = payments.reduce((sum, p) => {
+    const year = p.period_end ? new Date(p.period_end).getFullYear() : null
+    if (year === thisYear && p.net_amount) return sum + parseFloat(p.net_amount)
+    return sum
+  }, 0)
 
   const handleDownload = async (farmerPaymentId, e) => {
     e.stopPropagation()
     setDownloadId(farmerPaymentId)
     try {
       const res = await apiFetch(`/api/statements/statement/?farmer_payment_id=${farmerPaymentId}&download=true`)
-      if (!res.ok) { showToast({ type: 'error', message: 'Statement not available.' }); return }
+      if (!res.ok) { showToast({ type: 'error', message: t('noStatement') }); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
       URL.revokeObjectURL(url)
-    } catch { showToast({ type: 'error', message: 'Failed to download.' }) }
+    } catch { showToast({ type: 'error', message: t('failedToLoad') }) }
     finally { setDownloadId(null) }
   }
 
@@ -38,16 +49,16 @@ export default function FarmerPayments() {
     setDownloadId('latest')
     try {
       const res = await apiFetch('/api/statements/statement/latest/?download=true')
-      if (!res.ok) { showToast({ type: 'error', message: 'No statement available yet.' }); return }
+      if (!res.ok) { showToast({ type: 'error', message: t('noStatement') }); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       window.open(url, '_blank')
       URL.revokeObjectURL(url)
-    } catch { showToast({ type: 'error', message: 'Failed to download.' }) }
+    } catch { showToast({ type: 'error', message: t('failedToLoad') }) }
     finally { setDownloadId(null) }
   }
 
-  if (apiError) return <ErrorState message={apiError} action={{ label: 'Retry', onClick: refetch || refetchProfile }} />
+  if (apiError) return <ErrorState message={apiError} action={{ label: t('retry'), onClick: refetch || refetchProfile }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('payments')}</h2><ListSkeleton count={4} /></div>
 
   return (
@@ -59,6 +70,13 @@ export default function FarmerPayments() {
         </button>
       </div>
 
+      {yearlyEarnings > 0 && (
+        <div className="bg-success-container/20 border border-success-container rounded-xl p-4 mb-4">
+          <p className="text-xs font-semibold text-success">{t('earningsThisYear')}</p>
+          <p className="text-xl font-bold text-success">{formatKes(yearlyEarnings)}</p>
+        </div>
+      )}
+
       {latestPayment && (
         <div className="bg-surface-container rounded-xl border border-outline-variant p-4 mb-4 bg-primary-container/20 border-primary-container">
           <p className="text-xs text-on-surface-variant mb-1">{t('lastPayment')}</p>
@@ -67,7 +85,9 @@ export default function FarmerPayments() {
               <p className="text-xl font-bold text-primary">{formatKes(latestPayment.net_amount)}</p>
               <p className="text-xs text-on-surface-variant">{latestPayment.cycle_name} — {latestPayment.status}</p>
             </div>
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusColors[latestPayment.status] || 'bg-gray-200 text-gray-500'}`}>{latestPayment.status}</span>
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusColors[latestPayment.status] || 'bg-gray-200 text-gray-500'}`}>
+              {latestPayment.status}
+            </span>
           </div>
         </div>
       )}
@@ -83,10 +103,14 @@ export default function FarmerPayments() {
             <div key={p.farmer_payment_id || i} className="bg-surface-container rounded-xl border border-outline-variant p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <p className="font-semibold text-sm">{p.cycle_name || `Payment #${i + 1}`}</p>
-                  <p className="text-xs text-on-surface-variant">{p.period_start && p.period_end ? `${new Date(p.period_start).toLocaleDateString()} - ${new Date(p.period_end).toLocaleDateString()}` : '-'}</p>
+                  <p className="font-semibold text-sm">{p.cycle_name || `${t('payment')} #${i + 1}`}</p>
+                  <p className="text-xs text-on-surface-variant">
+                    {p.period_start && p.period_end ? `${new Date(p.period_start).toLocaleDateString()} - ${new Date(p.period_end).toLocaleDateString()}` : '-'}
+                  </p>
                 </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusColors[p.status] || 'bg-gray-200 text-gray-500'}`}>{p.status}</span>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${statusColors[p.status] || 'bg-gray-200 text-gray-500'}`}>
+                  {p.status}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm mb-3">
                 <div>

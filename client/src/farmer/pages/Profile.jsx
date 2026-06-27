@@ -35,15 +35,21 @@ export default function FarmerProfile() {
     setSaving(true)
     try {
       const res = await apiFetch('/api/farmers/me/', { method: 'PATCH', body: JSON.stringify(form) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to update') }
-      showToast({ type: 'success', message: 'Profile updated.' })
+      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || t('updateFailed')) }
+      showToast({ type: 'success', message: t('profileUpdated') })
       setEditing(false)
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSaving(false) }
   }
 
-  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+  const handleLogout = () => {
+    if (window.confirm(t('confirmLogout'))) {
+      logout()
+    }
+  }
+
+  if (error) return <ErrorState message={error} action={{ label: t('retry'), onClick: refetch }} />
   if (loading) return <div className="text-center py-12"><CardSkeleton lines={6} /></div>
 
   return (
@@ -52,7 +58,7 @@ export default function FarmerProfile() {
         <h2 className="text-lg font-bold">{t('profile')}</h2>
         <div className="flex items-center gap-3">
           <NotificationBell />
-          <button onClick={() => navigate('/farmer/settings')} aria-label="Settings" className="p-1">
+          <button onClick={() => navigate('/farmer/settings')} aria-label={t('settings')} className="p-1">
             <span className="material-symbols-outlined text-on-surface-variant">settings</span>
           </button>
         </div>
@@ -64,6 +70,7 @@ export default function FarmerProfile() {
         </div>
         <h3 className="font-bold text-lg">{profile?.first_name} {profile?.last_name}</h3>
         <p className="text-sm text-on-surface-variant">{t('memberNumber')}: {profile?.member_number}</p>
+        <p className="text-xs text-on-surface-variant mt-1">{profile?.county}, {profile?.sub_county}</p>
       </div>
 
       {!editing ? (
@@ -82,7 +89,9 @@ export default function FarmerProfile() {
             <div><p className="text-xs text-on-surface-variant">{t('bankName')}</p><p className="text-sm font-medium">{profile?.bank_name || '-'}</p></div>
             <div><p className="text-xs text-on-surface-variant">{t('bankAccount')}</p><p className="text-sm font-medium">{profile?.bank_account || '-'}</p></div>
           </div>
-          <button onClick={startEdit} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 w-full mt-2">{t('edit')}</button>
+          <button onClick={startEdit} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 w-full mt-2">
+            {t('edit')}
+          </button>
         </div>
       ) : (
         <div className="bg-surface-container rounded-xl border border-outline-variant p-4">
@@ -93,15 +102,19 @@ export default function FarmerProfile() {
             <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('ward')}</label><input value={form.ward} onChange={(e) => setForm(p => ({ ...p, ward: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
             <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('subCounty')}</label><input value={form.sub_county} onChange={(e) => setForm(p => ({ ...p, sub_county: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
             <div className="flex gap-3">
-              <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">{saving ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('save')}</button>
-              <button type="button" onClick={() => setEditing(false)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">{t('cancel')}</button>
+              <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">
+                {saving ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('save')}
+              </button>
+              <button type="button" onClick={() => setEditing(false)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">
+                {t('cancel')}
+              </button>
             </div>
           </form>
         </div>
       )}
 
       <div className="mt-6">
-        <button onClick={logout} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">
+        <button onClick={handleLogout} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">
           <span className="material-symbols-outlined">logout</span>
           {t('logout')}
         </button>

@@ -22,6 +22,9 @@ export default function FarmerGrades() {
   const pageSize = 20
   const totalPages = Math.ceil(total / pageSize)
 
+  const acceptedGrades = grades.filter(g => g.grade_letter !== 'REJECTED')
+  const rejectedCount = grades.length - acceptedGrades.length
+
   const handleDispute = async (gradeId) => {
     if (!disputeReason.trim()) return
     setSubmitting(true)
@@ -30,7 +33,7 @@ export default function FarmerGrades() {
         method: 'POST',
         body: JSON.stringify({ reason: disputeReason }),
       })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to submit dispute') }
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || t('disputeFailed')) }
       showToast({ type: 'success', message: t('disputeSubmitted') })
       setDisputeFor(null)
       setDisputeReason('')
@@ -39,12 +42,25 @@ export default function FarmerGrades() {
     finally { setSubmitting(false) }
   }
 
-  if (error) return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+  if (error) return <ErrorState message={error} action={{ label: t('retry'), onClick: refetch }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('grades')}</h2><ListSkeleton count={4} /></div>
 
   return (
     <div>
       <h2 className="text-lg font-bold mb-4">{t('grades')} {total > 0 && <span className="text-sm font-normal text-on-surface-variant">({total} {t('records')})</span>}</h2>
+
+      {total > 0 && (
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-surface-container rounded-xl border border-outline-variant p-3 text-center">
+            <p className="text-xs text-on-surface-variant">{t('acceptedGrades')}</p>
+            <p className="text-lg font-bold text-success">{acceptedGrades.length}</p>
+          </div>
+          <div className="bg-surface-container rounded-xl border border-outline-variant p-3 text-center">
+            <p className="text-xs text-on-surface-variant">{t('rejectedGrades')}</p>
+            <p className="text-lg font-bold text-error">{rejectedCount}</p>
+          </div>
+        </div>
+      )}
 
       {grades.length === 0 ? (
         <div className="text-center py-12">
@@ -88,9 +104,13 @@ export default function FarmerGrades() {
 
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
+          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+            {t('previous')}
+          </button>
           <span className="text-xs text-on-surface-variant">{t('of')} {page}/{totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+          <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">
+            {t('next')}
+          </button>
         </div>
       )}
 
