@@ -12,11 +12,17 @@ const appBarTabs = [
 export default function AppBar({ onMenuClick }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
-  const { user } = useAdminAuth()
+  const { user, logout } = useAdminAuth()
 
   const initials = user
     ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
     : '??'
+
+  const handleLogout = async () => {
+    await logout()               // clears token, sets user to null
+    navigate('/admin/login')     // redirect to login
+  }
+
 
   return (
     <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-4 lg:px-6 z-30">
@@ -61,11 +67,10 @@ export default function AppBar({ onMenuClick }) {
               <button
                 key={tab.label}
                 onClick={() => navigate(tab.path)}
-                className={`font-label-md text-label-md transition-colors whitespace-nowrap ${
-                  isActive
-                    ? 'text-primary font-bold border-b-2 border-primary pb-1'
-                    : 'text-on-surface-variant font-medium hover:text-primary'
-                }`}
+                className={`font-label-md text-label-md transition-colors whitespace-nowrap ${isActive
+                  ? 'text-primary font-bold border-b-2 border-primary pb-1'
+                  : 'text-on-surface-variant font-medium hover:text-primary'
+                  }`}
               >
                 {tab.label}
               </button>
@@ -81,7 +86,16 @@ export default function AppBar({ onMenuClick }) {
           <span className="material-symbols-outlined">history_edu</span>
         </button>
 
+
+
         <div className="flex items-center gap-3 pl-2 lg:pl-4 border-l border-outline-variant">
+          <button
+            onClick={handleLogout}
+            className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors"
+            aria-label="Logout"
+          >
+            <span className="material-symbols-outlined">logout</span>
+          </button>
           <div className="text-right hidden xl:block">
             <p className="font-label-md font-bold text-on-surface leading-tight truncate max-w-[120px]">
               {user ? `${user.first_name} ${user.last_name}` : 'Loading...'}
