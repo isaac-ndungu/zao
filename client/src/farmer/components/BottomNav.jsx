@@ -6,6 +6,7 @@ const tabs = [
   { path: '/farmer/deliveries', icon: 'receipt_long', labelKey: 'deliveries' },
   { path: '/farmer/payments', icon: 'payments', labelKey: 'payments' },
   { path: '/farmer/grades', icon: 'grade', labelKey: 'grades' },
+    { path: '/farmer/loans', icon: 'account_balance', labelKey: 'loans' },   
   { path: '/farmer/profile', icon: 'person', labelKey: 'profile' },
 ]
 

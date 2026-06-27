@@ -12,12 +12,12 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [otpCode, setOtpCode] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
   const [step, setStep] = useState('credentials')
   const [loginToken, setLoginToken] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [mustChangePassword, setMustChangePassword] = useState(false)
+  const [otpSent, setOtpSent] = useState(false) // now becomes true immediately
 
   const sessionExpired = new URLSearchParams(window.location.search).get('expired') === '1'
 
@@ -36,7 +36,8 @@ export default function Login() {
       if (result.requires_2fa) {
         setLoginToken(result.loginToken)
         setStep('otp')
-        setOtpSent(false)
+        setOtpSent(true) // assume code is sent automatically
+        setOtpCode('') // clear any previous
       } else {
         navigate(getLoginRedirect(result.user.role), { replace: true })
       }
@@ -57,8 +58,9 @@ export default function Login() {
     try {
       await requestOtp(loginToken)
       setOtpSent(true)
+      setOtpCode('')
     } catch (err) {
-      setError(err.detail || 'Failed to send OTP.')
+      setError(err.detail || 'Failed to resend OTP.')
     } finally {
       setLoading(false)
     }
@@ -176,42 +178,37 @@ export default function Login() {
                 />
                 <p className="text-label-md text-on-surface-variant mt-2">
                   {otpSent
-                    ? 'A 6-digit code was sent to your email.'
+                    ? 'A 6‑digit code was sent to your email.'
                     : 'Click "Send Code" to receive a verification code.'}
                 </p>
               </div>
 
-              {error && !otpCode && (
+              {error && (
                 <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">{error}</div>
               )}
 
-              <div className="flex gap-3">
-                {!otpSent ? (
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={loading}
-                    className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-                    {loading ? 'Sending...' : 'Send Code'}
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={loading || otpCode.length !== 6}
-                    className="flex-1 bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-                    {loading ? 'Verifying...' : 'Verify'}
-                  </button>
-                )}
-              </div>
+              <button
+                type="submit"
+                disabled={loading || otpCode.length !== 6}
+                className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                {loading ? 'Verifying...' : 'Verify'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSendOtp}
+                disabled={loading}
+                className="w-full text-center text-body-md text-primary hover:underline mt-1"
+              >
+                Resend code
+              </button>
 
               <button
                 type="button"
                 onClick={backToCredentials}
-                className="w-full text-center text-body-md text-primary hover:underline mt-2"
+                className="w-full text-center text-body-md text-primary hover:underline mt-1"
               >
                 Back to login
               </button>
