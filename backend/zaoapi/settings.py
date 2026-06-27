@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 import socket
@@ -32,6 +33,11 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,.onrender.com,testserver,web").split(",")
 
 TRASH_RETENTION_DAYS = config("TRASH_RETENTION_DAYS", default=30, cast=int)
+
+# Propagate cloudinary credentials to os.environ for cloudinary_storage
+_cloudinary_url = config("CLOUDINARY_URL", default="")
+if _cloudinary_url:
+    os.environ.setdefault("CLOUDINARY_URL", _cloudinary_url)
 
 # Application definition
 
