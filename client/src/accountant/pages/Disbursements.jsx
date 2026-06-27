@@ -30,7 +30,7 @@ export default function AccountantDisbursements() {
   if (statusFilter) qp.set('status', statusFilter)
 
   const { data, loading, error, refetch } = useApi(`/api/disbursements/?${qp}`)
-  const { data: cycles } = useApi('/api/cycles/?page=1&page_size=100')
+  const { data: cycles } = useApi('/api/payment-engine/?page=1&page_size=100')
 
   const disbursements = data?.results || data || []
   const totalCount = data?.count || disbursements.length
@@ -43,7 +43,7 @@ export default function AccountantDisbursements() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await apiFetch(`/api/cycles/${initForm.cycle}/initiate-disbursements/`, { method: 'POST' })
+      const res = await apiFetch('/api/disbursements/initiate/', { method: 'POST', body: JSON.stringify({ cycle: initForm.cycle }) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to initiate disbursements') }
       showToast({ type: 'success', message: 'Disbursements initiated from cycle.' })
       setShowInitiate(false)
@@ -62,21 +62,6 @@ export default function AccountantDisbursements() {
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setActionLoading(null) }
-  }
-
-  const handleExport = async () => {
-    try {
-      const res = await apiFetch('/api/disbursements/export/')
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Export failed') }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'disbursements_export.csv'
-      a.click()
-      URL.revokeObjectURL(url)
-      showToast({ type: 'success', message: 'Disbursements exported.' })
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
   const statuses = ['', 'PENDING', 'APPROVED', 'SENT', 'FAILED', 'REJECTED', 'CONFIRMED']
@@ -98,7 +83,6 @@ export default function AccountantDisbursements() {
           <p className="text-on-surface-variant font-body-md">{totalCount} disbursements</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleExport} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold hover:bg-surface-container-high transition-colors">Export CSV</button>
           <button onClick={() => setShowInitiate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">+ Initiate from Cycle</button>
         </div>
       </header>
@@ -156,13 +140,13 @@ export default function AccountantDisbursements() {
 
             <div className="pt-4 border-t border-outline-variant space-y-3">
               {selected.status === 'APPROVED' && (
-                <button onClick={() => handleAction(selected.id, 'live_send')} disabled={actionLoading === `${selected.id}-live_send`} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">
-                  {actionLoading === `${selected.id}-live_send` ? '...' : 'Live Send'}
+                <button onClick={() => handleAction(selected.id, 'live')} disabled={actionLoading === `${selected.id}-live`} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">
+                  {actionLoading === `${selected.id}-live` ? '...' : 'Live Send'}
                 </button>
               )}
               {selected.status === 'FAILED' && (
-                <button onClick={() => handleAction(selected.id, 'live_send')} disabled={actionLoading === `${selected.id}-live_send`} className="w-full py-2 bg-warning-container text-on-warning-container rounded-lg text-label-md font-bold disabled:opacity-50">
-                  {actionLoading === `${selected.id}-live_send` ? '...' : 'Retry'}
+                <button onClick={() => handleAction(selected.id, 'retry_failed')} disabled={actionLoading === `${selected.id}-retry_failed`} className="w-full py-2 bg-warning-container text-on-warning-container rounded-lg text-label-md font-bold disabled:opacity-50">
+                  {actionLoading === `${selected.id}-retry_failed` ? '...' : 'Retry'}
                 </button>
               )}
               {selected.status === 'SENT' && (

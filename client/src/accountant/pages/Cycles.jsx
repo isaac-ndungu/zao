@@ -29,13 +29,13 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
     setRunning(true)
     setRunProgress({ status: 'starting', message: 'Starting cycle...' })
     try {
-      const res = await apiFetch(`/api/cycles/${cycle.id}/run/`, { method: 'POST' })
+      const res = await apiFetch(`/api/payment-engine/${cycle.id}/run/`, { method: 'POST' })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to run cycle') }
       const result = await res.json()
       setRunProgress({ status: 'processing', message: 'Processing disbursements...', taskId: result.task_id || result.id })
       pollRef.current = setInterval(async () => {
         try {
-          const pr = await apiFetch(`/api/cycles/${cycle.id}/run-status/`)
+          const pr = await apiFetch(`/api/payment-engine/${cycle.id}/task-status/`)
           if (pr.ok) {
             const status = await pr.json()
             if (status.status === 'COMPLETED') {
@@ -63,7 +63,7 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
 
   const handleHoldRelease = async (action) => {
     try {
-      const res = await apiFetch(`/api/cycles/${cycle.id}/${action}/`, { method: 'POST' })
+      const res = await apiFetch(`/api/payment-engine/${cycle.id}/${action}/`, { method: 'POST' })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Failed to ${action}`) }
       showToast({ type: 'success', message: `Payments ${action === 'hold' ? 'held' : 'released'}.` })
       onAction()
@@ -72,7 +72,7 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
 
   const handleLockUnlock = async (action) => {
     try {
-      const res = await apiFetch(`/api/cycles/${cycle.id}/${action}/`, { method: 'POST' })
+      const res = await apiFetch(`/api/payment-engine/${cycle.id}/${action}/`, { method: 'POST' })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || `Failed to ${action}`) }
       showToast({ type: 'success', message: `Cycle ${action === 'lock' ? 'locked' : 'unlocked'}.` })
       onAction()
@@ -163,7 +163,7 @@ export default function AccountantCycles() {
   const [saving, setSaving] = useState(false)
 
   const qp = new URLSearchParams({ page, page_size: '20' })
-  const { data, loading, error, refetch } = useApi(`/api/cycles/?${qp}`)
+  const { data, loading, error, refetch } = useApi(`/api/payment-engine/?${qp}`)
 
   const cycles = data?.results || data || []
   const totalCount = data?.count || cycles.length
@@ -176,7 +176,7 @@ export default function AccountantCycles() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await apiFetch('/api/cycles/', {
+      const res = await apiFetch('/api/payment-engine/', {
         method: 'POST',
         body: JSON.stringify(formData),
       })
@@ -187,21 +187,6 @@ export default function AccountantCycles() {
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSaving(false) }
-  }
-
-  const handleExport = async () => {
-    try {
-      const res = await apiFetch('/api/cycles/export/')
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Export failed') }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'cycles_export.csv'
-      a.click()
-      URL.revokeObjectURL(url)
-      showToast({ type: 'success', message: 'Cycles exported.' })
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
   const columns = [
@@ -222,7 +207,7 @@ export default function AccountantCycles() {
           <p className="text-on-surface-variant font-body-md">{totalCount} cycles</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={handleExport} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold hover:bg-surface-container-high transition-colors">Export CSV</button>
+
           <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">+ New Cycle</button>
         </div>
       </header>

@@ -21,7 +21,7 @@ export default function ExternalFinancialStatements() {
   const handleFetchAnnual = async () => {
     setLoading(true)
     try {
-      const res = await apiFetch(`/api/reports/annual/?year=${year}`)
+      const res = await apiFetch(`/api/statements/annual-report/?year=${year}`)
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to fetch report') }
       const data = await res.json()
       setReport(data)
@@ -34,7 +34,7 @@ export default function ExternalFinancialStatements() {
   const handleDownloadKRA = async () => {
     setLoadingKRA(true)
     try {
-      const res = await apiFetch(`/api/reports/kra/?year=${year}&download=true`)
+      const res = await apiFetch(`/api/statements/kra-report/?year=${year}&download=true`)
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Download failed') }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -53,7 +53,7 @@ export default function ExternalFinancialStatements() {
   const handleDownloadSeason = async () => {
     setLoadingKRA(true)
     try {
-      const res = await apiFetch(`/api/reports/season/?cycle_id=latest&download=true`)
+      const res = await apiFetch(`/api/statements/report/?cycle_id=latest&download=true`)
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Download failed') }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)

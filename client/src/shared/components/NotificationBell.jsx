@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { apiFetch } from '../../admin/api/client'
 
 export default function NotificationBell({ endpoint = '/api/notifications/?page=1&page_size=5' }) {
   const { isAuthenticated } = useAuth()
@@ -22,7 +23,7 @@ export default function NotificationBell({ endpoint = '/api/notifications/?page=
     if (!open || !isAuthenticated) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    fetch(endpoint, { credentials: 'include' })
+    apiFetch(endpoint)
       .then((r) => r.json())
       .then((data) => setNotifications(data?.results || data || []))
       .catch(() => {})

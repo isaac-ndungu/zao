@@ -2,48 +2,22 @@ import { useState } from 'react'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { apiFetch } from '../../admin/api/client'
 
+const currentYear = new Date().getFullYear()
+
 const reportCards = [
   {
     title: 'Comprehensive Season Report',
     desc: 'Full season financial including payouts, deductions, and loan recovery data',
     icon: 'description',
-    endpoint: '/api/reports/season/',
+    endpoint: `/api/statements/report/?cycle_id=latest&download=true`,
     filename: 'season_report.pdf',
-  },
-  {
-    title: 'Annual Financial Statement',
-    desc: 'Audit-ready annual statement with revenue, expenses, and net payouts',
-    icon: 'finance',
-    endpoint: '/api/reports/annual/',
-    filename: 'annual_statement.pdf',
   },
   {
     title: 'KRA Withholding Tax Report',
     desc: 'WHT schedule per farmer for KRA compliance filing',
     icon: 'receipt_long',
-    endpoint: '/api/reports/kra/',
+    endpoint: `/api/statements/kra-report/?year=${currentYear}&download=true`,
     filename: 'kra_wht_report.pdf',
-  },
-  {
-    title: 'Farmer Payment Statement',
-    desc: 'Per-farmer breakdown of gross pay, deductions, and net disbursed',
-    icon: 'fact_check',
-    endpoint: '/api/reports/farmer-payments/',
-    filename: 'farmer_payments.pdf',
-  },
-  {
-    title: 'Loan Portfolio Summary',
-    desc: 'Outstanding loans, repayment rates, and default analysis',
-    icon: 'account_balance_wallet',
-    endpoint: '/api/reports/loans/',
-    filename: 'loan_portfolio.pdf',
-  },
-  {
-    title: 'Deductions Audit Trail',
-    desc: 'All deductions by type, farmer, and cycle for audit review',
-    icon: 'account_tree',
-    endpoint: '/api/reports/deductions/',
-    filename: 'deductions_audit.pdf',
   },
 ]
 

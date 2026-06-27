@@ -25,7 +25,7 @@ export default function AccountantDeductions() {
   if (typeFilter) qp.set('type', typeFilter)
 
   const { data: dedData, loading: dedLoading, error: dedError, refetch: dedRefetch } = useApi(tab === 'deductions' ? `/api/deductions/?${qp}` : null)
-  const { data: creditsData, loading: creditsLoading, error: creditsError, refetch: creditsRefetch } = useApi(tab === 'credits' ? `/api/credits/?${qp}` : null)
+  const { data: creditsData, loading: creditsLoading, error: creditsError, refetch: creditsRefetch } = useApi(tab === 'credits' ? `/api/deductions/farm-input-credits/?${qp}` : null)
   const { data: farmers } = useApi('/api/farmers/?page=1&page_size=100')
   const { data: stats } = useApi('/api/analytics/financial/')
 
@@ -40,7 +40,7 @@ export default function AccountantDeductions() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await apiFetch('/api/credits/', { method: 'POST', body: JSON.stringify(creditForm) })
+      const res = await apiFetch('/api/deductions/farm-input-credits/', { method: 'POST', body: JSON.stringify(creditForm) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create credit') }
       showToast({ type: 'success', message: 'Farm input credit created.' })
       setShowCreditForm(false)

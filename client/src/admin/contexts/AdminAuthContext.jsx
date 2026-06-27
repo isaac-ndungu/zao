@@ -110,7 +110,7 @@ export function AdminAuthProvider({ children }) {
   }, [])
 
   const requestOtp = useCallback(async (loginToken) => {
-    const res = await apiFetch('/api/auth/request-otp/', {
+    const res = await apiFetch('/api/auth/2fa/request/', {
       method: 'POST',
       body: JSON.stringify({ login_token: loginToken }),
       requireAuth: false,
@@ -122,7 +122,7 @@ export function AdminAuthProvider({ children }) {
   }, [])
 
   const verifyOtp = useCallback(async (loginToken, otpCode) => {
-    const res = await apiFetch('/api/auth/verify-otp/', {
+    const res = await apiFetch('/api/auth/2fa/verify/', {
       method: 'POST',
       body: JSON.stringify({ login_token: loginToken, otp_code: otpCode }),
       requireAuth: false,

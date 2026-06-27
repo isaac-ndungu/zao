@@ -27,7 +27,7 @@ export default function AuditorAuditLog() {
   if (dateFrom) queryParams.set('date_from', dateFrom)
   if (dateTo) queryParams.set('date_to', dateTo)
 
-  const { data, loading, error, refetch } = useApi(`/api/audit/?${queryParams}`)
+  const { data, loading, error, refetch } = useApi(`/api/statements/audit/?${queryParams}`)
 
   const logs = data?.results || data || []
   const totalCount = data?.count || logs.length

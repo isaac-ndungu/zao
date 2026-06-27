@@ -47,13 +47,6 @@ const pipelineStages = [
   { key: 'rejected', label: 'Rejected', color: 'bg-primary', textColor: 'text-on-primary', valueColor: 'text-white' },
 ]
 
-const pipelineDetail = {
-  pending: 'Awaiting system processing',
-  in_progress: 'Analysis in progress',
-  completed: 'Processed and finalized',
-  rejected: 'Flagged or returned',
-}
-
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
@@ -65,6 +58,30 @@ export default function Dashboard() {
   const { period } = useContext(AdminFilterContext)
   const { data, loading, error } = useApi(`/api/admin/dashboard/?period=${period}`)
   const { data: analytics, loading: analyticsLoading } = useApi(`/api/admin/analytics/dashboard/?period=${period}`)
+
+  // Safe extraction with fallback from related fields
+  const totalUsers = data?.total_users ?? '—'
+  const activeUsers = data?.active_users
+    ?? Object.values(data?.users_by_role || {}).reduce((s, v) => s + v, 0)
+    ?? '—'
+
+  // Pending deliveries
+  const pendingDeliveries = data?.pending_deliveries
+    ?? data?.deliveries_by_status?.pending
+    ?? '—'
+
+  // Active deliveries
+  const activeDeliveries = data?.active_deliveries
+    ?? (() => {
+      const dbs = data?.deliveries_by_status
+      if (!dbs) return '—'
+      const total = Object.entries(dbs)
+        .filter(([key]) => key !== 'cancelled')
+        .reduce((s, [, v]) => s + v, 0)
+      return total > 0 ? total : '—'
+    })()
+
+  const pendingGradings = data?.pending_gradings ?? '—'
 
   const usersByRole = useMemo(() => {
     const roles = data?.users_by_role
@@ -91,13 +108,15 @@ export default function Dashboard() {
   const analyticsData = analytics?.data
   const gradeDist = useMemo(() => {
     if (!analyticsData?.production?.grade_distribution) return []
-    return Object.entries(analyticsData.production.grade_distribution).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a)
+    return Object.entries(analyticsData.production.grade_distribution)
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a)
   }, [analyticsData])
 
   if (loading) {
     return (
       <div>
-        <header className="mb-8">
+        <header className="my-10">
           <h2 className="font-headline-lg text-display-md text-primary mb-1">Executive Overview</h2>
           <p className="text-on-surface-variant font-body-md">Real-time cooperative performance & operational health metrics.</p>
         </header>
@@ -123,7 +142,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <header className="mb-8">
+      <header className="mb-8 mt-4">
         <h2 className="font-headline-lg text-display-md text-primary mb-1">Executive Overview</h2>
         <p className="text-on-surface-variant font-body-md">
           Real-time cooperative performance & operational health metrics.
@@ -131,20 +150,20 @@ export default function Dashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <KpiCard icon="group" label="Total Users" value={formatNumber(data.total_users)} onClick={() => navigate('/admin/users')} />
-        <KpiCard icon="agriculture" label="Active Users" value={formatNumber(data.active_users)} onClick={() => navigate('/admin/users')} />
-        <KpiCard icon="grading" label="Pending Gradings" value={String(data.pending_gradings)} onClick={() => navigate('/admin/receipts')} />
-        <KpiCard icon="inventory" label="Active Deliveries" value={String(data.active_deliveries)} onClick={() => navigate('/admin/receipts')} />
-        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(data.trash_summary?.total_deleted || 0)} highlighted onClick={() => navigate('/admin/trash')} />
+        <KpiCard icon="group" label="Total Users" value={formatNumber(totalUsers)} onClick={() => navigate('/admin/users')} />
+        <KpiCard icon="agriculture" label="Active Users" value={formatNumber(activeUsers)} onClick={() => navigate('/admin/users')} />
+        <KpiCard icon="grading" label="Pending Gradings" value={formatNumber(pendingGradings)} onClick={() => navigate('/admin/receipts')} />
+        <KpiCard icon="inventory" label="Active Deliveries" value={formatNumber(activeDeliveries)} onClick={() => navigate('/admin/receipts')} />
+        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(data?.trash_summary?.total_deleted || 0)} highlighted onClick={() => navigate('/admin/trash')} />
       </div>
 
       {/* Analytics KPIs */}
       {analyticsData && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <KpiCard icon="payments" label="Revenue" value={analyticsData.financial?.total_revenue ? `KES ${formatNumber(analyticsData.financial.total_revenue)}` : '-'} onClick={() => navigate('/admin/financials')} />
-          <KpiCard icon="person" label="Active Farmers" value={analyticsData.farmers?.total_active || 0} trend={analyticsData.farmers?.new_this_period || 0} onClick={() => navigate('/admin/farmer-payments')} />
-          <KpiCard icon="inventory_2" label="Total Production" value={analyticsData.production?.total_kg ? `${formatNumber(analyticsData.production.total_kg)} kg` : '-'} onClick={() => navigate('/admin/inventory')} />
-          <KpiCard icon="account_balance" label="Gross Payout" value={analyticsData.financial?.total_gross_payout ? `KES ${formatNumber(analyticsData.financial.total_gross_payout)}` : '-'} onClick={() => navigate('/admin/financials')} />
+          <KpiCard icon="payments" label="Revenue" value={analyticsData.financial?.total_revenue ? `KES ${formatNumber(analyticsData.financial.total_revenue)}` : '—'} onClick={() => navigate('/admin/financials')} />
+          <KpiCard icon="person" label="Active Farmers" value={analyticsData.farmers?.total_active ?? '—'} trend={analyticsData.farmers?.new_this_period ?? 0} onClick={() => navigate('/admin/farmer-payments')} />
+          <KpiCard icon="inventory_2" label="Total Production" value={analyticsData.production?.total_kg ? `${formatNumber(analyticsData.production.total_kg)} kg` : '—'} onClick={() => navigate('/admin/inventory')} />
+          <KpiCard icon="account_balance" label="Gross Payout" value={analyticsData.financial?.total_gross_payout ? `KES ${formatNumber(analyticsData.financial.total_gross_payout)}` : '—'} onClick={() => navigate('/admin/financials')} />
         </div>
       )}
 
@@ -157,7 +176,17 @@ export default function Dashboard() {
           orientation="horizontal"
           height={220}
           emptyMessage="No user data available."
-          colorMap={Object.fromEntries(Object.entries(roleColors).map(([k, v]) => [roleLabels[k] || k, v === 'bg-outline-variant' ? '#9ca3af' : v === 'bg-primary' ? CATEGORICAL_COLORS[0] : v === 'bg-secondary' ? CATEGORICAL_COLORS[2] : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3] : v === 'bg-tertiary' ? CATEGORICAL_COLORS[4] : CATEGORICAL_COLORS[5]]))}
+          colorMap={Object.fromEntries(
+            Object.entries(roleColors).map(([k, v]) => [
+              roleLabels[k] || k,
+              v === 'bg-outline-variant' ? '#9ca3af'
+                : v === 'bg-primary' ? CATEGORICAL_COLORS[0]
+                : v === 'bg-secondary' ? CATEGORICAL_COLORS[2]
+                : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3]
+                : v === 'bg-tertiary' ? CATEGORICAL_COLORS[4]
+                : CATEGORICAL_COLORS[5]
+            ])
+          )}
         />
 
         <PieChartCard
@@ -167,7 +196,16 @@ export default function Dashboard() {
           categoryKey="name"
           height={280}
           emptyMessage="No delivery data available."
-          colorMap={Object.fromEntries(Object.entries(statusColors).map(([k, v]) => [statusLabels[k] || k, v === 'bg-primary' ? CATEGORICAL_COLORS[0] : v === 'bg-secondary' ? '#059669' : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3] : v === 'bg-error' ? '#dc2626' : CATEGORICAL_COLORS[5]]))}
+          colorMap={Object.fromEntries(
+            Object.entries(statusColors).map(([k, v]) => [
+              statusLabels[k] || k,
+              v === 'bg-primary' ? CATEGORICAL_COLORS[0]
+                : v === 'bg-secondary' ? '#059669'
+                : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3]
+                : v === 'bg-error' ? '#dc2626'
+                : CATEGORICAL_COLORS[5]
+            ])
+          )}
         />
       </div>
 
