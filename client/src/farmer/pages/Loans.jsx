@@ -5,6 +5,7 @@ import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import { ListSkeleton } from '../components/LoadingSkeleton'
 import { t } from '../i18n'
+import { useFarmerAuth } from '../context/FarmerAuthContext'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
 
@@ -18,6 +19,7 @@ const statusColors = {
 
 export default function FarmerLoans() {
   const { showToast } = useToast()
+  const { user: farmerUser } = useFarmerAuth()
   const [selected, setSelected] = useState(null)
   const [showApply, setShowApply] = useState(false)
   const [form, setForm] = useState({ amount_principal: '', interest_rate: '10', number_of_installments: '12', notes: '' })
@@ -29,11 +31,16 @@ export default function FarmerLoans() {
 
   const handleApply = async (e) => {
     e.preventDefault()
+    if (!farmerUser?.id) {
+      showToast({ type: 'error', message: 'Could not determine farmer profile. Please try logging in again.' })
+      return
+    }
     setSaving(true)
     try {
       const res = await apiFetch('/api/loans/', {
         method: 'POST',
         body: JSON.stringify({
+          farmer: farmerUser.id,
           amount_principal: parseFloat(form.amount_principal),
           interest_rate: parseFloat(form.interest_rate),
           number_of_installments: parseInt(form.number_of_installments),

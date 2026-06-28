@@ -32,7 +32,10 @@ export default function Farmers() {
     phone_number: '',
     id_number: '',
     county: '',
-    payment_method: 'MPESA',
+    email: '',
+    sub_county: '',
+    ward: '',
+    village: '',
   })
   const { showToast } = useToast()
 
@@ -233,30 +236,25 @@ export default function Farmers() {
       {[
         { name: 'first_name', label: 'First Name', required: true },
         { name: 'last_name', label: 'Last Name', required: true },
+        { name: 'email', label: 'Email' },
         { name: 'phone_number', label: 'Phone', required: true },
         { name: 'id_number', label: 'ID Number' },
-        { name: 'county', label: 'County' },
-      ].map(({ name, label, required }) => (
+        { name: 'date_of_birth', label: 'Date of Birth', type: 'date' },
+        { name: 'county', label: 'County', required: true },
+        { name: 'sub_county', label: 'Sub-County' },
+        { name: 'ward', label: 'Ward' },
+        { name: 'village', label: 'Village' },
+      ].map(({ name, label, required, type }) => (
         <div key={name}>
           <label className="block text-label-md text-on-surface-variant mb-1">{label}</label>
           <input
             name={name}
             required={required}
+            type={type || 'text'}
             className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
           />
         </div>
       ))}
-      <div>
-        <label className="block text-label-md text-on-surface-variant mb-1">Payment Method</label>
-        <select
-          name="payment_method"
-          className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-        >
-          <option>MPESA</option>
-          <option>BANK</option>
-          <option>CASH</option>
-        </select>
-      </div>
       <button
         type="submit"
         className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold"
@@ -266,32 +264,34 @@ export default function Farmers() {
     </form>
   )
 
+  const editFields = [
+    { name: 'first_name', label: 'First Name' },
+    { name: 'last_name', label: 'Last Name' },
+    { name: 'email', label: 'Email' },
+    { name: 'phone_number', label: 'Phone' },
+    { name: 'id_number', label: 'ID Number' },
+    { name: 'date_of_birth', label: 'Date of Birth', type: 'date' },
+    { name: 'county', label: 'County' },
+    { name: 'sub_county', label: 'Sub-County' },
+    { name: 'ward', label: 'Ward' },
+    { name: 'village', label: 'Village' },
+  ]
+
   const editForm = showEdit && (
     <form onSubmit={handleEdit} className="space-y-4">
-      {['first_name', 'last_name', 'phone_number', 'id_number', 'county'].map((f) => (
-        <div key={f}>
+      {editFields.map(({ name, label, type }) => (
+        <div key={name}>
           <label className="block text-label-md text-on-surface-variant mb-1 capitalize">
-            {f.replace('_', ' ')}
+            {label}
           </label>
           <input
-            name={f}
-            defaultValue={showEdit[f] || ''}
+            name={name}
+            type={type || 'text'}
+            defaultValue={showEdit[name] || ''}
             className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
           />
         </div>
       ))}
-      <div>
-        <label className="block text-label-md text-on-surface-variant mb-1">Payment Method</label>
-        <select
-          name="payment_method"
-          defaultValue={showEdit.payment_method || 'MPESA'}
-          className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-        >
-          <option>MPESA</option>
-          <option>BANK</option>
-          <option>CASH</option>
-        </select>
-      </div>
       <button
         type="submit"
         className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold"
