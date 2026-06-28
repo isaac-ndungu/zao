@@ -171,16 +171,15 @@ export default function ProduceReceipts() {
     setStatusTarget('')
   }
 
-  const confirmForceStatus = async () => {
-    if (!statusDelivery || !statusTarget) return
+  const confirmForceStatus = async (delivery, target) => {
     setActionLoading(true)
     try {
-      const res = await apiFetch(`/api/admin/deliveries/${statusDelivery.id}/force-status/`, {
+      const res = await apiFetch(`/api/admin/deliveries/${delivery.id}/force-status/`, {
         method: 'POST',
-        body: JSON.stringify({ status: statusTarget }),
+        body: JSON.stringify({ status: target }),
       })
       if (!res.ok) throw new Error(await res.text())
-      showToast({ type: 'success', message: `Delivery ${statusDelivery.batch_id} status changed to ${statusTarget}.` })
+      showToast({ type: 'success', message: `Delivery ${delivery.batch_id} status changed to ${target}.` })
       refetch()
       const result = await res.json().catch(() => ({}))
       if (panelDelivery && typeof result === 'object') {
@@ -192,8 +191,6 @@ export default function ProduceReceipts() {
           setPanelDelivery(prev => ({ ...prev, ...safeUpdates }))
         }
       }
-      setStatusDelivery(null)
-      setStatusTarget('')
       setModalConfig({ open: false })
     } catch (e) {
       showToast({ type: 'error', message: `Force status failed: ${e.message}` })
@@ -204,12 +201,16 @@ export default function ProduceReceipts() {
 
   const openConfirmForceStatus = () => {
     if (!statusTarget) return
+    const delivery = statusDelivery
+    const target = statusTarget
+    setStatusDelivery(null)
+    setStatusTarget('')
     setModalConfig({
       open: true,
       title: 'Confirm Status Change',
-      message: `Change delivery ${statusDelivery.batch_id} status to ${statusTarget}? This is an admin override.`,
-      onConfirm: confirmForceStatus,
-      destructive: statusTarget === 'REJECTED',
+      message: `Change delivery ${delivery.batch_id} status to ${target}? This is an admin override.`,
+      onConfirm: () => confirmForceStatus(delivery, target),
+      destructive: target === 'REJECTED',
     })
   }
 
@@ -331,7 +332,7 @@ export default function ProduceReceipts() {
             <button onClick={() => handleView(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors">
               <span className="material-symbols-outlined text-[18px]">visibility</span>
             </button>
-            <button onClick={() => openForceStatus(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
+            <button onClick={() => { setPanelOpen(false); setPanelDelivery(null); openForceStatus(delivery) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
               <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
             </button>
             <button onClick={() => openAssignGrade(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Assign Grade">
