@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
@@ -16,9 +16,29 @@ const statusColors = {
 
 function LoanDetailPanel({ loan, onClose, onAction }) {
   const [addingGuarantor, setAddingGuarantor] = useState(false)
-  const [guarantorPhone, setGuarantorPhone] = useState('')
-  const [guarantorName, setGuarantorName] = useState('')
+  const [guarantorSearch, setGuarantorSearch] = useState('')
+  const [guarantorResults, setGuarantorResults] = useState([])
+  const [selectedGuarantor, setSelectedGuarantor] = useState(null)
+  const [guarantorSearchOpen, setGuarantorSearchOpen] = useState(false)
+  const guarantorRef = useRef(null)
   const [actionLoading, setActionLoading] = useState(null)
+
+  useEffect(() => {
+    if (!guarantorSearch || guarantorSearch.length < 2) { setGuarantorResults([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/farmers/?search=${encodeURIComponent(guarantorSearch)}&page_size=10`)
+        if (res.ok) { const d = await res.json(); setGuarantorResults(d.results || []); setGuarantorSearchOpen(true) }
+      } catch { /* ignore */ }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [guarantorSearch])
+
+  useEffect(() => {
+    const handler = (e) => { if (guarantorRef.current && !guarantorRef.current.contains(e.target)) setGuarantorSearchOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const handleAction = async (action) => {
     setActionLoading(action)
@@ -33,17 +53,19 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
 
   const handleAddGuarantor = async (e) => {
     e.preventDefault()
+    if (!selectedGuarantor) return
     setActionLoading('guarantor')
     try {
       const res = await apiFetch(`/api/loans/${loan.id}/add_guarantor/`, {
         method: 'POST',
-        body: JSON.stringify({ phone_number: guarantorPhone, full_name: guarantorName }),
+        body: JSON.stringify({ guarantor_id: selectedGuarantor.id }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to add guarantor') }
       showToast({ type: 'success', message: 'Guarantor added.' })
       setAddingGuarantor(false)
-      setGuarantorPhone('')
-      setGuarantorName('')
+      setGuarantorSearch('')
+      setSelectedGuarantor(null)
+      setGuarantorResults([])
       onAction()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setActionLoading(null) }
@@ -97,12 +119,21 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
       </div>
 
       {addingGuarantor && (
-        <form onSubmit={handleAddGuarantor} className="bg-surface-container rounded-xl p-4 space-y-3">
-          <input value={guarantorName} onChange={(e) => setGuarantorName(e.target.value)} placeholder="Full name" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface" />
-          <input value={guarantorPhone} onChange={(e) => setGuarantorPhone(e.target.value)} placeholder="Phone number (0712345678)" pattern="^0\d{9}$" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface" />
+        <form onSubmit={handleAddGuarantor} className="bg-surface-container rounded-xl p-4 space-y-3" ref={guarantorRef}>
+          <div className="relative">
+            <input value={guarantorSearch} onChange={(e) => { setGuarantorSearch(e.target.value); setSelectedGuarantor(null) }} placeholder="Search farmer by name or phone..." required={!selectedGuarantor} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface" />
+            {selectedGuarantor && <p className="text-sm text-on-surface-variant mt-1">Selected: {selectedGuarantor.first_name} {selectedGuarantor.last_name} ({selectedGuarantor.phone_number})</p>}
+            {guarantorSearchOpen && guarantorResults.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full border border-outline-variant rounded-lg bg-surface shadow-lg max-h-40 overflow-y-auto">
+                {guarantorResults.map(f => (
+                  <button key={f.id} type="button" onClick={() => { setSelectedGuarantor(f); setGuarantorSearch(`${f.first_name} ${f.last_name}`); setGuarantorSearchOpen(false) }} className="w-full text-left px-3 py-2 hover:bg-surface-container text-body-md">{f.first_name} {f.last_name} — {f.phone_number}</button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={actionLoading === 'guarantor'} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{actionLoading === 'guarantor' ? 'Adding...' : 'Add'}</button>
-            <button type="button" onClick={() => { setAddingGuarantor(false); setGuarantorPhone(''); setGuarantorName('') }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+            <button type="submit" disabled={!selectedGuarantor || actionLoading === 'guarantor'} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{actionLoading === 'guarantor' ? 'Adding...' : 'Add'}</button>
+            <button type="button" onClick={() => { setAddingGuarantor(false); setGuarantorSearch(''); setSelectedGuarantor(null); setGuarantorResults([]) }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
           </div>
         </form>
       )}
@@ -136,7 +167,7 @@ export default function AccountantLoans() {
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ farmer: '', amount: '', purpose: '', interest_rate: '10', due_date: '' })
+  const [formData, setFormData] = useState({ farmer: '', amount_principal: '', interest_rate: '10', number_of_installments: '1', notes: '' })
   const [saving, setSaving] = useState(false)
 
   const queryParams = new URLSearchParams({ page, page_size: '20' })
@@ -167,7 +198,7 @@ export default function AccountantLoans() {
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create loan') }
       showToast({ type: 'success', message: 'Loan created.' })
       setShowForm(false)
-      setFormData({ farmer: '', amount: '', purpose: '', interest_rate: '10', due_date: '' })
+      setFormData({ farmer: '', amount_principal: '', interest_rate: '10', number_of_installments: '1', notes: '' })
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSaving(false) }
@@ -241,17 +272,17 @@ export default function AccountantLoans() {
                   {farmers?.results?.map((f) => <option key={f.id} value={f.id}>{f.full_name} ({f.phone_number})</option>)}
                 </select>
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Amount (KES)</label>
-                <input type="number" min="1" value={formData.amount} onChange={(e) => setFormData(p => ({ ...p, amount: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Amount Principal (KES)</label>
+                <input type="number" min="1" value={formData.amount_principal} onChange={(e) => setFormData(p => ({ ...p, amount_principal: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div><label className="block text-label-md text-on-surface-variant mb-1">Interest Rate (%)</label>
                 <input type="number" step="0.1" min="0" value={formData.interest_rate} onChange={(e) => setFormData(p => ({ ...p, interest_rate: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Purpose</label>
-                <textarea value={formData.purpose} onChange={(e) => setFormData(p => ({ ...p, purpose: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Number of Installments</label>
+                <input type="number" min="1" value={formData.number_of_installments} onChange={(e) => setFormData(p => ({ ...p, number_of_installments: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Due Date</label>
-                <input type="date" value={formData.due_date} onChange={(e) => setFormData(p => ({ ...p, due_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label>
+                <textarea value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div className="flex gap-3">
                 <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>
