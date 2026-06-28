@@ -15,6 +15,7 @@ const navItems = [
   { to: '/manager/deductions', icon: 'money_off', label: 'Deductions' },
   { to: '/manager/reports', icon: 'description', label: 'Reports' },
   { to: '/manager/routes', icon: 'route', label: 'Routes' },
+  { to: '/manager/audit-log', icon: 'security', label: 'Audit Log' },
 ]
 
 const bottomItems = [

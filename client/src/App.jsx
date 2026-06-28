@@ -71,6 +71,7 @@ const ManagerRoutes = lazy(() => import('./manager/pages/Routes'))
 const ManagerSettings = lazy(() => import('./manager/pages/Settings'))
 const SetupCooperative = lazy(() => import('./manager/pages/SetupCooperative'))
 const ManagerUsers = lazy(() => import('./manager/pages/Users'))
+const ManagerAuditLog = lazy(() => import('./manager/pages/AuditLog'))
 
 // Grader pages
 const GraderLayout = lazy(() => import('./grader/GraderLayout'))
@@ -217,6 +218,7 @@ export default function App() {
             <Route path="routes" element={<SuspenseWrapper><ManagerRoutes /></SuspenseWrapper>} />
             <Route path="setup/cooperative" element={<SuspenseWrapper><SetupCooperative /></SuspenseWrapper>} />
             <Route path="users" element={<SuspenseWrapper><ManagerUsers /></SuspenseWrapper>} />
+            <Route path="audit-log" element={<SuspenseWrapper><ManagerAuditLog /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><ManagerSettings /></SuspenseWrapper>} />
           </Route>
 

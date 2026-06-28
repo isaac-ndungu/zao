@@ -61,12 +61,12 @@ export default function AuditorAuditLog() {
   }
 
   const columns = [
-    { header: 'Timestamp', accessor: (l) => l.created_at ? new Date(l.created_at).toLocaleString() : '-', sortable: true },
-    { header: 'Actor', accessor: (l) => l.actor_name || l.actor?.email || `#${l.actor}` },
-    { header: 'Action', accessor: 'action', sortable: true },
-    { header: 'Resource', accessor: 'resource_type', sortable: true },
-    { header: 'Resource ID', accessor: (l) => l.resource_id ? String(l.resource_id).slice(0, 8) + '...' : '-' },
-    { header: 'Details', accessor: (l) => l.details ? JSON.stringify(l.details).slice(0, 60) + (JSON.stringify(l.details).length > 60 ? '...' : '') : '-' },
+    { key: 'created_at', label: 'Timestamp', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleString() : '-' },
+    { key: 'actor', label: 'Actor', render: (row) => row.actor_name || row.actor?.email || `#${row.actor}` },
+    { key: 'action', label: 'Action', sortable: true },
+    { key: 'resource_type', label: 'Resource', sortable: true },
+    { key: 'resource_id', label: 'Resource ID', render: (row) => row.resource_id ? String(row.resource_id).slice(0, 8) + '...' : '-' },
+    { key: 'details', label: 'Details', render: (row) => row.details ? JSON.stringify(row.details).slice(0, 60) + (JSON.stringify(row.details).length > 60 ? '...' : '') : '-' },
   ]
 
   return (
@@ -106,9 +106,6 @@ export default function AuditorAuditLog() {
         <DataTable
           columns={columns}
           data={logs}
-          page={page}
-          totalPages={Math.ceil(totalCount / 25)}
-          onPageChange={setPage}
         />
       )}
     </div>
