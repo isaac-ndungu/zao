@@ -200,10 +200,18 @@ export default function Deliveries() {
             )}
           </div>
           <div><label className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select name="product_type" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input name="quantity_kg" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Shift</label><select name="shift" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="AM">AM</option><option value="PM">PM</option></select></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Latitude (optional)</label><input name="latitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Longitude (optional)</label><input name="longitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input name="quantity_kg" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input name="volume_litres" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Shift</label><select name="shift" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="AM">AM</option><option value="PM">PM</option></select></div>
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input name="date_delivered" type="date" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Latitude (optional)</label><input name="latitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Longitude (optional)</label><input name="longitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+          </div>
           <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Record Delivery</button>
         </form>
       </SlideOutPanel>
