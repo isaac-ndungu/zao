@@ -33,11 +33,8 @@ export default function Settings() {
 
   const readOnlyFields = ['name', 'registration_number', 'county', 'sub_county', 'ward', 'location', 'email', 'phone_number', 'member_count']
   const editableFields = [
-    { key: 'milk_levy_per_litre', label: 'Milk Levy per Litre (KES)', type: 'number', step: '0.01' },
-    { key: 'coffee_levy_per_kg', label: 'Coffee Levy per kg (KES)', type: 'number', step: '0.01' },
-    { key: 'honey_levy_per_kg', label: 'Honey Levy per kg (KES)', type: 'number', step: '0.01' },
-    { key: 'membership_fee', label: 'Membership Fee (KES)', type: 'number', step: '0.01' },
-    { key: 'transport_fee_per_km', label: 'Transport Fee per km (KES)', type: 'number', step: '0.01' },
+    { key: 'levy_percentage', label: 'Levy (%)', type: 'number', step: '0.01' },
+    { key: 'monthly_fee', label: 'Monthly Fee (KES)', type: 'number', step: '0.01' },
   ]
 
   return (
@@ -69,7 +66,7 @@ export default function Settings() {
               <div>
                 <p className="text-body-md text-on-surface font-medium">{label}</p>
                 <p className="text-label-md text-on-surface-variant">
-                  Current: {coop ? `KES ${Number(coop[key] || 0).toLocaleString()}` : '-'}
+                  Current: {coop ? (key === 'levy_percentage' ? `${Number(coop[key] || 0)}%` : `KES ${Number(coop[key] || 0).toLocaleString()}`) : '-'}
                 </p>
               </div>
               {editing === key ? (

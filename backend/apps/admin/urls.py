@@ -73,6 +73,7 @@ urlpatterns = [
     path('bin/users/', AdminUserBinView.as_view()),
     path('bin/cooperatives/', AdminCooperativeBinView.as_view()),
     path('bin/users/<uuid:pk>/purge/', AdminUserPurgeView.as_view()),
+    path('bin/cooperatives/<uuid:pk>/purge/', AdminCooperativePurgeView.as_view()),
     path('bin/farmers/', AdminFarmerBinView.as_view()),
     path('bin/deliveries/', AdminDeliveryBinView.as_view()),
     path('bin/deliveries/<uuid:pk>/purge/', AdminDeliveryPurgeView.as_view()),

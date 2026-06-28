@@ -171,9 +171,9 @@ class AdminFarmerSerializer(serializers.ModelSerializer):
             'id', 'user', 'first_name', 'last_name', 'email', 'id_number',
             'phone_number', 'date_of_birth', 'county', 'sub_county', 'ward',
             'village', 'is_active', 'has_active_loan', 'date_joined', 'updated_at',
-            'cooperative', 'primary_membership',
+            'cooperative', 'primary_membership', 'deleted_at', 'restored_at',
         ]
-        read_only_fields = ['id', 'date_joined', 'updated_at', 'primary_membership']
+        read_only_fields = ['id', 'date_joined', 'updated_at', 'primary_membership', 'deleted_at', 'restored_at']
 
     def get_primary_membership(self, obj):
         pm = obj.primary_membership
@@ -199,6 +199,7 @@ class AdminDeliverySerializer(serializers.ModelSerializer):
             'product_type', 'batch_id', 'quantity_kg', 'volume_litres',
             'status', 'grade', 'quality_metrics', 'rejection_reason',
             'date_delivered', 'shift', 'is_synced', 'cooperative',
+            'deleted_at', 'restored_at',
         ]
         read_only_fields = fields
 
@@ -272,7 +273,7 @@ class AdminPaymentCycleSerializer(serializers.ModelSerializer):
             'total_loan_repayments', 'total_input_credits',
             'has_warnings', 'locked_by', 'locked_by_name',
             'locked_at', 'computed_at', 'created_at', 'updated_at',
-            'cooperative',
+            'cooperative', 'deleted_at', 'restored_at',
         ]
         read_only_fields = [
             'id', 'status', 'totals', 'total_levy', 'total_cooperative_fee',

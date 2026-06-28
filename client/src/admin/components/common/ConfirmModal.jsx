@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import useFocusTrap from '../../../shared/hooks/useFocusTrap'
 
-export default function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel, loading, destructive }) {
+export default function ConfirmModal({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel, loading, destructive, impactSummary }) {
   const confirmRef = useRef(null)
   const focusRef = useRef(null)
   useFocusTrap(focusRef)
@@ -32,6 +32,19 @@ export default function ConfirmModal({ open, title, message, confirmLabel = 'Con
       <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl transform transition-all duration-200 scale-100">
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">{title}</h3>
         <p className="text-body-md text-on-surface-variant mb-6">{message}</p>
+        {impactSummary && (
+          <div className="mb-6 px-4 py-3 bg-surface-container rounded-lg">
+            <p className="text-label-md font-bold text-on-surface mb-1">This will also restore:</p>
+            <ul className="space-y-0.5">
+              {impactSummary.map((item, i) => (
+                <li key={i} className="text-body-sm text-on-surface-variant flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[14px] text-primary">{item.icon}</span>
+                  {item.count} {item.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
