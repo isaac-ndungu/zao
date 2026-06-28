@@ -6,10 +6,12 @@ from apps.base.models import CooperativeScopedModel
 
 class BatchStatus(models.TextChoices):
     PENDING = 'PENDING', 'Pending'
+    APPROVED = 'APPROVED', 'Approved'
     PROCESSING = 'PROCESSING', 'Processing'
     COMPLETED = 'COMPLETED', 'Completed'
     PARTIALLY_COMPLETED = 'PARTIALLY_COMPLETED', 'Partially Completed'
     FAILED = 'FAILED', 'Failed'
+    REJECTED = 'REJECTED', 'Rejected'
 
 
 class CommandId(models.TextChoices):
