@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -19,13 +19,34 @@ export default function Loans() {
   const [showApprove, setShowApprove] = useState(null)
   const [showDefault, setShowDefault] = useState(null)
   const [showAddGuarantor, setShowAddGuarantor] = useState(null)
-  const [guarantorPhone, setGuarantorPhone] = useState('')
+  const [guarantorSearch, setGuarantorSearch] = useState('')
+  const [guarantorResults, setGuarantorResults] = useState([])
+  const [selectedGuarantor, setSelectedGuarantor] = useState(null)
+  const [guarantorSearchOpen, setGuarantorSearchOpen] = useState(false)
+  const guarantorRef = useRef(null)
   const { showToast } = useToast()
 
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
 
   const { data, loading, error, refetch } = useApi(`/api/loans/?${params}`)
+
+  useEffect(() => {
+    if (!guarantorSearch || guarantorSearch.length < 2) { setGuarantorResults([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/farmers/?search=${encodeURIComponent(guarantorSearch)}&page_size=10`)
+        if (res.ok) { const d = await res.json(); setGuarantorResults(d.results || []); setGuarantorSearchOpen(true) }
+      } catch { /* ignore */ }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [guarantorSearch])
+
+  useEffect(() => {
+    const handler = (e) => { if (guarantorRef.current && !guarantorRef.current.contains(e.target)) setGuarantorSearchOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
 
@@ -54,12 +75,12 @@ export default function Loans() {
   }
 
   const handleAddGuarantor = async () => {
-    if (!showAddGuarantor || !guarantorPhone) return
+    if (!showAddGuarantor || !selectedGuarantor) return
     try {
-      const res = await apiFetch(`/api/loans/${showAddGuarantor.id}/add_guarantor/`, { method: 'POST', body: JSON.stringify({ phone_number: guarantorPhone }) })
+      const res = await apiFetch(`/api/loans/${showAddGuarantor.id}/add_guarantor/`, { method: 'POST', body: JSON.stringify({ guarantor_id: selectedGuarantor.id }) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to add guarantor') }
       showToast({ type: 'success', message: 'Guarantor added.' })
-      setShowAddGuarantor(null); setGuarantorPhone(''); refetch()
+      setShowAddGuarantor(null); setGuarantorSearch(''); setSelectedGuarantor(null); setGuarantorResults([]); refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
@@ -157,14 +178,22 @@ export default function Loans() {
         )}
       </SlideOutPanel>
 
-      <SlideOutPanel open={!!showAddGuarantor} onClose={() => { setShowAddGuarantor(null); setGuarantorPhone('') }} title="Add Guarantor" width="max-w-md">
-        <div className="space-y-4">
-          <p className="text-body-md text-on-surface-variant">Enter the phone number of the guarantor to add to this loan.</p>
-          <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Guarantor Phone</label>
-            <input value={guarantorPhone} onChange={(e) => setGuarantorPhone(e.target.value)} placeholder="+2547..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+      <SlideOutPanel open={!!showAddGuarantor} onClose={() => { setShowAddGuarantor(null); setGuarantorSearch(''); setSelectedGuarantor(null); setGuarantorResults([]) }} title="Add Guarantor" width="max-w-md">
+        <div className="space-y-4" ref={guarantorRef}>
+          <p className="text-body-md text-on-surface-variant">Search for a farmer to add as guarantor.</p>
+          <div className="relative">
+            <label className="block text-label-md text-on-surface-variant mb-1">Search Farmer</label>
+            <input value={guarantorSearch} onChange={(e) => { setGuarantorSearch(e.target.value); setSelectedGuarantor(null) }} placeholder="Name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            {selectedGuarantor && <p className="text-sm text-on-surface-variant mt-1">Selected: {selectedGuarantor.first_name} {selectedGuarantor.last_name} ({selectedGuarantor.phone_number})</p>}
+            {guarantorSearchOpen && guarantorResults.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full border border-outline-variant rounded-lg bg-surface shadow-lg max-h-40 overflow-y-auto">
+                {guarantorResults.map(f => (
+                  <button key={f.id} type="button" onClick={() => { setSelectedGuarantor(f); setGuarantorSearch(`${f.first_name} ${f.last_name}`); setGuarantorSearchOpen(false) }} className="w-full text-left px-3 py-2 hover:bg-surface-container text-body-md">{f.first_name} {f.last_name} — {f.phone_number}</button>
+                ))}
+              </div>
+            )}
           </div>
-          <button onClick={handleAddGuarantor} disabled={!guarantorPhone} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">Add Guarantor</button>
+          <button onClick={handleAddGuarantor} disabled={!selectedGuarantor} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">Add Guarantor</button>
         </div>
       </SlideOutPanel>
 

@@ -17,7 +17,7 @@ export default function GradingQueue() {
   const [selectedIds, setSelectedIds] = useState([])
   const [detailItem, setDetailItem] = useState(null)
   const [showOverride, setShowOverride] = useState(null)
-  const [overrideData, setOverrideData] = useState({ grade_letter: '', override_reason: '' })
+  const [overrideData, setOverrideData] = useState({ grade_letter: '', price_per_unit: '', override_reason: '' })
   const [showResolve, setShowResolve] = useState(null)
   const [resolveData, setResolveData] = useState({ status: 'RESOLVED', resolution_notes: '' })
   const { showToast } = useToast()
@@ -151,6 +151,7 @@ export default function GradingQueue() {
       <SlideOutPanel open={!!showOverride} onClose={() => setShowOverride(null)} title="Override Grade" width="max-w-md">
         <div className="space-y-4">
           <div><label className="block text-label-md text-on-surface-variant mb-1">Grade Letter</label><select value={overrideData.grade_letter} onChange={(e) => setOverrideData(p => ({ ...p, grade_letter: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="PREMIUM">Premium</option><option value="STANDARD">Standard</option></select></div>
+          <div><label className="block text-label-md text-on-surface-variant mb-1">Price per Unit</label><input type="number" step="0.01" min="0" value={overrideData.price_per_unit} onChange={(e) => setOverrideData(p => ({ ...p, price_per_unit: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
           <div><label className="block text-label-md text-on-surface-variant mb-1">Reason</label><textarea value={overrideData.override_reason} onChange={(e) => setOverrideData(p => ({ ...p, override_reason: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
           <button onClick={handleOverride} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Override Grade</button>
         </div>
