@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 const navItems = [
   { to: '/manager/dashboard', icon: 'dashboard', label: 'Dashboard' },
   { to: '/manager/farmers', icon: 'agriculture', label: 'Farmers' },
+  { to: '/manager/users', icon: 'group', label: 'Staff' },
   { to: '/manager/deliveries', icon: 'local_shipping', label: 'Deliveries' },
   { to: '/manager/grading', icon: 'grading', label: 'Grading Queue' },
   { to: '/manager/cycles', icon: 'payments', label: 'Payment Cycles' },

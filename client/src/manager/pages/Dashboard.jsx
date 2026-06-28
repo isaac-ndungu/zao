@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import KpiCard from '../../admin/components/common/KpiCard'
@@ -17,12 +17,18 @@ export default function ManagerDashboard() {
   const { data: analytics, loading: analyticsLoading, error: analyticsError, refetch: refetchAnalytics } = useApi('/api/analytics/dashboard/')
   const { data: deliveriesSummary } = useApi('/api/deliveries/summary/')
   const { data: farmersStats } = useApi('/api/farmers/stats/')
-  const { data: coop } = useApi('/api/cooperatives/me/')
+  const { data: coop, error: coopError, loading: coopLoading } = useApi('/api/cooperatives/me/')
   const { data: recentDeliveries } = useApi('/api/deliveries/?page=1&page_size=5&ordering=-date_delivered')
   const { data: recentGrades } = useApi('/api/grades/?page=1&page_size=5&ordering=-created_at')
   const { data: recentCycles } = useApi('/api/payment-engine/?page=1&page_size=5&ordering=-created_at')
   const { data: pendingDisputes } = useApi('/api/disputes/?status=PENDING')
   const { data: pendingDisbursements } = useApi('/api/disbursements/?status=PENDING&page_size=1')
+
+  useEffect(() => {
+    if (!coopLoading && !coop && coopError) {
+      navigate('/manager/setup/cooperative', { replace: true })
+    }
+  }, [coop, coopError, coopLoading, navigate])
 
   const ad = analytics?.data || analytics
   const pendingGradings = deliveriesSummary?.pending_grading || 0

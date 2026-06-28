@@ -19,6 +19,7 @@ const About = lazy(() => import('./pages/About'))
 
 // Auth pages
 const Login = lazy(() => import('./admin/pages/Login'))
+const AcceptInvite = lazy(() => import('./shared/pages/AcceptInvite'))
 const FarmerLogin = lazy(() => import('./farmer/pages/Login'))
 
 // Admin pages
@@ -68,6 +69,8 @@ const ManagerDeductions = lazy(() => import('./manager/pages/Deductions'))
 const ManagerReports = lazy(() => import('./manager/pages/Reports'))
 const ManagerRoutes = lazy(() => import('./manager/pages/Routes'))
 const ManagerSettings = lazy(() => import('./manager/pages/Settings'))
+const SetupCooperative = lazy(() => import('./manager/pages/SetupCooperative'))
+const ManagerUsers = lazy(() => import('./manager/pages/Users'))
 
 // Grader pages
 const GraderLayout = lazy(() => import('./grader/GraderLayout'))
@@ -163,6 +166,7 @@ export default function App() {
 
           {/* Login pages */}
           <Route path="/admin/login" element={<SuspenseWrapper><Login /></SuspenseWrapper>} />
+          <Route path="/accept-invite" element={<SuspenseWrapper><AcceptInvite /></SuspenseWrapper>} />
 
           {/* Super-admin / Admin routes */}
           <Route path="/admin" element={<AdminRoutes />}>
@@ -211,6 +215,8 @@ export default function App() {
             <Route path="deductions" element={<SuspenseWrapper><ManagerDeductions /></SuspenseWrapper>} />
             <Route path="reports" element={<SuspenseWrapper><ManagerReports /></SuspenseWrapper>} />
             <Route path="routes" element={<SuspenseWrapper><ManagerRoutes /></SuspenseWrapper>} />
+            <Route path="setup/cooperative" element={<SuspenseWrapper><SetupCooperative /></SuspenseWrapper>} />
+            <Route path="users" element={<SuspenseWrapper><ManagerUsers /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><ManagerSettings /></SuspenseWrapper>} />
           </Route>
 

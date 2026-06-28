@@ -452,6 +452,7 @@ SUPERADMIN_ALLOWED_IPS = config('SUPERADMIN_ALLOWED_IPS', default='', cast=lambd
 # CORS - restrict in production
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:3000").split(",")
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 
 # HTTPS Security
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)

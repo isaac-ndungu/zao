@@ -1535,14 +1535,10 @@ class AdminInviteView(APIView):
         signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
         invite_token = signer.sign(user.email)
 
-        try:
-            host = request.get_host()
-        except Exception:
-            host = 'localhost'
-        invite_link = f'{request.scheme}://{host}/api/auth/invite/verify/'
+        invite_link = f'{settings.FRONTEND_URL}/accept-invite?token={invite_token}'
 
         otp_code = f'{secrets.randbelow(1_000_000):06d}'
-        expires_at = timezone.now() + timedelta(minutes=10)
+        expires_at = timezone.now() + timedelta(hours=3)
 
         TwoFactorOTP.objects.create(
             user=user,
@@ -1556,9 +1552,9 @@ class AdminInviteView(APIView):
             'You\'ve been invited to Zao',
             (
                 'You have been invited to join as a Manager.\n\n'
-                f'Your invite code is: {otp_code}\n'
-                f'It expires in 10 minutes.\n\n'
-                f'Or click the link below:\n{invite_link}\n\n'
+                f'Invite code: {otp_code}\n'
+                f'Expires in 3 hours.\n\n'
+                f'Or click: {invite_link}\n\n'
                 f'This invite expires in 7 days.'
             ),
             from_email,
@@ -1703,20 +1699,16 @@ class AdminInviteResendView(APIView):
         signer = TimestampSigner(salt=INVITE_TOKEN_SALT)
         invite_token = signer.sign(user.email)
 
-        try:
-            host = request.get_host()
-        except Exception:
-            host = 'localhost'
-        invite_link = f'{request.scheme}://{host}/api/auth/invite/verify/'
+        invite_link = f'{settings.FRONTEND_URL}/accept-invite?token={invite_token}'
 
         from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
         send_mail(
             'You\'ve been invited to Zao',
             (
                 'You have been invited to join as a Manager.\n\n'
-                f'Your invite code is: {otp_code}\n'
-                f'It expires in 10 minutes.\n\n'
-                f'Or click the link below:\n{invite_link}\n\n'
+                f'Invite code: {otp_code}\n'
+                f'Expires in 3 hours.\n\n'
+                f'Or click: {invite_link}\n\n'
                 f'This invite expires in 7 days.'
             ),
             from_email,
