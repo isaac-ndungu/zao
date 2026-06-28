@@ -102,10 +102,7 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-        requires_2fa = (
-            user.two_fa_enabled
-            or user.role == UserRole.MANAGER
-        )
+        requires_2fa = user.two_fa_enabled
         if requires_2fa:
             signer = TimestampSigner(salt=LOGIN_TOKEN_SALT)
             login_token = signer.sign(user.email)

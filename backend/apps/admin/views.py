@@ -261,15 +261,24 @@ class AdminUserToggle2FAView(APIView):
             user = User.objects.get(pk=pk)
         except User.DoesNotExist:
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        user.two_fa_enabled = not user.two_fa_enabled
+        serializer = AdminUserToggle2FASerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        enabled = serializer.validated_data['enabled']
+        if user.two_fa_enabled == enabled:
+            return Response({'detail': '2FA already in requested state.', 'two_fa_enabled': user.two_fa_enabled}, status=status.HTTP_400_BAD_REQUEST)
+        user.two_fa_enabled = enabled
         user.save(update_fields=['two_fa_enabled'])
+        if not enabled:
+            TwoFactorOTP.objects.filter(
+                user=user, is_used=False, expires_at__gt=timezone.now()
+            ).update(is_used=True)
         log_audit(
             actor=request.user, resource_type='user', resource_id=user.pk,
             action=AuditAction.ADMIN_ACTION,
             new_value={'two_fa_enabled': user.two_fa_enabled},
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': '2FA toggled.', 'two_fa_enabled': user.two_fa_enabled})
+        return Response({'detail': f'2FA {"enabled" if enabled else "disabled"}.', 'two_fa_enabled': user.two_fa_enabled})
 
 
 class AdminUserForceLogoutView(APIView):

@@ -76,7 +76,7 @@ class AdminUserDeactivateSerializer(serializers.Serializer):
     notify = serializers.BooleanField(default=True)
 
 class AdminUserToggle2FASerializer(serializers.Serializer):
-    pass
+    enabled = serializers.BooleanField()
 
 
 class AdminUserResetPasswordSerializer(serializers.Serializer):

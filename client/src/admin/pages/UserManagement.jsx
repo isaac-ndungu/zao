@@ -106,10 +106,13 @@ export default function UserManagement() {
     try {
       const res = await apiFetch(url, { method: 'POST', ...opts })
       if (!res.ok) throw new Error(await res.text())
-      const msg = url.includes('activate') ? 'activated' : url.includes('deactivate') ? 'deactivated' : url.includes('delete') ? 'soft-deleted' : url.includes('restore') ? 'restored' : url.includes('toggle') ? '2FA toggled' : url.includes('reset') ? 'password reset' : url.includes('logout') ? 'logged out' : url.includes('impersonate') ? 'impersonated' : 'action completed'
+      const result = await res.json().catch(() => ({}))
+      let msg = url.includes('activate') ? 'activated' : url.includes('deactivate') ? 'deactivated' : url.includes('delete') ? 'soft-deleted' : url.includes('restore') ? 'restored' : url.includes('reset') ? 'password reset' : url.includes('logout') ? 'logged out' : url.includes('impersonate') ? 'impersonated' : 'action completed'
+      if (url.includes('toggle-2fa') && result && result.two_fa_enabled !== undefined) {
+        msg = result.two_fa_enabled ? '2FA enabled' : '2FA disabled'
+      }
       showToast({ type: 'success', message: `User ${msg}.` })
       refetch()
-      const result = await res.json().catch(() => ({}))
       if (panelUser && typeof result === 'object') {
         const { detail, message, error, status, ...updates } = result
         const safeUpdates = Object.fromEntries(
@@ -153,7 +156,7 @@ export default function UserManagement() {
       deactivate: { title: 'Deactivate User', message: `Deactivate ${user.email}? They will lose access.`, destructive: true },
       delete: { title: 'Delete User', message: `Soft-delete ${user.email}? This can be undone.`, destructive: true },
       restore: { title: 'Restore User', message: `Restore ${user.email}?`, destructive: false },
-      'toggle-2fa': { title: 'Toggle 2FA', message: `Toggle 2FA for ${user.email}?`, destructive: false },
+      'toggle-2fa': { title: user.two_fa_enabled ? 'Disable 2FA' : 'Enable 2FA', message: user.two_fa_enabled ? `Disable 2FA for ${user.email}?` : `Enable 2FA for ${user.email}?`, destructive: !!user.two_fa_enabled },
       'reset-password': { title: 'Reset Password', message: `Send password reset for ${user.email}?`, destructive: false },
       'force-logout': { title: 'Force Logout', message: `Force logout ${user.email}? All sessions will be terminated.`, destructive: false },
     }
@@ -164,7 +167,7 @@ export default function UserManagement() {
       open: true,
       ...cfg,
       onConfirm: () => execAction(`/api/admin/users/${user.id}/${action}/`, {
-        body: JSON.stringify({ confirm: action === 'delete' }),
+        body: JSON.stringify({ confirm: action === 'delete', ...(action === 'toggle-2fa' ? { enabled: !user.two_fa_enabled } : {}) }),
         headers: { 'Content-Type': 'application/json' },
       }),
     })
