@@ -41,7 +41,7 @@ export default function Farmers() {
 
   const sortParam = sortOrder === 'desc' ? `-${sortField}` : sortField
   const queryParams = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
-  if (search) queryParams.set('search', search)
+  if (search) queryParams.set('q', search)
 
   const { data, loading, error, refetch } = useApi(`/api/farmers/?${queryParams}`)
   const { data: stats } = useApi('/api/farmers/stats/')
@@ -188,7 +188,7 @@ export default function Farmers() {
   }
 
   const columns = [
-    { key: 'member_number', label: 'Member #', sortable: true },
+    { key: 'member_number', label: 'Member #' },
     { key: 'first_name', label: 'First Name', sortable: true },
     { key: 'last_name', label: 'Last Name', sortable: true },
     { key: 'phone_number', label: 'Phone', sortable: true },
@@ -312,7 +312,12 @@ export default function Farmers() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => exportCsv('/api/farmers/?export=csv')}
+            onClick={() => {
+              const p = new URLSearchParams()
+              if (search) p.set('q', search)
+              p.set('export', 'csv')
+              exportCsv(`/api/farmers/?${p}`)
+            }}
             className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>Export

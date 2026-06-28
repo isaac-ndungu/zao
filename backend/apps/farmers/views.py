@@ -23,6 +23,7 @@ from apps.base.views import CooperativeScopedViewSet
 from apps.base.export_mixins import CsvExportMixin
 
 from .models import Farmer, FarmerCooperativeMembership
+from .pagination import FarmerPagination
 from apps.base.idempotency import idempotent
 from .serializers import (
     FarmerCreateSerializer,
@@ -54,6 +55,7 @@ def _create_farmer_user(farmer, cooperative_id):
 class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'farmers.csv'
     queryset = Farmer.objects.all().select_related('cooperative', 'user')
+    pagination_class = FarmerPagination
     filter_backends = [OrderingFilter]
     ordering_fields = [
         'first_name', 'last_name',

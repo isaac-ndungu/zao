@@ -63,7 +63,7 @@ class FarmerListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'member_number', 'first_name', 'last_name',
             'phone_number', 'payment_method',
-            'is_active', 'date_joined', 'email',
+            'is_active', 'date_joined', 'email', 'county',
             'primary_cooperative_name',
         ]
 
