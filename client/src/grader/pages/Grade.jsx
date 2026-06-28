@@ -141,9 +141,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
     try {
       const body = {
         delivery: delivery.id,
-        grade_letter: 'REJECTED',
         rejection_reason: rejectReason.trim(),
-        quality_metrics: {},
       }
       const res = await apiFetch('/api/grades/', { method: 'POST', body: JSON.stringify(body) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Rejection failed') }
@@ -163,18 +161,12 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
       return
     }
 
-    let parsedMetrics = {}
-    if (qualityMetrics.trim()) {
-      try { parsedMetrics = JSON.parse(qualityMetrics) }
-      catch { showToast({ type: 'error', message: 'Invalid quality metrics JSON.' }); return }
-    }
-
     setSubmitting(true)
     try {
       const body = {
         delivery: delivery.id,
         grade_letter: grade,
-        quality_metrics: parsedMetrics,
+        price_per_unit: priceMap[grade] || null,
       }
       const res = await apiFetch('/api/grades/', { method: 'POST', body: JSON.stringify(body) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Grading failed') }
