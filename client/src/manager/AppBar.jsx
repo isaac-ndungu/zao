@@ -5,7 +5,7 @@ import { useApi } from '../admin/hooks/useApi'
 
 export default function ManagerAppBar({ onMenuClick }) {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const { data: coop } = useApi('/api/cooperatives/me/')
 
   const initials = user
@@ -13,6 +13,11 @@ export default function ManagerAppBar({ onMenuClick }) {
     : '??'
 
   const coopName = coop?.name || ''
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/admin/login') // or '/login' depending on your auth flow
+  }
 
   return (
     <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-4 lg:px-6 z-30">
@@ -55,6 +60,14 @@ export default function ManagerAppBar({ onMenuClick }) {
         <NotificationBell endpoint="/api/notifications/?page=1&page_size=5" />
 
         <div className="flex items-center gap-3 pl-2 lg:pl-4 border-l border-outline-variant">
+          <button
+            onClick={handleLogout}
+            className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors"
+            aria-label="Logout"
+          >
+            <span className="material-symbols-outlined">logout</span>
+          </button>
+
           <div className="text-right hidden xl:block">
             <p className="font-label-md font-bold text-on-surface leading-tight truncate max-w-[120px]">
               {user ? `${user.first_name} ${user.last_name}` : 'Loading...'}
