@@ -118,20 +118,20 @@ export default function FarmerDashboard() {
 
       {/* Key metrics */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-surface-container rounded-xl border border-outline-variant p-4 text-center" onClick={() => navigate('/farmer/deliveries')}>
+        <button onClick={() => navigate('/farmer/deliveries')} className="bg-surface-container rounded-xl border border-outline-variant p-4 text-center cursor-pointer hover:shadow-md transition-shadow">
           <p className="text-xs text-on-surface-variant mb-1">{t('totalDeliveries')}</p>
           <p className="text-xl font-bold text-primary">{deliveryCount}</p>
-        </div>
-        <div className="bg-surface-container rounded-xl border border-outline-variant p-4 text-center" onClick={() => navigate('/farmer/payments')}>
+        </button>
+        <button onClick={() => navigate('/farmer/payments')} className="bg-surface-container rounded-xl border border-outline-variant p-4 text-center cursor-pointer hover:shadow-md transition-shadow">
           <p className="text-xs text-on-surface-variant mb-1">{t('lastPayment')}</p>
           <p className="text-lg font-bold text-on-surface">{lastPayment ? formatKes(lastPayment.net_amount) : '-'}</p>
           {lastPayment && <p className="text-[10px] text-on-surface-variant mt-0.5">{lastPayment.status}</p>}
-        </div>
-        <div className="bg-surface-container rounded-xl border border-outline-variant p-4 text-center" onClick={() => navigate('/farmer/loans')}>
+        </button>
+        <button onClick={() => navigate('/farmer/loans')} className="bg-surface-container rounded-xl border border-outline-variant p-4 text-center cursor-pointer hover:shadow-md transition-shadow">
           <p className="text-xs text-on-surface-variant mb-1">{t('activeLoan')}</p>
           <p className="text-lg font-bold text-warning">{activeLoan ? formatKes(activeLoan.amount_principal) : '-'}</p>
           {activeLoan && <p className="text-[10px] text-on-surface-variant mt-0.5">{activeLoan.installments_paid || 0}/{activeLoan.number_of_installments}</p>}
-        </div>
+        </button>
       </div>
 
       {/* Product breakdown (if multiple product types) */}
