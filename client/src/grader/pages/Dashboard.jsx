@@ -13,11 +13,15 @@ function timeSince(dateStr) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 export default function GraderDashboard() {
   const navigate = useNavigate()
   const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page_size=50&ordering=-date_delivered`)
-  const { data: summary } = useApi('/api/deliveries/summary/')
-  const { data: gradedToday } = useApi(`/api/grades/?page_size=1`)
+  const { data: summary } = useApi(`/api/deliveries/summary/?date_from=${todayStr()}&date_to=${todayStr()}`)
+  const { data: gradedToday } = useApi(`/api/grades/?created_at__date=${todayStr()}&page_size=1`)
 
   const pendingDeliveries = pendingData?.results || []
   const pendingCount = pendingData?.count || 0
@@ -55,33 +59,33 @@ export default function GraderDashboard() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+        <button onClick={() => navigate('/grader/grade')} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow text-left w-full">
+          <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-primary">pending</span>
           </div>
           <div>
             <p className="text-headline-lg font-bold text-on-surface">{pendingCount}</p>
             <p className="text-label-md text-on-surface-variant">Pending</p>
           </div>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center">
+        </button>
+        <button onClick={() => navigate('/grader/grade')} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow text-left w-full">
+          <div className="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-secondary">grading</span>
           </div>
           <div>
             <p className="text-headline-lg font-bold text-on-surface">{gradedTodayCount}</p>
             <p className="text-label-md text-on-surface-variant">Graded Today</p>
           </div>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center">
+        </button>
+        <button onClick={() => navigate('/grader/grade')} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 flex items-center gap-4 cursor-pointer hover:shadow-md transition-shadow text-left w-full">
+          <div className="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-tertiary">local_shipping</span>
           </div>
           <div>
             <p className="text-headline-lg font-bold text-on-surface">{summary?.total || 0}</p>
             <p className="text-label-md text-on-surface-variant">Total Today</p>
           </div>
-        </div>
+        </button>
       </div>
 
       {pendingDeliveries.length === 0 ? (

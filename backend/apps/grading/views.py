@@ -87,13 +87,19 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
         user = self.request.user
         if user.is_authenticated and getattr(user, 'role', None) == UserRole.FARMER:
             qs = qs.filter(delivery__farmer__user=user)
-        for param in ('grade_letter',):
+        for param in ('grade_letter', 'created_at__date'):
             val = self.request.query_params.get(param)
             if val:
                 qs = qs.filter(**{param: val})
         delivery_id = self.request.query_params.get('delivery')
         if delivery_id:
             qs = qs.filter(delivery_id=delivery_id)
+        date_from = self.request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        date_to = self.request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
         return qs
 
     def get_permissions(self):
