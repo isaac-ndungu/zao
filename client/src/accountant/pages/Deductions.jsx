@@ -18,7 +18,7 @@ export default function AccountantDeductions() {
   const [page, setPage] = useState(1)
   const [typeFilter, setTypeFilter] = useState('')
   const [showCreditForm, setShowCreditForm] = useState(false)
-  const [creditForm, setCreditForm] = useState({ farmer: '', description: '', amount: '' })
+  const [creditForm, setCreditForm] = useState({ farmer: '', item_description: '', amount: '' })
   const [saving, setSaving] = useState(false)
 
   const qp = new URLSearchParams({ page, page_size: '20' })
@@ -44,7 +44,7 @@ export default function AccountantDeductions() {
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create credit') }
       showToast({ type: 'success', message: 'Farm input credit created.' })
       setShowCreditForm(false)
-      setCreditForm({ farmer: '', description: '', amount: '' })
+      setCreditForm({ farmer: '', item_description: '', amount: '' })
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSaving(false) }
   }
@@ -133,7 +133,7 @@ export default function AccountantDeductions() {
                     <input type="number" min="1" value={creditForm.amount} onChange={(e) => setCreditForm(p => ({ ...p, amount: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
                   </div>
                   <div><label className="block text-label-md text-on-surface-variant mb-1">Description</label>
-                    <textarea value={creditForm.description} onChange={(e) => setCreditForm(p => ({ ...p, description: e.target.value }))} rows={3} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. Fertilizer, Seeds..." />
+                    <textarea value={creditForm.item_description} onChange={(e) => setCreditForm(p => ({ ...p, item_description: e.target.value }))} rows={3} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. Fertilizer, Seeds..." />
                   </div>
                   <div className="flex gap-3">
                     <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>

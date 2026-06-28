@@ -43,7 +43,7 @@ export default function AccountantDisbursements() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await apiFetch('/api/disbursements/initiate/', { method: 'POST', body: JSON.stringify({ cycle: initForm.cycle }) })
+      const res = await apiFetch('/api/disbursements/initiate/', { method: 'POST', body: JSON.stringify({ payment_cycle: initForm.cycle }) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to initiate disbursements') }
       showToast({ type: 'success', message: 'Disbursements initiated from cycle.' })
       setShowInitiate(false)

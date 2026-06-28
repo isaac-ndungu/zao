@@ -159,7 +159,7 @@ export default function AccountantCycles() {
   const selectedId = searchParams.get('selected')
   const [page, setPage] = useState(1)
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ name: '', period_start: '', period_end: '', notes: '', status: 'DRAFT' })
+  const [formData, setFormData] = useState({ name: '', start_date: '', end_date: '', notes: '', status: 'DRAFT' })
   const [saving, setSaving] = useState(false)
 
   const qp = new URLSearchParams({ page, page_size: '20' })
@@ -183,7 +183,7 @@ export default function AccountantCycles() {
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create cycle') }
       showToast({ type: 'success', message: 'Payment cycle created.' })
       setShowForm(false)
-      setFormData({ name: '', period_start: '', period_end: '', notes: '', status: 'DRAFT' })
+      setFormData({ name: '', start_date: '', end_date: '', notes: '', status: 'DRAFT' })
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSaving(false) }
@@ -242,10 +242,10 @@ export default function AccountantCycles() {
                 <input value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. June 2026 Payout" />
               </div>
               <div><label className="block text-label-md text-on-surface-variant mb-1">Period Start</label>
-                <input type="date" value={formData.period_start} onChange={(e) => setFormData(p => ({ ...p, period_start: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+                <input type="date" value={formData.start_date} onChange={(e) => setFormData(p => ({ ...p, start_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Period End</label>
-                <input type="date" value={formData.period_end} onChange={(e) => setFormData(p => ({ ...p, period_end: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label className="block text-label-md text-on-surface-variant mb-1">End Date</label>
+                <input type="date" value={formData.end_date} onChange={(e) => setFormData(p => ({ ...p, end_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label>
                 <textarea value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
