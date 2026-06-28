@@ -12,6 +12,30 @@ import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 import { useLocation } from 'react-router-dom'
 
+const KENYA_COUNTIES = [
+  'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo Marakwet',
+  'Embu', 'Garissa', 'Homa Bay', 'Isiolo', 'Kajiado',
+  'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 'Kirinyaga',
+  'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia',
+  'Lamu', 'Machakos', 'Makueni', 'Mandera', 'Marsabit',
+  'Meru', 'Migori', 'Mombasa', "Murang'a", 'Nairobi',
+  'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua',
+  'Nyeri', 'Samburu', 'Siaya', 'Taita Taveta', 'Tana River',
+  'Tharaka Nithi', 'Trans Nzoia', 'Turkana', 'Uasin Gishu',
+  'Vihiga', 'Wajir', 'West Pokot',
+]
+
+const produceTypeOptions = [
+  { value: 'DAIRY', label: 'Dairy' },
+  { value: 'COFFEE', label: 'Coffee' },
+  { value: 'HONEY', label: 'Honey' },
+]
+
+const paymentModelOptions = [
+  { value: 'FIXED_PRICE', label: 'Fixed Price' },
+  { value: 'REVENUE_SHARE', label: 'Revenue Share' },
+]
+
 const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
@@ -31,11 +55,11 @@ export default function Cooperatives() {
   const [panelItem, setPanelItem] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
-  const [form, setForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
+  const [form, setForm] = useState({ name: '', prefix: '', email: '', phone_number: '', physical_address: '', registration_number: '', county: 'Nairobi', produce_type: 'DAIRY', payment_model: 'FIXED_PRICE', levy_percentage: '', monthly_fee: '', sub_county: '', ward: '' })
   const [formLoading, setFormLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
+  const [editForm, setEditForm] = useState({ name: '', prefix: '', email: '', phone_number: '', physical_address: '', registration_number: '', county: 'Nairobi', produce_type: 'DAIRY', payment_model: 'FIXED_PRICE', levy_percentage: '', monthly_fee: '', sub_county: '', ward: '' })
   const [editLoading, setEditLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
 
@@ -125,7 +149,7 @@ export default function Cooperatives() {
 
   const openEdit = (item) => {
     setEditItem(item)
-    setEditForm({ name: item.name || '', code: item.code || '', email: item.email || '', phone_number: item.phone_number || '', address: item.address || '', registration_number: item.registration_number || '' })
+    setEditForm({ name: item.name || '', prefix: item.prefix || '', email: item.email || '', phone_number: item.phone_number || '', physical_address: item.physical_address || '', registration_number: item.registration_number || '', county: item.county || 'Nairobi', produce_type: item.produce_type || 'DAIRY', payment_model: item.payment_model || 'FIXED_PRICE', levy_percentage: item.levy_percentage || '', monthly_fee: item.monthly_fee || '', sub_county: item.sub_county || '', ward: item.ward || '' })
     setEditOpen(true)
   }
 
@@ -137,7 +161,7 @@ export default function Cooperatives() {
       if (!res.ok) throw new Error(await res.text())
       showToast({ type: 'success', message: `Cooperative ${form.name} created.` })
       setCreateOpen(false)
-      setForm({ name: '', code: '', email: '', phone_number: '', address: '', registration_number: '' })
+      setForm({ name: '', prefix: '', email: '', phone_number: '', physical_address: '', registration_number: '', county: 'Nairobi', produce_type: 'DAIRY', payment_model: 'FIXED_PRICE', levy_percentage: '', monthly_fee: '', sub_county: '', ward: '' })
       refetch()
     } catch (e) {
       showToast({ type: 'error', message: `Creation failed: ${e.message}` })
@@ -257,18 +281,33 @@ export default function Cooperatives() {
       {editOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">
           <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditItem(null) }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Cooperative</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update cooperative details.</p>
             <form onSubmit={handleEdit} className="space-y-3">
               <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input required value={editForm.name} onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Code</label><input value={editForm.code} onChange={(e) => setEditForm(f => ({ ...f, code: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number</label><input value={editForm.registration_number} onChange={(e) => setEditForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label><input value={editForm.prefix} onChange={(e) => setEditForm(f => ({ ...f, prefix: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label><input required value={editForm.registration_number} onChange={(e) => setEditForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><select required value={editForm.county} onChange={(e) => setEditForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input value={editForm.sub_county} onChange={(e) => setEditForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={editForm.ward} onChange={(e) => setEditForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label><select required value={editForm.produce_type} onChange={(e) => setEditForm(f => ({ ...f, produce_type: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label><select required value={editForm.payment_model} onChange={(e) => setEditForm(f => ({ ...f, payment_model: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label><input required type="number" step="0.01" min="0" max="100" value={editForm.levy_percentage} onChange={(e) => setEditForm(f => ({ ...f, levy_percentage: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label><input required type="number" step="0.01" min="0" value={editForm.monthly_fee} onChange={(e) => setEditForm(f => ({ ...f, monthly_fee: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
               <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input type="tel" value={editForm.phone_number} onChange={(e) => setEditForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Address</label><textarea rows={2} value={editForm.address} onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label><textarea rows={2} value={editForm.physical_address} onChange={(e) => setEditForm(f => ({ ...f, physical_address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setEditOpen(false); setEditItem(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
                 <button type="submit" disabled={editLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{editLoading ? 'Saving...' : 'Save'}</button>
@@ -281,18 +320,33 @@ export default function Cooperatives() {
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">
           <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Cooperative</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Register a new farmer cooperative.</p>
             <form onSubmit={handleCreate} className="space-y-3">
               <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input required value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Code</label><input value={form.code} onChange={(e) => setForm(f => ({ ...f, code: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number</label><input value={form.registration_number} onChange={(e) => setForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label><input value={form.prefix} onChange={(e) => setForm(f => ({ ...f, prefix: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label><input required value={form.registration_number} onChange={(e) => setForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><select required value={form.county} onChange={(e) => setForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input value={form.sub_county} onChange={(e) => setForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={form.ward} onChange={(e) => setForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label><select required value={form.produce_type} onChange={(e) => setForm(f => ({ ...f, produce_type: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label><select required value={form.payment_model} onChange={(e) => setForm(f => ({ ...f, payment_model: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label><input required type="number" step="0.01" min="0" max="100" value={form.levy_percentage} onChange={(e) => setForm(f => ({ ...f, levy_percentage: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label><input required type="number" step="0.01" min="0" value={form.monthly_fee} onChange={(e) => setForm(f => ({ ...f, monthly_fee: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              </div>
               <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input type="tel" value={form.phone_number} onChange={(e) => setForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Address</label><textarea rows={2} value={form.address} onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label><textarea rows={2} value={form.physical_address} onChange={(e) => setForm(f => ({ ...f, physical_address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
                 <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
