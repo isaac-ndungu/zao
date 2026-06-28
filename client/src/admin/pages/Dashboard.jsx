@@ -26,26 +26,29 @@ const roleLabels = {
   unknown: 'Other',
 }
 
-const statusColors = {
-  pending: 'bg-tertiary-fixed-dim',
-  in_progress: 'bg-primary',
-  completed: 'bg-secondary',
-  cancelled: 'bg-error',
-}
-
 const statusLabels = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
+  PENDING: 'Pending',
+  GRADED: 'Graded',
+  ACCEPTED: 'Accepted',
+  REJECTED: 'Rejected',
+  PAID: 'Paid',
 }
 
 const pipelineStages = [
-  { key: 'pending', label: 'Draft', color: 'bg-surface-container-highest', textColor: 'text-on-surface-variant', valueColor: 'text-primary' },
-  { key: 'in_progress', label: 'Computing', color: 'bg-primary-fixed', textColor: 'text-on-primary-fixed-variant', valueColor: 'text-primary' },
-  { key: 'completed', label: 'Completed', color: 'bg-primary-container', textColor: 'text-on-primary-container', valueColor: 'text-white' },
-  { key: 'rejected', label: 'Rejected', color: 'bg-primary', textColor: 'text-on-primary', valueColor: 'text-white' },
+  { key: 'DRAFT', label: 'Draft', color: 'bg-surface-container-highest', textColor: 'text-on-surface-variant', valueColor: 'text-primary' },
+  { key: 'COMPUTING', label: 'Computing', color: 'bg-primary-fixed', textColor: 'text-on-primary-fixed-variant', valueColor: 'text-primary' },
+  { key: 'COMPUTED', label: 'Computed', color: 'bg-primary-container', textColor: 'text-on-primary-container', valueColor: 'text-white' },
+  { key: 'LOCKED', label: 'Locked', color: 'bg-secondary', textColor: 'text-on-secondary', valueColor: 'text-white' },
+  { key: 'DISBURSED', label: 'Disbursed', color: 'bg-tertiary', textColor: 'text-on-tertiary', valueColor: 'text-white' },
 ]
+
+const cycleStatusColors = {
+  DRAFT: CATEGORICAL_COLORS[5],
+  COMPUTING: CATEGORICAL_COLORS[0],
+  COMPUTED: CATEGORICAL_COLORS[1],
+  LOCKED: CATEGORICAL_COLORS[2],
+  DISBURSED: CATEGORICAL_COLORS[3],
+}
 
 function formatNumber(n) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -59,29 +62,15 @@ export default function Dashboard() {
   const { data, loading, error } = useApi(`/api/admin/dashboard/?period=${period}`)
   const { data: analytics, loading: analyticsLoading } = useApi(`/api/admin/analytics/dashboard/?period=${period}`)
 
-  // Safe extraction with fallback from related fields
   const totalUsers = data?.total_users ?? '—'
-  const activeUsers = data?.active_users
-    ?? Object.values(data?.users_by_role || {}).reduce((s, v) => s + v, 0)
-    ?? '—'
+  const totalFarmers = data?.total_farmers ?? '—'
+  const pendingDeliveries = data?.deliveries_by_status?.PENDING ?? '—'
+  const totalDeliveries = data?.total_deliveries ?? '—'
 
-  // Pending deliveries
-  const pendingDeliveries = data?.pending_deliveries
-    ?? data?.deliveries_by_status?.pending
-    ?? '—'
-
-  // Active deliveries
-  const activeDeliveries = data?.active_deliveries
-    ?? (() => {
-      const dbs = data?.deliveries_by_status
-      if (!dbs) return '—'
-      const total = Object.entries(dbs)
-        .filter(([key]) => key !== 'cancelled')
-        .reduce((s, [, v]) => s + v, 0)
-      return total > 0 ? total : '—'
-    })()
-
-  const pendingGradings = data?.pending_gradings ?? '—'
+  const totalDeleted = useMemo(() => {
+    if (!data?.trash) return 0
+    return Object.values(data.trash).reduce((s, v) => s + v, 0)
+  }, [data?.trash])
 
   const usersByRole = useMemo(() => {
     const roles = data?.users_by_role
@@ -96,14 +85,14 @@ export default function Dashboard() {
   }, [data?.deliveries_by_status])
 
   const cyclePipeline = useMemo(() => {
-    const pipe = data?.cycle_pipeline
+    const pipe = data?.cycles_by_status
     if (!pipe) return pipelineStages.map(s => ({ ...s, value: 0, percent: 0 }))
     const total = Object.values(pipe).reduce((s, v) => s + v, 0) || 1
     return pipelineStages.map((stage) => {
       const value = pipe[stage.key] || 0
       return { ...stage, value, percent: (value / total) * 100 }
     })
-  }, [data?.cycle_pipeline])
+  }, [data?.cycles_by_status])
 
   const analyticsData = analytics?.data
   const gradeDist = useMemo(() => {
@@ -151,13 +140,12 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <KpiCard icon="group" label="Total Users" value={formatNumber(totalUsers)} onClick={() => navigate('/admin/users')} />
-        <KpiCard icon="agriculture" label="Active Users" value={formatNumber(activeUsers)} onClick={() => navigate('/admin/users')} />
-        <KpiCard icon="grading" label="Pending Gradings" value={formatNumber(pendingGradings)} onClick={() => navigate('/admin/receipts')} />
-        <KpiCard icon="inventory" label="Active Deliveries" value={formatNumber(activeDeliveries)} onClick={() => navigate('/admin/receipts')} />
-        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(data?.trash_summary?.total_deleted || 0)} highlighted onClick={() => navigate('/admin/trash')} />
+        <KpiCard icon="agriculture" label="Total Farmers" value={formatNumber(totalFarmers)} onClick={() => navigate('/admin/users')} />
+        <KpiCard icon="grading" label="Pending Deliveries" value={formatNumber(pendingDeliveries)} onClick={() => navigate('/admin/receipts')} />
+        <KpiCard icon="inventory" label="Total Deliveries" value={formatNumber(totalDeliveries)} onClick={() => navigate('/admin/receipts')} />
+        <KpiCard icon="delete" label="Soft Deleted" value={formatNumber(totalDeleted)} highlighted onClick={() => navigate('/admin/trash')} />
       </div>
 
-      {/* Analytics KPIs */}
       {analyticsData && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <KpiCard icon="payments" label="Revenue" value={analyticsData.financial?.total_revenue ? `KES ${formatNumber(analyticsData.financial.total_revenue)}` : '—'} onClick={() => navigate('/admin/financials')} />
@@ -197,12 +185,12 @@ export default function Dashboard() {
           height={280}
           emptyMessage="No delivery data available."
           colorMap={Object.fromEntries(
-            Object.entries(statusColors).map(([k, v]) => [
-              statusLabels[k] || k,
-              v === 'bg-primary' ? CATEGORICAL_COLORS[0]
-                : v === 'bg-secondary' ? '#059669'
-                : v === 'bg-tertiary-fixed-dim' ? CATEGORICAL_COLORS[3]
-                : v === 'bg-error' ? '#dc2626'
+            Object.entries(statusLabels).map(([k, v]) => [
+              v,
+              k === 'PENDING' ? CATEGORICAL_COLORS[0]
+                : k === 'GRADED' ? CATEGORICAL_COLORS[1]
+                : k === 'ACCEPTED' ? CATEGORICAL_COLORS[2]
+                : k === 'REJECTED' ? '#dc2626'
                 : CATEGORICAL_COLORS[5]
             ])
           )}
@@ -223,7 +211,7 @@ export default function Dashboard() {
 
       <BarChartCard
         title="Cycle Pipeline"
-        subtitle="Flow of items through the current processing cycle."
+        subtitle="Flow of payment cycles through stages."
         data={cyclePipeline.map(s => ({ name: s.label, value: s.value }))}
         categoryKey="name"
         dataKey="value"
