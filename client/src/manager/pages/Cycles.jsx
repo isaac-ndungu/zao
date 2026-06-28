@@ -43,14 +43,14 @@ export default function Cycles() {
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'status', label: 'Status', sortable: true, render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
-    { key: 'start_date', label: 'Start', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
-    { key: 'end_date', label: 'End', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
-    { key: 'total_amount', label: 'Total', sortable: true, render: (v) => v ? `KES ${Number(v).toLocaleString()}` : '-' },
-    { key: 'farmer_count', label: 'Farmers', sortable: true, render: (v) => v ?? '-' },
-    { key: 'created_at', label: 'Created', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'start_date', label: 'Start', sortable: true, render: (row) => row.start_date ? new Date(row.start_date).toLocaleDateString() : '-' },
+    { key: 'end_date', label: 'End', sortable: true, render: (row) => row.end_date ? new Date(row.end_date).toLocaleDateString() : '-' },
+    { key: 'total_amount', label: 'Total', sortable: true, render: (row) => row.total_amount ? `KES ${Number(row.total_amount).toLocaleString()}` : '-' },
+    { key: 'farmer_count', label: 'Farmers', sortable: true, render: (row) => row.farmer_count ?? '-' },
+    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <div className="flex gap-2">
           {row.status === 'PENDING' && (
             <button onClick={(e) => { e.stopPropagation(); setShowLock(row) }} className="text-warning text-label-md hover:underline">Lock</button>

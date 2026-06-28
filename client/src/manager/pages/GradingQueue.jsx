@@ -60,13 +60,13 @@ export default function GradingQueue() {
   }
 
   const gradeColumns = [
-    { key: 'id', label: 'ID', render: (v) => v?.slice(0, 8) || '' },
-    { key: 'grade_letter', label: 'Grade', render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
-    { key: 'price_per_unit', label: 'Price/Unit', render: (v) => v ? `KES ${v}` : '-' },
-    { key: 'is_overridden', label: 'Overridden', render: (v) => v ? 'Yes' : 'No' },
-    { key: 'created_at', label: 'Date', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (row) => row.id?.slice(0, 8) || '' },
+    { key: 'grade_letter', label: 'Grade', render: (row) => <StatusBadge status={row.grade_letter?.toLowerCase()} label={row.grade_letter} /> },
+    { key: 'price_per_unit', label: 'Price/Unit', render: (row) => row.price_per_unit ? `KES ${row.price_per_unit}` : '-' },
+    { key: 'is_overridden', label: 'Overridden', render: (row) => row.is_overridden ? 'Yes' : 'No' },
+    { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <button onClick={(e) => { e.stopPropagation(); setShowOverride(row); setOverrideData({ grade_letter: row.grade_letter, override_reason: '' }) }} className="text-primary text-label-md hover:underline">Override</button>
       ),
     },
@@ -76,18 +76,18 @@ export default function GradingQueue() {
     { key: 'batch_id', label: 'Batch ID' },
     { key: 'farmer_name', label: 'Farmer' },
     { key: 'product_type', label: 'Product' },
-    { key: 'quantity_kg', label: 'Qty (kg)', render: (v, r) => v || r.volume_litres || '-' },
-    { key: 'date_delivered', label: 'Delivered', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'quantity_kg', label: 'Qty (kg)', render: (row) => row.quantity_kg || row.volume_litres || '-' },
+    { key: 'date_delivered', label: 'Delivered', render: (row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
     { key: 'shift', label: 'Shift' },
   ]
 
   const disputeColumns = [
-    { key: 'id', label: 'ID', render: (v) => v?.slice(0, 8) || '' },
-    { key: 'status', label: 'Status', render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
+    { key: 'id', label: 'ID', render: (row) => row.id?.slice(0, 8) || '' },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
     { key: 'reason', label: 'Reason' },
-    { key: 'created_at', label: 'Date', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary text-label-md hover:underline">
           {row.status === 'PENDING' ? 'Resolve' : 'View'}
         </button>

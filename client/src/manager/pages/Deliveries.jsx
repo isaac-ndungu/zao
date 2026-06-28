@@ -77,12 +77,12 @@ export default function Deliveries() {
     { key: 'batch_id', label: 'Batch ID', sortable: true },
     { key: 'farmer_name', label: 'Farmer', sortable: true },
     { key: 'product_type', label: 'Product', sortable: true },
-    { key: 'quantity_kg', label: 'Qty (kg)', sortable: true, render: (v, r) => v || r.volume_litres || '-' },
+    { key: 'quantity_kg', label: 'Qty (kg)', sortable: true, render: (row) => row.quantity_kg || row.volume_litres || '-' },
     { key: 'shift', label: 'Shift', sortable: true },
-    { key: 'status', label: 'Status', sortable: true, render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
-    { key: 'date_delivered', label: 'Date', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'date_delivered', label: 'Date', sortable: true, render: (row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>
       ),
     },
@@ -111,8 +111,8 @@ export default function Deliveries() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <KpiCard icon="local_shipping" label="Total" value={String(summary.total || 0)} />
           <KpiCard icon="pending" label="Pending" value={String(summary.pending_grading || 0)} />
-          <KpiCard icon="grading" label="Graded" value={String(summary.by_status?.GRADED || 0)} />
-          <KpiCard icon="check_circle" label="Accepted" value={String(summary.by_status?.ACCEPTED || 0)} />
+          <KpiCard icon="grading" label="Graded" value={String(summary.by_status?.find(s => s.status === 'GRADED')?.count || 0)} />
+          <KpiCard icon="check_circle" label="Accepted" value={String(summary.by_status?.find(s => s.status === 'ACCEPTED')?.count || 0)} />
         </div>
       )}
 

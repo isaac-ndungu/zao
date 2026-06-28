@@ -64,17 +64,17 @@ function SalesSection() {
   }
 
   const columns = [
-    { key: 'invoice_number', label: 'Invoice', sortable: true, render: (v) => v || '-' },
+    { key: 'invoice_number', label: 'Invoice', sortable: true, render: (row) => row.invoice_number || '-' },
     { key: 'buyer_name', label: 'Buyer', sortable: true },
     { key: 'product_type', label: 'Product', sortable: true },
-    { key: 'quantity', label: 'Qty', sortable: true, render: (v) => v ?? '-' },
-    { key: 'unit', label: 'Unit', render: (v) => v || '-' },
-    { key: 'price_per_unit', label: 'Price/Unit', sortable: true, render: (v) => v ? `KES ${v}` : '-' },
-    { key: 'total_amount', label: 'Total', sortable: true, render: (v) => v ? `KES ${Number(v).toLocaleString()}` : '-' },
-    { key: 'status', label: 'Status', sortable: true, render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
-    { key: 'sale_date', label: 'Date', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'quantity', label: 'Qty', sortable: true, render: (row) => row.quantity ?? '-' },
+    { key: 'unit', label: 'Unit', render: (row) => row.unit || '-' },
+    { key: 'price_per_unit', label: 'Price/Unit', sortable: true, render: (row) => row.price_per_unit ? `KES ${row.price_per_unit}` : '-' },
+    { key: 'total_amount', label: 'Total', sortable: true, render: (row) => row.total_amount ? `KES ${Number(row.total_amount).toLocaleString()}` : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'sale_date', label: 'Date', sortable: true, render: (row) => row.sale_date ? new Date(row.sale_date).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>
       ),
     },
@@ -414,13 +414,13 @@ function BuyersSection() {
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'contact_person', label: 'Contact', sortable: true, render: (v) => v || '-' },
-    { key: 'phone_number', label: 'Phone', sortable: true, render: (v) => v || '-' },
-    { key: 'email', label: 'Email', render: (v) => v || '-' },
-    { key: 'is_active', label: 'Active', render: (v) => <StatusBadge status={v} label={v ? 'Yes' : 'No'} /> },
-    { key: 'created_at', label: 'Created', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'contact_person', label: 'Contact', sortable: true, render: (row) => row.contact_person || '-' },
+    { key: 'phone_number', label: 'Phone', sortable: true, render: (row) => row.phone_number || '-' },
+    { key: 'email', label: 'Email', render: (row) => row.email || '-' },
+    { key: 'is_active', label: 'Active', render: (row) => <StatusBadge status={row.is_active} label={row.is_active ? 'Yes' : 'No'} /> },
+    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <div className="flex gap-2">
           <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary text-label-md hover:underline">Edit</button>
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>

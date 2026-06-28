@@ -88,15 +88,15 @@ export default function Loans() {
   const total = data?.count || 0
 
   const columns = [
-    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (v) => v || '-' },
-    { key: 'amount', label: 'Amount', sortable: true, render: (v) => v ? `KES ${Number(v).toLocaleString()}` : '-' },
-    { key: 'balance', label: 'Balance', sortable: true, render: (v) => v !== undefined && v !== null ? `KES ${Number(v).toLocaleString()}` : '-' },
-    { key: 'interest_rate', label: 'Interest', sortable: true, render: (v) => v ? `${v}%` : '-' },
-    { key: 'status', label: 'Status', sortable: true, render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
-    { key: 'guarantors', label: 'Guarantors', render: (v) => Array.isArray(v) ? v.length : 0 },
-    { key: 'created_at', label: 'Created', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (row) => row.farmer_name || '-' },
+    { key: 'amount', label: 'Amount', sortable: true, render: (row) => row.amount ? `KES ${Number(row.amount).toLocaleString()}` : '-' },
+    { key: 'balance', label: 'Balance', sortable: true, render: (row) => row.balance != null ? `KES ${Number(row.balance).toLocaleString()}` : '-' },
+    { key: 'interest_rate', label: 'Interest', sortable: true, render: (row) => row.interest_rate ? `${row.interest_rate}%` : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'guarantors', label: 'Guarantors', render: (row) => Array.isArray(row.guarantors) ? row.guarantors.length : 0 },
+    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <div className="flex gap-2">
           {row.status === 'PENDING' && (
             <>

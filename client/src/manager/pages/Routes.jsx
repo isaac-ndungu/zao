@@ -70,10 +70,10 @@ export default function Routes() {
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'description', label: 'Description', render: (v) => v || '-' },
-    { key: 'created_at', label: 'Created', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'description', label: 'Description', render: (row) => row.description || '-' },
+    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (_, row) => (
+      key: 'actions', label: '', render: (row) => (
         <div className="flex gap-2">
           <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary text-label-md hover:underline">Edit</button>
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>

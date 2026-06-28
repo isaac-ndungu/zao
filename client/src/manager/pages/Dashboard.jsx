@@ -36,9 +36,7 @@ export default function ManagerDashboard() {
   const activeFarmers = farmersStats?.active || 0
   const pendingDisputesCount = pendingDisputes?.count || pendingDisputes?.results?.length || 0
   const pendingDisbursementCount = pendingDisbursements?.count || pendingDisbursements?.results?.length || 0
-  const todayDeliveries = deliveriesSummary?.by_status
-    ? Object.values(deliveriesSummary.by_status).reduce((a, b) => a + b, 0)
-    : 0
+  const todayDeliveries = deliveriesSummary?.total || 0
 
   const recentActivities = useMemo(() => {
     const items = []

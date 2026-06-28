@@ -24,14 +24,14 @@ export default function Deductions() {
   const total = data?.count || 0
 
   const columns = [
-    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (v) => v || '-' },
+    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (row) => row.farmer_name || '-' },
     { key: 'deduction_type', label: 'Type', sortable: true },
-    { key: 'amount', label: 'Amount', sortable: true, render: (v) => v ? `KES ${Number(v).toLocaleString()}` : '-' },
-    { key: 'cycle_name', label: 'Cycle', sortable: true, render: (v) => v || '-' },
-    { key: 'status', label: 'Status', sortable: true, render: (v) => <StatusBadge status={v?.toLowerCase()} label={v} /> },
-    { key: 'loan_id', label: 'Related Loan', render: (v) => v ? (
+    { key: 'amount', label: 'Amount', sortable: true, render: (row) => row.amount ? `KES ${Number(row.amount).toLocaleString()}` : '-' },
+    { key: 'cycle_name', label: 'Cycle', sortable: true, render: (row) => row.cycle_name || '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'loan_id', label: 'Related Loan', render: (row) => row.loan_id ? (
       <button onClick={(e) => { e.stopPropagation(); navigate(`/manager/loans`) }} className="text-primary text-label-md hover:underline underline">
-        {typeof v === 'string' ? v.slice(0, 8) : v}
+        {typeof row.loan_id === 'string' ? row.loan_id.slice(0, 8) : row.loan_id}
       </button>
     ) : '-' },
     { key: 'created_at', label: 'Date', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },

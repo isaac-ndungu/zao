@@ -27,15 +27,15 @@ export default function Inventory() {
   const alertList = alerts?.results || alerts || []
 
   const columns = [
-    { key: 'batch_id', label: 'Batch ID', sortable: true },
-    { key: 'product_type', label: 'Product', sortable: true },
-    { key: 'grade', label: 'Grade', sortable: true, render: (v) => v || '-' },
-    { key: 'unit', label: 'Unit', render: (v) => v || '-' },
-    { key: 'quantity_in', label: 'Qty In', sortable: true, render: (v) => v ?? '-' },
-    { key: 'quantity_out', label: 'Qty Out', sortable: true, render: (v) => v ?? '-' },
-    { key: 'running_balance', label: 'Balance', sortable: true, render: (v) => v !== undefined && v !== null ? v : '-' },
-    { key: 'is_sold', label: 'Status', render: (v) => <StatusBadge status={v ? 'sold' : 'available'} label={v ? 'Sold' : 'Available'} /> },
-    { key: 'created_at', label: 'Created', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'batch_id', label: 'Batch ID', sortable: true, render: (row) => row.batch_id ?? '-' },
+    { key: 'product_type', label: 'Product', sortable: true, render: (row) => row.product_type ?? '-' },
+    { key: 'grade', label: 'Grade', sortable: true, render: (row) => row.grade || '-' },
+    { key: 'unit', label: 'Unit', render: (row) => row.unit || '-' },
+    { key: 'quantity_in', label: 'Qty In', sortable: true, render: (row) => row.quantity_in ?? '-' },
+    { key: 'quantity_out', label: 'Qty Out', sortable: true, render: (row) => row.quantity_out ?? '-' },
+    { key: 'running_balance', label: 'Balance', sortable: true, render: (row) => row.running_balance !== undefined && row.running_balance !== null ? row.running_balance : '-' },
+    { key: 'is_sold', label: 'Status', render: (row) => <StatusBadge status={row.is_sold ? 'sold' : 'available'} label={row.is_sold ? 'Sold' : 'Available'} /> },
+    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
   ]
 
   return (
@@ -67,7 +67,7 @@ export default function Inventory() {
             {alertList.map((alert, i) => (
               <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-container-lowest rounded-lg">
                 <span className="material-symbols-outlined text-warning">info</span>
-                <span className="text-body-md text-on-surface">{alert.message || alert}</span>
+                <span className="text-body-md text-on-surface">Batch {alert.batch_id} — {alert.product_type} ({alert.grade || 'no grade'}): {alert.running_balance} {alert.unit} remaining</span>
               </div>
             ))}
           </div>
