@@ -584,7 +584,7 @@ export default function ProduceReceipts() {
                         <button
                           key={f.id}
                           type="button"
-                          onClick={() => { setSelectedFarmerName(`${f.first_name} ${f.last_name} (${f.phone || f.id.slice(0, 8)})`); setCreateForm(ff => ({ ...ff, farmer: f.id })); setFarmerSearchOpen(false); setFarmerSearch('') }}
+                          onClick={() => { setSelectedFarmerName(`${f.first_name} ${f.last_name} (${f.phone_number || f.id.slice(0, 8)})`); setCreateForm(ff => ({ ...ff, farmer: f.id })); setFarmerSearchOpen(false); setFarmerSearch('') }}
                           className="w-full text-left px-3 py-2 text-body-md text-on-surface hover:bg-surface-container transition-colors"
                         >
                           {f.first_name} {f.last_name}
