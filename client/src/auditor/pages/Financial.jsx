@@ -26,10 +26,12 @@ export default function AuditorFinancial() {
     .reduce((s, [, v]) => s + v, 0)
 
   const deductionsBreakdown = financial.deductions_breakdown || {}
-  const payoutTrend = financial.payout_trend || []
-  const trendData = Array.isArray(payoutTrend)
-    ? payoutTrend.map((p, i) => ({ month: p.month || p.label || `M${i + 1}`, payout: p.amount || p.value || 0 }))
-    : []
+  const totalDeductions = Object.values(deductionsBreakdown).reduce((s, v) => s + v, 0)
+  const payoutSeries = financial.payout_monthly_series || {}
+  const trendData = Object.entries(payoutSeries).map(([month, data]) => ({
+    month,
+    payout: data.gross || data.net || 0,
+  }))
 
   const pieData = Object.entries(deductionsBreakdown).map(([name, value]) => ({ name, value }))
 
@@ -56,10 +58,10 @@ export default function AuditorFinancial() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <KpiCard icon="payments" label="Total Revenue" value={formatKes(financial.total_revenue)} />
         <KpiCard icon="account_balance" label="Gross Payout" value={formatKes(financial.total_gross_payout)} />
-        <KpiCard icon="money_off" label="Deductions" value={formatKes(financial.total_deductions)} />
+        <KpiCard icon="money_off" label="Deductions" value={formatKes(totalDeductions)} />
         <KpiCard icon="receipt_long" label="WHT Held" value={formatKes(financial.total_withholding_tax)} />
         <KpiCard icon="payments" label="Active Cycles" value={String(activeCycles)} highlighted={activeCycles > 0} onClick={() => navigate('/auditor/reports')} />
-        <KpiCard icon="account_balance" label="Avg Payout/Farmer" value={formatKes(financial.avg_payout_per_farmer)} />
+        <KpiCard icon="repeat" label="Total Cycles" value={String(financial.cycle_count ?? '-')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

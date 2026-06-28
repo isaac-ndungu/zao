@@ -14,6 +14,9 @@ export default function AuditorLoans() {
   const { data: loanData, loading, error, refetch } = useApi('/api/analytics/loans/')
 
   const loans = loanData?.data || loanData || {}
+  const totalRepaid = loans.total_principal && loans.total_outstanding
+    ? loans.total_principal - loans.total_outstanding
+    : 0
 
   if (loading) {
     return (
@@ -44,8 +47,8 @@ export default function AuditorLoans() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon="payments" label="Total Disbursed (period)" value={formatKes(loans.total_disbursed_this_period)} />
-        <KpiCard icon="receipt" label="Total Repaid" value={formatKes(loans.total_repaid)} />
-        <KpiCard icon="people" label="Active Borrowers" value={String(loans.active_borrowers || '-')} />
+        <KpiCard icon="receipt" label="Total Repaid" value={formatKes(totalRepaid)} />
+        <KpiCard icon="people" label="Active Loans" value={String(loans.active_count ?? '-')} />
         <KpiCard icon="pending" label="Pending Applications" value={String(loans.pending_count || '-')} />
       </div>
     </div>

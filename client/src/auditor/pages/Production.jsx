@@ -21,6 +21,16 @@ export default function AuditorProduction() {
 
   const prod = prodData?.data || prodData || {}
 
+  const productBreakdown = Object.entries(prod.by_product_type || {}).map(([productType, kg]) => ({
+    product_type: productType,
+    total_kg: kg,
+  }))
+  const byShift = Object.entries(prod.by_shift || {}).map(([shift, kg]) => ({
+    route: shift,
+    total_kg: kg,
+    delivery_count: 0,
+  }))
+
   if (loading) {
     return (
       <div>
@@ -34,10 +44,6 @@ export default function AuditorProduction() {
     return <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
   }
 
-  const productBreakdown = prod.product_breakdown || []
-  const deliveriesByRoute = prod.deliveries_by_route || []
-  /* unused: qualityStats */
-
   return (
     <div>
       <header className="mb-8">
@@ -46,10 +52,10 @@ export default function AuditorProduction() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KpiCard icon="local_shipping" label="Total Deliveries" value={formatNumber(prod.total_deliveries)} />
+        <KpiCard icon="local_shipping" label="Total Deliveries" value={formatNumber(prod.delivery_count)} />
         <KpiCard icon="scale" label="Total Quantity" value={prod.total_kg ? `${formatNumber(prod.total_kg)} kg` : '-'} />
-        <KpiCard icon="people" label="Active Farmers" value={formatNumber(prod.active_farmers)} />
-        <KpiCard icon="star" label="Avg Grade" value={prod.avg_grade || '-'} />
+        <KpiCard icon="block" label="Rejection Rate" value={prod.rejection_rate_pct ? `${prod.rejection_rate_pct}%` : '-'} />
+        <KpiCard icon="star" label="Grade Distribution" value={prod.grade_distribution ? Object.keys(prod.grade_distribution).length + ' grades' : '-'} />
       </div>
 
       {productBreakdown.length > 0 && (
@@ -61,19 +67,13 @@ export default function AuditorProduction() {
                 <tr className="border-b border-outline-variant bg-surface-container">
                   <th className="px-6 py-3 text-label-md font-bold text-on-surface">Product Type</th>
                   <th className="px-6 py-3 text-label-md font-bold text-on-surface">Quantity (kg)</th>
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Volume (L)</th>
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Deliveries</th>
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Total Value</th>
                 </tr>
               </thead>
               <tbody>
                 {productBreakdown.map((p, i) => (
                   <tr key={i} className="border-b border-outline-variant/50 last:border-0 hover:bg-surface-container transition-colors">
-                    <td className="px-6 py-3 text-body-md font-medium">{p.product_type || p.name || p.type}</td>
-                    <td className="px-6 py-3 text-body-md">{p.total_kg ? formatNumber(p.total_kg) : '-'}</td>
-                    <td className="px-6 py-3 text-body-md">{p.total_volume ? formatNumber(p.total_volume) : '-'}</td>
-                    <td className="px-6 py-3 text-body-md">{p.delivery_count || 0}</td>
-                    <td className="px-6 py-3 text-body-md">{p.total_value ? formatKes(p.total_value) : '-'}</td>
+                    <td className="px-6 py-3 text-body-md font-medium">{p.product_type}</td>
+                    <td className="px-6 py-3 text-body-md">{formatNumber(p.total_kg)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -82,24 +82,22 @@ export default function AuditorProduction() {
         </div>
       )}
 
-      {deliveriesByRoute.length > 0 && (
+      {byShift.length > 0 && (
         <div>
-          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Deliveries by Route</h3>
+          <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Deliveries by Shift</h3>
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-outline-variant bg-surface-container">
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Route</th>
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Deliveries</th>
+                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Shift</th>
                   <th className="px-6 py-3 text-label-md font-bold text-on-surface">Total (kg)</th>
                 </tr>
               </thead>
               <tbody>
-                {deliveriesByRoute.map((r, i) => (
+                {byShift.map((r, i) => (
                   <tr key={i} className="border-b border-outline-variant/50 last:border-0 hover:bg-surface-container transition-colors">
-                    <td className="px-6 py-3 text-body-md">{r.name || r.route || `Route #${i + 1}`}</td>
-                    <td className="px-6 py-3 text-body-md">{r.count || r.delivery_count || 0}</td>
-                    <td className="px-6 py-3 text-body-md">{r.total_kg ? formatNumber(r.total_kg) : '-'}</td>
+                    <td className="px-6 py-3 text-body-md">{r.route}</td>
+                    <td className="px-6 py-3 text-body-md">{formatNumber(r.total_kg)}</td>
                   </tr>
                 ))}
               </tbody>

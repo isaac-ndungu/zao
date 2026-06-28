@@ -25,6 +25,8 @@ export default function AuditorDashboard() {
   const financial = dash.financial || {}
   const production = dash.production || {}
   const loans = dash.loans || {}
+  const farmers = dash.farmers || {}
+  const totalDeductions = Object.values(financial.deductions_breakdown || {}).reduce((s, v) => s + v, 0)
 
   if (loading) {
     return (
@@ -49,17 +51,17 @@ export default function AuditorDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <KpiCard icon="payments" label="Total Revenue" value={formatKes(financial.total_revenue)} onClick={() => navigate('/auditor/financial')} />
         <KpiCard icon="account_balance" label="Gross Payout" value={formatKes(financial.total_gross_payout)} onClick={() => navigate('/auditor/financial')} />
-        <KpiCard icon="money_off" label="Deductions" value={formatKes(financial.total_deductions)} onClick={() => navigate('/auditor/financial')} />
-        <KpiCard icon="receipt_long" label="WHT Held" value={formatKes(financial.total_withholding_tax)} />
+        <KpiCard icon="money_off" label="Deductions" value={formatKes(totalDeductions)} onClick={() => navigate('/auditor/financial')} />
+        <KpiCard icon="receipt_long" label="WHT Held" value={formatKes(financial.total_withholding_tax)} onClick={() => navigate('/auditor/financial')} />
         <KpiCard icon="local_shipping" label="Production" value={production.total_kg ? `${formatNumber(production.total_kg)} kg` : '-'} onClick={() => navigate('/auditor/production')} />
         <KpiCard icon="account_balance_wallet" label="Loan Portfolio" value={formatKes(loans.total_outstanding)} onClick={() => navigate('/auditor/loans')} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon="security" label="Audit Logs" value={dash.audit_log_count || '-'} onClick={() => navigate('/auditor/audit-log')} />
-        <KpiCard icon="trending_up" label="Repayment Rate" value={loans.repayment_rate_pct ? `${loans.repayment_rate_pct}%` : '-'} />
+        <KpiCard icon="people" label="Active Farmers" value={formatNumber(farmers.total_active ?? 0)} onClick={() => navigate('/auditor/financial')} />
+        <KpiCard icon="trending_up" label="Repayment Rate" value={loans.repayment_rate_pct ? `${loans.repayment_rate_pct}%` : '-'} onClick={() => navigate('/auditor/loans')} />
         <KpiCard icon="description" label="Reports" value="View PDFs" onClick={() => navigate('/auditor/reports')} />
-        <KpiCard icon="people" label="Active Farmers" value={formatNumber(production.active_farmers || dash.farmer_count || 0)} />
+        <KpiCard icon="repeat" label="Cycles" value={String(financial.cycle_count ?? '-')} onClick={() => navigate('/auditor/financial')} />
       </div>
     </div>
   )
