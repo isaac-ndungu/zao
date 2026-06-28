@@ -16,6 +16,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Solutions = lazy(() => import('./pages/Solutions'))
 const ForFarmers = lazy(() => import('./pages/ForFarmers'))
 const About = lazy(() => import('./pages/About'))
+const Contact = lazy(() => import('./pages/Contact'))
 
 // Auth pages
 const Login = lazy(() => import('./admin/pages/Login'))
@@ -164,6 +165,7 @@ export default function App() {
           <Route path="/solutions" element={<SuspenseWrapper><Solutions /></SuspenseWrapper>} />
           <Route path="/farmers" element={<SuspenseWrapper><ForFarmers /></SuspenseWrapper>} />
           <Route path="/about" element={<SuspenseWrapper><About /></SuspenseWrapper>} />
+          <Route path="/contact" element={<SuspenseWrapper><Contact /></SuspenseWrapper>} />
 
           {/* Login pages */}
           <Route path="/admin/login" element={<SuspenseWrapper><Login /></SuspenseWrapper>} />
