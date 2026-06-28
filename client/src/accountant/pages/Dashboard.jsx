@@ -38,11 +38,13 @@ export default function AccountantDashboard() {
     .reduce((s, [, v]) => s + v, 0)
 
   const deductionsBreakdown = financial.deductions_breakdown || {}
+  const totalDeductions = Object.values(deductionsBreakdown).reduce((s, v) => s + v, 0)
 
-  const payoutTrend = financial.payout_trend || []
-  const trendData = Array.isArray(payoutTrend)
-    ? payoutTrend.map((p, i) => ({ month: p.month || p.label || `M${i + 1}`, payout: p.amount || p.value || 0 }))
-    : []
+  const payoutSeries = financial.payout_monthly_series || {}
+  const trendData = Object.entries(payoutSeries).map(([month, data]) => ({
+    month,
+    payout: data.gross || data.net || 0,
+  }))
 
   const pieData = Object.entries(deductionsBreakdown).map(([name, value]) => ({ name, value }))
 
@@ -77,8 +79,8 @@ export default function AccountantDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <KpiCard icon="payments" label="Total Revenue" value={formatKes(financial.total_revenue)} onClick={() => navigate('/accountant/reports')} />
         <KpiCard icon="account_balance" label="Gross Payout" value={formatKes(financial.total_gross_payout)} onClick={() => navigate('/accountant/cycles')} />
-        <KpiCard icon="money_off" label="Deductions" value={formatKes(financial.total_deductions)} onClick={() => navigate('/accountant/deductions')} />
-        <KpiCard icon="receipt_long" label="WHT Held" value={formatKes(financial.total_withholding_tax)} />
+        <KpiCard icon="money_off" label="Deductions" value={formatKes(totalDeductions)} onClick={() => navigate('/accountant/deductions')} />
+        <KpiCard icon="receipt_long" label="WHT Held" value={formatKes(financial.total_withholding_tax)} onClick={() => navigate('/accountant/deductions')} />
         <KpiCard icon="payments" label="Active Cycles" value={String(activeCycles)} highlighted={activeCycles > 0} onClick={() => navigate('/accountant/cycles')} />
         <KpiCard icon="local_shipping" label="Production" value={production.total_kg ? `${formatNumber(production.total_kg)} kg` : '-'} onClick={() => navigate('/accountant/reports')} />
       </div>
@@ -107,9 +109,9 @@ export default function AccountantDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon="account_balance_wallet" label="Loan Portfolio" value={formatKes(loans.total_outstanding)} onClick={() => navigate('/accountant/loans')} />
-        <KpiCard icon="trending_up" label="Repayment Rate" value={loans.repayment_rate_pct ? `${loans.repayment_rate_pct}%` : '-'} />
-        <KpiCard icon="check_circle" label="Disbursed (period)" value={fin.total_disbursed_this_period ? formatKes(fin.total_disbursed_this_period) : formatKes(loans.total_disbursed_this_period)} />
-        <KpiCard icon="account_balance" label="Disbursement Success" value={disbursements.success_rate_pct ? `${disbursements.success_rate_pct}%` : '-'} />
+        <KpiCard icon="trending_up" label="Repayment Rate" value={loans.repayment_rate_pct ? `${loans.repayment_rate_pct}%` : '-'} onClick={() => navigate('/accountant/loans')} />
+        <KpiCard icon="check_circle" label="Disbursed (period)" value={fin.total_disbursed_this_period ? formatKes(fin.total_disbursed_this_period) : formatKes(loans.total_disbursed_this_period)} onClick={() => navigate('/accountant/disbursements')} />
+        <KpiCard icon="account_balance" label="Disbursement Success" value={disbursements.success_rate_pct ? `${disbursements.success_rate_pct}%` : '-'} onClick={() => navigate('/accountant/disbursements')} />
       </div>
     </div>
   )
