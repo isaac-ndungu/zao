@@ -33,11 +33,16 @@ export default function FarmerLedger() {
   const [actionLoading, setActionLoading] = useState(false)
   const [openDropdownId, setOpenDropdownId] = useState(null)
   const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
-  const [createForm, setCreateForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', payment_method: 'MPESA', mpesa_number: '', bank_name: '', bank_account: '' })
+  const [createForm, setCreateForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', date_of_birth: '', cooperative: '' })
   const [formLoading, setFormLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editFarmer, setEditFarmer] = useState(null)
-  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', payment_method: 'MPESA', mpesa_number: '', bank_name: '', bank_account: '' })
+  const [editForm, setEditForm] = useState({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', date_of_birth: '', cooperative: '' })
+  const [coopSearch, setCoopSearch] = useState('')
+  const [coopOptions, setCoopOptions] = useState([])
+  const [coopSearchOpen, setCoopSearchOpen] = useState(false)
+  const [selectedCoopName, setSelectedCoopName] = useState('')
+  const coopRef = useRef(null)
   const [editLoading, setEditLoading] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -46,10 +51,25 @@ export default function FarmerLedger() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setOpenDropdownId(null)
       }
+      if (coopRef.current && !coopRef.current.contains(e.target)) {
+        setCoopSearchOpen(false)
+      }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  useEffect(() => {
+    if (!coopSearch || coopSearch.length < 2) { setCoopOptions([]); return }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/api/admin/cooperatives/?search=${encodeURIComponent(coopSearch)}&page_size=10`)
+        const data = await res.json()
+        setCoopOptions(data?.results || [])
+      } catch { setCoopOptions([]) }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [coopSearch])
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -176,10 +196,8 @@ export default function FarmerLedger() {
       sub_county: farmer.sub_county || '',
       ward: farmer.ward || '',
       village: farmer.village || '',
-      payment_method: farmer.payment_method || 'MPESA',
-      mpesa_number: farmer.mpesa_number || '',
-      bank_name: farmer.bank_name || '',
-      bank_account: farmer.bank_account || '',
+      date_of_birth: farmer.date_of_birth || '',
+      cooperative: farmer.cooperative || '',
     })
     setEditOpen(true)
   }
@@ -192,7 +210,9 @@ export default function FarmerLedger() {
       if (!res.ok) throw new Error(await res.text())
       showToast({ type: 'success', message: `Farmer ${createForm.first_name} ${createForm.last_name} created.` })
       setCreateOpen(false)
-      setCreateForm({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', payment_method: 'MPESA', mpesa_number: '', bank_name: '', bank_account: '' })
+      setCreateForm({ first_name: '', last_name: '', email: '', phone_number: '', id_number: '', county: '', sub_county: '', ward: '', village: '', date_of_birth: '', cooperative: '' })
+      setSelectedCoopName('')
+      setCoopSearch('')
       refetch()
     } catch (e) {
       showToast({ type: 'error', message: `Creation failed: ${e.message}` })
@@ -397,7 +417,7 @@ export default function FarmerLedger() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input value={editForm.id_number} onChange={(e) => setEditForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Method</label><select value={editForm.payment_method} onChange={(e) => setEditForm(f => ({ ...f, payment_method: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"><option value="MPESA">M-Pesa</option><option value="BANK">Bank</option><option value="CASH">Cash</option></select></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Date of Birth</label><input type="date" value={editForm.date_of_birth} onChange={(e) => setEditForm(f => ({ ...f, date_of_birth: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County</label><input value={editForm.county} onChange={(e) => setEditForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
@@ -406,10 +426,6 @@ export default function FarmerLedger() {
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={editForm.ward} onChange={(e) => setEditForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input value={editForm.village} onChange={(e) => setEditForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">M-Pesa Number</label><input value={editForm.mpesa_number} onChange={(e) => setEditForm(f => ({ ...f, mpesa_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Bank Account</label><input value={editForm.bank_account} onChange={(e) => setEditForm(f => ({ ...f, bank_account: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setEditOpen(false); setEditFarmer(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
@@ -422,11 +438,44 @@ export default function FarmerLedger() {
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedCoopName(''); setCoopSearch('') } }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Register Farmer</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Create a new farmer record and user account.</p>
             <form onSubmit={handleCreateFarmer} className="space-y-3">
+              <div ref={coopRef} className="relative">
+                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Cooperative *</label>
+                <input
+                  type="text"
+                  value={selectedCoopName || coopSearch}
+                  onChange={(e) => { setCoopSearch(e.target.value); setSelectedCoopName(''); setCreateForm(f => ({ ...f, cooperative: '' })); setCoopSearchOpen(true) }}
+                  onFocus={() => { if (coopSearch.length >= 2) setCoopSearchOpen(true) }}
+                  placeholder="Search cooperative..."
+                  className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 pr-10 text-body-md text-on-surface placeholder:text-on-surface-variant"
+                  disabled={formLoading}
+                  autoComplete="off"
+                />
+                {coopSearchOpen && coopOptions.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {coopOptions.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => { setSelectedCoopName(`${c.name} (${c.registration_number})`); setCreateForm(ff => ({ ...ff, cooperative: c.id })); setCoopSearchOpen(false); setCoopSearch('') }}
+                        className="w-full text-left px-3 py-2 text-body-md text-on-surface hover:bg-surface-container transition-colors"
+                      >
+                        {c.name}
+                        <span className="text-on-surface-variant text-label-sm ml-2">{c.registration_number}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {coopSearchOpen && coopSearch.length >= 2 && coopOptions.length === 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg p-3 text-center text-on-surface-variant text-body-md">
+                    No cooperatives found.
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name *</label><input required value={createForm.first_name} onChange={(e) => setCreateForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name *</label><input required value={createForm.last_name} onChange={(e) => setCreateForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
@@ -437,23 +486,19 @@ export default function FarmerLedger() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input value={createForm.id_number} onChange={(e) => setCreateForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Method</label><select value={createForm.payment_method} onChange={(e) => setCreateForm(f => ({ ...f, payment_method: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"><option value="MPESA">M-Pesa</option><option value="BANK">Bank</option><option value="CASH">Cash</option></select></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Date of Birth</label><input type="date" value={createForm.date_of_birth} onChange={(e) => setCreateForm(f => ({ ...f, date_of_birth: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County</label><input value={createForm.county} onChange={(e) => setCreateForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><input required value={createForm.county} onChange={(e) => setCreateForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input value={createForm.sub_county} onChange={(e) => setCreateForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={createForm.ward} onChange={(e) => setCreateForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
                 <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input value={createForm.village} onChange={(e) => setCreateForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">M-Pesa Number</label><input value={createForm.mpesa_number} onChange={(e) => setCreateForm(f => ({ ...f, mpesa_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Bank Account</label><input value={createForm.bank_account} onChange={(e) => setCreateForm(f => ({ ...f, bank_account: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
-                <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Register'}</button>
+                <button type="button" onClick={() => { setCreateOpen(false); setSelectedCoopName(''); setCoopSearch('') }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
+                <button type="submit" disabled={formLoading || !createForm.cooperative} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Register'}</button>
               </div>
             </form>
           </div>
