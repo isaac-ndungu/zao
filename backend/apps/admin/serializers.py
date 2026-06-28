@@ -142,9 +142,25 @@ class AdminDashboardSerializer(serializers.Serializer):
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
+    actor_email = serializers.SerializerMethodField()
+    changes = serializers.SerializerMethodField()
+
     class Meta:
         model = AuditLog
-        fields = '__all__'
+        fields = [
+            'id', 'cooperative', 'actor', 'actor_email',
+            'resource_type', 'resource_id', 'action',
+            'previous_value', 'new_value', 'changes',
+            'ip_address', 'created_at',
+        ]
+
+    def get_actor_email(self, obj):
+        return obj.actor.email if obj.actor else 'Deleted User'
+
+    def get_changes(self, obj):
+        if obj.previous_value is None and obj.new_value is None:
+            return None
+        return {'previous': obj.previous_value, 'new': obj.new_value}
 
 
 class ImpersonateSerializer(serializers.Serializer):
@@ -338,9 +354,16 @@ class AdminLoanSerializer(serializers.ModelSerializer):
 
 
 class AdminOTPTokenSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField()
+    user_id = serializers.UUIDField(source='user_id', read_only=True)
+
     class Meta:
         model = TwoFactorOTP
-        fields = ['id', 'user', 'purpose', 'attempts', 'expires_at', 'is_used', 'created_at']
+        fields = ['id', 'user', 'user_id', 'user_email', 'purpose', 'is_used',
+                  'expires_at', 'created_at', 'attempts']
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else 'Deleted User'
 
 
 class AdminSoftDeleteConfirmSerializer(serializers.Serializer):

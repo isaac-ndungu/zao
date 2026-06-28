@@ -43,8 +43,42 @@ const resourceOptions = [
   { value: 'invite', label: 'Invite' },
 ]
 
+const ACTION_LABELS = {
+  CREATE: 'Created',
+  UPDATE: 'Updated',
+  DELETE: 'Deleted',
+  RESTORE: 'Restored',
+  PURGE: 'Purged',
+  ACTIVATE: 'Activated',
+  DEACTIVATE: 'Deactivated',
+  LOGIN: 'Logged In',
+  LOGOUT: 'Logged Out',
+  FORCE_LOGOUT: 'Force Logged Out',
+  INVITE: 'Invited',
+  RESEND_INVITE: 'Resent Invite',
+  REVOKE_INVITE: 'Revoked Invite',
+  RESET_PASSWORD: 'Reset Password',
+  TOGGLE_2FA: 'Toggled 2FA',
+  IMPERSONATE: 'Impersonated User',
+  FORCE_STATUS: 'Forced Status',
+  LOCK: 'Locked',
+  UNLOCK: 'Unlocked',
+  APPROVE: 'Approved',
+  REJECT: 'Rejected',
+  MARK_DEFAULTED: 'Marked Defaulted',
+  MARK_COMPLETED: 'Marked Completed',
+  BULK_ACTION: 'Bulk Action',
+  DISBURSE: 'Disbursed',
+  OVERRIDE: 'Grade Overridden',
+  PDF_GENERATED: 'PDF Generated',
+  ADMIN_CREATE: 'Admin Created',
+  ADMIN_UPDATE: 'Admin Updated',
+  ADMIN_DELETE: 'Admin Deleted',
+  ADMIN_ACTION: 'Admin Action',
+}
+
 function formatAuditAction(action) {
-  return action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  return ACTION_LABELS[action] || action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 export default function AuditTrail() {
@@ -123,18 +157,16 @@ export default function AuditTrail() {
                       )}
                     </div>
                     <p className="text-body-md text-on-surface">
-                      {log.description || `${log.action} on ${log.resource_type || 'unknown'}${log.resource_id ? ` (${log.resource_id})` : ''}`}
+                      {ACTION_LABELS[log.action] || formatAuditAction(log.action)}{log.resource_type ? ` on ${formatAuditAction(log.resource_type)}` : ''}{log.resource_id ? ` (${log.resource_id.slice(0, 8)}...)` : ''}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-label-md text-on-surface-variant">
                       {log.created_at ? new Date(log.created_at).toLocaleString() : ''}
                     </p>
-                    {log.actor && (
-                      <p className="text-[11px] text-on-surface-variant font-data-mono">
-                        Actor: {log.actor?.slice(0, 8)}...
-                      </p>
-                    )}
+                    <p className="text-[11px] text-on-surface-variant font-data-mono">
+                      {log.actor_email || 'System'}
+                    </p>
                   </div>
                 </div>
                 {log.changes && Object.keys(log.changes).length > 0 && (

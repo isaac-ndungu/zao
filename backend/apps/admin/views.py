@@ -963,24 +963,39 @@ class AdminAuditLogView(APIView):
 
     def get(self, request):
         qs = AuditLog.objects.select_related('actor').order_by('-created_at')
+
         resource_type = request.query_params.get('resource_type')
         if resource_type:
             qs = qs.filter(resource_type=resource_type)
+
         resource_id = request.query_params.get('resource_id')
         if resource_id:
             qs = qs.filter(resource_id=resource_id)
+
         action = request.query_params.get('action')
         if action:
             qs = qs.filter(action=action)
+
         actor = request.query_params.get('actor')
         if actor:
             qs = qs.filter(actor_id=actor)
-        limit = request.query_params.get('limit', '200')
-        try:
-            limit = int(limit)
-        except ValueError:
-            limit = 200
-        return Response(AuditLogSerializer(qs[:limit], many=True).data)
+
+        date_from = request.query_params.get('created_at__gte')
+        if date_from:
+            qs = qs.filter(created_at__gte=date_from)
+
+        date_to = request.query_params.get('created_at__lte')
+        if date_to:
+            qs = qs.filter(created_at__lte=date_to)
+
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = AuditLogSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = AuditLogSerializer(qs[:200], many=True)
+        return Response(serializer.data)
 
 
 class AdminHealthView(APIView):
@@ -1743,16 +1758,27 @@ class AdminOTPTokenView(APIView):
 
     def get(self, request):
         qs = TwoFactorOTP.objects.all().select_related('user').order_by('-created_at')
+
         user_id = request.query_params.get('user')
         if user_id:
             qs = qs.filter(user_id=user_id)
+
         purpose = request.query_params.get('purpose')
         if purpose:
             qs = qs.filter(purpose=purpose)
+
         is_used = request.query_params.get('is_used')
         if is_used is not None:
             qs = qs.filter(is_used=is_used.lower() == 'true')
-        return Response(AdminOTPTokenSerializer(qs[:100], many=True).data)
+
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(qs, request)
+        if page is not None:
+            serializer = AdminOTPTokenSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = AdminOTPTokenSerializer(qs[:200], many=True)
+        return Response(serializer.data)
 
 
 class AdminOTPTokenInvalidateAllView(APIView):
