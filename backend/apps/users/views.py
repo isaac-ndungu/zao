@@ -49,7 +49,7 @@ class UserViewSet(CooperativeScopedViewSet):
 
     def get_permissions(self):
         if self.action in ('update', 'partial_update', 'destroy'):
-            return [IsAuthenticated(), IsAdmin()]
+            return [IsAuthenticated(), IsAdminOrManager()]
         if self.action in ('create', 'list'):
             return [IsAuthenticated(), IsAdminOrManager()]
         return [IsAuthenticated()]

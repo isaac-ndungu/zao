@@ -54,6 +54,19 @@ export default function ManagerUsers() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!deleting) return
+    try {
+      const res = await apiFetch(`/api/users/${deleting.id}/`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to remove staff member')
+      showToast({ type: 'success', message: `${deleting.first_name} ${deleting.last_name} removed from cooperative.` })
+      setDeleting(null)
+      refetch()
+    } catch (err) {
+      showToast({ type: 'error', message: err.message })
+    }
+  }
+
   const roleOptions = [
     { value: 'grader', label: 'Grader' },
     { value: 'accountant', label: 'Accountant' },
@@ -69,12 +82,20 @@ export default function ManagerUsers() {
     { key: 'date_joined', label: 'Joined', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (_, row) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); handleToggleActive(row) }}
-          className={`text-label-md hover:underline ${row.is_active ? 'text-error' : 'text-primary'}`}
-        >
-          {row.is_active ? 'Deactivate' : 'Activate'}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleToggleActive(row) }}
+            className={`text-label-md hover:underline ${row.is_active ? 'text-error' : 'text-primary'}`}
+          >
+            {row.is_active ? 'Deactivate' : 'Activate'}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setDeleting(row) }}
+            className="text-label-md text-on-surface-variant hover:text-error hover:underline"
+          >
+            Remove
+          </button>
+        </div>
       ),
     },
   ]
@@ -143,6 +164,16 @@ export default function ManagerUsers() {
           </button>
         </form>
       </SlideOutPanel>
+
+      <ConfirmModal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={handleDelete}
+        title="Remove Staff Member"
+        message={deleting ? `Are you sure you want to remove ${deleting.first_name} ${deleting.last_name} from the cooperative? This action cannot be undone.` : ''}
+        confirmLabel="Remove"
+        confirmClassName="bg-error text-on-error"
+      />
     </div>
   )
 }
