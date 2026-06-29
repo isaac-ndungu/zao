@@ -4,6 +4,7 @@ import { useFarmerAuth } from '../context/FarmerAuthContext'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import { setLanguage, getLanguage, t } from '../i18n'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function FarmerSettings() {
   const navigate = useNavigate()
@@ -12,6 +13,8 @@ export default function FarmerSettings() {
   const [lang, setLangState] = useState(getLanguage())
   const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' })
   const [saving, setSaving] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const switchLang = (l) => {
     setLanguage(l)
@@ -38,10 +41,11 @@ export default function FarmerSettings() {
     finally { setSaving(false) }
   }
 
-  const handleLogout = () => {
-    if (window.confirm(t('confirmLogout'))) {
-      logout()
-    }
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    await logout()
+    setLoggingOut(false)
+    setShowLogoutConfirm(false)
   }
 
   return (
@@ -92,10 +96,21 @@ export default function FarmerSettings() {
         <p className="text-xs text-on-surface-variant">{t('version')} 1.0.0</p>
       </div>
 
-      <button onClick={handleLogout} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">
+      <button onClick={() => setShowLogoutConfirm(true)} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">
         <span className="material-symbols-outlined">logout</span>
         {t('logout')}
       </button>
+
+      <ConfirmModal
+        open={showLogoutConfirm}
+        title={t('logout')}
+        message={t('confirmLogout')}
+        confirmLabel={t('logout')}
+        cancelLabel={t('cancel')}
+        loading={loggingOut}
+        onConfirm={handleLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </div>
   )
 }
