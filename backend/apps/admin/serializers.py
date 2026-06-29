@@ -355,7 +355,7 @@ class AdminLoanSerializer(serializers.ModelSerializer):
 
 class AdminOTPTokenSerializer(serializers.ModelSerializer):
     user_email = serializers.SerializerMethodField()
-    user_id = serializers.UUIDField(source='user_id', read_only=True)
+    user_id = serializers.UUIDField(read_only=True)
 
     class Meta:
         model = TwoFactorOTP
