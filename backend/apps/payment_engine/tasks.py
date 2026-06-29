@@ -162,7 +162,9 @@ def run_payment_engine(self, cycle_id: str):
         total_loan_repayments = 0.0
         total_input_credits = 0.0
 
-        # Collect pending objects for bulk operations
+        # Chunked processing — flush to DB every FLUSH_INTERVAL farmers
+        # to keep peak memory proportional to chunk size, not farmer count
+        FLUSH_INTERVAL = 500
         farmer_payments = []
         all_loan_deds = []
         all_loan_repayments = []
@@ -170,8 +172,35 @@ def run_payment_engine(self, cycle_id: str):
         all_input_deds = []
         credits_to_update = []
         carry_forward_updates = []
+        all_levy_deds = []
 
-        for data in farmer_data:
+        def _flush_chunk():
+            for prev in carry_forward_updates:
+                prev.save(update_fields=['carry_forward_reason'])
+            FarmerPayment.objects.bulk_create(farmer_payments)
+            if all_loan_deds:
+                Deduction.objects.bulk_create(all_loan_deds)
+                LoanRepayment.objects.bulk_create(all_loan_repayments)
+                for update in updated_loans:
+                    Loan.objects.filter(id=update.loan_id).update(
+                        installments_paid=update.installments_paid, status=update.status,
+                    )
+            if all_input_deds:
+                Deduction.objects.bulk_create(all_input_deds)
+                for credit, amount_deducted in credits_to_update:
+                    credit.total_deducted += Decimal(str(amount_deducted))
+                    if credit.total_deducted >= credit.amount:
+                        credit.status = 'COMPLETED'
+                        credit.deducted_in_cycle = cycle
+                        credit.installment_amount = credit.installment_amount or credit.amount
+                    credit.save(update_fields=['total_deducted', 'status', 'deducted_in_cycle'])
+            if all_levy_deds:
+                Deduction.objects.bulk_create(all_levy_deds)
+
+        # Delete existing LEVY deductions once before the chunk loop
+        Deduction.objects.filter(cycle=cycle, deduction_type='LEVY').delete()
+
+        for idx, data in enumerate(farmer_data, 1):
             farmer = data.farmer
             gross = data.gross_amount
 
@@ -231,28 +260,32 @@ def run_payment_engine(self, cycle_id: str):
             total_loan_repayments += deductions.loan_repayment
             total_input_credits += deductions.input_credit
 
-        # Bulk writes
-        for prev in carry_forward_updates:
-            prev.save(update_fields=['carry_forward_reason'])
-        FarmerPayment.objects.bulk_create(farmer_payments)
-        if all_loan_deds:
-            Deduction.objects.bulk_create(all_loan_deds)
-            LoanRepayment.objects.bulk_create(all_loan_repayments)
-            for update in updated_loans:
-                Loan.objects.filter(id=update.loan_id).update(
-                    installments_paid=update.installments_paid, status=update.status,
-                )
-        if all_input_deds:
-            Deduction.objects.bulk_create(all_input_deds)
-            for credit, amount_deducted in credits_to_update:
-                credit.total_deducted += Decimal(str(amount_deducted))
-                if credit.total_deducted >= credit.amount:
-                    credit.status = 'COMPLETED'
-                    credit.deducted_in_cycle = cycle
-                    credit.installment_amount = credit.installment_amount or credit.amount
-                credit.save(update_fields=['total_deducted', 'status', 'deducted_in_cycle'])
+            # Accumulate levy deduction (original gross, before carry-forward)
+            levy_amount = round(data.gross_amount * (float(cooperative.levy_percentage) / 100), 2)
+            if levy_amount > 0:
+                all_levy_deds.append(Deduction(
+                    cooperative=cycle.cooperative,
+                    farmer=farmer,
+                    cycle=cycle,
+                    deduction_type='LEVY',
+                    amount=levy_amount,
+                    notes='Auto-generated levy deduction',
+                ))
 
-        _create_levy_deductions(cycle, farmer_data)
+            # Flush to DB periodically to keep peak memory bounded
+            if idx % FLUSH_INTERVAL == 0:
+                _flush_chunk()
+                farmer_payments = []
+                all_loan_deds = []
+                all_loan_repayments = []
+                updated_loans = []
+                all_input_deds = []
+                credits_to_update = []
+                carry_forward_updates = []
+                all_levy_deds = []
+
+        # Final flush for remaining farmers
+        _flush_chunk()
 
         totals = FarmerPayment.objects.filter(cycle=cycle).aggregate(
             total_gross=Sum('gross_amount'),
@@ -303,21 +336,3 @@ def run_payment_engine(self, cycle_id: str):
         logger.exception("Payment engine failed for cycle %s, reset to DRAFT", cycle_id)
         raise
 
-
-def _create_levy_deductions(cycle, farmer_data):
-    Deduction.objects.filter(cycle=cycle, deduction_type='LEVY').delete()
-    levies = []
-    for data in farmer_data:
-        farmer = data.farmer
-        gross = data.gross_amount
-        levy_amount = round(gross * (float(cycle.cooperative.levy_percentage) / 100), 2)
-        if levy_amount > 0:
-            levies.append(Deduction(
-                cooperative=cycle.cooperative,
-                farmer=farmer,
-                cycle=cycle,
-                deduction_type='LEVY',
-                amount=levy_amount,
-                notes='Auto-generated levy deduction',
-            ))
-    Deduction.objects.bulk_create(levies)

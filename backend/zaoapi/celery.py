@@ -9,6 +9,6 @@ app.autodiscover_tasks()
 
 # Global timeouts (per-task overrides take precedence)
 app.conf.update(
-    task_soft_time_limit=60,
-    task_time_limit=120,
+    task_soft_time_limit=300,
+    task_time_limit=600,
 )

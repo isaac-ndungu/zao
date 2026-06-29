@@ -173,25 +173,25 @@ def process_batch_disbursements(self, batch_id: str):
         logger.warning("Batch %s skipped: %s", batch_id, e)
         return {'error': str(e), 'batch_id': batch_id}
 
-    pending = list(
-        DisbursementTransaction.objects.filter(
-            batch=batch, status='PENDING', payment_method='M_PESA',
-        ).select_related('farmer').order_by(
-            Case(
-                When(payment_method='M_PESA', then=0),
-                When(payment_method='BANK', then=1),
-                When(payment_method='CASH', then=2),
-                output_field=IntegerField(),
-            ),
-            'created_at', 'id',
-        )
+    pending_qs = DisbursementTransaction.objects.filter(
+        batch=batch, status='PENDING', payment_method='M_PESA',
+    ).select_related('farmer').order_by(
+        Case(
+            When(payment_method='M_PESA', then=0),
+            When(payment_method='BANK', then=1),
+            When(payment_method='CASH', then=2),
+            output_field=IntegerField(),
+        ),
+        'created_at', 'id',
     )
 
-    if not pending:
+    if not pending_qs.exists():
         logger.info("Batch %s: no pending M-PESA transactions", batch_id)
         batch.status = 'COMPLETED'
         batch.save(update_fields=['status'])
         return {'status': 'COMPLETED', 'batch_id': batch_id, 'processed': 0}
+
+    total_pending = pending_qs.count()
 
     batch.status = 'PROCESSING'
     batch.celery_task_id = self.request.id or ''
@@ -200,40 +200,65 @@ def process_batch_disbursements(self, batch_id: str):
     CHUNK_SIZE = 50
     CHUNK_DELAY = 30
     processed_count = 0
-    chunks = [pending[i:i + CHUNK_SIZE] for i in range(0, len(pending), CHUNK_SIZE)]
+    pending_iter = pending_qs.iterator(chunk_size=CHUNK_SIZE)
 
-    for chunk_index, chunk in enumerate(chunks):
-        for txn in chunk:
-            mpesa_number = txn.recipient_identifier
-            try:
-                mpesa_number = normalize_mpesa_number(mpesa_number)
-            except ValueError:
-                txn.status = 'FAILED'
-                txn.failure_reason = f'Invalid M-Pesa number: {mpesa_number}'
-                txn.failed_at = timezone.now()
-                txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
-                continue
+    chunk = []
+    for txn in pending_iter:
+        chunk.append(txn)
+        if len(chunk) >= CHUNK_SIZE:
+            for t in chunk:
+                mpesa_number = t.recipient_identifier
+                try:
+                    mpesa_number = normalize_mpesa_number(mpesa_number)
+                except ValueError:
+                    t.status = 'FAILED'
+                    t.failure_reason = f'Invalid M-Pesa number: {mpesa_number}'
+                    t.failed_at = timezone.now()
+                    t.save(update_fields=['status', 'failure_reason', 'failed_at'])
+                    continue
 
-            send_single_mpesa_disbursement.delay(
-                transaction_id=str(txn.id),
-                batch_id=str(batch.id),
-                phone_number=mpesa_number,
-                amount=txn.amount,
-                command_id=batch.command_id,
-                farmer_name=str(txn.farmer),
-            )
-            processed_count += 1
+                send_single_mpesa_disbursement.delay(
+                    transaction_id=str(t.id),
+                    batch_id=str(batch.id),
+                    phone_number=mpesa_number,
+                    amount=t.amount,
+                    command_id=batch.command_id,
+                    farmer_name=str(t.farmer),
+                )
+                processed_count += 1
 
-        if chunk_index < len(chunks) - 1:
             update_batch_summary.apply_async(
                 args=[str(batch.id)],
                 countdown=CHUNK_DELAY,
             )
+            chunk = []
+
+    if chunk:
+        for t in chunk:
+            mpesa_number = t.recipient_identifier
+            try:
+                mpesa_number = normalize_mpesa_number(mpesa_number)
+            except ValueError:
+                t.status = 'FAILED'
+                t.failure_reason = f'Invalid M-Pesa number: {mpesa_number}'
+                t.failed_at = timezone.now()
+                t.save(update_fields=['status', 'failure_reason', 'failed_at'])
+                continue
+
+            send_single_mpesa_disbursement.delay(
+                transaction_id=str(t.id),
+                batch_id=str(batch.id),
+                phone_number=mpesa_number,
+                amount=t.amount,
+                command_id=batch.command_id,
+                farmer_name=str(t.farmer),
+            )
+            processed_count += 1
 
     return {
         'status': 'PROCESSING',
         'batch_id': batch_id,
-        'total_pending': len(pending),
+        'total_pending': total_pending,
         'queued': processed_count,
     }
 
