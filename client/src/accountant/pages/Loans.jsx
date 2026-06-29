@@ -5,6 +5,7 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import Pagination from '../../admin/components/common/Pagination'
 import ErrorState from '../../shared/components/ErrorState'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
@@ -15,6 +16,7 @@ const statusColors = {
 }
 
 function LoanDetailPanel({ loan, onClose, onAction }) {
+  const { showToast } = useToast()
   const [addingGuarantor, setAddingGuarantor] = useState(false)
   const [guarantorSearch, setGuarantorSearch] = useState('')
   const [guarantorResults, setGuarantorResults] = useState([])
@@ -70,8 +72,6 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setActionLoading(null) }
   }
-
-  const { showToast } = useToast()
 
   const canDisburse = loan.status === 'APPROVED' && (loan.guarantors?.length || 0) >= 1
 
@@ -165,12 +165,13 @@ export default function AccountantLoans() {
   const selectedId = searchParams.get('selected')
   const { showToast } = useToast()
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ farmer: '', amount_principal: '', interest_rate: '10', number_of_installments: '1', notes: '' })
   const [saving, setSaving] = useState(false)
 
-  const queryParams = new URLSearchParams({ page, page_size: '20' })
+  const queryParams = new URLSearchParams({ page, page_size: pageSize })
   if (search) queryParams.set('search', search)
   if (statusFilter) queryParams.set('status', statusFilter)
 
@@ -207,13 +208,13 @@ export default function AccountantLoans() {
   const statuses = ['', 'PENDING', 'APPROVED', 'DISBURSED', 'COMPLETED', 'DEFAULTED', 'WRITTEN_OFF']
 
   const columns = [
-    { header: 'ID', accessor: 'id', sortable: true },
-    { header: 'Farmer', accessor: (l) => l.farmer_name || l.farmer?.full_name || `#${l.farmer}`, sortable: true },
-    { header: 'Amount', accessor: (l) => formatKes(l.amount), sortable: true },
-    { header: 'Balance', accessor: (l) => formatKes(l.balance) },
-    { header: 'Status', accessor: (l) => <span className={`badge ${statusColors[l.status] || 'badge-default'}`}>{l.status}</span> },
-    { header: 'Due', accessor: (l) => l.due_date ? new Date(l.due_date).toLocaleDateString() : '-' },
-    { header: 'Created', accessor: (l) => l.created_at ? new Date(l.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (row) => row.id },
+    { key: 'farmer', label: 'Farmer', render: (l) => l.farmer_name || l.farmer?.full_name || `#${l.farmer}` },
+    { key: 'amount', label: 'Amount', render: (l) => formatKes(l.amount) },
+    { key: 'balance', label: 'Balance', render: (l) => formatKes(l.balance) },
+    { key: 'status', label: 'Status', render: (l) => <span className={`badge ${statusColors[l.status] || 'badge-default'}`}>{l.status}</span> },
+    { key: 'due_date', label: 'Due', render: (l) => l.due_date ? new Date(l.due_date).toLocaleDateString() : '-' },
+    { key: 'created_at', label: 'Created', render: (l) => l.created_at ? new Date(l.created_at).toLocaleDateString() : '-' },
   ]
 
   return (
@@ -239,14 +240,14 @@ export default function AccountantLoans() {
           </div>
 
           {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
-            <DataTable
-              columns={columns}
-              data={loans}
-              onRowClick={(l) => setSearchParams({ ...Object.fromEntries(searchParams.entries()), selected: String(l.id) })}
-              page={page}
-              totalPages={Math.ceil(totalCount / 20)}
-              onPageChange={setPage}
-            />
+            <>
+              <DataTable
+                columns={columns}
+                data={loans}
+                onRowClick={(l) => setSearchParams({ ...Object.fromEntries(searchParams.entries()), selected: String(l.id) })}
+              />
+              <Pagination page={page} pageSize={pageSize} total={totalCount} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </div>
 

@@ -5,6 +5,7 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import Pagination from '../../admin/components/common/Pagination'
 import ErrorState from '../../shared/components/ErrorState'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
@@ -16,18 +17,19 @@ export default function AccountantDeductions() {
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') || 'deductions'
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [typeFilter, setTypeFilter] = useState('')
   const [showCreditForm, setShowCreditForm] = useState(false)
   const [creditForm, setCreditForm] = useState({ farmer: '', item_description: '', amount: '' })
   const [saving, setSaving] = useState(false)
 
-  const qp = new URLSearchParams({ page, page_size: '20' })
+  const qp = new URLSearchParams({ page, page_size: pageSize })
   if (typeFilter) qp.set('type', typeFilter)
 
   const { data: dedData, loading: dedLoading, error: dedError, refetch: dedRefetch } = useApi(tab === 'deductions' ? `/api/deductions/?${qp}` : null)
   const { data: creditsData, loading: creditsLoading, error: creditsError, refetch: creditsRefetch } = useApi(tab === 'credits' ? `/api/deductions/farm-input-credits/?${qp}` : null)
   const { data: farmers } = useApi('/api/farmers/?page=1&page_size=100')
-  const { data: stats } = useApi('/api/analytics/financial/')
+  const { data: stats } = useApi(tab === 'deductions' ? '/api/analytics/financial/' : null)
 
   const deductions = dedData?.results || dedData || []
   const credits = creditsData?.results || creditsData || []
@@ -43,6 +45,7 @@ export default function AccountantDeductions() {
       const res = await apiFetch('/api/deductions/farm-input-credits/', { method: 'POST', body: JSON.stringify(creditForm) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create credit') }
       showToast({ type: 'success', message: 'Farm input credit created.' })
+      creditsRefetch()
       setShowCreditForm(false)
       setCreditForm({ farmer: '', item_description: '', amount: '' })
     } catch (err) { showToast({ type: 'error', message: err.message }) }
@@ -50,20 +53,20 @@ export default function AccountantDeductions() {
   }
 
   const dedColumns = [
-    { header: 'ID', accessor: 'id' },
-    { header: 'Farmer', accessor: (d) => d.farmer_name || d.farmer?.full_name || `#${d.farmer}` },
-    { header: 'Type', accessor: (d) => <span className={`badge ${deductionTypeColors[d.deduction_type] || 'badge-default'}`}>{d.deduction_type}</span> },
-    { header: 'Amount', accessor: (d) => formatKes(d.amount) },
-    { header: 'Description', accessor: (d) => d.description || '-' },
-    { header: 'Date', accessor: (d) => d.created_at ? new Date(d.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (row) => row.id },
+    { key: 'farmer', label: 'Farmer', render: (d) => d.farmer_name || d.farmer?.full_name || `#${d.farmer}` },
+    { key: 'deduction_type', label: 'Type', render: (d) => <span className={`badge ${deductionTypeColors[d.deduction_type] || 'badge-default'}`}>{d.deduction_type}</span> },
+    { key: 'amount', label: 'Amount', render: (d) => formatKes(d.amount) },
+    { key: 'description', label: 'Description', render: (d) => d.description || '-' },
+    { key: 'created_at', label: 'Date', render: (d) => d.created_at ? new Date(d.created_at).toLocaleDateString() : '-' },
   ]
 
   const creditColumns = [
-    { header: 'ID', accessor: 'id' },
-    { header: 'Farmer', accessor: (c) => c.farmer_name || c.farmer?.full_name || `#${c.farmer}` },
-    { header: 'Amount', accessor: (c) => formatKes(c.amount) },
-    { header: 'Description', accessor: (c) => c.description || '-' },
-    { header: 'Date', accessor: (c) => c.created_at ? new Date(c.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (row) => row.id },
+    { key: 'farmer', label: 'Farmer', render: (c) => c.farmer_name || c.farmer?.full_name || `#${c.farmer}` },
+    { key: 'amount', label: 'Amount', render: (c) => formatKes(c.amount) },
+    { key: 'description', label: 'Description', render: (c) => c.description || '-' },
+    { key: 'created_at', label: 'Date', render: (c) => c.created_at ? new Date(c.created_at).toLocaleDateString() : '-' },
   ]
 
   return (
@@ -103,7 +106,10 @@ export default function AccountantDeductions() {
           </div>
 
           {dedLoading ? <TableSkeleton rows={10} cols={6} /> : dedError ? <ErrorState message={dedError} action={{ label: 'Retry', onClick: dedRefetch }} /> : (
-            <DataTable columns={dedColumns} data={deductions} page={page} totalPages={Math.ceil(totalCount / 20)} onPageChange={setPage} />
+            <>
+              <DataTable columns={dedColumns} data={deductions} />
+              <Pagination page={page} pageSize={pageSize} total={totalCount} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </>
       )}
@@ -115,7 +121,10 @@ export default function AccountantDeductions() {
           </div>
 
           {creditsLoading ? <TableSkeleton rows={10} cols={5} /> : creditsError ? <ErrorState message={creditsError} action={{ label: 'Retry', onClick: creditsRefetch }} /> : (
-            <DataTable columns={creditColumns} data={credits} page={page} totalPages={Math.ceil(totalCount / 20)} onPageChange={setPage} />
+            <>
+              <DataTable columns={creditColumns} data={credits} />
+              <Pagination page={page} pageSize={pageSize} total={totalCount} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
 
           {showCreditForm && (

@@ -5,6 +5,7 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import Pagination from '../../admin/components/common/Pagination'
 import ErrorState from '../../shared/components/ErrorState'
 
 const statusColors = {
@@ -25,7 +26,6 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
   }, [])
 
   async function handleRunCycle() {
-    runCycle.current = handleRunCycle
     setRunning(true)
     setRunProgress({ status: 'starting', message: 'Starting cycle...' })
     try {
@@ -158,11 +158,12 @@ export default function AccountantCycles() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('selected')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ name: '', start_date: '', end_date: '', notes: '', status: 'DRAFT' })
   const [saving, setSaving] = useState(false)
 
-  const qp = new URLSearchParams({ page, page_size: '20' })
+  const qp = new URLSearchParams({ page, page_size: pageSize })
   const { data, loading, error, refetch } = useApi(`/api/payment-engine/?${qp}`)
 
   const cycles = data?.results || data || []
@@ -190,13 +191,13 @@ export default function AccountantCycles() {
   }
 
   const columns = [
-    { header: 'ID', accessor: 'id', sortable: true },
-    { header: 'Name', accessor: 'name', sortable: true },
-    { header: 'Status', accessor: (c) => <span className={`badge ${statusColors[c.status] || 'badge-default'}`}>{c.status}</span> },
-    { header: 'Gross', accessor: (c) => formatKes(c.total_gross) },
-    { header: 'Net', accessor: (c) => formatKes(c.net_payout) },
-    { header: 'Farmers', accessor: 'farmer_count' },
-    { header: 'Period', accessor: (c) => c.period_start ? `${new Date(c.period_start).toLocaleDateString()} - ${new Date(c.period_end).toLocaleDateString()}` : '-' },
+    { key: 'id', label: 'ID', render: (row) => row.id },
+    { key: 'name', label: 'Name', render: (row) => row.name },
+    { key: 'status', label: 'Status', render: (c) => <span className={`badge ${statusColors[c.status] || 'badge-default'}`}>{c.status}</span> },
+    { key: 'total_gross', label: 'Gross', render: (c) => formatKes(c.total_gross) },
+    { key: 'net_payout', label: 'Net', render: (c) => formatKes(c.net_payout) },
+    { key: 'farmer_count', label: 'Farmers', render: (c) => c.farmer_count ?? '-' },
+    { key: 'period', label: 'Period', render: (c) => c.period_start ? `${new Date(c.period_start).toLocaleDateString()} - ${new Date(c.period_end).toLocaleDateString()}` : '-' },
   ]
 
   return (
@@ -215,14 +216,14 @@ export default function AccountantCycles() {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 min-w-0">
           {loading ? <TableSkeleton rows={10} cols={7} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
-            <DataTable
-              columns={columns}
-              data={cycles}
-              onRowClick={(c) => setSearchParams({ selected: String(c.id) })}
-              page={page}
-              totalPages={Math.ceil(totalCount / 20)}
-              onPageChange={setPage}
-            />
+            <>
+              <DataTable
+                columns={columns}
+                data={cycles}
+                onRowClick={(c) => setSearchParams({ selected: String(c.id) })}
+              />
+              <Pagination page={page} pageSize={pageSize} total={totalCount} onPageChange={setPage} onPageSizeChange={setPageSize} />
+            </>
           )}
         </div>
 

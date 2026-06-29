@@ -4,13 +4,16 @@ import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 
 export default function AccountantSettings() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [editing, setEditing] = useState(false)
   const [formData, setFormData] = useState({ first_name: user?.first_name || '', last_name: user?.last_name || '', email: user?.email || '' })
   const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' })
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+  const [showEnable2fa, setShowEnable2fa] = useState(false)
+  const [enable2faPassword, setEnable2faPassword] = useState('')
+  const [enabling2fa, setEnabling2fa] = useState(false)
 
   const handleProfileSave = async (e) => {
     e.preventDefault()
@@ -38,6 +41,23 @@ export default function AccountantSettings() {
       setPwForm({ old_password: '', new_password: '', confirm_password: '' })
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSavingPassword(false) }
+  }
+
+  const handleEnable2fa = async (e) => {
+    e.preventDefault()
+    setEnabling2fa(true)
+    try {
+      const res = await apiFetch('/api/auth/2fa/enable/', {
+        method: 'POST',
+        body: JSON.stringify({ password: enable2faPassword }),
+      })
+      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to enable 2FA') }
+      showToast({ type: 'success', message: 'Two-factor authentication enabled.' })
+      setShowEnable2fa(false)
+      setEnable2faPassword('')
+      refreshUser()
+    } catch (err) { showToast({ type: 'error', message: err.message }) }
+    finally { setEnabling2fa(false) }
   }
 
   return (
@@ -79,11 +99,37 @@ export default function AccountantSettings() {
       <section className="mb-8">
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Two-Factor Authentication</h3>
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="material-symbols-outlined text-success">verified</span>
-            <span className="text-body-md text-on-surface font-medium">Two-factor authentication is enabled</span>
-          </div>
-          <p className="text-body-md text-on-surface-variant">2FA is mandatory for accountant accounts and cannot be disabled.</p>
+          {user?.two_fa_enabled ? (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="material-symbols-outlined text-success">verified</span>
+                <span className="text-body-md text-on-surface font-medium">Two-factor authentication is enabled</span>
+              </div>
+              <p className="text-body-md text-on-surface-variant">2FA is mandatory for accountant accounts and cannot be disabled.</p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="material-symbols-outlined text-on-surface-variant">security</span>
+                <span className="text-body-md text-on-surface font-medium">Two-factor authentication is not enabled</span>
+              </div>
+              <p className="text-body-md text-on-surface-variant mb-4">Enable 2FA to add an extra layer of security to your account.</p>
+              {showEnable2fa ? (
+                <form onSubmit={handleEnable2fa} className="space-y-3">
+                  <div>
+                    <label className="block text-label-md text-on-surface-variant mb-1">Confirm your password</label>
+                    <input value={enable2faPassword} onChange={(e) => setEnable2faPassword(e.target.value)} type="password" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="Enter your password..." />
+                  </div>
+                  <div className="flex gap-3">
+                    <button type="submit" disabled={enabling2fa} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{enabling2fa ? 'Enabling...' : 'Enable 2FA'}</button>
+                    <button type="button" onClick={() => { setShowEnable2fa(false); setEnable2faPassword('') }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+                  </div>
+                </form>
+              ) : (
+                <button onClick={() => setShowEnable2fa(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">Enable 2FA</button>
+              )}
+            </>
+          )}
         </div>
       </section>
 
