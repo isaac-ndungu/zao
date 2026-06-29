@@ -261,15 +261,7 @@ REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 _redis_available = False
 try:
     import redis as _redis
-    from urllib.parse import urlparse as _urlparse
-    _parsed = _urlparse(REDIS_URL)
-    _client = _redis.Redis(
-        host=_parsed.hostname or 'localhost',
-        port=_parsed.port or 6379,
-        password=_parsed.password or None,
-        username=_parsed.username or None,
-        socket_connect_timeout=2,
-    )
+    _client = _redis.from_url(REDIS_URL, socket_connect_timeout=2)
     _client.ping()
     _client.close()
     _redis_available = True
