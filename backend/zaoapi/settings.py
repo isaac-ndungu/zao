@@ -258,17 +258,43 @@ GOOGLE_AI_TIMEOUT = config('GOOGLE_AI_TIMEOUT', default=30, cast=int)
 
 REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
-        'TIMEOUT': 300,
-    },
-}
+_redis_available = False
+try:
+    import redis as _redis
+    from urllib.parse import urlparse as _urlparse
+    _parsed = _urlparse(REDIS_URL)
+    _client = _redis.Redis(
+        host=_parsed.hostname or 'localhost',
+        port=_parsed.port or 6379,
+        password=_parsed.password or None,
+        username=_parsed.username or None,
+        socket_connect_timeout=2,
+    )
+    _client.ping()
+    _client.close()
+    _redis_available = True
+except Exception:
+    _redis_available = False
+
+if _redis_available:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'TIMEOUT': 300,
+        },
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'TIMEOUT': 300,
+        },
+    }
 
 # Celery configuration
-CELERY_BROKER_URL = config('REDIS_URL')
-CELERY_RESULT_BACKEND = config('REDIS_URL')
+CELERY_BROKER_URL = REDIS_URL if _redis_available else None
+CELERY_RESULT_BACKEND = REDIS_URL if _redis_available else None
 CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
