@@ -1,7 +1,7 @@
 let onSessionExpired = null
 
 function resolveUrl(url) {
-  const base = import.meta.env.VITE_API_URL || ''
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
   return url.startsWith('/') ? `${base}${url}` : url
 }
 
