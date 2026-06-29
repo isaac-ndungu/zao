@@ -4,6 +4,8 @@ import { AdminAuthProvider } from './admin/contexts/AdminAuthContext'
 import AdminGuard from './admin/components/common/AdminGuard'
 import AdminLayout from './admin/layouts/AdminLayout'
 import RoleGuard from './shared/components/RoleGuard'
+import { useFarmerAuth } from './farmer/context/FarmerAuthContext'
+import { getToken as getFarmerToken } from './farmer/api/client'
 import DashboardLayout from './shared/components/DashboardLayout'
 import LegalAcceptanceGate from './shared/components/LegalAcceptanceGate'
 import ErrorBoundary from './shared/components/ErrorBoundary'
@@ -131,23 +133,36 @@ function FarmerLayoutWithNav() {
   return (
     <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
       <div className="px-4 pt-4">
-        <Outlet />   {/* Renders the matched child route (dashboard, deliveries, etc.) */}
+        <Outlet />
       </div>
       <BottomNav />
     </div>
   )
 }
 
-// Authenticated farmer layout with role guard, legal gate, etc.
+// Authenticated farmer layout with farmer auth guard, legal gate, etc.
 function FarmerAuthenticatedLayout() {
+  const { isAuthenticated, loading } = useFarmerAuth()
+  const token = getFarmerToken()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated && !token) {
+    return <Navigate to="/farmer/login" replace />
+  }
+
   return (
-    <RoleGuard roles={['farmer']}>
-      <LegalAcceptanceGate>
-        <ErrorBoundary>
-          <FarmerLayoutWithNav />
-        </ErrorBoundary>
-      </LegalAcceptanceGate>
-    </RoleGuard>
+    <LegalAcceptanceGate>
+      <ErrorBoundary>
+        <FarmerLayoutWithNav />
+      </ErrorBoundary>
+    </LegalAcceptanceGate>
   )
 }
 

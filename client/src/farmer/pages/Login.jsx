@@ -102,13 +102,23 @@ export default function FarmerLogin() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    ignoreRef.current = false // new request, reset ignore flag
+    ignoreRef.current = false
+
+    const safetyTimer = setTimeout(() => {
+      if (!ignoreRef.current) {
+        setLoading(false)
+        setError('Request timed out. Please try again.')
+      }
+    }, 30000)
+
     try {
       const result = await farmerLogin(phoneNumber)
-      if (ignoreRef.current) return // user went back while waiting
+      clearTimeout(safetyTimer)
+      if (ignoreRef.current) return
       setLoginToken(result.loginToken)
       setStep('otp')
     } catch (err) {
+      clearTimeout(safetyTimer)
       if (ignoreRef.current) return
       setError(err.detail || err.message || 'Failed to send OTP.')
     } finally {
@@ -119,10 +129,20 @@ export default function FarmerLogin() {
   const handleVerifyOtp = async () => {
     setError('')
     setLoading(true)
+
+    const safetyTimer = setTimeout(() => {
+      if (!ignoreRef.current) {
+        setLoading(false)
+        setError('Verification timed out. Please try again.')
+      }
+    }, 30000)
+
     try {
       await farmerVerify(loginToken, otpCode)
+      clearTimeout(safetyTimer)
       navigate('/farmer/dashboard', { replace: true })
     } catch (err) {
+      clearTimeout(safetyTimer)
       setError(err.detail || err.message || 'Invalid or expired OTP.')
     } finally { setLoading(false) }
   }
