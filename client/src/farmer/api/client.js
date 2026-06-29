@@ -1,5 +1,10 @@
 let onSessionExpired = null
 
+function resolveUrl(url) {
+  const base = import.meta.env.VITE_API_URL || ''
+  return url.startsWith('/') ? `${base}${url}` : url
+}
+
 function getToken() {
   try { return localStorage.getItem('zao_farmer_token') } catch { return null }
 }
@@ -25,7 +30,7 @@ async function refreshAccessToken() {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
     try {
-      const res = await fetch('/api/auth/refresh/', { method: 'POST', credentials: 'include' })
+      const res = await fetch(resolveUrl('/api/auth/refresh/'), { method: 'POST', credentials: 'include' })
       if (!res.ok) { setToken(null); return null }
       const data = await res.json().catch(() => ({}))
       if (!data.access) return null
@@ -43,6 +48,7 @@ export function setOnSessionExpired(cb) {
 export async function apiFetch(url, options = {}) {
   const { requireAuth = true, headers = {}, ...rest } = options
   const token = getToken()
+  const resolvedUrl = resolveUrl(url)
 
   const config = {
     headers: { 'Content-Type': 'application/json', ...headers },
@@ -53,13 +59,13 @@ export async function apiFetch(url, options = {}) {
     config.headers['Authorization'] = `Bearer ${token}`
   }
 
-  let res = await fetch(url, config)
+  let res = await fetch(resolvedUrl, config)
 
   if (res.status === 401 && requireAuth && token) {
     const newToken = await refreshAccessToken()
     if (newToken) {
       config.headers['Authorization'] = `Bearer ${newToken}`
-      res = await fetch(url, config)
+      res = await fetch(resolvedUrl, config)
     } else {
       setToken(null)
       setUser(null)

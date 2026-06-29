@@ -2,6 +2,11 @@ let accessToken = null
 let refreshPromise = null
 let onSessionExpired = null
 
+function resolveUrl(url) {
+  const base = import.meta.env.VITE_API_URL || ''
+  return url.startsWith('/') ? `${base}${url}` : url
+}
+
 export function getAccessToken() {
   return accessToken
 }
@@ -27,7 +32,7 @@ async function refreshAccessToken() {
 
   refreshPromise = (async () => {
     try {
-      const res = await fetch('/api/auth/refresh/', { method: 'POST', credentials: 'include' })
+      const res = await fetch(resolveUrl('/api/auth/refresh/'), { method: 'POST', credentials: 'include' })
       if (!res.ok) {
         accessToken = null
         return null
@@ -46,6 +51,7 @@ async function refreshAccessToken() {
 
 export async function apiFetch(url, options = {}) {
   const { requireAuth = true, headers = {}, ...rest } = options
+  const resolvedUrl = resolveUrl(url)
 
   const config = {
     headers: { 'Content-Type': 'application/json', ...headers },
@@ -56,14 +62,14 @@ export async function apiFetch(url, options = {}) {
     config.headers['Authorization'] = `Bearer ${accessToken}`
   }
 
-  let res = await fetch(url, config)
+  let res = await fetch(resolvedUrl, config)
 
   if (res.status === 401 && requireAuth && accessToken) {
     const newToken = await refreshAccessToken()
 
     if (newToken) {
       config.headers['Authorization'] = `Bearer ${newToken}`
-      res = await fetch(url, config)
+      res = await fetch(resolvedUrl, config)
     } else {
       onSessionExpired?.()
     }
