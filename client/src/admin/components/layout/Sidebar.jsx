@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 const navItems = [
   { to: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -24,6 +24,7 @@ const systemItems = [
 ]
 
 const bottomItems = [
+  { to: '/admin/profile', icon: 'person', label: 'Profile' },
   { to: '/admin/settings', icon: 'settings', label: 'Settings' },
   { to: '/admin/support', icon: 'help', label: 'Support' },
 ]
@@ -36,17 +37,32 @@ const entryLinks = [
   { to: '/admin/financials', label: 'New Payment Cycle', icon: 'payments' },
 ]
 
-export default function Sidebar({ mobileOpen, onClose }) {
+export default function Sidebar({ mobileOpen, onClose, minimized }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [entryOpen, setEntryOpen] = useState(false)
+  const [tooltip, setTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
 
   useEffect(() => { onClose(); setEntryOpen(false) }, [pathname])
 
+  const showTooltip = useCallback((e, label) => {
+    if (!minimized) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    setTooltip({ show: true, label, x: rect.right + 8, y: rect.top + rect.height / 2 })
+  }, [minimized])
+
+  const hideTooltip = useCallback(() => {
+    setTooltip({ show: false, label: '', x: 0, y: 0 })
+  }, [])
+
   const sidebarContent = (
-    <aside className="w-64 h-full bg-primary flex flex-col py-6 px-4 overflow-y-auto">
-      <div className="mb-10 px-2">
-        <h1 className="font-headline-lg text-headline-lg font-bold text-on-primary">Zao Operations</h1>
+    <aside className={`${minimized ? 'w-16 px-2' : 'w-64 px-4'} h-full bg-primary flex flex-col py-6 overflow-y-auto transition-all duration-300`}>
+      <div className={`mb-10 ${minimized ? 'px-0 text-center' : 'px-2'}`}>
+        {minimized ? (
+          <h1 className="font-headline-lg text-headline-lg font-bold text-on-primary">Z</h1>
+        ) : (
+          <h1 className="font-headline-lg text-headline-lg font-bold text-on-primary">Zao Operations</h1>
+        )}
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -56,6 +72,8 @@ export default function Sidebar({ mobileOpen, onClose }) {
             <Link
               key={item.to}
               to={item.to}
+              onMouseEnter={(e) => showTooltip(e, item.label)}
+              onMouseLeave={hideTooltip}
               className={`flex items-center gap-3 px-4 py-3 transition-colors ${
                 isActive
                   ? 'bg-secondary-container text-on-secondary-container rounded-lg'
@@ -63,15 +81,17 @@ export default function Sidebar({ mobileOpen, onClose }) {
               }`}
             >
               <span className="material-symbols-outlined">{item.icon}</span>
-              <span className="font-body-md text-body-md">{item.label}</span>
+              {!minimized && <span className="font-body-md text-body-md">{item.label}</span>}
             </Link>
           )
         })}
       </nav>
 
-      <div className="px-2 pt-2 pb-1">
-        <p className="text-[10px] uppercase font-bold text-on-primary/40 tracking-widest font-label-md">System</p>
-      </div>
+      {!minimized && (
+        <div className="px-2 pt-2 pb-1">
+          <p className="text-[10px] uppercase font-bold text-on-primary/40 tracking-widest font-label-md">System</p>
+        </div>
+      )}
       <nav className="space-y-0.5 mb-2">
         {systemItems.map((item) => {
           const isActive = pathname.startsWith(item.to)
@@ -79,6 +99,8 @@ export default function Sidebar({ mobileOpen, onClose }) {
             <Link
               key={item.to}
               to={item.to}
+              onMouseEnter={(e) => showTooltip(e, item.label)}
+              onMouseLeave={hideTooltip}
               className={`flex items-center gap-3 px-4 py-2 transition-colors ${
                 isActive
                   ? 'bg-secondary-container text-on-secondary-container rounded-lg'
@@ -86,21 +108,23 @@ export default function Sidebar({ mobileOpen, onClose }) {
               }`}
             >
               <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
-              <span className="font-label-md text-label-md font-medium">{item.label}</span>
+              {!minimized && <span className="font-label-md text-label-md font-medium">{item.label}</span>}
             </Link>
           )
         })}
       </nav>
 
-      <div className="mt-auto pt-6 border-t border-on-primary/10 space-y-4">
+      <div className={`mt-auto pt-6 border-t border-on-primary/10 ${minimized ? 'space-y-2' : 'space-y-4'}`}>
         {bottomItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
+            onMouseEnter={(e) => showTooltip(e, item.label)}
+            onMouseLeave={hideTooltip}
             className="flex items-center gap-3 px-4 py-2 text-on-primary/80 hover:text-on-primary transition-colors"
           >
             <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-            <span className="font-label-md text-label-md">{item.label}</span>
+            {!minimized && <span className="font-label-md text-label-md">{item.label}</span>}
           </Link>
         ))}
 
@@ -108,13 +132,15 @@ export default function Sidebar({ mobileOpen, onClose }) {
           <button
             onClick={() => setEntryOpen(!entryOpen)}
             onBlur={() => setTimeout(() => setEntryOpen(false), 200)}
-            className="w-full bg-primary-fixed text-on-primary-fixed font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 hover:opacity-90 transition-opacity"
+            onMouseEnter={(e) => showTooltip(e, 'New Entry')}
+            onMouseLeave={hideTooltip}
+            className={`w-full bg-primary-fixed text-on-primary-fixed font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 hover:opacity-90 transition-opacity ${minimized ? 'px-0' : ''}`}
           >
             <span className="material-symbols-outlined">add</span>
-            <span>New Entry</span>
+            {!minimized && <span>New Entry</span>}
           </button>
           {entryOpen && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden">
+            <div className={`absolute bottom-full left-0 right-0 mb-2 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden ${minimized ? 'min-w-[200px]' : ''}`}>
               {entryLinks.map((link) => (
                 <button
                   key={link.to}
@@ -134,18 +160,12 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
       )}
-      {/* Desktop: fixed sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 z-50">
+      <div className={`hidden lg:fixed lg:inset-y-0 lg:flex ${minimized ? 'lg:w-16' : 'lg:w-64'} z-50 transition-all duration-300`}>
         {sidebarContent}
       </div>
-      {/* Mobile: overlay sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out lg:hidden ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -153,6 +173,14 @@ export default function Sidebar({ mobileOpen, onClose }) {
       >
         {sidebarContent}
       </div>
+      {minimized && tooltip.show && (
+        <div
+          className="fixed px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none z-[999] shadow-lg"
+          style={{ left: tooltip.x, top: tooltip.y, transform: 'translateY(-50%)' }}
+        >
+          {tooltip.label}
+        </div>
+      )}
     </>
   )
 }

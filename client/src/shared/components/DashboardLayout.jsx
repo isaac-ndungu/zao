@@ -5,6 +5,7 @@ import OfflineBanner from './OfflineBanner'
 
 export default function DashboardLayout({ sidebar, header, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarMinimized, setSidebarMinimized] = useState(true)
 
   return (
     <ToastProvider>
@@ -12,14 +13,23 @@ export default function DashboardLayout({ sidebar, header, children }) {
         {sidebar && (
           <>
             {typeof sidebar === 'function'
-              ? sidebar({ mobileOpen: sidebarOpen, onClose: () => setSidebarOpen(false) })
+              ? sidebar({
+                  mobileOpen: sidebarOpen,
+                  onClose: () => setSidebarOpen(false),
+                  minimized: sidebarMinimized,
+                  onToggle: () => setSidebarMinimized(v => !v),
+                })
               : sidebar}
           </>
         )}
-        <div className={sidebar ? 'flex-1 lg:ml-64' : 'flex-1'}>
+        <div className={sidebar ? `flex-1 ${sidebarMinimized ? 'lg:ml-16' : 'lg:ml-64'}` : 'flex-1'}>
           {header && (
             typeof header === 'function'
-              ? header({ onMenuClick: () => setSidebarOpen(!sidebarOpen) })
+              ? header({
+                  onMenuClick: () => setSidebarOpen(!sidebarOpen),
+                  minimized: sidebarMinimized,
+                  onToggle: () => setSidebarMinimized(v => !v),
+                })
               : header
           )}
           <OfflineBanner />
