@@ -44,6 +44,7 @@ const AdminFarmerPayments = lazy(() => import('./admin/pages/FarmerPayments'))
 const OTPTokens = lazy(() => import('./admin/pages/OTPTokens'))
 const SeasonalPatterns = lazy(() => import('./admin/pages/SeasonalPatterns'))
 const FarmerRetention = lazy(() => import('./admin/pages/FarmerRetention'))
+const AdminProfile = lazy(() => import('./admin/pages/Profile'))
 const AdminNotFound = lazy(() => import('./admin/pages/NotFound'))
 
 // Farmer pages 
@@ -74,6 +75,7 @@ const ManagerRoutes = lazy(() => import('./manager/pages/Routes'))
 const ManagerSettings = lazy(() => import('./manager/pages/Settings'))
 const SetupCooperative = lazy(() => import('./manager/pages/SetupCooperative'))
 const ManagerUsers = lazy(() => import('./manager/pages/Users'))
+const ManagerProfile = lazy(() => import('./manager/pages/Profile'))
 const ManagerAuditLog = lazy(() => import('./manager/pages/AuditLog'))
 
 // Grader pages
@@ -82,6 +84,7 @@ const GraderDashboard = lazy(() => import('./grader/pages/Dashboard'))
 const Grade = lazy(() => import('./grader/pages/Grade'))
 const MyGrades = lazy(() => import('./grader/pages/MyGrades'))
 const GraderSync = lazy(() => import('./grader/pages/Sync'))
+const GraderProfile = lazy(() => import('./grader/pages/Profile'))
 const GraderSettings = lazy(() => import('./grader/pages/Settings'))
 
 // Accountant pages
@@ -92,6 +95,7 @@ const AccountantDisbursements = lazy(() => import('./accountant/pages/Disburseme
 const AccountantLoans = lazy(() => import('./accountant/pages/Loans'))
 const AccountantDeductions = lazy(() => import('./accountant/pages/Deductions'))
 const AccountantReports = lazy(() => import('./accountant/pages/Reports'))
+const AccountantProfile = lazy(() => import('./accountant/pages/Profile'))
 const AccountantSettings = lazy(() => import('./accountant/pages/Settings'))
 
 // Auditor pages
@@ -102,12 +106,14 @@ const AuditorFinancial = lazy(() => import('./auditor/pages/Financial'))
 const AuditorProduction = lazy(() => import('./auditor/pages/Production'))
 const AuditorLoans = lazy(() => import('./auditor/pages/Loans'))
 const AuditorReports = lazy(() => import('./auditor/pages/Reports'))
+const AuditorProfile = lazy(() => import('./auditor/pages/Profile'))
 const AuditorSettings = lazy(() => import('./auditor/pages/Settings'))
 
 // External auditor pages
 const ExternalAuditorLayout = lazy(() => import('./external-auditor/ExternalAuditorLayout'))
 const ExternalFinancialStatements = lazy(() => import('./external-auditor/pages/FinancialStatements'))
 const ExternalAuditTrail = lazy(() => import('./external-auditor/pages/AuditTrail'))
+const ExternalAuditorProfile = lazy(() => import('./external-auditor/pages/Profile'))
 const ExternalLoanPortfolio = lazy(() => import('./external-auditor/pages/LoanPortfolio'))
 
 function SuspenseFallback() {
@@ -195,6 +201,7 @@ export default function App() {
             <Route path="inventory" element={<SuspenseWrapper><AdminInventory /></SuspenseWrapper>} />
             <Route path="logistics" element={<SuspenseWrapper><Logistics /></SuspenseWrapper>} />
             <Route path="financials" element={<SuspenseWrapper><Financials /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><AdminProfile /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><Settings /></SuspenseWrapper>} />
             <Route path="support" element={<SuspenseWrapper><Support /></SuspenseWrapper>} />
             <Route path="users" element={<SuspenseWrapper><UserManagement /></SuspenseWrapper>} />
@@ -236,6 +243,7 @@ export default function App() {
             <Route path="setup/cooperative" element={<SuspenseWrapper><SetupCooperative /></SuspenseWrapper>} />
             <Route path="users" element={<SuspenseWrapper><ManagerUsers /></SuspenseWrapper>} />
             <Route path="audit-log" element={<SuspenseWrapper><ManagerAuditLog /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><ManagerProfile /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><ManagerSettings /></SuspenseWrapper>} />
           </Route>
 
@@ -254,6 +262,7 @@ export default function App() {
             <Route path="grade" element={<SuspenseWrapper><Grade /></SuspenseWrapper>} />
             <Route path="my-grades" element={<SuspenseWrapper><MyGrades /></SuspenseWrapper>} />
             <Route path="sync" element={<SuspenseWrapper><GraderSync /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><GraderProfile /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><GraderSettings /></SuspenseWrapper>} />
           </Route>
 
@@ -274,6 +283,7 @@ export default function App() {
             <Route path="loans" element={<SuspenseWrapper><AccountantLoans /></SuspenseWrapper>} />
             <Route path="deductions" element={<SuspenseWrapper><AccountantDeductions /></SuspenseWrapper>} />
             <Route path="reports" element={<SuspenseWrapper><AccountantReports /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><AccountantProfile /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><AccountantSettings /></SuspenseWrapper>} />
           </Route>
 
@@ -294,6 +304,7 @@ export default function App() {
             <Route path="production" element={<SuspenseWrapper><AuditorProduction /></SuspenseWrapper>} />
             <Route path="loans" element={<SuspenseWrapper><AuditorLoans /></SuspenseWrapper>} />
             <Route path="reports" element={<SuspenseWrapper><AuditorReports /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><AuditorProfile /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><AuditorSettings /></SuspenseWrapper>} />
           </Route>
 
@@ -311,6 +322,7 @@ export default function App() {
             <Route path="financial-statements" element={<SuspenseWrapper><ExternalFinancialStatements /></SuspenseWrapper>} />
             <Route path="audit-trail" element={<SuspenseWrapper><ExternalAuditTrail /></SuspenseWrapper>} />
             <Route path="loan-portfolio" element={<SuspenseWrapper><ExternalLoanPortfolio /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><ExternalAuditorProfile /></SuspenseWrapper>} />
           </Route>
 
           {/* Farmer auth */}
