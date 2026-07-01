@@ -242,7 +242,7 @@ export default function FarmerLedger() {
   }
 
   return (
-    <div ref={dropdownRef}>
+    <div ref={dropdownRef} className="overflow-x-hidden">
       <header className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">Farmer Ledger</h2>
