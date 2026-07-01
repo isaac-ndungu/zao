@@ -83,7 +83,9 @@ export default function GradingQueue() {
     { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <button onClick={(e) => { e.stopPropagation(); setShowOverride(row); setOverrideData({ grade_letter: row.grade_letter, override_reason: '' }) }} className="text-primary text-label-md hover:underline">Override</button>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <button onClick={(e) => { e.stopPropagation(); setShowOverride(row); setOverrideData({ grade_letter: row.grade_letter, override_reason: '' }) }} className="text-primary hover:text-primary/80" title="Override Grade"><span className="material-symbols-outlined text-[18px]">edit_note</span></button>
+        </div>
       ),
     },
   ]
@@ -104,9 +106,13 @@ export default function GradingQueue() {
     { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary text-label-md hover:underline">
-          {row.status === 'PENDING' ? 'Resolve' : 'View'}
-        </button>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          {row.status === 'PENDING' ? (
+            <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" title="Resolve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
+          ) : (
+            <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" title="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+          )}
+        </div>
       ),
     },
   ]

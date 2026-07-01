@@ -82,18 +82,20 @@ export default function ManagerUsers() {
     { key: 'date_joined', label: 'Joined', render: (row) => row.date_joined ? new Date(row.date_joined).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <div className="flex gap-3">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button
             onClick={(e) => { e.stopPropagation(); handleToggleActive(row) }}
-            className={`text-label-md hover:underline ${row.is_active ? 'text-error' : 'text-primary'}`}
+            className={`${row.is_active ? 'text-error hover:text-error/80' : 'text-primary hover:text-primary/80'}`}
+            title={row.is_active ? 'Deactivate' : 'Activate'}
           >
-            {row.is_active ? 'Deactivate' : 'Activate'}
+            <span className="material-symbols-outlined text-[18px]">{row.is_active ? 'toggle_off' : 'toggle_on'}</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDeleting(row) }}
-            className="text-label-md text-on-surface-variant hover:text-error hover:underline"
+            className="text-on-surface-variant hover:text-error"
+            title="Remove User"
           >
-            Remove
+            <span className="material-symbols-outlined text-[18px]">person_remove</span>
           </button>
         </div>
       ),

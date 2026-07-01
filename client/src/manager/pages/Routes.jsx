@@ -74,9 +74,9 @@ export default function Routes() {
     { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <div className="flex gap-2">
-          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary text-label-md hover:underline">Edit</button>
-          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" title="Edit Route"><span className="material-symbols-outlined text-[18px]">edit</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete Route"><span className="material-symbols-outlined text-[18px]">delete</span></button>
         </div>
       ),
     },

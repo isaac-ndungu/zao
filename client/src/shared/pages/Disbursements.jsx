@@ -335,8 +335,9 @@ export default function Disbursements() {
       <div className="relative" ref={isOpen ? dropdownRef : undefined}>
         <button
           onClick={(e) => { e.stopPropagation(); setOpenDropdownId(isOpen ? null : row.id) }}
-          className="p-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"
+          className={`p-1 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors ${isOpen ? 'opacity-100' : ''}`}
           aria-label="Actions"
+          title="Batch actions"
         >
           <span className="material-symbols-outlined text-lg">more_vert</span>
         </button>

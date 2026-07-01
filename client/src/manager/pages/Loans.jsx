@@ -110,15 +110,15 @@ export default function Loans() {
     { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <div className="flex gap-2">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' && (
             <>
-              <button onClick={(e) => { e.stopPropagation(); setShowAddGuarantor(row) }} className="text-primary text-label-md hover:underline">+ Guarantor</button>
-              <button onClick={(e) => { e.stopPropagation(); setShowApprove(row) }} className="text-success text-label-md hover:underline">Approve</button>
+              <button onClick={(e) => { e.stopPropagation(); setShowAddGuarantor(row) }} className="text-primary hover:text-primary/80" title="Add Guarantor"><span className="material-symbols-outlined text-[18px]">person_add</span></button>
+              <button onClick={(e) => { e.stopPropagation(); setShowApprove(row) }} className="text-success hover:text-success/80" title="Approve Loan"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
             </>
           )}
           {row.status === 'ACTIVE' && (
-            <button onClick={(e) => { e.stopPropagation(); setShowDefault(row) }} className="text-error text-label-md hover:underline">Default</button>
+            <button onClick={(e) => { e.stopPropagation(); setShowDefault(row) }} className="text-error hover:text-error/80" title="Mark Default"><span className="material-symbols-outlined text-[18px]">block</span></button>
           )}
         </div>
       ),

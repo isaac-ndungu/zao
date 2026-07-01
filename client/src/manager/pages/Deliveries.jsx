@@ -97,7 +97,9 @@ export default function Deliveries() {
     { key: 'date_delivered', label: 'Date', sortable: true, render: (row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+        </div>
       ),
     },
   ]

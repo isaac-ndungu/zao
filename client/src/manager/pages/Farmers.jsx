@@ -225,18 +225,20 @@ export default function Farmers() {
               e.stopPropagation()
               setShowEdit(row)
             }}
-            className="text-primary text-label-md hover:underline"
+            className="text-primary hover:text-primary/80"
+            title="Edit"
           >
-            Edit
+            <span className="material-symbols-outlined text-[18px]">edit</span>
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation()
               setShowDelete(row)
             }}
-            className="text-error text-label-md hover:underline"
+            className="text-error hover:text-error/80"
+            title="Delete"
           >
-            Delete
+            <span className="material-symbols-outlined text-[18px]">delete</span>
           </button>
         </div>
       ),

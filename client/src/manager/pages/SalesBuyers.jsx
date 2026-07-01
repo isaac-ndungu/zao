@@ -89,7 +89,9 @@ function SalesSection() {
     { key: 'sale_date', label: 'Date', sortable: true, render: (row) => row.sale_date ? new Date(row.sale_date).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete Sale"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+        </div>
       ),
     },
   ]
@@ -448,9 +450,9 @@ function BuyersSection() {
     { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <div className="flex gap-2">
-          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary text-label-md hover:underline">Edit</button>
-          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error text-label-md hover:underline">Delete</button>
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" title="Edit Buyer"><span className="material-symbols-outlined text-[18px]">edit</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete Buyer"><span className="material-symbols-outlined text-[18px]">delete</span></button>
         </div>
       ),
     },
