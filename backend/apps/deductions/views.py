@@ -1,3 +1,4 @@
+from rest_framework import filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 
@@ -24,6 +25,8 @@ class DeductionViewSet(CsvExportMixin, CooperativeScopedViewSet):
         'farmer', 'cycle', 'created_by', 'cooperative',
     )
     lookup_value_regex = '[0-9a-f-]{36}'
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['farmer__first_name', 'farmer__last_name', 'farmer__member_number', 'deduction_type']
 
     def get_serializer_class(self):
         if self.action == 'list':

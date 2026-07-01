@@ -20,6 +20,7 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.permissions import AllowAny
 from apps.base.health import health_check
+from apps.base.views.global_search import GlobalSearchView
 from apps.disbursement.callbacks import mpesa_result_callback, mpesa_timeout_callback
 from apps.notifications.urls import api_urlpatterns, callback_urlpatterns as notification_callback_urlpatterns
 
@@ -29,6 +30,7 @@ urlpatterns = [
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[AllowAny]), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[AllowAny]), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[AllowAny]), name='redoc'),
+    path('api/search/', GlobalSearchView.as_view(), name='global-search'),
     path('api/', include('apps.cooperatives.urls')),
     path('api/', include('apps.users.urls')),
     path('api/', include('apps.farmers.urls')),

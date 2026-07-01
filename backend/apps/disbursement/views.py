@@ -6,7 +6,7 @@ from drf_spectacular.utils import extend_schema
 from django.db.models import Case, IntegerField, When
 from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework import serializers, status
+from rest_framework import filters, serializers, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -34,6 +34,8 @@ class DisbursementViewSet(CooperativeScopedViewSet):
     queryset = DisbursementBatch.objects.all().select_related(
         'payment_cycle', 'cooperative', 'approved_by', 'created_by',
     ).prefetch_related('transactions')
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['id', 'cooperative__name', 'notes']
 
     def get_serializer_class(self):
         if self.action == 'initiate':
