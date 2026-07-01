@@ -44,7 +44,9 @@ export default function Login() {
   }, [isAuthenticated, auth.role, navigate])
 
   useEffect(() => {
-    loadGisScript().then(() => {
+    loadGisScript().catch(() => {
+      console.error('Google Identity Services script failed to load.')
+    }).then(() => {
       setGisReady(true)
     })
   }, [])
@@ -73,20 +75,25 @@ export default function Login() {
   }, [auth, navigate])
 
   useEffect(() => {
-    if (!gisReady || !googleBtnRef.current || googleBtnRef.current.hasChildNodes()) return
+    if (!gisReady) return
+    const container = googleBtnRef.current
+    if (!container || container.hasChildNodes()) return
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
-    if (!clientId) return
+    if (!clientId) {
+      console.warn('Google Sign-In disabled: VITE_GOOGLE_CLIENT_ID not configured.')
+      return
+    }
 
     google.accounts.id.initialize({
       client_id: clientId,
       callback: (response) => handleGoogleCredential(response.credential),
     })
-    google.accounts.id.renderButton(googleBtnRef.current, {
+    google.accounts.id.renderButton(container, {
       theme: 'outline',
       size: 'large',
       text: 'signin_with',
       shape: 'rectangular',
-      width: googleBtnRef.current.offsetWidth || 300,
+      width: container.offsetWidth || 300,
     })
   }, [gisReady, handleGoogleCredential])
 
@@ -225,26 +232,6 @@ export default function Login() {
                 {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
-
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-outline-variant" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-surface-container-lowest px-2 text-on-surface-variant">or</span>
-                </div>
-              </div>
-
-              <div className="flex justify-center">
-                {googleLoading ? (
-                  <div className="flex items-center gap-2 text-on-surface-variant text-body-md">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                    Signing in...
-                  </div>
-                ) : (
-                  <div ref={googleBtnRef} className="w-full min-h-[40px] flex justify-center" />
-                )}
-              </div>
             </form>
           ) : (
             <form onSubmit={handleOtpSubmit} className="space-y-5">
@@ -296,6 +283,29 @@ export default function Login() {
                 Back to login
               </button>
             </form>
+          )}
+
+          {step === 'credentials' && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-outline-variant" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-surface-container-lowest px-2 text-on-surface-variant">or</span>
+                </div>
+              </div>
+
+              <div className="relative w-full min-h-[40px] flex justify-center items-center">
+                <div ref={googleBtnRef} className={`w-full flex justify-center ${googleLoading ? 'invisible' : ''}`} />
+                {googleLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center gap-2 text-on-surface-variant text-body-md">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                    Signing in...
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
