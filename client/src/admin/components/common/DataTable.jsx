@@ -80,7 +80,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
             ) : data.map((row, idx) => (
               <tr
                 key={row.id}
-                className={`border-b border-outline-variant/50 transition-colors ${idx % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container'
+                className={`group border-b border-outline-variant/50 transition-colors ${idx % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container'
                   } ${onRowClick ? 'cursor-pointer hover:bg-surface-container-high' : ''}`}
                 onClick={() => onRowClick?.(row)}
               >
@@ -102,7 +102,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                 ))}
                 {rowActions && (
                   <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                       {rowActions(row)}
                     </div>
                   </td>

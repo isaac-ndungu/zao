@@ -393,10 +393,11 @@ export default function UserManagement() {
                 <div className="relative">
                   <button
                     onClick={() => toggleDropdown(user.id)}
-                    className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors"
+                    className={`p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors ${openDropdownId === user.id ? 'opacity-100' : ''}`}
                     aria-label="User actions"
                     aria-haspopup="true"
                     aria-expanded={openDropdownId === user.id}
+                    title="User actions"
                   >
                     <span className="material-symbols-outlined text-[18px]">more_vert</span>
                   </button>
@@ -487,8 +488,8 @@ export default function UserManagement() {
                       <td className="px-4 py-3 text-right">
                         {inv.status === 'PENDING' && (
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => handleResendInvite(inv)} disabled={actionLoading} className="px-2 py-1 text-[11px] font-bold text-primary hover:bg-primary-container rounded-lg transition-colors" title="Resend Invite">Resend</button>
-                            <button onClick={() => handleRevokeInvite(inv)} disabled={actionLoading} className="px-2 py-1 text-[11px] font-bold text-error hover:bg-error-container rounded-lg transition-colors" title="Revoke Invite">Revoke</button>
+                            <button onClick={() => handleResendInvite(inv)} disabled={actionLoading} className="p-1.5 rounded-lg text-primary hover:bg-primary-container transition-colors disabled:opacity-50" title="Resend Invite"><span className="material-symbols-outlined text-[16px]">forward_to_inbox</span></button>
+                            <button onClick={() => handleRevokeInvite(inv)} disabled={actionLoading} className="p-1.5 rounded-lg text-error hover:bg-error-container transition-colors disabled:opacity-50" title="Revoke Invite"><span className="material-symbols-outlined text-[16px]">cancel</span></button>
                           </div>
                         )}
                       </td>

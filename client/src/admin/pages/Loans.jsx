@@ -297,19 +297,19 @@ export default function Loans() {
           emptyMessage="No loans found."
           rowActions={(item) => (
             <div className="flex items-center gap-1">
-              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View" title="View Details"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
               {item.status === 'pending' && (
                 <>
-                  <button onClick={() => openEditLoan(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-                  <button onClick={() => handleStatusAction(item, 'approved')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
-                  <button onClick={() => handleStatusAction(item, 'rejected')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>
+                  <button onClick={() => openEditLoan(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit" title="Edit Loan"><span className="material-symbols-outlined text-[18px]">edit</span></button>
+                  <button onClick={() => handleStatusAction(item, 'approved')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Approve" title="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
+                  <button onClick={() => handleStatusAction(item, 'rejected')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Reject" title="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>
                 </>
               )}
               {item.status === 'approved' && (
                 <>
-                  <button onClick={() => handleDisburse(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Disburse"><span className="material-symbols-outlined text-[18px]">payments</span></button>
-                  <button onClick={() => handleStatusAction(item, 'defaulted')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Mark Defaulted"><span className="material-symbols-outlined text-[18px]">warning</span></button>
-                  <button onClick={() => handleStatusAction(item, 'completed')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Mark Completed"><span className="material-symbols-outlined text-[18px]">task_alt</span></button>
+                  <button onClick={() => handleDisburse(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Disburse" title="Disburse"><span className="material-symbols-outlined text-[18px]">payments</span></button>
+                  <button onClick={() => handleStatusAction(item, 'defaulted')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Mark Defaulted" title="Mark Defaulted"><span className="material-symbols-outlined text-[18px]">warning</span></button>
+                  <button onClick={() => handleStatusAction(item, 'completed')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Mark Completed" title="Mark Completed"><span className="material-symbols-outlined text-[18px]">task_alt</span></button>
                 </>
               )}
             </div>

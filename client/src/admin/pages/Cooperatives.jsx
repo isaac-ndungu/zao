@@ -249,14 +249,14 @@ export default function Cooperatives() {
           emptyMessage="No cooperatives found."
           rowActions={(item) => (
             <div className="flex items-center gap-1">
-              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
-              <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
+              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View" title="View Details"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+              <button onClick={() => openEdit(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit" title="Edit Cooperative"><span className="material-symbols-outlined text-[18px]">edit</span></button>
               {item.is_active ? (
-                <button onClick={() => handleDeactivate(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Deactivate"><span className="material-symbols-outlined text-[18px]">block</span></button>
+                <button onClick={() => handleDeactivate(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Deactivate" title="Deactivate"><span className="material-symbols-outlined text-[18px]">block</span></button>
               ) : (
-                <button onClick={() => handleActivate(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Activate"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
+                <button onClick={() => handleActivate(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Activate" title="Activate"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
               )}
-              <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+              <button onClick={() => handleDelete(item)} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Delete" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
             </div>
           )}
         />

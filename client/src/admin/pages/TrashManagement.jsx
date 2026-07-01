@@ -355,21 +355,23 @@ export default function TrashManagement() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2 shrink-0 ml-3">
+                      <div className="flex gap-1 shrink-0 ml-3 items-center">
                         <button
                           onClick={() => handleRestore(item, section)}
                           disabled={actionLoadingId === item.id}
-                          className="px-3 py-1.5 text-[11px] font-bold bg-primary-container text-primary rounded-lg hover:bg-primary-fixed transition-colors disabled:opacity-50"
+                          className="p-1.5 rounded-lg bg-primary-container text-primary hover:bg-primary-fixed transition-colors disabled:opacity-50"
+                          title="Restore"
                         >
-                          {actionLoadingId === item.id ? '...' : 'Restore'}
+                          {actionLoadingId === item.id ? <span className="material-symbols-outlined text-[16px] animate-spin">sync</span> : <span className="material-symbols-outlined text-[16px]">restore</span>}
                         </button>
                         {section.purgePrefix && (
                           <button
                             onClick={() => handlePurge(item, section)}
                             disabled={actionLoadingId === item.id}
-                            className="px-3 py-1.5 text-[11px] font-bold bg-error-container text-error rounded-lg hover:bg-error/10 transition-colors disabled:opacity-50"
+                            className="p-1.5 rounded-lg bg-error-container text-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                            title="Purge"
                           >
-                            {actionLoadingId === item.id ? '...' : 'Purge'}
+                            {actionLoadingId === item.id ? <span className="material-symbols-outlined text-[16px] animate-spin">sync</span> : <span className="material-symbols-outlined text-[16px]">delete_forever</span>}
                           </button>
                         )}
                       </div>

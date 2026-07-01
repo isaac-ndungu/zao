@@ -170,11 +170,11 @@ export default function FarmerPayments() {
           emptyMessage="No payments found."
           rowActions={(item) => (
             <div className="flex items-center gap-1">
-              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View" title="View Details"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
               {item.status === 'held' ? (
-                <button onClick={() => handleUnhold(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Release"><span className="material-symbols-outlined text-[18px]">lock_open</span></button>
+                <button onClick={() => handleUnhold(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Release" title="Release Payment"><span className="material-symbols-outlined text-[18px]">lock_open</span></button>
               ) : (
-                <button onClick={() => handleHold(item)} className="p-1.5 rounded-lg hover:bg-warning-container text-warning" aria-label="Hold"><span className="material-symbols-outlined text-[18px]">lock</span></button>
+                <button onClick={() => handleHold(item)} className="p-1.5 rounded-lg hover:bg-warning-container text-warning" aria-label="Hold" title="Hold Payment"><span className="material-symbols-outlined text-[18px]">lock</span></button>
               )}
             </div>
           )}

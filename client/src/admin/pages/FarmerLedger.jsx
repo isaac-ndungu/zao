@@ -325,10 +325,10 @@ export default function FarmerLedger() {
         emptyMessage="No farmers found matching your criteria."
         rowActions={(farmer) => (
           <div className="relative flex items-center">
-            <button onClick={() => handleViewFarmer(farmer)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors">
+            <button onClick={() => handleViewFarmer(farmer)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="View Details">
               <span className="material-symbols-outlined text-[18px]">visibility</span>
             </button>
-            <button onClick={() => toggleDropdown(farmer.id)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" aria-label="Farmer actions" aria-haspopup="true" aria-expanded={openDropdownId === farmer.id}>
+            <button onClick={() => toggleDropdown(farmer.id)} className={`p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors ${openDropdownId === farmer.id ? 'opacity-100' : ''}`} aria-label="Farmer actions" aria-haspopup="true" aria-expanded={openDropdownId === farmer.id} title="More actions">
               <span className="material-symbols-outlined text-[18px]">more_vert</span>
             </button>
             {openDropdownId === farmer.id && (
