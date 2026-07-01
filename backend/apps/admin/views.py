@@ -607,6 +607,73 @@ class AdminFarmerBinView(APIView):
         return Response(AdminFarmerSerializer(qs[:200], many=True).data)
 
 
+class AdminFarmerActivateView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            farmer = Farmer.objects.get(pk=pk)
+        except Farmer.DoesNotExist:
+            return Response({'detail': 'Farmer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if farmer.is_active:
+            return Response({'detail': 'Farmer is already active.'}, status=status.HTTP_400_BAD_REQUEST)
+        farmer.is_active = True
+        farmer.save(update_fields=['is_active'])
+        log_audit(
+            actor=request.user, resource_type='farmer', resource_id=farmer.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'is_active': True},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Farmer activated.', 'is_active': True})
+
+
+class AdminFarmerDeactivateView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            farmer = Farmer.objects.get(pk=pk)
+        except Farmer.DoesNotExist:
+            return Response({'detail': 'Farmer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if not farmer.is_active:
+            return Response({'detail': 'Farmer is already inactive.'}, status=status.HTTP_400_BAD_REQUEST)
+        farmer.is_active = False
+        farmer.save(update_fields=['is_active'])
+        log_audit(
+            actor=request.user, resource_type='farmer', resource_id=farmer.pk,
+            action=AuditAction.ADMIN_ACTION,
+            new_value={'is_active': False},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Farmer deactivated.', 'is_active': False})
+
+
+class AdminFarmerDeleteView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+    serializer_class = AdminSoftDeleteConfirmSerializer
+
+    @idempotent()
+    def post(self, request, pk):
+        serializer = AdminSoftDeleteConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            farmer = Farmer.objects.all_with_trashed().get(pk=pk)
+        except Farmer.DoesNotExist:
+            return Response({'detail': 'Farmer not found.'}, status=status.HTTP_404_NOT_FOUND)
+        if farmer.deleted_at:
+            return Response({'detail': 'Farmer is already deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+        farmer.soft_delete()
+        log_audit(
+            actor=request.user, resource_type='farmer', resource_id=farmer.pk,
+            action=AuditAction.ADMIN_DELETE,
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Farmer soft-deleted.', 'deleted_at': farmer.deleted_at})
+
+
 class AdminFarmerRestoreView(APIView):
     permission_classes = [IsAuthenticated, IsSuperUser]
     serializer_class = AdminRestoreConfirmSerializer
