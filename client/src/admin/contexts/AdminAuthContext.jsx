@@ -164,6 +164,21 @@ export function AdminAuthProvider({ children }) {
     return { success: true, user: data.user }
   }, [])
 
+  const googleLogin = useCallback(async (credential) => {
+    const res = await apiFetch('/api/auth/google/', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
+      requireAuth: false,
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw { ...data, status: res.status }
+    }
+    setAccessToken(data.access)
+    setUser(data.user)
+    return { success: true, user: data.user }
+  }, [])
+
   const changePassword = useCallback(async (currentPassword, newPassword) => {
     const res = await apiFetch('/api/auth/change-password/', {
       method: 'POST',
@@ -230,11 +245,12 @@ export function AdminAuthProvider({ children }) {
     verifyOtp,
     farmerLogin,
     farmerVerify,
+    googleLogin,
     changePassword,
     logout,
     refreshUser,
     stopImpersonation,
-  }), [user, role, loginRedirect, loading, login, requestOtp, verifyOtp, farmerLogin, farmerVerify, changePassword, logout, refreshUser, stopImpersonation])
+  }), [user, role, loginRedirect, loading, login, requestOtp, verifyOtp, farmerLogin, farmerVerify, googleLogin, changePassword, logout, refreshUser, stopImpersonation])
 
   return (
     <AdminAuthContext.Provider value={value}>

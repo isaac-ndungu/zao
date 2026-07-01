@@ -380,6 +380,44 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 
+class GoogleLoginSerializer(serializers.Serializer):
+    credential = serializers.CharField()
+
+    def validate(self, attrs):
+        from django.conf import settings
+        from google.oauth2 import id_token
+        from google.auth.transport import requests
+
+        credential = attrs['credential']
+
+        try:
+            info = id_token.verify_oauth2_token(
+                credential,
+                requests.Request(),
+                settings.GOOGLE_CLIENT_ID,
+            )
+        except ValueError as e:
+            raise serializers.ValidationError(f'Invalid Google token: {e}')
+
+        email = info.get('email')
+        google_sub = info.get('sub')
+        if not email or not google_sub:
+            raise serializers.ValidationError('Google token missing email or sub.')
+
+        if not info.get('email_verified'):
+            raise serializers.ValidationError('Google email not verified.')
+
+        user = User.objects.filter(email=email, is_active=True).first()
+        if not user:
+            raise serializers.ValidationError('No active account found with this email.')
+
+        user.google_sub = google_sub
+        user.save(update_fields=['google_sub'])
+
+        attrs['user'] = user
+        return attrs
+
+
 class TokenResponseSerializer(serializers.Serializer):
     access = serializers.CharField()
     refresh = serializers.CharField()

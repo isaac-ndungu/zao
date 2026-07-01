@@ -152,3 +152,8 @@ class InviteVerifyRateThrottle(_TokenFromRequestBodyThrottle):
     rate = '10/min'
     token_field = 'invite_token'
     token_salt = INVITE_TOKEN_SALT
+
+
+class GoogleLoginRateThrottle(_RateFallbackMixin, AnonRateThrottle):
+    scope = 'google_login'
+    rate = '5/min'

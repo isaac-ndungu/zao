@@ -6,6 +6,7 @@ from apps.auth_api.views import (
     Enable2FAView,
     FarmerRequestOTPView,
     FarmerVerifyOTPView,
+    GoogleLoginView,
     InviteRequestOTPView,
     InviteVerifyView,
     LoginView,
@@ -32,4 +33,5 @@ urlpatterns = [
     path('auth/password-reset/verify/', PasswordResetVerifyView.as_view()),
     path('auth/2fa/enable/', Enable2FAView.as_view()),
     path('auth/2fa/disable/', Disable2FAView.as_view()),
+    path('auth/google/', GoogleLoginView.as_view()),
 ]

@@ -1,13 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, getLoginRedirect } from '../../shared/hooks/useAuth'
 import OTPInput from '../../shared/components/OTPInput'
 import ForcePasswordChange from '../../shared/components/ForcePasswordChange'
+import { apiFetch } from '../api/client'
+
+function loadGisScript() {
+  return new Promise((resolve) => {
+    if (window.google?.accounts) return resolve()
+    const s = document.createElement('script')
+    s.src = 'https://accounts.google.com/gsi/client'
+    s.async = true
+    s.defer = true
+    s.onload = resolve
+    document.head.appendChild(s)
+  })
+}
 
 export default function Login() {
   const auth = useAuth()
   const { login, requestOtp, verifyOtp, isAuthenticated } = auth
   const navigate = useNavigate()
+  const googleBtnRef = useRef(null)
+  const [gisReady, setGisReady] = useState(false)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,8 +31,9 @@ export default function Login() {
   const [loginToken, setLoginToken] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [mustChangePassword, setMustChangePassword] = useState(false)
-  const [otpSent, setOtpSent] = useState(false) // now becomes true immediately
+  const [otpSent, setOtpSent] = useState(false)
 
   const sessionExpired = new URLSearchParams(window.location.search).get('expired') === '1'
 
@@ -26,6 +42,53 @@ export default function Login() {
       navigate(getLoginRedirect(auth.role), { replace: true })
     }
   }, [isAuthenticated, auth.role, navigate])
+
+  useEffect(() => {
+    loadGisScript().then(() => {
+      setGisReady(true)
+    })
+  }, [])
+
+  const handleGoogleCredential = useCallback(async (credential) => {
+    setGoogleLoading(true)
+    setError('')
+    try {
+      const res = await apiFetch('/api/auth/google/', {
+        method: 'POST',
+        body: JSON.stringify({ credential }),
+        requireAuth: false,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw { ...data, status: res.status }
+
+      const { setAccessToken } = await import('../api/client')
+      setAccessToken(data.access)
+      auth.refreshUser()
+      navigate(getLoginRedirect(data.user.role), { replace: true })
+    } catch (err) {
+      setError(err.detail || err.message || 'Google sign-in failed.')
+    } finally {
+      setGoogleLoading(false)
+    }
+  }, [auth, navigate])
+
+  useEffect(() => {
+    if (!gisReady || !googleBtnRef.current || googleBtnRef.current.hasChildNodes()) return
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    if (!clientId) return
+
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: (response) => handleGoogleCredential(response.credential),
+    })
+    google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: 'outline',
+      size: 'large',
+      text: 'signin_with',
+      shape: 'rectangular',
+      width: googleBtnRef.current.offsetWidth || 300,
+    })
+  }, [gisReady, handleGoogleCredential])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -36,8 +99,8 @@ export default function Login() {
       if (result.requires_2fa) {
         setLoginToken(result.loginToken)
         setStep('otp')
-        setOtpSent(true) // assume code is sent automatically
-        setOtpCode('') // clear any previous
+        setOtpSent(true)
+        setOtpCode('')
       } else {
         navigate(getLoginRedirect(result.user.role), { replace: true })
       }
@@ -162,6 +225,26 @@ export default function Login() {
                 {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                 {loading ? 'Signing in...' : 'Sign In'}
               </button>
+
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-outline-variant" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-surface-container-lowest px-2 text-on-surface-variant">or</span>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                {googleLoading ? (
+                  <div className="flex items-center gap-2 text-on-surface-variant text-body-md">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                    Signing in...
+                  </div>
+                ) : (
+                  <div ref={googleBtnRef} className="w-full min-h-[40px] flex justify-center" />
+                )}
+              </div>
             </form>
           ) : (
             <form onSubmit={handleOtpSubmit} className="space-y-5">

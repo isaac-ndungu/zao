@@ -29,6 +29,7 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeletableModel):
     must_change_password = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     invite_revoked = models.BooleanField(default=False)
+    google_sub = models.CharField(max_length=255, unique=True, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

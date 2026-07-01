@@ -249,6 +249,9 @@ MPESA_DISBURSEMENT_BLACKOUT_END = config('MPESA_DISBURSEMENT_BLACKOUT_END', defa
 MPESA_CALLBACK_IP_WHITELIST = config('MPESA_CALLBACK_IP_WHITELIST', default='')
 MPESA_CALLBACK_HMAC_SECRET = config('MPESA_CALLBACK_HMAC_SECRET', default='')
 
+# Google OAuth
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+
 # Google AI (Gemini)
 GOOGLE_API_KEY = config('GOOGLE_API_KEY', default='')
 GOOGLE_AI_MODEL = config('GOOGLE_AI_MODEL', default='gemini-2.5-flash')

@@ -25,6 +25,7 @@ from .serializers import (
     ChangePasswordSerializer,
     FarmerRequestOTPSerializer,
     FarmerVerifyOTPSerializer,
+    GoogleLoginSerializer,
     InviteRequestOTPSerializer,
     InviteVerifySerializer,
     LoginSerializer,
@@ -39,6 +40,7 @@ from .serializers import (
 from apps.base.idempotency import idempotent
 from .throttles import (
     FarmerRequestOTPRateThrottle,
+    GoogleLoginRateThrottle,
     InviteRequestOTPRateThrottle,
     InviteVerifyRateThrottle,
     LoginRateThrottle,
@@ -364,6 +366,20 @@ class InviteVerifyView(APIView):
         user.must_change_password = False
         user.save(update_fields=['phone_number', 'password', 'is_active', 'must_change_password'])
 
+        return _login_response(user)
+
+
+class GoogleLoginView(APIView):
+    authentication_classes = []
+    permission_classes = []
+    serializer_class = GoogleLoginSerializer
+    throttle_classes = [GoogleLoginRateThrottle]
+
+    @idempotent()
+    def post(self, request):
+        serializer = GoogleLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
         return _login_response(user)
 
 
