@@ -4,6 +4,7 @@ import { useAdminAuth } from '../../hooks/useAdminAuth'
 import PeriodPicker from './PeriodPicker'
 import NotificationBell from '../../../shared/components/NotificationBell'
 import ProfileDropdown from '../../../shared/components/ProfileDropdown'
+import SearchBar from '../../../shared/components/SearchBar'
 
 const appBarTabs = [
   { label: 'Analytics', path: '/admin/dashboard' },
@@ -40,24 +41,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           <span className="material-symbols-outlined">{minimized ? 'menu' : 'menu_open'}</span>
         </button>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            const fd = new FormData(e.target)
-            const q = fd.get('search')
-            if (q?.trim()) navigate(`/admin/farmers?search=${encodeURIComponent(q.trim())}`)
-          }}
-          className="relative hidden sm:block sm:w-60 lg:w-72 flex-shrink-0"
-        >
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
-            search
-          </span>
-          <input
-            name="search"
-            className="w-full bg-surface-container border-none rounded-full py-2 pl-10 pr-4 text-body-md focus:ring-1 focus:ring-primary"
-            placeholder="Search operations, records, or farmers..."
-          />
-        </form>
+        <SearchBar role="admin" placeholder="Search operations, records, or farmers..." />
 
         {['/admin/dashboard', '/admin/ledger', '/admin/financials', '/admin/inventory', '/admin/logistics', '/admin/analytics/seasonal', '/admin/analytics/retention'].some(p => pathname.startsWith(p)) && (
           <div className="hidden md:block flex-shrink-0">

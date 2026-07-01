@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../shared/hooks/useAuth'
 import NotificationBell from '../shared/components/NotificationBell'
 import { useApi } from '../admin/hooks/useApi'
 import ProfileDropdown from '../shared/components/ProfileDropdown'
+import SearchBar from '../shared/components/SearchBar'
 
 export default function ManagerAppBar({ onMenuClick, minimized, onToggle }) {
-  const navigate = useNavigate()
   const { user } = useAuth()
   const { data: coop } = useApi('/api/cooperatives/me/')
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -36,24 +35,7 @@ export default function ManagerAppBar({ onMenuClick, minimized, onToggle }) {
           <span className="material-symbols-outlined">{minimized ? 'menu' : 'menu_open'}</span>
         </button>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            const fd = new FormData(e.target)
-            const q = fd.get('search')
-            if (q?.trim()) navigate(`/manager/farmers?search=${encodeURIComponent(q.trim())}`)
-          }}
-          className="relative hidden sm:block sm:w-60 lg:w-72 flex-shrink-0"
-        >
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
-            search
-          </span>
-          <input
-            name="search"
-            className="w-full bg-surface-container border-none rounded-full py-2 pl-10 pr-4 text-body-md focus:ring-1 focus:ring-primary"
-            placeholder="Search farmers..."
-          />
-        </form>
+        <SearchBar role="manager" placeholder="Search farmers, deliveries, loans..." />
       </div>
 
       <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">

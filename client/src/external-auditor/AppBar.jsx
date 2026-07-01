@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../shared/hooks/useAuth'
 import { useApi } from '../admin/hooks/useApi'
 import ProfileDropdown from '../shared/components/ProfileDropdown'
+import SearchBar from '../shared/components/SearchBar'
 
 export default function ExternalAuditorAppBar({ onMenuClick, minimized, onToggle }) {
   const { user } = useAuth()
@@ -33,7 +34,7 @@ export default function ExternalAuditorAppBar({ onMenuClick, minimized, onToggle
           <span className="material-symbols-outlined">{minimized ? 'menu' : 'menu_open'}</span>
         </button>
 
-        <span className="text-body-md text-on-surface-variant hidden sm:block">Audit Portal</span>
+        <SearchBar role="external-auditor" placeholder="Search audit trail or loans..." />
       </div>
 
       <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
