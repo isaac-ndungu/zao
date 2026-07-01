@@ -1092,10 +1092,20 @@ class AdminHealthView(APIView):
             celery_ok = worker_count > 0
         except Exception:
             pass
+        email_ok = False
+        try:
+            from django.core.mail import get_connection
+            conn = get_connection()
+            conn.open()
+            conn.close()
+            email_ok = True
+        except Exception:
+            pass
         return Response({
             'db': db_ok,
             'redis': redis_ok,
             'celery': celery_ok,
+            'email': email_ok,
             'worker_count': worker_count,
         })
 

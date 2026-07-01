@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     'corsheaders',
+    'anymail',
     'django_celery_beat',
     'django.contrib.postgres',
 
@@ -347,15 +348,12 @@ CELERY_BEAT_SCHEDULE = {
 NOTIFICATIONS_DRY_RUN = config('NOTIFICATIONS_DRY_RUN', default=True, cast=bool)
 AFRICASTALKING_USSD_CODE = config('AFRICASTALKING_USSD_CODE', default='*384*11411#')
 
-# Email
+# Email — Resend via django-anymail
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='')
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-EMAIL_TIMEOUT = 15
+ANYMAIL = {
+    'RESEND_API_KEY': config('RESEND_API_KEY', default=''),
+}
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Zao <noreply@zao.app>')
 
 USE_I18N = True
 

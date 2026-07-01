@@ -73,3 +73,4 @@ gunicorn==23.0.0
 
 # External APIs
 africastalking==2.0.2
+django-anymail[resend]==15.0
