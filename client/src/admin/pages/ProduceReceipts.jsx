@@ -10,7 +10,7 @@ import StatusBadge from '../components/common/StatusBadge'
 import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 
 const statusOptions = [
   { value: 'PENDING', label: 'Pending' },
@@ -64,6 +64,8 @@ const shiftOptions = [
 export default function ProduceReceipts() {
   const { showToast } = useToast()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -122,6 +124,17 @@ export default function ProduceReceipts() {
   }, [page, pageSize, search, filters, sortField, sortOrder])
 
   const { data, loading, error, refetch } = useApi(`/api/admin/deliveries/?${query}`)
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !panelOpen) {
+        setPanelDelivery(found)
+        setPanelOpen(true)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -493,7 +506,7 @@ export default function ProduceReceipts() {
         </div>
       )}
 
-      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelDelivery(null) }} title="Delivery Details">
+      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelDelivery(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Delivery Details">
         {panelDelivery && (
           <div className="space-y-4">
             <div className="flex items-center gap-4 mb-4">

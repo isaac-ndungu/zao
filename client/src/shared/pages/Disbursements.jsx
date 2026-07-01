@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch, exportCsv } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -49,6 +50,8 @@ function statusColor(status) {
 export default function Disbursements() {
   const { isManager } = useAuth()
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [statusFilter, setStatusFilter] = useState('')
@@ -111,6 +114,15 @@ export default function Disbursements() {
 
   const items = data?.results || []
   const total = data?.count || 0
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailDisbursement) {
+        setDetailDisbursement(found)
+      }
+    }
+  }, [selectedId, items])
 
   const cycles = (cyclesData?.results || []).filter(
     (c) => c.status === 'LOCKED' || c.status === 'ACTIVE' || c.status === 'COMPLETED',
@@ -427,7 +439,7 @@ export default function Disbursements() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailDisbursement} onClose={() => setDetailDisbursement(null)} title="Disbursement Details" width="max-w-2xl">
+      <SlideOutPanel open={!!detailDisbursement} onClose={() => { setDetailDisbursement(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Disbursement Details" width="max-w-2xl">
         {detailDisbursement && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -18,10 +19,23 @@ export default function Cycles() {
   const [detailCycle, setDetailCycle] = useState(null)
   const [showLock, setShowLock] = useState(null)
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const sortParam = sortField.startsWith('-') ? sortField : sortField
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
   const { data, loading, error, refetch } = useApi(`/api/payment-engine/?${params}`)
+
+  const cycles = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && cycles.length > 0) {
+      const found = cycles.find(i => String(i.id) === String(selectedId))
+      if (found && !detailCycle) {
+        setDetailCycle(found)
+      }
+    }
+  }, [selectedId, cycles])
 
   const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
 
@@ -35,7 +49,6 @@ export default function Cycles() {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
-  const cycles = data?.results || []
   const totalCount = data?.count || 0
   const pendingCount = cycles.filter(c => c.status === 'PENDING').length
   const lockedCount = cycles.filter(c => c.status === 'LOCKED').length
@@ -93,7 +106,7 @@ export default function Cycles() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailCycle} onClose={() => setDetailCycle(null)} title="Cycle Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailCycle} onClose={() => { setDetailCycle(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Cycle Details" width="max-w-xl">
         {detailCycle && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

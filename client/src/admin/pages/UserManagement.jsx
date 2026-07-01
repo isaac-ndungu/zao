@@ -26,11 +26,13 @@ const roleBadgeMap = {
   farmer: { status: 'active', label: 'Farmer' },
 }
 
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 
 export default function UserManagement() {
   const { showToast } = useToast()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
   const [tab, setTab] = useState('users')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -90,6 +92,18 @@ export default function UserManagement() {
     return params.toString()
   }, [invitePage, inviteFilters])
   const { data: inviteData, loading: inviteListLoading, refetch: refetchInvites } = useApi(`/api/admin/auth/invites/?${inviteQuery}`)
+
+  const users = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && users.length > 0) {
+      const found = users.find(i => String(i.id) === String(selectedId))
+      if (found && !panelOpen) {
+        setPanelUser(found)
+        setPanelOpen(true)
+      }
+    }
+  }, [selectedId, users])
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -490,7 +504,7 @@ export default function UserManagement() {
         </>
       )}
 
-      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelUser(null) }} title="User Details">
+      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelUser(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="User Details">
         {panelUser && (
           <div className="space-y-4">
             <div className="flex items-center gap-4 mb-4">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -25,11 +26,24 @@ export default function Loans() {
   const [guarantorSearchOpen, setGuarantorSearchOpen] = useState(false)
   const guarantorRef = useRef(null)
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
 
   const { data, loading, error, refetch } = useApi(`/api/loans/?${params}`)
+
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailLoan) {
+        setDetailLoan(found)
+      }
+    }
+  }, [selectedId, items])
 
   useEffect(() => {
     if (!guarantorSearch || guarantorSearch.length < 2) { setGuarantorResults([]); return }
@@ -84,7 +98,6 @@ export default function Loans() {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
-  const items = data?.results || []
   const total = data?.count || 0
 
   const columns = [
@@ -149,7 +162,7 @@ export default function Loans() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailLoan} onClose={() => setDetailLoan(null)} title="Loan Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailLoan} onClose={() => { setDetailLoan(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Loan Details" width="max-w-xl">
         {detailLoan && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

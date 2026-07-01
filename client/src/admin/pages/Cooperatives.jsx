@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch, exportCsv } from '../api/client'
 import FilterBar from '../components/common/FilterBar'
@@ -10,7 +10,7 @@ import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
 
 const KENYA_COUNTIES = [
   'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo Marakwet',
@@ -44,6 +44,8 @@ const statusOptions = [
 export default function Cooperatives() {
   const { showToast } = useToast()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -80,6 +82,18 @@ export default function Cooperatives() {
   const kpis = useMemo(() => ({
     total: kpiData?.count || 0,
   }), [kpiData])
+
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !panelOpen) {
+        setPanelItem(found)
+        setPanelOpen(true)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -252,7 +266,7 @@ export default function Cooperatives() {
         <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </div>
 
-      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelItem(null) }} title="Cooperative Details">
+      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelItem(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Cooperative Details">
         {panelItem && (
           <div className="space-y-4">
             <div>

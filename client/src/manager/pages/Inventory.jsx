@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
@@ -14,6 +15,8 @@ export default function Inventory() {
   const [productFilter, setProductFilter] = useState('')
   const [detailItem, setDetailItem] = useState(null)
   const [showAlerts, setShowAlerts] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const params = new URLSearchParams({ page, page_size: pageSize })
   if (productFilter) params.set('product_type', productFilter)
@@ -25,6 +28,15 @@ export default function Inventory() {
   const items = data?.results || []
   const total = data?.count || 0
   const alertList = alerts?.results || alerts || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailItem) {
+        setDetailItem(found)
+      }
+    }
+  }, [selectedId, items])
 
   const columns = [
     { key: 'batch_id', label: 'Batch ID', sortable: true, render: (row) => row.batch_id ?? '-' },
@@ -98,7 +110,7 @@ export default function Inventory() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailItem} onClose={() => setDetailItem(null)} title="Batch Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailItem} onClose={() => { setDetailItem(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Batch Details" width="max-w-xl">
         {detailItem && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

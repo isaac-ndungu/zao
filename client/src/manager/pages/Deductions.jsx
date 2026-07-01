@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
@@ -14,6 +14,8 @@ export default function Deductions() {
   const [pageSize, setPageSize] = useState(20)
   const [typeFilter, setTypeFilter] = useState('')
   const [detailItem, setDetailItem] = useState(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const params = new URLSearchParams({ page, page_size: pageSize })
   if (typeFilter) params.set('type', typeFilter)
@@ -22,6 +24,15 @@ export default function Deductions() {
 
   const items = data?.results || []
   const total = data?.count || 0
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailItem) {
+        setDetailItem(found)
+      }
+    }
+  }, [selectedId, items])
 
   const columns = [
     { key: 'farmer_name', label: 'Farmer', sortable: true, render: (row) => row.farmer_name || '-' },
@@ -68,7 +79,7 @@ export default function Deductions() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailItem} onClose={() => setDetailItem(null)} title="Deduction Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailItem} onClose={() => { setDetailItem(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Deduction Details" width="max-w-xl">
         {detailItem && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch, exportCsv } from '../../admin/api/client'
@@ -46,6 +46,18 @@ export default function Farmers() {
   const { data, loading, error, refetch } = useApi(`/api/farmers/?${queryParams}`)
   const { data: stats } = useApi('/api/farmers/stats/')
   const { data: counties } = useApi('/api/cooperatives/enums/')
+
+  const selectedId = searchParams.get('selected')
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailFarmer) {
+        setDetailFarmer(found)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSearch = useCallback(
     (e) => {
@@ -387,7 +399,7 @@ export default function Farmers() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailFarmer} onClose={() => setDetailFarmer(null)} title="Farmer Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailFarmer} onClose={() => { setDetailFarmer(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Farmer Details" width="max-w-xl">
         {detailFarmer && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

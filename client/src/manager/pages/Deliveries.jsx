@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -25,6 +26,8 @@ export default function Deliveries() {
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerResults, setFarmerResults] = useState([])
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
@@ -33,6 +36,17 @@ export default function Deliveries() {
   const { data, loading, error, refetch } = useApi(`/api/deliveries/?${params}`)
   const { data: summary } = useApi('/api/deliveries/summary/')
   const { data: mapData } = useApi(showMap ? '/api/deliveries/map/' : null)
+
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailDelivery) {
+        setDetailDelivery(found)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSort = (key) => setSortField((prev) => (prev === key ? `-${key}` : key))
 
@@ -171,7 +185,7 @@ export default function Deliveries() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailDelivery} onClose={() => setDetailDelivery(null)} title="Delivery Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailDelivery} onClose={() => { setDetailDelivery(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Delivery Details" width="max-w-xl">
         {detailDelivery && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -46,11 +47,24 @@ function SalesSection() {
   const [showCreate, setShowCreate] = useState(false)
   const [showDelete, setShowDelete] = useState(null)
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
 
   const { data, loading, error, refetch } = useApi(`/api/sales/?${params}`)
+
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailSale) {
+        setDetailSale(found)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSort = (key) => setSortField(prev => prev === key ? `-${key}` : key)
 
@@ -113,7 +127,7 @@ function SalesSection() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailSale} onClose={() => setDetailSale(null)} title="Sale Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailSale} onClose={() => { setDetailSale(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Sale Details" width="max-w-xl">
         {detailSale && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -367,12 +381,25 @@ function BuyersSection() {
   const [showEdit, setShowEdit] = useState(null)
   const [showDelete, setShowDelete] = useState(null)
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const sortParam = sortOrder === 'desc' ? `-${sortField}` : sortField
   const queryParams = new URLSearchParams({ page, page_size: pageSize, ordering: sortParam })
   if (search) queryParams.set('search', search)
 
   const { data, loading, error, refetch } = useApi(`/api/buyers/?${queryParams}`)
+
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !detailBuyer) {
+        setDetailBuyer(found)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSort = (key) => {
     if (sortField === key) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -483,7 +510,7 @@ function BuyersSection() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailBuyer} onClose={() => setDetailBuyer(null)} title="Buyer Details" width="max-w-xl">
+      <SlideOutPanel open={!!detailBuyer} onClose={() => { setDetailBuyer(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Buyer Details" width="max-w-xl">
         {detailBuyer && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

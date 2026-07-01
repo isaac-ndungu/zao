@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -21,6 +22,8 @@ export default function GradingQueue() {
   const [showResolve, setShowResolve] = useState(null)
   const [resolveData, setResolveData] = useState({ status: 'RESOLVED', resolution_notes: '' })
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
 
   const tabs = [
     { key: 'recent', label: 'Recent Grades' },
@@ -36,6 +39,19 @@ export default function GradingQueue() {
 
   const disputesParams = new URLSearchParams({ page, page_size: pageSize })
   const { data: disputes, loading: disputesLoading, error: disputesError, refetch: refetchDisputes } = useApi(tab === 'disputes' ? `/api/disputes/?${disputesParams}` : null)
+
+  const activeItems = tab === 'recent' ? (grades?.results || [])
+    : tab === 'awaiting' ? (awaitingDeliveries?.results || [])
+    : (disputes?.results || [])
+
+  useEffect(() => {
+    if (selectedId && activeItems.length > 0) {
+      const found = activeItems.find(i => String(i.id) === String(selectedId))
+      if (found && !detailItem) {
+        setDetailItem(found)
+      }
+    }
+  }, [selectedId, activeItems, tab])
 
   const handleOverride = async () => {
     if (!showOverride) return
@@ -136,7 +152,7 @@ export default function GradingQueue() {
         </>
       )}
 
-      <SlideOutPanel open={!!detailItem} onClose={() => setDetailItem(null)} title="Details" width="max-w-lg">
+      <SlideOutPanel open={!!detailItem} onClose={() => { setDetailItem(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Details" width="max-w-lg">
         {detailItem && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

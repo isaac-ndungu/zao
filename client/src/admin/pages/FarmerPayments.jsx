@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useApi } from '../hooks/useApi'
 import { apiFetch, exportCsv } from '../api/client'
+import { useSearchParams } from 'react-router-dom'
 import FilterBar from '../components/common/FilterBar'
 import DataTable from '../components/common/DataTable'
 import Pagination from '../components/common/Pagination'
@@ -13,6 +14,8 @@ import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 
 export default function FarmerPayments() {
   const { showToast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedId = searchParams.get('selected')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState('')
@@ -45,6 +48,18 @@ export default function FarmerPayments() {
   const kpis = useMemo(() => ({
     total: kpiData?.count || 0,
   }), [kpiData])
+
+  const items = data?.results || []
+
+  useEffect(() => {
+    if (selectedId && items.length > 0) {
+      const found = items.find(i => String(i.id) === String(selectedId))
+      if (found && !panelOpen) {
+        setPanelItem(found)
+        setPanelOpen(true)
+      }
+    }
+  }, [selectedId, items])
 
   const handleSort = useCallback((field) => {
     if (sortField === field) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
@@ -170,7 +185,7 @@ export default function FarmerPayments() {
         <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </div>
 
-      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelItem(null) }} title="Payment Details">
+      <SlideOutPanel open={panelOpen} onClose={() => { setPanelOpen(false); setPanelItem(null); const p = new URLSearchParams(searchParams); p.delete('selected'); setSearchParams(p, { replace: true }) }} title="Payment Details">
         {panelItem && (
           <div className="space-y-4">
             <h4 className="font-headline-sm text-headline-sm text-on-surface">Farmer Payment</h4>

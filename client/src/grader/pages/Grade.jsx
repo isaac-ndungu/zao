@@ -14,14 +14,15 @@ const gradeOptions = ['PREMIUM', 'STANDARD', 'A', 'B', 'C']
 export default function Grade() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const preSelectedDelivery = searchParams.get('delivery')
+  const preSelectedDelivery = searchParams.get('delivery') || searchParams.get('selected')
 
   const [selectedDelivery, setSelectedDelivery] = useState(null)
   const [page, setPage] = useState(1)
   const [queueSearch, setQueueSearch] = useState('')
 
   const { data: pricesData } = useApi('/api/grades/prices/')
-  const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page=${page}&page_size=10&ordering=-date_delivered`)
+  const searchParam = queueSearch ? `&search=${encodeURIComponent(queueSearch)}` : ''
+  const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page=${page}&page_size=10&ordering=-date_delivered${searchParam}`)
 
   const prices = pricesData?.results || pricesData || []
   const priceMap = {}
