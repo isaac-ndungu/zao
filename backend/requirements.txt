@@ -73,4 +73,3 @@ gunicorn==23.0.0
 
 # External APIs
 africastalking==2.0.2
-google-auth>=2.55.0

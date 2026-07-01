@@ -385,18 +385,30 @@ class GoogleLoginSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         from django.conf import settings
-        from google.oauth2 import id_token
-        from google.auth.transport import requests
+        from jwt import PyJWKClient, PyJWTError
+        import jwt
 
         credential = attrs['credential']
 
         try:
-            info = id_token.verify_oauth2_token(
-                credential,
-                requests.Request(),
-                settings.GOOGLE_CLIENT_ID,
+            jwks_client = PyJWKClient(
+                'https://www.googleapis.com/oauth2/v3/certs',
+                cache_keys=True,
             )
-        except ValueError as e:
+            signing_key = jwks_client.get_signing_key_from_jwt(credential)
+            info = jwt.decode(
+                credential,
+                signing_key.key,
+                algorithms=['RS256'],
+                audience=settings.GOOGLE_CLIENT_ID,
+                issuer='https://accounts.google.com',
+                options={
+                    'verify_exp': True,
+                    'verify_aud': True,
+                    'verify_iss': True,
+                },
+            )
+        except PyJWTError as e:
             raise serializers.ValidationError(f'Invalid Google token: {e}')
 
         email = info.get('email')
