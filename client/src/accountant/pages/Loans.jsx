@@ -102,7 +102,7 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
       <div>
         <div className="flex justify-between items-center mb-3">
           <p className="text-label-md text-on-surface-variant font-bold">Guarantors ({loan.guarantors?.length || 0})</p>
-          <button onClick={() => setAddingGuarantor(true)} disabled={actionLoading === 'guarantor'} className="text-primary text-label-md font-bold hover:underline disabled:opacity-50">+ Add</button>
+          <button onClick={() => setAddingGuarantor(true)} disabled={actionLoading === 'guarantor'} className="text-primary hover:text-primary/80 disabled:opacity-50" title="Add Guarantor"><span className="material-symbols-outlined text-[18px]">person_add</span></button>
         </div>
         {loan.guarantors?.length > 0 ? (
           <div className="space-y-2">
@@ -140,18 +140,18 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
 
       <div className="pt-4 border-t border-outline-variant space-y-3">
         {loan.status === 'APPROVED' && (
-          <button onClick={() => handleAction('disburse')} disabled={!canDisburse || actionLoading} className={`w-full py-2 rounded-lg text-label-md font-bold transition-colors ${canDisburse ? 'bg-success-container text-on-success-container hover:bg-success-container/80' : 'bg-surface-container text-on-surface-variant cursor-not-allowed'}`}>
-            {actionLoading === 'disburse' ? '...' : canDisburse ? 'Disburse Loan' : 'Add Guarantor First'}
+          <button onClick={() => handleAction('disburse')} disabled={!canDisburse || actionLoading} className={`w-full py-2 rounded-lg text-label-md font-bold transition-colors inline-flex items-center justify-center gap-2 ${canDisburse ? 'bg-success-container text-on-success-container hover:bg-success-container/80' : 'bg-surface-container text-on-surface-variant cursor-not-allowed'}`}>
+            {actionLoading === 'disburse' ? '...' : <><span className="material-symbols-outlined text-[18px]">payments</span> {canDisburse ? 'Disburse Loan' : 'Add Guarantor First'}</>}
           </button>
         )}
         {loan.status === 'DISBURSED' && (
-          <button onClick={() => handleAction('mark_completed')} disabled={actionLoading} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">
-            {actionLoading === 'mark_completed' ? '...' : 'Mark Completed'}
+          <button onClick={() => handleAction('mark_completed')} disabled={actionLoading} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2">
+            {actionLoading === 'mark_completed' ? '...' : <><span className="material-symbols-outlined text-[18px]">check_circle</span> Mark Completed</>}
           </button>
         )}
         {(loan.status === 'APPROVED' || loan.status === 'DISBURSED') && (
-          <button onClick={() => handleAction('mark_defaulted')} disabled={actionLoading} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50">
-            {actionLoading === 'mark_defaulted' ? '...' : 'Mark Defaulted'}
+          <button onClick={() => handleAction('mark_defaulted')} disabled={actionLoading} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2">
+            {actionLoading === 'mark_defaulted' ? '...' : <><span className="material-symbols-outlined text-[18px]">block</span> Mark Defaulted</>}
           </button>
         )}
       </div>

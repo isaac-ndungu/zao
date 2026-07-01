@@ -129,9 +129,10 @@ export default function FarmerPayments() {
               <button
                 onClick={(e) => handleDownload(p.farmer_payment_id, e)}
                 disabled={downloadId === p.farmer_payment_id}
-                className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] w-full hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] w-full hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5"
+                title={t('seeStatement')}
               >
-                {downloadId === p.farmer_payment_id ? <span className="inline-block animate-spin h-4 w-4 border-2 border-outline-variant border-t-primary rounded-full" /> : t('seeStatement')}
+                {downloadId === p.farmer_payment_id ? <span className="inline-block animate-spin h-4 w-4 border-2 border-outline-variant border-t-primary rounded-full" /> : <><span className="material-symbols-outlined text-[16px]">receipt_long</span> {t('seeStatement')}</>}
               </button>
             </div>
           ))}

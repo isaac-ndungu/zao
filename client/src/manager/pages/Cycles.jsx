@@ -64,9 +64,9 @@ export default function Cycles() {
     { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (row) => (
-        <div className="flex gap-2">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' && (
-            <button onClick={(e) => { e.stopPropagation(); setShowLock(row) }} className="text-warning text-label-md hover:underline">Lock</button>
+            <button onClick={(e) => { e.stopPropagation(); setShowLock(row) }} className="text-warning hover:text-warning/80" title="Lock Cycle"><span className="material-symbols-outlined text-[18px]">lock</span></button>
           )}
         </div>
       ),

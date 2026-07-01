@@ -91,8 +91,8 @@ export default function FarmerGrades() {
                 </div>
                 <div className="flex gap-2 mt-3">
                   {!isRejected && (
-                    <button onClick={() => setDisputeFor(g)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 flex-1">
-                      {t('disputeGrade')}
+                    <button onClick={() => setDisputeFor(g)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 flex-1 inline-flex items-center justify-center gap-1.5" title={t('disputeGrade')}>
+                      <span className="material-symbols-outlined text-[16px]">feedback</span> {t('disputeGrade')}
                     </button>
                   )}
                 </div>

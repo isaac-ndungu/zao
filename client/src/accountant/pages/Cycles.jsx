@@ -117,33 +117,33 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
         ) : (
           <>
             {cycle.status === 'DRAFT' && (
-              <button onClick={handleRunCycle} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-                Run Cycle
+              <button onClick={handleRunCycle} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">play_arrow</span> Run Cycle
               </button>
             )}
             {cycle.status === 'ACTIVE' && (
-              <button onClick={() => handleHoldRelease('hold')} className="w-full py-2 bg-warning-container text-on-warning-container rounded-lg text-label-md font-bold hover:bg-warning-container/80 transition-colors">
-                Hold All Payments
+              <button onClick={() => handleHoldRelease('hold')} className="w-full py-2 bg-warning-container text-on-warning-container rounded-lg text-label-md font-bold hover:bg-warning-container/80 transition-colors inline-flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">pause_circle</span> Hold All Payments
               </button>
             )}
             {cycle.status === 'HOLD' && (
-              <button onClick={() => handleHoldRelease('release')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors">
-                Release Payments
+              <button onClick={() => handleHoldRelease('release')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors inline-flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">play_circle</span> Release Payments
               </button>
             )}
             {(cycle.status === 'DRAFT' || cycle.status === 'ACTIVE') && (
-              <button onClick={() => handleLockUnlock('lock')} disabled={cycle.status !== 'ACTIVE'} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50 transition-colors">
-                Lock Cycle
+              <button onClick={() => handleLockUnlock('lock')} disabled={cycle.status !== 'ACTIVE'} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50 transition-colors inline-flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">lock</span> Lock Cycle
               </button>
             )}
             {cycle.status === 'LOCKED' && (
-              <button onClick={() => handleLockUnlock('unlock')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors">
-                Unlock Cycle
+              <button onClick={() => handleLockUnlock('unlock')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors inline-flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">lock_open</span> Unlock Cycle
               </button>
             )}
             {cycle.status === 'DRAFT' && (
-              <button onClick={() => handleLockUnlock('lock')} className="w-full py-2 border border-error text-error rounded-lg text-label-md font-bold">
-                Lock Cycle
+              <button onClick={() => handleLockUnlock('lock')} className="w-full py-2 border border-error text-error rounded-lg text-label-md font-bold inline-flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">lock</span> Lock Cycle
               </button>
             )}
           </>
