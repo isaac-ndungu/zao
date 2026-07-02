@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 
 const navItems = [
   { to: '/grader/dashboard', icon: 'dashboard', label: 'Dashboard' },
+  { to: '/grader/record-delivery', icon: 'add_circle', label: 'Record Delivery' },
   { to: '/grader/grade', icon: 'grading', label: 'Grade Delivery' },
   { to: '/grader/my-grades', icon: 'fact_check', label: 'My Grades' },
   { to: '/grader/sync', icon: 'sync', label: 'Sync' },

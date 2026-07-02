@@ -327,9 +327,46 @@ class TestFarmerLookup:
             f'/api/farmers/lookup/?phone={farmer.phone_number}'
         )
         assert resp.status_code == status.HTTP_200_OK, resp.json()
-        assert resp.json()['phone_number'] == farmer.phone_number
+        results = resp.json()['results']
+        assert len(results) == 1
+        assert results[0]['phone_number'] == farmer.phone_number
 
-    def test_lookup_without_phone_returns_400(self, api_client, cooperative):
+    def test_lookup_by_name(self, api_client, farmer, cooperative):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        manager = User.objects.create_user(
+            email='lookup_mgr@test.com', phone_number='+254700000211',
+            first_name='Look', last_name='Mgr',
+            password='testpass123', role=UserRole.MANAGER,
+            cooperative=cooperative,
+        )
+        api_client.force_authenticate(user=manager)
+        resp = api_client.get(
+            f'/api/farmers/lookup/?name={farmer.first_name}+{farmer.last_name}'
+        )
+        assert resp.status_code == status.HTTP_200_OK, resp.json()
+        results = resp.json()['results']
+        assert len(results) == 1
+        assert results[0]['phone_number'] == farmer.phone_number
+
+    def test_lookup_by_partial_name(self, api_client, farmer, cooperative):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        manager = User.objects.create_user(
+            email='lookup_mgr@test.com', phone_number='+254700000211',
+            first_name='Look', last_name='Mgr',
+            password='testpass123', role=UserRole.MANAGER,
+            cooperative=cooperative,
+        )
+        api_client.force_authenticate(user=manager)
+        resp = api_client.get(
+            f'/api/farmers/lookup/?name={farmer.first_name[:3]}'
+        )
+        assert resp.status_code == status.HTTP_200_OK, resp.json()
+        results = resp.json()['results']
+        assert len(results) >= 1
+
+    def test_lookup_without_params_returns_400(self, api_client, cooperative):
         from django.contrib.auth import get_user_model
         User = get_user_model()
         manager = User.objects.create_user(

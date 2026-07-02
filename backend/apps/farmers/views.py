@@ -185,34 +185,57 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
     @action(detail=False, methods=['get'])
     def lookup(self, request):
         phone = request.query_params.get('phone', '').strip()
-        if not phone:
+        name = request.query_params.get('name', '').strip()
+        if not phone and not name:
             return Response(
-                {'error': 'phone query parameter is required.'},
+                {'error': 'Either phone or name query parameter is required.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        phone = phone.lstrip('+')
-        farmer = Farmer.objects.filter(phone_number__endswith=phone).first()
-        if not farmer:
+        farmers = Farmer.objects.none()
+        if phone:
+            phone_clean = phone.lstrip('+')
+            farmers = Farmer.objects.filter(phone_number__endswith=phone_clean)
+        elif name:
+            parts = name.split()
+            if len(parts) == 1:
+                farmers = Farmer.objects.filter(
+                    first_name__icontains=parts[0]
+                ) | Farmer.objects.filter(
+                    last_name__icontains=parts[0]
+                )
+                farmers = farmers.distinct()
+            else:
+                farmers = Farmer.objects.filter(
+                    first_name__icontains=parts[0],
+                    last_name__icontains=parts[-1],
+                )
+        if not farmers.exists():
             return Response(
                 {'error': 'Farmer not found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        primary = farmer.primary_membership
+
+        def serialize(f):
+            primary = f.primary_membership
+            return {
+                'id': f.id,
+                'first_name': f.first_name,
+                'last_name': f.last_name,
+                'phone_number': f.phone_number,
+                'member_number': primary.member_number if primary else None,
+                'primary_cooperative_name': f.cooperative.name if f.cooperative_id else None,
+                'existing_memberships': [
+                    {
+                        'cooperative_id': str(m.cooperative_id),
+                        'member_number': m.member_number,
+                        'is_active': m.is_active,
+                    }
+                    for m in f.memberships.all()
+                ],
+            }
+
         return Response({
-            'id': farmer.id,
-            'first_name': farmer.first_name,
-            'last_name': farmer.last_name,
-            'phone_number': farmer.phone_number,
-            'member_number': primary.member_number if primary else None,
-            'primary_cooperative_name': farmer.cooperative.name if farmer.cooperative_id else None,
-            'existing_memberships': [
-                {
-                    'cooperative_id': str(m.cooperative_id),
-                    'member_number': m.member_number,
-                    'is_active': m.is_active,
-                }
-                for m in farmer.memberships.all()
-            ],
+            'results': [serialize(f) for f in farmers],
         })
 
     @action(detail=False, methods=['get', 'patch'])

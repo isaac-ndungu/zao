@@ -20,11 +20,14 @@ export default function Deliveries() {
   const [sortField, setSortField] = useState('-date_delivered')
   const [selectedIds, setSelectedIds] = useState([])
   const [showCreate, setShowCreate] = useState(false)
+  const [showEdit, setShowEdit] = useState(null)
   const [showDelete, setShowDelete] = useState(null)
   const [showMap, setShowMap] = useState(false)
   const [detailDelivery, setDetailDelivery] = useState(null)
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerResults, setFarmerResults] = useState([])
+  const [editForm, setEditForm] = useState({})
+  const [editLoading, setEditLoading] = useState(false)
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('selected')
@@ -54,10 +57,12 @@ export default function Deliveries() {
     setFarmerSearch(q)
     if (q.length < 2) { setFarmerResults([]); return }
     try {
-      const res = await apiFetch(`/api/farmers/lookup/?phone=${encodeURIComponent(q)}`)
+      const isNumeric = /^[\d\+]+$/.test(q)
+      const param = isNumeric ? `phone=${encodeURIComponent(q)}` : `name=${encodeURIComponent(q)}`
+      const res = await apiFetch(`/api/farmers/lookup/?${param}`)
       if (res.ok) {
         const d = await res.json()
-        setFarmerResults(d.results ? [d] : [d])
+        setFarmerResults(d.results || [d])
       }
     } catch {}
   }, [])
@@ -84,6 +89,36 @@ export default function Deliveries() {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
   }
 
+  const openEdit = (delivery) => {
+    setShowEdit(delivery)
+    setEditForm({
+      product_type: delivery.product_type || 'MILK',
+      quantity_kg: delivery.quantity_kg || '',
+      volume_litres: delivery.volume_litres || '',
+      shift: delivery.shift || 'AM',
+      date_delivered: delivery.date_delivered ? delivery.date_delivered.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      latitude: delivery.latitude || '',
+      longitude: delivery.longitude || '',
+    })
+  }
+
+  const handleEdit = async (e) => {
+    e.preventDefault()
+    setEditLoading(true)
+    try {
+      const body = { ...editForm }
+      if (!body.quantity_kg) delete body.quantity_kg
+      if (!body.volume_litres) delete body.volume_litres
+      if (!body.latitude) delete body.latitude
+      if (!body.longitude) delete body.longitude
+      const res = await apiFetch(`/api/deliveries/${showEdit.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to update') }
+      showToast({ type: 'success', message: 'Delivery updated.' })
+      setShowEdit(null); refetch()
+    } catch (err) { showToast({ type: 'error', message: err.message }) }
+    finally { setEditLoading(false) }
+  }
+
   const withLocationCount = mapData?.filter((m) => m.latitude && m.longitude)?.length || 0
   const totalMapItems = mapData?.length || 0
 
@@ -98,6 +133,7 @@ export default function Deliveries() {
     {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} className="text-on-surface-variant hover:text-primary" title="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
         </div>
       ),
@@ -203,7 +239,7 @@ export default function Deliveries() {
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
             <label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
-            <input value={farmerSearch} onChange={(e) => searchFarmer(e.target.value)} placeholder="Search by phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/>
+            <input value={farmerSearch} onChange={(e) => searchFarmer(e.target.value)} placeholder="Search by name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/>
             {farmerResults.length > 0 && (
               <div className="mt-1 border border-outline-variant rounded-lg overflow-hidden">
                 {farmerResults.map(f => (
@@ -230,6 +266,38 @@ export default function Deliveries() {
           </div>
           <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Record Delivery</button>
         </form>
+      </SlideOutPanel>
+
+      <SlideOutPanel open={!!showEdit} onClose={() => setShowEdit(null)} title="Edit Delivery" width="max-w-md">
+        {showEdit && (
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div>
+              <label className="block text-label-md text-on-surface-variant mb-1">Batch ID</label>
+              <p className="text-body-md text-on-surface font-medium">{showEdit.batch_id}</p>
+            </div>
+            <div>
+              <label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
+              <p className="text-body-md text-on-surface font-medium">{showEdit.farmer_name}</p>
+            </div>
+            <div><label className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select value={editForm.product_type} onChange={(e) => setEditForm(f => ({ ...f, product_type: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input type="number" step="0.01" value={editForm.quantity_kg} onChange={(e) => setEditForm(f => ({ ...f, quantity_kg: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input type="number" step="0.01" value={editForm.volume_litres} onChange={(e) => setEditForm(f => ({ ...f, volume_litres: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Shift</label><select value={editForm.shift} onChange={(e) => setEditForm(f => ({ ...f, shift: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="AM">AM</option><option value="PM">PM</option></select></div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input type="date" value={editForm.date_delivered} onChange={(e) => setEditForm(f => ({ ...f, date_delivered: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Latitude</label><input type="number" step="any" value={editForm.latitude} onChange={(e) => setEditForm(f => ({ ...f, latitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label className="block text-label-md text-on-surface-variant mb-1">Longitude</label><input type="number" step="any" value={editForm.longitude} onChange={(e) => setEditForm(f => ({ ...f, longitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+            </div>
+            <button type="submit" disabled={editLoading} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold flex items-center justify-center gap-2">
+              {editLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              {editLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </form>
+        )}
       </SlideOutPanel>
 
       <ConfirmModal open={!!showDelete} title="Delete Delivery" message={`Delete delivery ${showDelete?.batch_id || ''}?`} confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setShowDelete(null)} />
