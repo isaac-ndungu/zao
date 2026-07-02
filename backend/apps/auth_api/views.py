@@ -138,7 +138,7 @@ class RequestOTPView(APIView):
             expires_at=expires_at,
         )
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        from_email = settings.DEFAULT_FROM_EMAIL
         send_mail(
             'Your Login OTP',
             f'Your OTP is: {otp_code}\nIt expires in 5 minutes.',
@@ -200,7 +200,7 @@ class PasswordResetRequestView(APIView):
         signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
         reset_token = signer.sign(user.email)
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        from_email = settings.DEFAULT_FROM_EMAIL
         send_mail(
             'Reset Your Zao Password',
             f'Your OTP is: {otp_code}\nIt expires in 10 minutes.',
@@ -333,7 +333,7 @@ class InviteRequestOTPView(APIView):
             expires_at=expires_at,
         )
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        from_email = settings.DEFAULT_FROM_EMAIL
         send_mail(
             'Your Zao Invite Code',
             f'Your invite code is: {otp_code}\nIt expires in 10 minutes.',

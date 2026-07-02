@@ -1648,7 +1648,7 @@ class AdminInviteView(APIView):
             expires_at=expires_at,
         )
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        from_email = settings.DEFAULT_FROM_EMAIL
         send_mail(
             'You\'ve been invited to Zao',
             (
@@ -1802,7 +1802,7 @@ class AdminInviteResendView(APIView):
 
         invite_link = f'{settings.FRONTEND_URL}/accept-invite?token={invite_token}'
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        from_email = settings.DEFAULT_FROM_EMAIL
         send_mail(
             'You\'ve been invited to Zao',
             (

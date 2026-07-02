@@ -50,7 +50,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             user.must_change_password = True
         user.save()
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        from_email = settings.DEFAULT_FROM_EMAIL
         send_mail(
             'Your Zao Account Credentials',
             f'Your account has been created.\n\n'

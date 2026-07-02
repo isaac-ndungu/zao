@@ -403,7 +403,7 @@ def reconcile_stuck_transactions():
 def _send_stuck_alerts(stuck_by_coop: dict[str, list[DisbursementTransaction]]) -> None:
     from apps.auth_api.models import User
 
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+    from_email = settings.DEFAULT_FROM_EMAIL
 
     for coop_id, txns in stuck_by_coop.items():
         if not txns:
