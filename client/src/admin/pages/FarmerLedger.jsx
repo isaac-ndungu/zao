@@ -232,7 +232,11 @@ export default function FarmerLedger() {
     { key: 'email', label: 'Email', sortable: true, render: (r) => <span className="text-on-surface-variant">{r.email}</span> },
     { key: 'phone_number', label: 'Phone', sortable: true },
     { key: 'county', label: 'County', sortable: true },
-    { key: 'id_number', label: 'ID No.', sortable: false },
+    { key: 'id_number', label: 'ID No.', sortable: false, render: (r) => (
+      <span title={r.id_number} className="max-w-[120px] truncate inline-block align-middle">
+        {r.id_number}
+      </span>
+    ) },
     { key: 'is_active', label: 'Status', render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
     { key: 'date_joined', label: 'Joined', sortable: true, render: (r) => r.date_joined ? new Date(r.date_joined).toLocaleDateString() : '-' },
   ], [])
@@ -242,7 +246,7 @@ export default function FarmerLedger() {
   }
 
   return (
-    <div ref={dropdownRef} className="overflow-x-hidden">
+    <div ref={dropdownRef}>
       <header className="mb-6">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">Farmer Ledger</h2>

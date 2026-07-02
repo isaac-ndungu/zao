@@ -30,8 +30,8 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
 
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto min-w-0">
+        <table className="w-full min-w-[800px]">
           <thead>
             <tr className="border-b border-outline-variant bg-surface-container">
               {onSelectionChange && (
