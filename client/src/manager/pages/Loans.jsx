@@ -51,7 +51,7 @@ export default function Loans() {
       try {
         const res = await apiFetch(`/api/farmers/?search=${encodeURIComponent(guarantorSearch)}&page_size=10`)
         if (res.ok) { const d = await res.json(); setGuarantorResults(d.results || []); setGuarantorSearchOpen(true) }
-      } catch { /* ignore */ }
+      } catch { showToast({ type: 'error', message: 'Failed to search guarantors.' }) }
     }, 300)
     return () => clearTimeout(timer)
   }, [guarantorSearch])

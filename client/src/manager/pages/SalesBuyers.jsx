@@ -186,7 +186,7 @@ function CreateSaleForm({ onClose, onSuccess }) {
         const d = await res.json()
         setBuyerResults(d.results || [])
       }
-    } catch { /* ignore */ }
+    } catch { showToast({ type: 'error', message: 'Failed to search buyers.' }) }
   }, [])
 
   const totalQty = lineItems.reduce((s, li) => s + (Number(li.quantity) || 0), 0)
