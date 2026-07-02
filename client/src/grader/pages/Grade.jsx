@@ -8,6 +8,7 @@ import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import ErrorState from '../../shared/components/ErrorState'
+import { saveGrade, cachePendingDeliveries, getCachedPendingDeliveries } from '../services/offlineQueue'
 
 const gradeOptions = ['PREMIUM', 'STANDARD', 'A', 'B', 'C']
 
@@ -19,16 +20,40 @@ export default function Grade() {
   const [selectedDelivery, setSelectedDelivery] = useState(null)
   const [page, setPage] = useState(1)
   const [queueSearch, setQueueSearch] = useState('')
+  const [cachedDeliveries, setCachedDeliveries] = useState([])
+  const [showCached, setShowCached] = useState(false)
 
   const { data: pricesData } = useApi('/api/grades/prices/')
   const searchParam = queueSearch ? `&search=${encodeURIComponent(queueSearch)}` : ''
   const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page=${page}&page_size=10&ordering=-date_delivered${searchParam}`)
 
+  // Cache successful delivery fetches for offline use
+  useEffect(() => {
+    if (pendingData?.results) {
+      cachePendingDeliveries(pendingData.results)
+    }
+  }, [pendingData])
+
+  // On error (offline), try loading cached deliveries
+  useEffect(() => {
+    if (error) {
+      getCachedPendingDeliveries().then(cached => {
+        if (cached) {
+          setCachedDeliveries(cached)
+          setShowCached(true)
+        }
+      })
+    } else {
+      setShowCached(false)
+      setCachedDeliveries([])
+    }
+  }, [error])
+
   const prices = pricesData?.results || pricesData || []
   const priceMap = {}
   prices.forEach(p => { priceMap[p.grade_letter] = p.price_per_unit })
 
-  const pendingDeliveries = pendingData?.results || []
+  const pendingDeliveries = showCached ? cachedDeliveries : (pendingData?.results || [])
 
   const autoSelected = preSelectedDelivery && pendingDeliveries.length > 0
     ? pendingDeliveries.find(d => d.id === preSelectedDelivery)
@@ -60,9 +85,12 @@ export default function Grade() {
             <button onClick={() => { setSelectedDelivery(null); refetch() }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">refresh</span>Refresh
             </button>
+            {showCached && (
+              <span className="text-label-md text-warning">Showing cached data (offline)</span>
+            )}
           </div>
 
-          {loading ? <TableSkeleton rows={8} cols={5} /> : error ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
+          {loading ? <TableSkeleton rows={8} cols={5} /> : error && !showCached ? <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} /> : (
             <>
               <DataTable
                 columns={[
@@ -140,6 +168,18 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
     }
     setSubmitting(true)
     try {
+      if (!isOnline) {
+        await saveGrade({
+          delivery_id: delivery.id,
+          delivery_batch_id: delivery.batch_id,
+          farmer_name: delivery.farmer_name,
+          rejection_reason: rejectReason.trim(),
+          quality_metrics: qualityMetrics !== '{}' ? qualityMetrics : null,
+        })
+        showToast({ type: 'success', message: 'Rejection saved offline. Will sync when online.' })
+        onComplete()
+        return
+      }
       const body = {
         delivery: delivery.id,
         rejection_reason: rejectReason.trim(),
@@ -157,17 +197,30 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
       showToast({ type: 'error', message: 'Select a grade.' })
       return
     }
-    if (!isOnline) {
-      showToast({ type: 'warning', message: 'Cannot grade offline. Record the delivery first, then grade when back online.' })
-      return
-    }
 
     setSubmitting(true)
     try {
+      if (!isOnline) {
+        await saveGrade({
+          delivery_id: delivery.id,
+          delivery_batch_id: delivery.batch_id,
+          farmer_name: delivery.farmer_name,
+          grade_letter: grade,
+          price_per_unit: priceMap[grade] || null,
+          quality_metrics: qualityMetrics !== '{}' ? qualityMetrics : null,
+        })
+        showToast({ type: 'success', message: `Grade ${grade} saved offline. Will sync when online.` })
+        onComplete()
+        return
+      }
+
       const body = {
         delivery: delivery.id,
         grade_letter: grade,
         price_per_unit: priceMap[grade] || null,
+      }
+      if (qualityMetrics !== '{}') {
+        try { body.quality_metrics = JSON.parse(qualityMetrics) } catch {}
       }
       const res = await apiFetch('/api/grades/', { method: 'POST', body: JSON.stringify(body) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Grading failed') }
@@ -215,7 +268,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
                   current.temperature = e.target.value ? Number(e.target.value) : undefined
                   setQualityMetrics(JSON.stringify(current))
                   setJsonError('')
-                } catch { /* ignore */ }
+                } catch {}
               }}
               className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
             />
@@ -230,7 +283,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
                   current.fat_content = e.target.value ? Number(e.target.value) : undefined
                   setQualityMetrics(JSON.stringify(current))
                   setJsonError('')
-                } catch { /* ignore */ }
+                } catch {}
               }}
               className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
             />
@@ -311,7 +364,11 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
             </label>
           )}
         </div>
-        <p className="text-label-md text-on-surface-variant">Upload photos of the delivery for quality verification.</p>
+        <p className="text-label-md text-on-surface-variant">
+          {isOnline
+            ? 'Upload photos of the delivery for quality verification.'
+            : 'Photos cannot be taken offline. Grade now and add photos later.'}
+        </p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -321,12 +378,12 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         <div className="flex-1" />
         {rejectReason.trim() && (
           <button onClick={handleReject} disabled={submitting} className="px-6 py-2.5 bg-error text-on-error rounded-lg text-label-md font-bold hover:bg-error/90 transition-colors disabled:opacity-50">
-            {submitting ? 'Rejecting...' : 'Reject Delivery'}
+            {submitting ? 'Saving...' : isOnline ? 'Reject Delivery' : 'Save Rejection Offline'}
           </button>
         )}
         {grade && (
-          <button onClick={handleGrade} disabled={submitting || !isOnline} className="px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50">
-            {submitting ? 'Submitting...' : !isOnline ? 'Offline — Cannot Grade' : `Submit Grade ${grade}`}
+          <button onClick={handleGrade} disabled={submitting} className="px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50">
+            {submitting ? 'Saving...' : isOnline ? `Submit Grade ${grade}` : `Save Grade ${grade} Offline`}
           </button>
         )}
       </div>

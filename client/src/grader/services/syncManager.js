@@ -14,67 +14,87 @@ class SyncManager {
 
   async syncAll() {
     if (!navigator.onLine) return { synced: 0, failed: 0 }
-
-    const pending = await offlineQueue.getPendingDeliveries()
-    if (pending.length === 0) return { synced: 0, failed: 0 }
-
-    const batches = chunk(pending, 50)
     let synced = 0
     let failed = 0
 
-    for (const batch of batches) {
-      const payload = {
-        deliveries: batch.map(d => ({
-          local_id: d.local_id,
-          farmer: d.farmer_id,
-          product_type: d.product_type,
-          quantity_kg: d.quantity_kg,
-          volume_litres: d.volume_litres,
-          shift: d.shift,
-          quality_metrics: d.quality_metrics,
-          latitude: d.latitude,
-          longitude: d.longitude,
-          status: 'PENDING',
-        })),
-      }
-
-      try {
-        const res = await apiFetch('/api/deliveries/sync/', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        })
-
-        if (res.ok) {
-          const data = await res.json()
-          if (data.synced) {
-            for (const s of data.synced) {
-              await offlineQueue.markSynced(s.local_id)
+    // -- Sync deliveries --
+    const pendingDeliveries = await offlineQueue.getPendingDeliveries()
+    if (pendingDeliveries.length > 0) {
+      const batches = chunk(pendingDeliveries, 50)
+      for (const batch of batches) {
+        const payload = {
+          deliveries: batch.map(d => ({
+            local_id: d.local_id,
+            farmer: d.farmer_id,
+            product_type: d.product_type,
+            quantity_kg: d.quantity_kg,
+            volume_litres: d.volume_litres,
+            shift: d.shift,
+            quality_metrics: d.quality_metrics,
+            latitude: d.latitude,
+            longitude: d.longitude,
+            status: 'PENDING',
+          })),
+        }
+        try {
+          const res = await apiFetch('/api/deliveries/sync/', { method: 'POST', body: JSON.stringify(payload) })
+          if (res.ok) {
+            const data = await res.json()
+            if (data.synced) {
+              for (const s of data.synced) { await offlineQueue.markSynced(s.local_id) }
+              synced += data.synced.length
             }
-            synced += data.synced.length
-          }
-        } else if (res.status === 409) {
-          const errData = await res.json()
-          if (errData.conflicts) {
-            for (const c of errData.conflicts) {
-              await offlineQueue.markSynced(c.local_id)
+          } else if (res.status === 409) {
+            const errData = await res.json()
+            if (errData.conflicts) {
+              for (const c of errData.conflicts) { await offlineQueue.markSynced(c.local_id) }
+              synced += errData.conflicts.length
             }
-            synced += errData.conflicts.length
+          } else {
+            for (const d of batch) { await offlineQueue.markFailed(d.local_id, 'Server error') }
+            failed += batch.length
           }
-        } else {
-          for (const d of batch) {
-            await offlineQueue.markFailed(d.local_id, 'Server error')
-          }
+        } catch (e) {
+          for (const d of batch) { await offlineQueue.markFailed(d.local_id, e.message) }
           failed += batch.length
         }
-      } catch (e) {
-        for (const d of batch) {
-          await offlineQueue.markFailed(d.local_id, e.message)
+      }
+      await offlineQueue.deleteSynced()
+    }
+
+    // -- Sync grades --
+    const pendingGrades = await offlineQueue.getPendingGrades()
+    for (const grade of pendingGrades) {
+      try {
+        const body = {}
+        body.delivery = grade.delivery_id
+        if (grade.grade_letter) {
+          body.grade_letter = grade.grade_letter
+          if (grade.price_per_unit) body.price_per_unit = grade.price_per_unit
         }
-        failed += batch.length
+        if (grade.rejection_reason) body.rejection_reason = grade.rejection_reason
+        if (grade.quality_metrics) {
+          try { body.quality_metrics = JSON.parse(grade.quality_metrics) } catch { body.quality_metrics = grade.quality_metrics }
+        }
+        const res = await apiFetch('/api/grades/', { method: 'POST', body: JSON.stringify(body) })
+        if (res.ok) {
+          const result = await res.json()
+          await offlineQueue.markGradeSynced(grade.local_id, result.id)
+          synced++
+        } else if (res.status === 400) {
+          // Likely duplicate — delivery already graded. Mark as synced to avoid retry spam.
+          await offlineQueue.markGradeSynced(grade.local_id, null)
+          synced++
+        } else {
+          await offlineQueue.markGradeFailed(grade.local_id, 'Server error')
+          failed++
+        }
+      } catch (e) {
+        await offlineQueue.markGradeFailed(grade.local_id, e.message)
+        failed++
       }
     }
 
-    await offlineQueue.deleteSynced()
     return { synced, failed }
   }
 

@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { KpiSkeleton } from '../../admin/components/common/Skeleton'
 import ErrorState from '../../shared/components/ErrorState'
+import { cachePendingDeliveries } from '../services/offlineQueue'
 
 function timeSince(dateStr) {
   if (!dateStr) return ''
@@ -22,6 +24,13 @@ export default function GraderDashboard() {
   const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page_size=50&ordering=-date_delivered`)
   const { data: summary } = useApi(`/api/deliveries/summary/?date_from=${todayStr()}&date_to=${todayStr()}`)
   const { data: gradedToday } = useApi(`/api/grades/?created_at__date=${todayStr()}&page_size=1`)
+
+  // Cache pending deliveries for offline use
+  useEffect(() => {
+    if (pendingData?.results) {
+      cachePendingDeliveries(pendingData.results)
+    }
+  }, [pendingData])
 
   const pendingDeliveries = pendingData?.results || []
   const pendingCount = pendingData?.count || 0
