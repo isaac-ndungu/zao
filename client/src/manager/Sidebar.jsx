@@ -7,6 +7,7 @@ const navItems = [
   { to: '/manager/users', icon: 'group', label: 'Staff' },
   { to: '/manager/deliveries', icon: 'local_shipping', label: 'Deliveries' },
   { to: '/manager/grading', icon: 'grading', label: 'Grading Queue' },
+  { to: '/manager/grade-prices', icon: 'monetization_on', label: 'Grade Prices' },
   { to: '/manager/cycles', icon: 'payments', label: 'Payment Cycles' },
   { to: '/manager/disbursements', icon: 'account_balance', label: 'Disbursements' },
   { to: '/manager/loans', icon: 'account_balance_wallet', label: 'Loans' },

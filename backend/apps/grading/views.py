@@ -1,7 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.base.constants import UserRole
-from apps.base.permissions import IsFarmer, IsGrader, IsManager, IsManagerOrGrader
+from apps.base.permissions import IsAdminOrManager, IsFarmer, IsGrader, IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 from apps.base.export_mixins import CsvExportMixin
@@ -415,3 +415,14 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
             cooperative_id=request.cooperative_id,
         )
         return Response(GradeDisputeSerializer(dispute).data)
+
+
+class GradePriceViewSet(viewsets.ModelViewSet):
+    queryset = GradePrice.objects.all().order_by('-effective_from')
+    serializer_class = GradePriceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAuthenticated(), IsAdminOrManager()]
+        return [IsAuthenticated()]

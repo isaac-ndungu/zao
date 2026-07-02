@@ -47,6 +47,7 @@ const FarmerRetention = lazy(() => import('./admin/pages/FarmerRetention'))
 const AdminProfile = lazy(() => import('./admin/pages/Profile'))
 const AdminNotFound = lazy(() => import('./admin/pages/NotFound'))
 const AdminSearchResults = lazy(() => import('./admin/pages/SearchResults'))
+const GradePricesPage = lazy(() => import('./shared/pages/GradePrices'))
 
 // Farmer pages 
 const FarmerDashboard = lazy(() => import('./farmer/pages/Dashboard'))
@@ -82,6 +83,7 @@ const ManagerSearchResults = lazy(() => import('./manager/pages/SearchResults'))
 
 // Grader pages
 const GraderLayout = lazy(() => import('./grader/GraderLayout'))
+const RecordDelivery = lazy(() => import('./grader/pages/RecordDelivery'))
 const GraderDashboard = lazy(() => import('./grader/pages/Dashboard'))
 const Grade = lazy(() => import('./grader/pages/Grade'))
 const MyGrades = lazy(() => import('./grader/pages/MyGrades'))
@@ -218,6 +220,7 @@ export default function App() {
             <Route path="loans" element={<SuspenseWrapper><Loans /></SuspenseWrapper>} />
             <Route path="farmer-payments" element={<SuspenseWrapper><AdminFarmerPayments /></SuspenseWrapper>} />
             <Route path="otp-tokens" element={<SuspenseWrapper><OTPTokens /></SuspenseWrapper>} />
+            <Route path="grade-prices" element={<SuspenseWrapper><GradePricesPage /></SuspenseWrapper>} />
             <Route path="analytics/seasonal" element={<SuspenseWrapper><SeasonalPatterns /></SuspenseWrapper>} />
             <Route path="analytics/retention" element={<SuspenseWrapper><FarmerRetention /></SuspenseWrapper>} />
             <Route path="search" element={<SuspenseWrapper><AdminSearchResults /></SuspenseWrapper>} />
@@ -250,6 +253,7 @@ export default function App() {
             <Route path="setup/cooperative" element={<SuspenseWrapper><SetupCooperative /></SuspenseWrapper>} />
             <Route path="users" element={<SuspenseWrapper><ManagerUsers /></SuspenseWrapper>} />
             <Route path="audit-log" element={<SuspenseWrapper><ManagerAuditLog /></SuspenseWrapper>} />
+            <Route path="grade-prices" element={<SuspenseWrapper><GradePricesPage /></SuspenseWrapper>} />
             <Route path="profile" element={<SuspenseWrapper><ManagerProfile /></SuspenseWrapper>} />
             <Route path="settings" element={<SuspenseWrapper><ManagerSettings /></SuspenseWrapper>} />
             <Route path="search" element={<SuspenseWrapper><ManagerSearchResults /></SuspenseWrapper>} />
@@ -267,6 +271,7 @@ export default function App() {
           }>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<SuspenseWrapper><GraderDashboard /></SuspenseWrapper>} />
+            <Route path="record-delivery" element={<SuspenseWrapper><RecordDelivery /></SuspenseWrapper>} />
             <Route path="grade" element={<SuspenseWrapper><Grade /></SuspenseWrapper>} />
             <Route path="my-grades" element={<SuspenseWrapper><MyGrades /></SuspenseWrapper>} />
             <Route path="sync" element={<SuspenseWrapper><GraderSync /></SuspenseWrapper>} />
