@@ -1,3 +1,4 @@
+import logging
 import uuid
 import secrets
 from datetime import timedelta
@@ -23,6 +24,8 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 
 from apps.auth_api.models import TwoFactorOTP
 from apps.auth_api.serializers import INVITE_TOKEN_SALT
+
+logger = logging.getLogger(__name__)
 from apps.analytics.cache import get_cached_analytics, record_access, set_cached_analytics
 from apps.analytics.queries.admin import (
     get_admin_dashboard,
@@ -1488,16 +1491,47 @@ class AdminFarmerPaymentHoldView(APIView):
             return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
         serializer = AdminFarmerPaymentHoldSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        payment.is_on_hold = serializer.validated_data['hold']
+        previous = {
+            'is_on_hold': payment.is_on_hold,
+            'hold_reason': payment.hold_reason,
+        }
+        payment.is_on_hold = True
         payment.hold_reason = serializer.validated_data.get('reason', '')
         payment.save(update_fields=['is_on_hold', 'hold_reason'])
         log_audit(
             actor=request.user, resource_type='farmer_payment', resource_id=payment.pk,
             action=AuditAction.ADMIN_ACTION,
-            new_value={'is_on_hold': payment.is_on_hold},
+            previous_value=previous,
+            new_value={'is_on_hold': payment.is_on_hold, 'hold_reason': payment.hold_reason},
             ip_address=request.META.get('REMOTE_ADDR'),
         )
-        return Response({'detail': 'Payment hold toggled.', 'is_on_hold': payment.is_on_hold})
+        return Response({'detail': 'Payment placed on hold.', 'is_on_hold': payment.is_on_hold})
+
+
+class AdminFarmerPaymentUnholdView(APIView):
+    permission_classes = [IsAuthenticated, IsSuperUser]
+
+    @idempotent()
+    def post(self, request, pk):
+        try:
+            payment = FarmerPayment.objects.get(pk=pk)
+        except FarmerPayment.DoesNotExist:
+            return Response({'detail': 'Payment not found.'}, status=status.HTTP_404_NOT_FOUND)
+        previous = {
+            'is_on_hold': payment.is_on_hold,
+            'hold_reason': payment.hold_reason,
+        }
+        payment.is_on_hold = False
+        payment.hold_reason = ''
+        payment.save(update_fields=['is_on_hold', 'hold_reason'])
+        log_audit(
+            actor=request.user, resource_type='farmer_payment', resource_id=payment.pk,
+            action=AuditAction.ADMIN_ACTION,
+            previous_value=previous,
+            new_value={'is_on_hold': False, 'hold_reason': ''},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return Response({'detail': 'Payment hold released.', 'is_on_hold': False})
 
 
 class AdminLoanViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
@@ -1649,19 +1683,28 @@ class AdminInviteView(APIView):
         )
 
         from_email = settings.DEFAULT_FROM_EMAIL
-        send_mail(
-            'You\'ve been invited to Zao',
-            (
-                'You have been invited to join as a Manager.\n\n'
-                f'Invite code: {otp_code}\n'
-                f'Expires in 3 hours.\n\n'
-                f'Or click: {invite_link}\n\n'
-                f'This invite expires in 7 days.'
-            ),
-            from_email,
-            [user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                'You\'ve been invited to Zao',
+                (
+                    'You have been invited to join as a Manager.\n\n'
+                    f'Invite code: {otp_code}\n'
+                    f'Expires in 3 hours.\n\n'
+                    f'Or click: {invite_link}\n\n'
+                    f'This invite expires in 7 days.'
+                ),
+                from_email,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.exception(
+                'Failed to send invite email to %s: %s', user.email, exc,
+            )
+            return Response(
+                {'detail': 'Failed to send email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         log_audit(
             actor=request.user,
@@ -1803,19 +1846,28 @@ class AdminInviteResendView(APIView):
         invite_link = f'{settings.FRONTEND_URL}/accept-invite?token={invite_token}'
 
         from_email = settings.DEFAULT_FROM_EMAIL
-        send_mail(
-            'You\'ve been invited to Zao',
-            (
-                'You have been invited to join as a Manager.\n\n'
-                f'Invite code: {otp_code}\n'
-                f'Expires in 3 hours.\n\n'
-                f'Or click: {invite_link}\n\n'
-                f'This invite expires in 7 days.'
-            ),
-            from_email,
-            [user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                'You\'ve been invited to Zao',
+                (
+                    'You have been invited to join as a Manager.\n\n'
+                    f'Invite code: {otp_code}\n'
+                    f'Expires in 3 hours.\n\n'
+                    f'Or click: {invite_link}\n\n'
+                    f'This invite expires in 7 days.'
+                ),
+                from_email,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.exception(
+                'Failed to send invite resend email to %s: %s', user.email, exc,
+            )
+            return Response(
+                {'detail': 'Failed to send email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         log_audit(
             actor=request.user,
