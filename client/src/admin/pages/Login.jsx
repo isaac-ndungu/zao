@@ -106,8 +106,14 @@ export default function Login() {
       if (result.requires_2fa) {
         setLoginToken(result.loginToken)
         setStep('otp')
-        setOtpSent(true)
         setOtpCode('')
+        setOtpSent(false)
+        try {
+          await requestOtp(result.loginToken)
+          setOtpSent(true)
+        } catch (otpErr) {
+          setError(otpErr.detail || 'Failed to send verification code. Click "Resend code" to try again.')
+        }
       } else {
         navigate(getLoginRedirect(result.user.role), { replace: true })
       }

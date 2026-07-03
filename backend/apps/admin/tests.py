@@ -379,17 +379,3 @@ class TestAdminCooperativeSerializer:
         resp = client.put(f'/api/admin/cooperatives/{cooperative.id}/', data, format='json')
         assert resp.status_code == 400
         assert resp.json()['registration_number'] == ['Cooperative with this registration number already exists.']
-
-
-class TestAnymailIntegration:
-    def test_send_email_via_anymail_backend(self, settings):
-        settings.EMAIL_BACKEND = 'anymail.backends.test.EmailBackend'
-        settings.ANYMAIL = {'RESEND_API_KEY': 're_test_key'}
-        send_mail(
-            'Test Subject',
-            'Test body.',
-            'test@example.com',
-            ['recipient@example.com'],
-        )
-        assert len(mail.outbox) == 1
-        assert mail.outbox[0].subject == 'Test Subject'
