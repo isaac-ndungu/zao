@@ -29,8 +29,10 @@ class CooperativeViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
     def get_permissions(self):
-        if self.action in ('update', 'partial_update', 'destroy'):
+        if self.action == 'destroy':
             return [IsAdmin()]
+        if self.action in ('update', 'partial_update'):
+            return [IsAdminOrManager()]
         if self.action == 'create':
             return [IsAdminOrManager()]
         return []
