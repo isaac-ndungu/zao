@@ -23,7 +23,7 @@ export function useOnlineStatus() {
     // Health ping — supplements unreliable window events on Android WebView.
     const interval = setInterval(async () => {
       try {
-        await fetch('/api/health/', { method: 'HEAD', cache: 'no-store' })
+        await fetch('/api/health/', { method: 'GET', cache: 'no-store' })
         setIsOnline(true)
       } catch {
         setIsOnline(false)

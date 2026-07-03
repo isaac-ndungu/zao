@@ -1,10 +1,10 @@
 from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_http_methods
 
 
-@require_GET
+@require_http_methods(['GET', 'HEAD'])
 def health_check(request):
     database_status = _check_database()
     redis_status = _check_redis()

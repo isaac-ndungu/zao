@@ -1,5 +1,8 @@
+import logging
 import secrets
 from datetime import timedelta
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -139,13 +142,22 @@ class RequestOTPView(APIView):
         )
 
         from_email = settings.DEFAULT_FROM_EMAIL
-        send_mail(
-            'Your Login OTP',
-            f'Your OTP is: {otp_code}\nIt expires in 5 minutes.',
-            from_email,
-            [user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                'Your Login OTP',
+                f'Your OTP is: {otp_code}\nIt expires in 5 minutes.',
+                from_email,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.exception(
+                'Failed to send 2FA login OTP email to %s: %s', user.email, exc,
+            )
+            return Response(
+                {'detail': 'Failed to send email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         data = {'detail': 'OTP sent to your email.'}
         if settings.DEBUG:
@@ -201,13 +213,22 @@ class PasswordResetRequestView(APIView):
         reset_token = signer.sign(user.email)
 
         from_email = settings.DEFAULT_FROM_EMAIL
-        send_mail(
-            'Reset Your Zao Password',
-            f'Your OTP is: {otp_code}\nIt expires in 10 minutes.',
-            from_email,
-            [user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                'Reset Your Zao Password',
+                f'Your OTP is: {otp_code}\nIt expires in 10 minutes.',
+                from_email,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.exception(
+                'Failed to send password reset OTP email to %s: %s', user.email, exc,
+            )
+            return Response(
+                {'detail': 'Failed to send email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         data = {
             'reset_token': reset_token,
@@ -334,13 +355,22 @@ class InviteRequestOTPView(APIView):
         )
 
         from_email = settings.DEFAULT_FROM_EMAIL
-        send_mail(
-            'Your Zao Invite Code',
-            f'Your invite code is: {otp_code}\nIt expires in 10 minutes.',
-            from_email,
-            [user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                'Your Zao Invite Code',
+                f'Your invite code is: {otp_code}\nIt expires in 10 minutes.',
+                from_email,
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception as exc:
+            logger.exception(
+                'Failed to send invite OTP email to %s: %s', user.email, exc,
+            )
+            return Response(
+                {'detail': 'Failed to send email. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         data = {'detail': 'OTP sent to your email.'}
         if settings.DEBUG:
@@ -454,8 +484,8 @@ class TokenRefreshView(APIView):
         refresh_token = request.COOKIES.get('refresh_token')
         if not refresh_token:
             return Response(
-                {'detail': 'Refresh token not found.'},
-                status=status.HTTP_401_UNAUTHORIZED,
+                {'detail': 'Not authenticated.', 'authenticated': False},
+                status=status.HTTP_200_OK,
             )
 
         serializer = TokenRefreshSerializer(data={'refresh': refresh_token})
