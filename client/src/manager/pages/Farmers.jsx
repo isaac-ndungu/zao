@@ -219,7 +219,7 @@ export default function Farmers() {
       key: 'actions',
       label: '',
       render: (row) => (
-        <div className="flex gap-2">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button
             onClick={(e) => {
               e.stopPropagation()

@@ -72,7 +72,7 @@ export default function GradePrices() {
     { key: 'created_at', label: 'Created', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (_v, row) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} className="text-on-surface-variant hover:text-primary" title="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
           <button onClick={(e) => { e.stopPropagation(); setDeleting(row) }} className="text-error hover:text-error/80" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
         </div>
