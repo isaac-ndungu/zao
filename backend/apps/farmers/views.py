@@ -113,7 +113,7 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
         if self.action in ('create', 'update', 'partial_update', 'destroy', 'import_csv'):
             return [IsAuthenticated(), IsManager()]
         if self.action in ('lookup',):
-            return [IsAuthenticated(), IsManager()]
+            return [IsAuthenticated(), IsManagerOrGrader()]
         return [IsAuthenticated()]
 
     def get_serializer_class(self):

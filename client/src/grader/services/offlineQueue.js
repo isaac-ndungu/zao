@@ -246,6 +246,51 @@ export async function cachePendingDeliveries(deliveries) {
   })
 }
 
+const FARMER_CACHE_KEY = 'farmers'
+
+export async function cacheFarmers(farmers) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CACHE_STORE, 'readwrite')
+    const store = tx.objectStore(CACHE_STORE)
+    store.put({ key: FARMER_CACHE_KEY, data: farmers, cached_at: new Date().toISOString() })
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function getCachedFarmers() {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CACHE_STORE, 'readonly')
+    const store = tx.objectStore(CACHE_STORE)
+    const request = store.get(FARMER_CACHE_KEY)
+    request.onsuccess = () => {
+      const entry = request.result
+      if (entry && Date.now() - new Date(entry.cached_at).getTime() < 24 * 60 * 60 * 1000) {
+        resolve(entry.data)
+      } else {
+        resolve(null)
+      }
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+export function searchCachedFarmers(farmers, q) {
+  if (!farmers || !q || q.length < 2) return []
+  const lower = q.toLowerCase()
+  const isNumeric = /^[\d\+]+$/.test(q)
+  return farmers.filter(f => {
+    if (isNumeric) {
+      return f.phone_number?.replace(/\D/g, '').includes(q.replace(/\D/g, ''))
+    }
+    return f.first_name?.toLowerCase().includes(lower)
+      || f.last_name?.toLowerCase().includes(lower)
+      || `${f.first_name} ${f.last_name}`.toLowerCase().includes(lower)
+  })
+}
+
 export async function getCachedPendingDeliveries() {
   const db = await openDB()
   return new Promise((resolve, reject) => {

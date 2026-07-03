@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
+import { useOnlineStatus } from '../../shared/hooks/useOnlineStatus'
+import { saveDelivery, cacheFarmers, getCachedFarmers, searchCachedFarmers } from '../services/offlineQueue'
 
 const productTypes = [
   { value: 'MILK', label: 'Milk' },
@@ -13,10 +15,33 @@ const productTypes = [
 export default function RecordDelivery() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const isOnline = useOnlineStatus()
   const [submitting, setSubmitting] = useState(false)
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerOptions, setFarmerOptions] = useState([])
   const [selectedFarmer, setSelectedFarmer] = useState(null)
+  const [cachedFarmersList, setCachedFarmersList] = useState(null)
+  useEffect(() => {
+    if (!isOnline) {
+      getCachedFarmers().then(cached => {
+        if (cached) setCachedFarmersList(cached)
+      })
+      return
+    }
+    getCachedFarmers().then(cached => {
+      if (cached) setCachedFarmersList(cached)
+    })
+    apiFetch('/api/farmers/?page_size=500').then(r => {
+      if (!r.ok) return null
+      return r.json()
+    }).then(data => {
+      if (data?.results) {
+        setCachedFarmersList(data.results)
+        cacheFarmers(data.results)
+      }
+    })
+  }, [isOnline])
+
   const [form, setForm] = useState({
     farmer: '',
     product_type: 'MILK',
@@ -33,6 +58,10 @@ export default function RecordDelivery() {
     setSelectedFarmer(null)
     setForm(f => ({ ...f, farmer: '' }))
     if (q.length < 2) { setFarmerOptions([]); return }
+    if (!isOnline && cachedFarmersList) {
+      setFarmerOptions(searchCachedFarmers(cachedFarmersList, q))
+      return
+    }
     try {
       const isNumeric = /^[\d\+]+$/.test(q)
       const param = isNumeric ? `phone=${encodeURIComponent(q)}` : `name=${encodeURIComponent(q)}`
@@ -59,15 +88,21 @@ export default function RecordDelivery() {
     }
     setSubmitting(true)
     try {
-      const body = { ...form }
+      const body = { ...form, farmer_id: form.farmer, farmer_name: farmerSearch }
       if (!body.quantity_kg) delete body.quantity_kg
       if (!body.volume_litres) delete body.volume_litres
       if (!body.latitude) delete body.latitude
       if (!body.longitude) delete body.longitude
-      const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create delivery') }
-      showToast({ type: 'success', message: 'Delivery recorded.' })
-      navigate('/grader/grade')
+      if (isOnline) {
+        const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
+        if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create delivery') }
+        showToast({ type: 'success', message: 'Delivery recorded.' })
+        navigate('/grader/grade')
+      } else {
+        await saveDelivery(body)
+        showToast({ type: 'success', message: 'Delivery saved offline. Will sync when online.' })
+        navigate('/grader/grade')
+      }
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSubmitting(false) }
   }
