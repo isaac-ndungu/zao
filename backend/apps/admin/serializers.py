@@ -334,7 +334,6 @@ class AdminFarmerPaymentSerializer(serializers.ModelSerializer):
 
 
 class AdminFarmerPaymentHoldSerializer(serializers.Serializer):
-    hold = serializers.BooleanField()
     reason = serializers.CharField(required=False, allow_blank=True)
 
 
