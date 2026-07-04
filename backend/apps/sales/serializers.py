@@ -71,39 +71,30 @@ class SaleDetailSerializer(serializers.ModelSerializer):
 
     def get_line_items(self, obj):
         items = obj.line_items.select_related('inventory').all()
-        if items.exists():
-            return [
-                {
-                    'inventory_id': str(li.inventory_id),
-                    'batch_id': li.inventory.batch_id,
-                    'quantity': float(li.quantity),
-                }
-                for li in items
-            ]
-        if obj.inventory:
-            return [
-                {
-                    'inventory_id': str(obj.inventory_id),
-                    'batch_id': obj.inventory.batch_id,
-                    'quantity': float(obj.quantity),
-                }
-            ]
-        return []
+        return [
+            {
+                'inventory_id': str(li.inventory_id),
+                'batch_id': li.inventory.batch_id,
+                'quantity': float(li.quantity),
+            }
+            for li in items
+        ]
 
 
 class SaleCreateSerializer(serializers.ModelSerializer):
     cooperative_id = serializers.UUIDField(required=False, write_only=True)
-    line_items = SaleInventoryLineItemSerializer(many=True, write_only=True)
+    stock = serializers.UUIDField(write_only=True)
 
     class Meta:
         model = Sale
         fields = [
-            'buyer', 'line_items',
+            'id', 'buyer', 'stock',
             'quantity', 'price_per_unit',
             'payment_cycle', 'status', 'sale_date',
             'invoice_number', 'notes',
             'cooperative_id',
         ]
+        read_only_fields = ['id']
 
     def validate_cooperative_id(self, value):
         if not Cooperative.objects.filter(id=value).exists():
@@ -120,105 +111,43 @@ class SaleCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Price per unit must be greater than 0.')
         return value
 
-    def validate_line_items(self, value):
-        if not value:
-            raise serializers.ValidationError('At least one inventory line item is required.')
-
-        seen = set()
-        product_types = set()
-        grades = set()
-
-        for item in value:
-            inv_id = str(item['inventory'])
-            if inv_id in seen:
-                raise serializers.ValidationError(
-                    f'Duplicate inventory entry: {inv_id}. Each batch can appear only once per sale.'
-                )
-            seen.add(inv_id)
-
-            if item['quantity'] <= 0:
-                raise serializers.ValidationError(
-                    f'Quantity for inventory {inv_id} must be greater than 0.'
-                )
-
-        inventory_ids = list(seen)
-        inventories = {
-            str(i.id): i
-            for i in Inventory.objects.filter(id__in=inventory_ids)
-        }
-
-        for inv_id in inventory_ids:
-            inv = inventories.get(inv_id)
-            if not inv:
-                raise serializers.ValidationError(f'Inventory {inv_id} not found.')
-            product_types.add(inv.product_type)
-            grades.add(inv.grade)
-
-        if len(product_types) > 1:
-            raise serializers.ValidationError(
-                'All line items must share the same product_type.'
-            )
-        if len(grades) > 1:
-            raise serializers.ValidationError(
-                'All line items must share the same grade.'
-            )
-
+    def validate_stock(self, value):
+        from apps.inventory.models import Stock
+        if not Stock.objects.filter(id=value).exists():
+            raise serializers.ValidationError('Stock not found.')
         return value
 
     def validate(self, attrs):
-        line_items = attrs.get('line_items', [])
-        quantity = attrs.get('quantity', 0)
-        total_line_qty = sum(item['quantity'] for item in line_items)
-
-        if quantity != total_line_qty:
-            raise serializers.ValidationError(
-                f'Sale quantity ({float(quantity)}) must equal the sum of '
-                f'line item quantities ({float(total_line_qty)}).'
-            )
-
-        inventory_ids = [str(item['inventory']) for item in line_items]
-        inventories = {
-            str(i.id): i
-            for i in Inventory.objects.filter(id__in=inventory_ids)
-        }
-
-        for item in line_items:
-            inv = inventories[str(item['inventory'])]
-            available = inv.quantity_in - inv.quantity_out
-            if item['quantity'] > available:
+        from decimal import Decimal
+        from apps.inventory.models import Stock
+        stock_id = attrs.get('stock')
+        quantity = attrs.get('quantity', Decimal('0'))
+        if stock_id and quantity:
+            try:
+                stock = Stock.objects.get(id=stock_id)
+            except Stock.DoesNotExist:
+                raise serializers.ValidationError({'stock': 'Stock not found.'})
+            if Decimal(str(quantity)) > Decimal(str(stock.quantity_available)):
                 raise serializers.ValidationError(
-                    f'Insufficient inventory in batch {inv.batch_id}: '
-                    f'{float(available)} {inv.unit} available, '
-                    f'{float(item["quantity"])} {inv.unit} requested.'
+                    f'Insufficient stock: {stock.quantity_available} {stock.unit} available, '
+                    f'{float(quantity)} {stock.unit} requested.'
                 )
-
         return attrs
 
     def create(self, validated_data):
-        line_items_data = validated_data.pop('line_items', [])
-
-        first_inv = Inventory.objects.get(id=line_items_data[0]['inventory'])
-        validated_data['product_type'] = first_inv.product_type
-        validated_data['grade_letter'] = first_inv.grade
-        validated_data['unit'] = first_inv.unit
+        from apps.inventory.models import Stock
+        stock_id = validated_data.pop('stock')
+        stock = Stock.objects.get(id=stock_id)
+        validated_data['product_type'] = stock.product_type
+        validated_data['grade_letter'] = stock.grade
+        validated_data['unit'] = stock.unit
+        validated_data['stock'] = stock
+        validated_data['status'] = 'COMPLETED'
         validated_data['total_amount'] = validated_data['quantity'] * validated_data['price_per_unit']
-
-        sale = super().create(validated_data)
-
-        line_item_objs = [
-            SaleInventoryLineItem(
-                sale=sale,
-                inventory_id=item['inventory'],
-                quantity=item['quantity'],
-            )
-            for item in line_items_data
-        ]
-        SaleInventoryLineItem.objects.bulk_create(line_item_objs)
-
-        return sale
+        return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        validated_data.pop('line_items', None)
+        validated_data.pop('stock', None)
         quantity = validated_data.get('quantity', instance.quantity)
         price_per_unit = validated_data.get('price_per_unit', instance.price_per_unit)
         validated_data['total_amount'] = quantity * price_per_unit

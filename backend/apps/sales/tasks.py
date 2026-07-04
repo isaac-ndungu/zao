@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 
 from celery import shared_task
 from django.db import transaction
@@ -10,140 +11,117 @@ logger = logging.getLogger(__name__)
 
 @shared_task(soft_time_limit=30, time_limit=60)
 def decrement_inventory_on_sale(sale_id: str):
-    from apps.inventory.models import Inventory
-    from .models import Sale
+    """FIFO-allocate a sale's quantity across the cooperative's cycle-pools,
+    decrement each pool and the Stock aggregate, and record the allocation as
+    SaleInventoryLineItem rows. Phase 3 server-side allocation."""
+    from apps.inventory.models import Inventory, Stock
+    from .models import Sale, SaleInventoryLineItem
 
     try:
         with transaction.atomic():
             sale = Sale.objects.select_for_update().get(id=sale_id)
-
             if sale.inventory_updated:
                 return {'status': 'skipped', 'reason': 'Already decremented'}
+            if not sale.stock_id:
+                return {'status': 'skipped', 'reason': 'No stock FK (legacy sale?)'}
 
-            line_items = list(sale.line_items.select_related('inventory').all())
+            stock = Stock.objects.select_for_update().get(id=sale.stock_id)
+            qty_remaining = sale.quantity
+            if qty_remaining <= 0:
+                return {'status': 'skipped', 'reason': 'Zero quantity'}
 
-            if line_items:
-                inventory_ids = sorted([li.inventory_id for li in line_items])
-                inventories = {
-                    str(i.id): i
-                    for i in Inventory.objects.select_for_update().filter(id__in=inventory_ids)
-                }
-                for li in line_items:
-                    inv = inventories[str(li.inventory_id)]
-                    available = inv.quantity_in - inv.quantity_out
-                    if li.quantity > available:
-                        logger.critical(
-                            "Sale %s: cannot decrement line item %s. Available: %s %s, "
-                            "requested: %s %s. Inventory %s requires manual review.",
-                            sale_id, li.id, available, inv.unit, li.quantity, inv.unit, inv.id,
-                        )
-                        log_audit(
-                            actor=sale.recorded_by,
-                            resource_type='inventory',
-                            resource_id=inv.id,
-                            action='LOCK',
-                            new_value={
-                                'error': 'insufficient_balance',
-                                'available': float(available),
-                                'requested': float(li.quantity),
-                                'line_item_id': str(li.id),
-                            },
-                            cooperative_id=sale.cooperative_id,
-                        )
-                        return
-                    inv.quantity_out += li.quantity
-                    if inv.running_balance <= 0:
-                        inv.is_sold = True
-                    inv.save(update_fields=['quantity_out', 'is_sold', 'updated_at'])
+            # FIFO over cycle-pools for (cooperative, product_type, grade), oldest first.
+            pools = list(Inventory.objects.select_for_update().filter(
+                cooperative_id=sale.cooperative_id,
+                payment_cycle__isnull=False,
+                product_type=sale.product_type,
+                grade=sale.grade_letter,
+            ).order_by('created_at'))
 
-                logger.info(
-                    "Inventory decremented for sale %s across %d batch(es)",
-                    sale_id, len(line_items),
+            line_items = []
+            payment_cycle_assigned = False
+            for pool in pools:
+                if qty_remaining <= 0:
+                    break
+                available = (pool.quantity_in or Decimal('0')) - (pool.quantity_out or Decimal('0'))
+                if available <= 0:
+                    continue
+                take = min(available, qty_remaining)
+                pool.quantity_out = (pool.quantity_out or Decimal('0')) + take
+                pool.is_sold = (pool.quantity_in - pool.quantity_out) <= 0
+                pool.save(update_fields=['quantity_out', 'is_sold', 'updated_at'])
+                qty_remaining -= take
+                line_items.append(SaleInventoryLineItem(
+                    sale=sale, inventory=pool, quantity=take,
+                ))
+                if not payment_cycle_assigned and pool.payment_cycle_id:
+                    sale.payment_cycle_id = pool.payment_cycle_id
+                    payment_cycle_assigned = True
+
+            if qty_remaining > 0:
+                logger.critical(
+                    "Sale %s: insufficient stock. Short by %s %s. Stock %s had %s available across %d pool(s).",
+                    sale_id, qty_remaining, sale.unit, stock.id,
+                    stock.quantity_available, len(pools),
                 )
+                return {'status': 'error', 'reason': 'insufficient stock',
+                        'short': float(qty_remaining)}
 
-            elif sale.inventory:
-                inventory = Inventory.objects.select_for_update().get(id=sale.inventory_id)
-                available = inventory.quantity_in - inventory.quantity_out
-                if sale.quantity > available:
-                    logger.critical(
-                        "Sale %s: cannot decrement. Available: %s %s, requested: %s %s. "
-                        "Inventory %s requires manual review.",
-                        sale_id, available, inventory.unit, sale.quantity, inventory.unit, inventory.id,
-                    )
-                    log_audit(
-                        actor=sale.recorded_by,
-                        resource_type='inventory',
-                        resource_id=inventory.id,
-                        action='LOCK',
-                        new_value={
-                            'error': 'insufficient_balance',
-                            'available': float(available),
-                            'requested': float(sale.quantity),
-                        },
-                        cooperative_id=sale.cooperative_id,
-                    )
-                    return
-                inventory.quantity_out += sale.quantity
-                if inventory.running_balance <= 0:
-                    inventory.is_sold = True
-                inventory.save(update_fields=['quantity_out', 'is_sold', 'updated_at'])
-
-                logger.info("Inventory %s decremented by %s for sale %s", inventory.id, sale.quantity, sale_id)
-
+            SaleInventoryLineItem.objects.bulk_create(line_items)
+            stock.quantity_available = (stock.quantity_available or Decimal('0')) - sale.quantity
+            stock.save(update_fields=['quantity_available', 'last_updated'])
             sale.inventory_updated = True
-            sale.save(update_fields=['inventory_updated'])
+            sale.save(update_fields=['inventory_updated', 'payment_cycle'])
 
+            logger.info(
+                "Sale %s allocated FIFO: %s %s across %d pool(s); stock %s now %s.",
+                sale_id, sale.quantity, sale.unit, len(line_items),
+                stock.id, stock.quantity_available,
+            )
+            return {'status': 'ok', 'line_items': len(line_items)}
     except Sale.DoesNotExist:
         logger.error("Sale %s not found. Inventory not decremented.", sale_id)
 
 
 @shared_task(soft_time_limit=30, time_limit=60)
 def reverse_inventory_on_cancellation(sale_id: str):
-    from apps.inventory.models import Inventory
-    from .models import Sale
+    """Reverse the FIFO allocation for a cancelled sale: restore each
+    cycle-pool's quantity_out, restore the Stock aggregate, and delete the
+    SaleInventoryLineItem rows."""
+    from apps.inventory.models import Inventory, Stock
+    from .models import Sale, SaleInventoryLineItem
 
     try:
         with transaction.atomic():
             sale = Sale.objects.select_for_update().get(id=sale_id)
-
             if not sale.inventory_updated:
                 return {'status': 'skipped', 'reason': 'Already reversed'}
 
             line_items = list(sale.line_items.select_related('inventory').all())
-
-            if line_items:
-                inventory_ids = sorted([li.inventory_id for li in line_items])
-                inventories = {
-                    str(i.id): i
-                    for i in Inventory.objects.select_for_update().filter(id__in=inventory_ids)
-                }
-                for li in line_items:
-                    inv = inventories[str(li.inventory_id)]
-                    inv.quantity_out -= li.quantity
-                    if inv.quantity_out < 0:
-                        inv.quantity_out = 0
-                    if inv.running_balance > 0:
-                        inv.is_sold = False
-                    inv.save(update_fields=['quantity_out', 'is_sold', 'updated_at'])
-
-                logger.info(
-                    "Inventory reversed for cancelled sale %s across %d batch(es)",
-                    sale_id, len(line_items),
+            for li in line_items:
+                inv = Inventory.objects.select_for_update().get(id=li.inventory_id)
+                inv.quantity_out = max(
+                    (inv.quantity_out or Decimal('0')) - li.quantity,
+                    Decimal('0'),
                 )
+                inv.is_sold = (inv.quantity_in - inv.quantity_out) > 0
+                inv.save(update_fields=['quantity_out', 'is_sold', 'updated_at'])
 
-            elif sale.inventory:
-                inventory = Inventory.objects.select_for_update().get(id=sale.inventory_id)
-                inventory.quantity_out -= sale.quantity
-                if inventory.quantity_out < 0:
-                    inventory.quantity_out = 0
-                if inventory.running_balance > 0:
-                    inventory.is_sold = False
-                inventory.save(update_fields=['quantity_out', 'is_sold', 'updated_at'])
+            if sale.stock_id:
+                stock = Stock.objects.select_for_update().get(id=sale.stock_id)
+                stock.quantity_available = (
+                    (stock.quantity_available or Decimal('0')) + sale.quantity
+                )
+                stock.save(update_fields=['quantity_available', 'last_updated'])
 
-                logger.info("Inventory %s reversed by %s for cancelled sale %s", inventory.id, sale.quantity, sale_id)
-
+            sale.line_items.all().delete()
             sale.inventory_updated = False
             sale.save(update_fields=['inventory_updated'])
-
+            logger.info(
+                "Sale %s reversed: %d pool(s) restored; stock %s now %s.",
+                sale_id, len(line_items),
+                stock.id if sale.stock_id else 'N/A',
+                stock.quantity_available if sale.stock_id else 'N/A',
+            )
     except Sale.DoesNotExist:
         logger.error("Sale %s not found. Inventory not reversed.", sale_id)

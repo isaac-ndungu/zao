@@ -64,8 +64,8 @@ class Sale(CooperativeScopedModel):
         Buyer, on_delete=models.PROTECT,
         related_name='sales',
     )
-    inventory = models.ForeignKey(
-        'inventory.Inventory', on_delete=models.PROTECT,
+    stock = models.ForeignKey(
+        'inventory.Stock', on_delete=models.PROTECT,
         related_name='sales',
         null=True, blank=True,
     )
@@ -116,11 +116,7 @@ class Sale(CooperativeScopedModel):
     @property
     def all_inventory(self):
         line_items = self.line_items.select_related('inventory').all()
-        if line_items.exists():
-            return [(li.inventory, li.quantity) for li in line_items]
-        if self.inventory:
-            return [(self.inventory, self.quantity)]
-        return []
+        return [(li.inventory, li.quantity) for li in line_items]
 
     def __str__(self):
         return f'{self.invoice_number or "Sale"} — {self.buyer.name} ({self.sale_date})'

@@ -7,13 +7,7 @@ from .tasks import decrement_inventory_on_sale, reverse_inventory_on_cancellatio
 
 @receiver(pre_save, sender=Sale)
 def populate_sale_fields(sender, instance, **kwargs):
-    if instance.inventory_id:
-        inventory = instance.inventory
-        instance.product_type = inventory.product_type
-        instance.grade_letter = inventory.grade
-        instance.unit = inventory.unit
-
-    if instance.quantity and instance.price_per_unit:
+    if instance.quantity and instance.price_per_unit and not instance.total_amount:
         instance.total_amount = instance.quantity * instance.price_per_unit
 
     if instance.pk:

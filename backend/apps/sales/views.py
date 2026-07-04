@@ -67,11 +67,11 @@ class BuyerViewSet(CooperativeScopedViewSet):
 
 class SaleViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'sales.csv'
-    queryset = Sale.objects.all().select_related('buyer', 'inventory', 'cooperative')
+    queryset = Sale.objects.all().select_related('buyer', 'stock', 'cooperative')
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = [
         'buyer__name', 'product_type', 'grade_letter',
-        'invoice_number', 'inventory__batch_id',
+        'invoice_number',
     ]
     ordering_fields = [
         'sale_date', 'total_amount', 'quantity',
@@ -115,36 +115,19 @@ class SaleViewSet(CsvExportMixin, CooperativeScopedViewSet):
 
     def perform_create(self, serializer):
         from django.db import transaction
-        from apps.inventory.models import Inventory
+        from apps.inventory.models import Stock
         from rest_framework.exceptions import ValidationError
 
-        line_items_data = serializer.validated_data.get('line_items', [])
-        inventory = serializer.validated_data.get('inventory')
+        stock_id = serializer.validated_data.get('stock')
         quantity = serializer.validated_data.get('quantity')
 
         with transaction.atomic():
-            if line_items_data:
-                inventory_ids = sorted([item['inventory'] for item in line_items_data])
-                inventories = {
-                    str(i.id): i
-                    for i in Inventory.objects.select_for_update().filter(id__in=inventory_ids)
-                }
-                for item in line_items_data:
-                    inv = inventories[str(item['inventory'])]
-                    available = inv.quantity_in - inv.quantity_out
-                    if item['quantity'] > available:
-                        raise ValidationError(
-                            f'Insufficient inventory in batch {inv.batch_id}: '
-                            f'{float(available)} {inv.unit} available, '
-                            f'{float(item["quantity"])} {inv.unit} requested.'
-                        )
-            elif inventory and quantity:
-                inv = Inventory.objects.select_for_update().get(id=inventory.id)
-                available = inv.quantity_in - inv.quantity_out
-                if quantity > available:
+            if stock_id and quantity:
+                stock = Stock.objects.select_for_update().get(id=stock_id)
+                if quantity > stock.quantity_available:
                     raise ValidationError(
-                        f'Insufficient inventory: {float(available)} {inv.unit} available, '
-                        f'{float(quantity)} {inv.unit} requested.'
+                        f'Insufficient stock: {float(stock.quantity_available)} {stock.unit} available, '
+                        f'{float(quantity)} {stock.unit} requested.'
                     )
 
             if getattr(self.request.user, 'role', None) == 'admin':
