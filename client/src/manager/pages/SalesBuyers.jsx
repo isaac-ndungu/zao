@@ -165,7 +165,8 @@ function CreateSaleForm({ onClose, onSuccess }) {
   const [buyerSearch, setBuyerSearch] = useState('')
   const [buyerResults, setBuyerResults] = useState([])
   const [selectedBuyer, setSelectedBuyer] = useState(null)
-  const [lineItems, setLineItems] = useState([{ inventory_id: '', quantity: 0 }])
+  const [stockId, setStockId] = useState('')
+  const [quantity, setQuantity] = useState(0)
   const [pricePerUnit, setPricePerUnit] = useState(0)
   const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0])
   const [invoiceNumber, setInvoiceNumber] = useState('')
@@ -174,8 +175,9 @@ function CreateSaleForm({ onClose, onSuccess }) {
   const [validationError, setValidationError] = useState('')
   const { showToast } = useToast()
 
-  const { data: inventoryData } = useApi('/api/inventory/')
-  const inventoryBatches = inventoryData?.results || []
+  const { data: stockData } = useApi('/api/stock/')
+  const stockItems = stockData?.results || []
+  const selectedStock = stockItems.find(s => s.id === stockId) || null
 
   const searchBuyer = useCallback(async (q) => {
     setBuyerSearch(q)
@@ -189,61 +191,27 @@ function CreateSaleForm({ onClose, onSuccess }) {
     } catch { showToast({ type: 'error', message: 'Failed to search buyers.' }) }
   }, [])
 
-  const totalQty = lineItems.reduce((s, li) => s + (Number(li.quantity) || 0), 0)
-  const totalAmount = totalQty * Number(pricePerUnit || 0)
-
-  const addLineItem = () => {
-    setValidationError('')
-    setLineItems(prev => [...prev, { inventory_id: '', quantity: 0 }])
-  }
-
-  const removeLineItem = (index) => {
-    setValidationError('')
-    setLineItems(prev => prev.filter((_, i) => i !== index))
-  }
-
-  const updateLineItem = (index, field, value) => {
-    setValidationError('')
-    setLineItems(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item))
-  }
-
-  const selectedBatchIds = lineItems.map(li => li.inventory_id).filter(Boolean)
+  const totalAmount = Number(quantity || 0) * Number(pricePerUnit || 0)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setValidationError('')
 
     if (!selectedBuyer) { setValidationError('Select a buyer.'); return }
-    const validLineItems = lineItems.filter(li => li.inventory_id && Number(li.quantity) > 0)
-    if (validLineItems.length === 0) { setValidationError('Add at least one batch line item with quantity.'); return }
-
-    const ids = validLineItems.map(li => li.inventory_id)
-    if (new Set(ids).size !== ids.length) { setValidationError('Duplicate batch selected.'); return }
-
-    const selectedBatches = validLineItems.map(li => inventoryBatches.find(b => b.id === li.inventory_id)).filter(Boolean)
-    if (selectedBatches.length > 1) {
-      const types = new Set(selectedBatches.map(b => b.product_type))
-      const grades = new Set(selectedBatches.map(b => b.grade))
-      if (types.size > 1 || grades.size > 1) {
-        setValidationError('All batches must have the same product type and grade.')
-        return
-      }
-    }
-
-    for (const li of validLineItems) {
-      const batch = inventoryBatches.find(b => b.id === li.inventory_id)
-      if (batch && Number(li.quantity) > Number(batch.running_balance || batch.quantity_in - batch.quantity_out)) {
-        setValidationError(`Quantity for batch ${batch.batch_id} exceeds available balance (${batch.running_balance || batch.quantity_in - batch.quantity_out}).`)
-        return
-      }
+    if (!stockId) { setValidationError('Select a product / grade (stock).'); return }
+    if (Number(quantity) <= 0) { setValidationError('Quantity must be greater than 0.'); return }
+    if (Number(pricePerUnit) <= 0) { setValidationError('Price per unit must be greater than 0.'); return }
+    if (selectedStock && Number(quantity) > Number(selectedStock.quantity_available)) {
+      setValidationError(`Insufficient stock: ${selectedStock.quantity_available} ${selectedStock.unit} available, ${quantity} ${selectedStock.unit} requested.`)
+      return
     }
 
     setCreating(true)
     try {
       const body = {
         buyer: selectedBuyer.id,
-        line_items: validLineItems.map(li => ({ inventory: li.inventory_id, quantity: Number(li.quantity) })),
-        quantity: totalQty,
+        stock: stockId,
+        quantity: Number(quantity),
         price_per_unit: Number(pricePerUnit),
         sale_date: saleDate,
         invoice_number: invoiceNumber,
@@ -251,7 +219,7 @@ function CreateSaleForm({ onClose, onSuccess }) {
       }
       const res = await apiFetch('/api/sales/', { method: 'POST', body: JSON.stringify(body) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create sale') }
-      showToast({ type: 'success', message: 'Sale recorded.' })
+      showToast({ type: 'success', message: 'Sale recorded. The server allocated FIFO across cycle-pools.' })
       onSuccess(); onClose()
     } catch (err) { setValidationError(err.message) }
     finally { setCreating(false) }
@@ -282,56 +250,24 @@ function CreateSaleForm({ onClose, onSuccess }) {
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-label-md text-on-surface-variant">Batch Line Items</label>
-            <button type="button" onClick={addLineItem} className="text-primary text-label-md font-bold flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">add</span>Add Batch
-            </button>
-          </div>
-          <div className="space-y-3">
-            {lineItems.map((item, index) => (
-              <div key={index} className="flex gap-2 items-start">
-                <div className="flex-1">
-                  <select
-                    value={item.inventory_id}
-                    onChange={(e) => updateLineItem(index, 'inventory_id', e.target.value)}
-                    className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-                  >
-                    <option value="">Select batch...</option>
-                    {inventoryBatches
-                      .filter(b => !selectedBatchIds.includes(b.id) || b.id === item.inventory_id)
-                      .map(b => (
-                        <option key={b.id} value={b.id}>
-                          {b.batch_id} — {b.product_type} ({b.grade}) — avail: {b.running_balance || Number(b.quantity_in - b.quantity_out)}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <div className="w-28">
-                  <input
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    value={item.quantity || ''}
-                    onChange={(e) => updateLineItem(index, 'quantity', e.target.value)}
-                    placeholder="Qty"
-                    className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-                  />
-                </div>
-                {lineItems.length > 1 && (
-                  <button type="button" onClick={() => removeLineItem(index)} className="text-error mt-2">
-                    <span className="material-symbols-outlined text-[18px]">remove_circle</span>
-                  </button>
-                )}
-              </div>
+          <label className="block text-label-md text-on-surface-variant mb-1">Product / Grade (Stock)</label>
+          <select value={stockId} onChange={(e) => setStockId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+            <option value="">Select stock...</option>
+            {stockItems.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.product_type} {s.grade ? `(${s.grade})` : ''} — avail: {s.quantity_available} {s.unit}
+              </option>
             ))}
-          </div>
+          </select>
+          {selectedStock && (
+            <p className="text-label-md text-on-surface-variant mt-1">Available: <span className="font-bold text-on-surface">{selectedStock.quantity_available} {selectedStock.unit}</span> — server will allocate FIFO across cycle-pools.</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Total Quantity</label>
-            <input value={totalQty} disabled className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container-low text-on-surface-variant" />
+            <label className="block text-label-md text-on-surface-variant mb-1">Quantity ({selectedStock?.unit || 'unit'})</label>
+            <input type="number" step="0.001" min="0" value={quantity || ''} onChange={(e) => setQuantity(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label className="block text-label-md text-on-surface-variant mb-1">Price per Unit (KES)</label>
