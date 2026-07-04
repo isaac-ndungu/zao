@@ -1,8 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { markdownToHtml } from '../utils/markdown'
-import ErrorState from './ErrorState'
-
+import ErrorState from '../components/ErrorState'
 function fmtDate(s) {
   if (!s) return ''
   return new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
