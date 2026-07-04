@@ -72,6 +72,13 @@ from apps.admin.views import (
     RevokeAllSessionsView,
 )
 
+from apps.legal.admin_views import (
+    LegalAcceptanceLogView,
+    LegalComplianceView,
+    LegalDocumentAdminViewSet,
+    LegalRecentActivityView,
+)
+
 urlpatterns = [
     path('bin/', AdminBinSummaryView.as_view()),
     path('bin/users/', AdminUserBinView.as_view()),
@@ -161,4 +168,12 @@ urlpatterns = [
     path('analytics/payment-efficiency/', AdminAnalyticsViewSet.as_view({'get': 'payment_efficiency'}), name='admin-analytics-payment-efficiency'),
     path('analytics/farmer-retention/', AdminAnalyticsViewSet.as_view({'get': 'farmer_retention'}), name='admin-analytics-farmer-retention'),
     path('analytics/leaderboard/', AdminAnalyticsViewSet.as_view({'get': 'leaderboard'}), name='admin-analytics-leaderboard'),
+
+    # --- Legal admin (privacy policy, ToS, etc.) ---
+    path('legal/documents/', LegalDocumentAdminViewSet.as_view({'get': 'list', 'post': 'create'})),
+    path('legal/documents/<uuid:id>/', LegalDocumentAdminViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
+    path('legal/documents/<uuid:id>/publish/', LegalDocumentAdminViewSet.as_view({'post': 'publish'})),
+    path('legal/acceptances/', LegalAcceptanceLogView.as_view()),
+    path('legal/compliance/', LegalComplianceView.as_view()),
+    path('legal/recent-activity/', LegalRecentActivityView.as_view()),
 ]

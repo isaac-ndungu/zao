@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import LegalDocument, LegalAcceptance
+from .models import LegalAcceptance, LegalDocument
 
 
 class LegalDocumentListSerializer(serializers.ModelSerializer):
@@ -29,3 +29,32 @@ class PendingLegalDocumentSerializer(serializers.Serializer):
     slug = serializers.SlugField()
     title = serializers.CharField()
     version = serializers.IntegerField()
+
+
+class LegalDocumentAdminSerializer(serializers.ModelSerializer):
+    """Full admin serializer for LegalDocument (all fields, writable).
+
+    `published_at` is intentionally read-only here: the `publish`
+    action on the viewset creates a new versioned row and sets
+    `published_at` there. That keeps version history intact and
+    prevents admins from silently re-publishing an old version.
+    """
+    class Meta:
+        model = LegalDocument
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at', 'published_at']
+
+
+class LegalAcceptanceAdminSerializer(serializers.ModelSerializer):
+    """Read-only admin log serializer with denormalized user/doc fields."""
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    document_slug = serializers.CharField(source='document.slug', read_only=True)
+    document_title = serializers.CharField(source='document.title', read_only=True)
+
+    class Meta:
+        model = LegalAcceptance
+        fields = [
+            'id', 'user', 'user_email', 'document', 'document_slug', 'document_title',
+            'version', 'accepted_at', 'ip_address', 'user_agent',
+        ]
+        read_only_fields = fields

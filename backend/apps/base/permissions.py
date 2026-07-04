@@ -90,3 +90,18 @@ class IsManagerOrAuditor(IsInRoles):
 class IsReadOnly(BasePermission):
     def has_permission(self, request, view):
         return request.method in SAFE_METHODS
+
+
+class IsAdminOrSuperUser(BasePermission):
+    """Platform-level admin access: role=admin OR is_superuser=True.
+    Excludes managers, accountants, graders, farmers, auditors, etc.
+    Use for legal/compliance surfaces that must not be exposed to ops roles."""
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and (
+                getattr(request.user, 'is_superuser', False)
+                or getattr(request.user, 'role', None) == UserRole.ADMIN
+            )
+        )
