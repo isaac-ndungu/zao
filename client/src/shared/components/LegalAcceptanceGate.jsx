@@ -85,7 +85,7 @@ export default function LegalAcceptanceGate({ children }) {
                   )}
                   <div className="flex gap-3">
                     <a
-                      href={`/api/legal/${doc.slug}/`}
+                      href={`/legal/${doc.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary text-body-md hover:underline"

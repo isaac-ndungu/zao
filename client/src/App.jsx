@@ -19,6 +19,7 @@ const Solutions = lazy(() => import('./pages/Solutions'))
 const ForFarmers = lazy(() => import('./pages/ForFarmers'))
 const About = lazy(() => import('./pages/About'))
 const Contact = lazy(() => import('./pages/Contact'))
+const LegalPage = lazy(() => import('./shared/pages/LegalPage'))
 
 // Auth pages
 const Login = lazy(() => import('./admin/pages/Login'))
@@ -48,6 +49,9 @@ const AdminProfile = lazy(() => import('./admin/pages/Profile'))
 const AdminNotFound = lazy(() => import('./admin/pages/NotFound'))
 const AdminSearchResults = lazy(() => import('./admin/pages/SearchResults'))
 const GradePricesPage = lazy(() => import('./shared/pages/GradePrices'))
+const LegalDocuments = lazy(() => import('./admin/pages/LegalDocuments'))
+const LegalDocumentEdit = lazy(() => import('./admin/pages/LegalDocumentEdit'))
+const LegalAcceptances = lazy(() => import('./admin/pages/LegalAcceptances'))
 
 // Farmer pages 
 const FarmerDashboard = lazy(() => import('./farmer/pages/Dashboard'))
@@ -195,6 +199,7 @@ export default function App() {
           <Route path="/farmers" element={<SuspenseWrapper><ForFarmers /></SuspenseWrapper>} />
           <Route path="/about" element={<SuspenseWrapper><About /></SuspenseWrapper>} />
           <Route path="/contact" element={<SuspenseWrapper><Contact /></SuspenseWrapper>} />
+          <Route path="/legal/:slug" element={<SuspenseWrapper><LegalPage /></SuspenseWrapper>} />
 
           {/* Login pages */}
           <Route path="/admin/login" element={<SuspenseWrapper><Login /></SuspenseWrapper>} />
@@ -224,6 +229,9 @@ export default function App() {
             <Route path="analytics/seasonal" element={<SuspenseWrapper><SeasonalPatterns /></SuspenseWrapper>} />
             <Route path="analytics/retention" element={<SuspenseWrapper><FarmerRetention /></SuspenseWrapper>} />
             <Route path="search" element={<SuspenseWrapper><AdminSearchResults /></SuspenseWrapper>} />
+            <Route path="legal" element={<SuspenseWrapper><LegalDocuments /></SuspenseWrapper>} />
+            <Route path="legal/documents/:id" element={<SuspenseWrapper><LegalDocumentEdit /></SuspenseWrapper>} />
+            <Route path="legal/acceptances" element={<SuspenseWrapper><LegalAcceptances /></SuspenseWrapper>} />
             <Route path="*" element={<SuspenseWrapper><AdminNotFound /></SuspenseWrapper>} />
           </Route>
 

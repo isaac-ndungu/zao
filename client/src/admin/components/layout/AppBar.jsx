@@ -5,6 +5,7 @@ import PeriodPicker from './PeriodPicker'
 import NotificationBell from '../../../shared/components/NotificationBell'
 import ProfileDropdown from '../../../shared/components/ProfileDropdown'
 import SearchBar from '../../../shared/components/SearchBar'
+import LegalHistoryDropdown from './LegalHistoryDropdown'
 
 const appBarTabs = [
   { label: 'Analytics', path: '/admin/dashboard' },
@@ -71,9 +72,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
       <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
         <NotificationBell />
 
-        <button aria-label="Legal history" className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors hidden sm:block">
-          <span className="material-symbols-outlined">history_edu</span>
-        </button>
+        <LegalHistoryDropdown />
 
         <div className="relative flex items-center gap-3 pl-2 lg:pl-4 border-l border-outline-variant">
           <div className="text-right hidden xl:block">
