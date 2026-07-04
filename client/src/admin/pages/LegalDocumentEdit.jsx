@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import ConfirmModal from '../components/common/ConfirmModal'
 
 export default function LegalDocumentEdit() {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ export default function LegalDocumentEdit() {
   const [requiresAcceptance, setRequiresAcceptance] = useState(true)
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [showPublishConfirm, setShowPublishConfirm] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {

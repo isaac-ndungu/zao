@@ -46,11 +46,6 @@ export default function LegalHistoryDropdown() {
         <div className="absolute right-0 mt-2 w-[360px] max-h-[70vh] overflow-y-auto bg-surface-container-highest border border-outline-variant rounded-xl shadow-2xl z-50">
           <div className="px-4 py-3 border-b border-outline-variant">
             <p className="text-label-md font-bold text-on-surface">Legal history</p>
-            <p className="text-label-md text-on-surface-variant">
-              {pending > 0
-                ? `${pending} document${pending === 1 ? '' : 's'} awaiting user acceptance`
-                : 'No documents pending acceptance'}
-            </p>
           </div>
 
           {recentPublishes.length > 0 && (
