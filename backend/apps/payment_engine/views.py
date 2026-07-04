@@ -305,6 +305,7 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
     @action(detail=True, methods=['get'])
     def export(self, request, pk=None):
         import csv
+        from io import StringIO
         cycle = self.get_object()
         farmer_payments = FarmerPayment.objects.filter(
             cycle=cycle,
@@ -320,18 +321,13 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
             )
         }
 
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = (
-            f'attachment; filename="cycle_{cycle.name}_payments.csv"'
-        )
-
-        writer = csv.writer(response)
+        buf = StringIO()
+        writer = csv.writer(buf)
         writer.writerow([
             'member_number', 'farmer_name', 'total_quantity_kg',
             'gross_amount', 'total_deductions', 'withholding_tax_amount',
             'net_amount', 'payment_method', 'payment_status',
         ])
-
         for fp in farmer_payments:
             membership = memberships.get(fp.farmer_id)
             writer.writerow([
@@ -346,6 +342,10 @@ class PaymentCycleViewSet(CooperativeScopedViewSet):
                 fp.payment_status,
             ])
 
+        response = HttpResponse(buf.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = (
+            f'attachment; filename="cycle_{cycle.name}_payments.csv"'
+        )
         return response
 
 
