@@ -50,22 +50,48 @@ def update_delivery_from_grade(grade):
     return delivery
 
 
-def _reverse_inventory_contribution(delivery, was_rejected):
+def _reverse_cycle_pool_and_stock(delivery, grade_letter):
+    """Decrement the cycle-pool and Stock for a grade's contribution.
+    Used before re-running the grading task (update/override) or on destroy.
+    Pass the OLD grade_letter for update/override (the grade has been saved with
+    the new values by the time this is called)."""
+    from decimal import Decimal
+    from apps.inventory.models import Inventory, Stock
+    from apps.payment_engine.models import PaymentCycle
+
     coop = delivery.cooperative
     product = delivery.product_type
-    inventory = coop.inventory or {}
-    current = inventory.get(product, {})
+    grade_letter = grade_letter or ''
+    qty = delivery.volume_litres if product == 'MILK' else delivery.quantity_kg
+    qty = qty or Decimal('0')
 
-    if was_rejected:
-        current['rejected_qty_kg'] = float(current.get('rejected_qty_kg', 0)) - float(delivery.quantity_kg or 0)
-        current['rejected_volume_litres'] = float(current.get('rejected_volume_litres', 0)) - float(delivery.volume_litres or 0)
-    else:
-        current['graded_qty_kg'] = float(current.get('graded_qty_kg', 0)) - float(delivery.quantity_kg or 0)
-        current['graded_volume_litres'] = float(current.get('graded_volume_litres', 0)) - float(delivery.volume_litres or 0)
+    cycle = PaymentCycle.objects.filter(
+        cooperative=coop,
+        start_date__lte=delivery.date_delivered.date(),
+        end_date__gte=delivery.date_delivered.date(),
+    ).first()
 
-    inventory[product] = current
-    coop.inventory = inventory
-    coop.save(update_fields=['inventory'])
+    if cycle:
+        pool = Inventory.objects.filter(
+            cooperative=coop, payment_cycle=cycle,
+            product_type=product, grade=grade_letter,
+        ).first()
+        if pool is not None:
+            pool.quantity_in = (pool.quantity_in or Decimal('0')) - qty
+            if pool.quantity_in <= 0:
+                pool.delete()
+            else:
+                pool.is_sold = (pool.quantity_in - (pool.quantity_out or Decimal('0'))) <= 0
+                pool.save(update_fields=['quantity_in', 'is_sold', 'updated_at'])
+
+    stock = Stock.objects.filter(
+        cooperative=coop, product_type=product, grade=grade_letter,
+    ).first()
+    if stock is not None:
+        stock.quantity_available = (stock.quantity_available or Decimal('0')) - qty
+        if stock.quantity_available < 0:
+            stock.quantity_available = Decimal('0')
+        stock.save(update_fields=['quantity_available', 'last_updated'])
 
 
 class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
@@ -169,14 +195,14 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
 
     def perform_update(self, serializer):
         instance = serializer.instance
-        was_rejected = bool(instance.rejection_reason)
+        old_grade_letter = instance.grade_letter
         delivery = instance.delivery
 
         serializer.validated_data.pop('delivery', None)
         instance = serializer.save()
         update_delivery_from_grade(instance)
 
-        _reverse_inventory_contribution(delivery, was_rejected)
+        _reverse_cycle_pool_and_stock(delivery, old_grade_letter or '')
 
         instance.is_inventory_updated = False
         instance.save(update_fields=['is_inventory_updated'])
@@ -192,12 +218,8 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
         )
 
     def perform_destroy(self, instance):
-        from apps.inventory.models import Inventory
-
         delivery = instance.delivery
-        was_rejected = bool(instance.rejection_reason)
-        _reverse_inventory_contribution(delivery, was_rejected)
-        Inventory.objects.filter(batch_id=delivery.batch_id, cooperative=delivery.cooperative).delete()
+        _reverse_cycle_pool_and_stock(delivery, instance.grade_letter or '')
 
         log_audit(
             actor=self.request.user,
@@ -220,6 +242,7 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
         serializer.is_valid(raise_exception=True)
 
         was_rejected = bool(grade.rejection_reason)
+        old_grade_letter = grade.grade_letter
         delivery = grade.delivery
 
         previous = {
@@ -242,7 +265,7 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
             'rejection_reason', grade.rejection_reason
         )
 
-        _reverse_inventory_contribution(delivery, was_rejected)
+        _reverse_cycle_pool_and_stock(delivery, old_grade_letter or '')
 
         grade.is_inventory_updated = False
         grade.save()

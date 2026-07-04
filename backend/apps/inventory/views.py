@@ -8,10 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from .models import Inventory
+from .models import Inventory, Stock
 from .serializers import (
     InventoryDetailSerializer,
     InventoryListSerializer,
+    StockSerializer,
 )
 
 
@@ -111,3 +112,20 @@ class InventoryViewSet(ReadOnlyModelViewSet):
             'count': len(results),
             'results': results,
         })
+
+
+class StockViewSet(ReadOnlyModelViewSet):
+    """The 'proper inventory' — current total sellable stock per (cooperative, product, grade)."""
+    queryset = Stock.objects.all()
+    serializer_class = StockSerializer
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['product_type', 'grade']
+    ordering_fields = ['product_type', 'grade', 'quantity_available']
+    ordering = ['product_type', 'grade']
+
+    def get_queryset(self):
+        qs = Stock.objects.all().select_related('cooperative')
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+            return qs
+        return qs.filter(cooperative_id=getattr(user, 'cooperative_id', None))

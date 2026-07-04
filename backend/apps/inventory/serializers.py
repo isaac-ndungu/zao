@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Inventory
+from .models import Inventory, Stock
 
 
 class InventoryListSerializer(serializers.ModelSerializer):
@@ -26,6 +26,16 @@ class InventoryDetailSerializer(serializers.ModelSerializer):
         model = Inventory
         fields = '__all__'
         read_only_fields = [
-            'id', 'batch_id', 'cooperative', 'product_type', 'grade',
+            'id', 'batch_id', 'cooperative', 'payment_cycle', 'product_type', 'grade',
             'unit', 'quantity_in', 'quantity_out', 'created_at', 'updated_at',
         ]
+
+
+class StockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Stock
+        fields = [
+            'id', 'cooperative', 'product_type', 'grade', 'unit',
+            'quantity_available', 'low_stock_threshold', 'last_updated',
+        ]
+        read_only_fields = fields

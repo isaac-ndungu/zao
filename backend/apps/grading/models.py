@@ -41,6 +41,11 @@ class Grade(CooperativeScopedModel):
         'deliveries.Delivery', on_delete=models.CASCADE,
         related_name='grade_record',
     )
+    payment_cycle = models.ForeignKey(
+        'payment_engine.PaymentCycle', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='grades',
+    )
     grade_letter = models.CharField(max_length=20, choices=GradeLetter.choices, blank=True)
     price_per_unit = models.DecimalField(
         max_digits=10, decimal_places=2,
