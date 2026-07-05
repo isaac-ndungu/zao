@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../../hooks/useApi'
+import { LEGAL_INVALIDATE } from '../../../shared/utils/legalEvents'
 
 function fmtDateTime(s) {
   if (!s) return '-'
@@ -11,7 +12,7 @@ export default function LegalHistoryDropdown() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
-  const { data } = useApi('/api/admin/legal/recent-activity/')
+  const { data, refetch } = useApi('/api/admin/legal/recent-activity/')
 
   // Close on outside click
   useEffect(() => {
@@ -23,7 +24,13 @@ export default function LegalHistoryDropdown() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  const pending = data?.pending_required_count ?? 0
+  // Re-fetch when a legal publish or acceptance happens anywhere in the app.
+  useEffect(() => {
+    const handler = () => refetch()
+    window.addEventListener(LEGAL_INVALIDATE, handler)
+    return () => window.removeEventListener(LEGAL_INVALIDATE, handler)
+  }, [refetch])
+
   const recentAcceptances = data?.recent_acceptances ?? []
   const recentPublishes = data?.recent_publishes ?? []
 
@@ -35,11 +42,6 @@ export default function LegalHistoryDropdown() {
         className="relative p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors hidden sm:block"
       >
         <span className="material-symbols-outlined">history_edu</span>
-        {pending > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-error text-on-error text-[10px] font-bold flex items-center justify-center">
-            {pending}
-          </span>
-        )}
       </button>
 
       {open && (

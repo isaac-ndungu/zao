@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '../../admin/api/client'
 import { useAuth } from '../hooks/useAuth'
+import { emitLegalInvalidate } from '../utils/legalEvents'
 
 export default function LegalAcceptanceGate({ children }) {
   const { loading: authLoading, isAuthenticated, logout } = useAuth()
@@ -9,30 +10,30 @@ export default function LegalAcceptanceGate({ children }) {
   const [accepting, setAccepting] = useState(null)
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  const refetch = useCallback(async () => {
     if (!isAuthenticated) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingDocs([])
       setLoading(false)
       return
     }
-
-    let cancelled = false
-    ;(async () => {
-      try {
-        const res = await apiFetch('/api/legal/pending-acceptance/')
-        if (cancelled) return
-        if (res.ok) {
-          const data = await res.json()
-          setPendingDocs(data.pending_documents || [])
-        }
-      } catch {
-        // If the endpoint fails, don't gate access
-      } finally {
-        if (!cancelled) setLoading(false)
+    setLoading(true)
+    try {
+      const res = await apiFetch('/api/legal/pending-acceptance/')
+      if (res.ok) {
+        const data = await res.json()
+        setPendingDocs(data.pending_documents || [])
       }
-    })()
-    return () => { cancelled = true }
+    } catch {
+      // If the endpoint fails, don't gate access
+    } finally {
+      setLoading(false)
+    }
   }, [isAuthenticated])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refetch()
+  }, [refetch])
 
   const handleAccept = async (slug) => {
     setAccepting(slug)
@@ -43,7 +44,10 @@ export default function LegalAcceptanceGate({ children }) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.detail || 'Failed to accept.')
       }
-      setPendingDocs((prev) => prev.filter((d) => d.slug !== slug))
+      // Re-fetch from the server so the source of truth stays there; the
+      // previous optimistic update could mask a stale-state failure.
+      await refetch()
+      emitLegalInvalidate()
     } catch (err) {
       setError(err.message)
     } finally {

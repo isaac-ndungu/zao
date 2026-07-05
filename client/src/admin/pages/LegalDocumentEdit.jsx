@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useApi } from '../hooks/useApi'
 import { apiFetch } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
+import { emitLegalInvalidate } from '../../shared/utils/legalEvents'
 import ErrorState from '../../shared/components/ErrorState'
 import ConfirmModal from '../components/common/ConfirmModal'
 
@@ -45,6 +46,7 @@ export default function LegalDocumentEdit() {
         throw new Error(typeof d === 'string' ? d : JSON.stringify(d))
       }
       showToast({ type: 'success', message: 'Saved.' })
+      emitLegalInvalidate()
       navigate('/admin/legal')
     } catch (err) {
       setError(err.message)
@@ -71,6 +73,7 @@ export default function LegalDocumentEdit() {
         throw new Error(typeof d === 'string' ? d : JSON.stringify(d))
       }
       showToast({ type: 'success', message: 'New version published.' })
+      emitLegalInvalidate()
       navigate('/admin/legal')
     } catch (err) {
       setError(err.message)
