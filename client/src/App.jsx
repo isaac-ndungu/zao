@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AdminAuthProvider } from './admin/contexts/AdminAuthContext'
 import AdminGuard from './admin/components/common/AdminGuard'
 import AdminLayout from './admin/layouts/AdminLayout'
@@ -12,6 +12,7 @@ import ErrorBoundary from './shared/components/ErrorBoundary'
 import { FarmerAuthProvider } from './farmer/context/FarmerAuthContext'
 import { ToastProvider } from './farmer/components/Toast'
 import BottomNav from './farmer/components/BottomNav'
+import ChatWidget from './shared/components/ChatWidget'
 
 // Public pages
 const Home = lazy(() => import('./pages/Home'))
@@ -148,12 +149,16 @@ function AdminRoutes() {
 
 // Farmer mobile layout with bottom navigation
 function FarmerLayoutWithNav() {
+  const location = useLocation()
+  const isChatPage = location.pathname === '/farmer/chat'
+
   return (
     <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
       <div className="px-4 pt-4">
         <Outlet />
       </div>
       <BottomNav />
+      {!isChatPage && <ChatWidget />}
     </div>
   )
 }

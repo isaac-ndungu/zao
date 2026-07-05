@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { ToastProvider } from './ToastProvider'
 import OfflineBanner from './OfflineBanner'
+import ChatWidget from './ChatWidget'
 
 export default function DashboardLayout({ sidebar, header, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -32,12 +33,12 @@ export default function DashboardLayout({ sidebar, header, children }) {
                 })
               : header
           )}
-          <OfflineBanner />
+<OfflineBanner />
           <main className={`${header ? 'mt-16' : ''} p-container-margin min-h-[calc(100vh-4rem)] max-w-[1600px] mx-auto w-full`}>
             {children || <Outlet />}
           </main>
         </div>
-      </div>
-    </ToastProvider>
+        <ChatWidget />
+      </ToastProvider>
   )
 }
