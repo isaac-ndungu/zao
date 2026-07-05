@@ -75,22 +75,15 @@ class LegalDocumentAdminViewSet(viewsets.ModelViewSet):
             .first()
         )
         new_version = (latest.version + 1) if latest else 1
-        new_doc = LegalDocument.objects.create(
+        new_doc = LegalDocument.objects.publish_new(
             slug=doc.slug,
+            actor=request.user,
+            ip_address=request.META.get('REMOTE_ADDR'),
             title=doc.title,
             content=doc.content,
             version=new_version,
-            is_active=True,
             requires_acceptance=doc.requires_acceptance,
             published_at=timezone.now(),
-        )
-        log_audit(
-            actor=request.user,
-            resource_type='legal_document',
-            resource_id=new_doc.id,
-            action='PUBLISH',
-            new_value={'slug': new_doc.slug, 'version': new_doc.version},
-            ip_address=request.META.get('REMOTE_ADDR'),
         )
         return Response(LegalDocumentAdminSerializer(new_doc).data, status=status.HTTP_201_CREATED)
 

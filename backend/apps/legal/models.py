@@ -1,7 +1,46 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 import uuid
+
+
+class LegalDocumentManager(models.Manager):
+    def publish_new(self, slug, *, actor=None, ip_address=None, **fields):
+        """Atomically supersede any active version of ``slug`` and create a new one.
+
+        Steps performed inside a single transaction:
+        1. Mark all currently-active rows of this slug as ``is_active=False``.
+        2. Insert the new row as ``is_active=True``.
+        3. Write an audit log entry recording the publish event.
+
+        Returns the newly-created :class:`LegalDocument`. The partial
+        ``UniqueConstraint`` on ``(slug, is_active=True)`` guarantees that
+        if the transaction ever commits with two active rows for the same
+        slug, the database will reject the second insert.
+        """
+        from apps.base.utils import log_audit
+
+        with transaction.atomic():
+            LegalDocument = self.model
+            LegalDocument.objects.filter(slug=slug, is_active=True).update(
+                is_active=False
+            )
+            new_doc = LegalDocument.objects.create(
+                slug=slug, is_active=True, **fields
+            )
+            log_audit(
+                actor=actor,
+                resource_type='LegalDocument',
+                resource_id=new_doc.pk,
+                action='PUBLISH',
+                new_value={
+                    'slug': slug,
+                    'version': new_doc.version,
+                    'requires_acceptance': new_doc.requires_acceptance,
+                },
+                ip_address=ip_address,
+            )
+            return new_doc
 
 
 class LegalDocument(models.Model):
@@ -25,12 +64,21 @@ class LegalDocument(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = LegalDocumentManager()
+
     class Meta:
         verbose_name = 'Legal Document'
         verbose_name_plural = 'Legal Documents'
         ordering = ['-published_at', '-version']
         indexes = [
             models.Index(fields=['slug', 'is_active', 'published_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['slug'],
+                condition=models.Q(is_active=True),
+                name='uniq_active_slug',
+            ),
         ]
 
     def __str__(self):
