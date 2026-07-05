@@ -16,7 +16,22 @@ class LegalDocumentDetailSerializer(serializers.ModelSerializer):
 
 
 class LegalAcceptanceInputSerializer(serializers.Serializer):
+    """Input schema for POST /api/legal/<slug>/accept/.
+
+    ``version`` is optional. When supplied, the view verifies that it
+    matches the currently active version's version — a mismatch returns
+    400 so the client can refresh the page and re-read the document.
+    """
     slug = serializers.SlugField()
+    version = serializers.IntegerField(required=False, min_value=1)
+
+
+class MyAcceptanceSerializer(serializers.Serializer):
+    """Read-only response for GET /api/legal/<slug>/my-acceptance/."""
+    accepted = serializers.BooleanField()
+    accepted_version = serializers.IntegerField(allow_null=True)
+    accepted_at = serializers.DateTimeField(allow_null=True)
+    current_version = serializers.IntegerField()
 
 
 class LegalAcceptanceSerializer(serializers.ModelSerializer):

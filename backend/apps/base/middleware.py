@@ -176,6 +176,12 @@ class LegalAcceptanceMiddleware:
             if not any(path.startswith(p) for p in self.SAFE_PATHS):
                 from apps.legal.models import LegalDocument, LegalAcceptance
 
+                # Phase 2 simplification: with the partial UniqueConstraint
+                # in place, at most one active row exists per slug, so
+                # ``document=OuterRef('pk')`` is sufficient to mark a doc as
+                # accepted for this user. (Previously, ``version=OuterRef(
+                # 'version')`` caused users to be re-prompted for v1 after
+                # v2 was published even though v2 implies v1 acceptance.)
                 has_pending = LegalDocument.objects.filter(
                     is_active=True,
                     requires_acceptance=True,
@@ -185,7 +191,6 @@ class LegalAcceptanceMiddleware:
                         LegalAcceptance.objects.filter(
                             user=request.user,
                             document=OuterRef('pk'),
-                            version=OuterRef('version'),
                         )
                     ),
                 ).filter(has_accepted=False).exists()

@@ -342,6 +342,198 @@ class TestPendingAcceptanceView:
         assert resp.status_code == 401
 
 
+class TestMyAcceptanceView:
+    """Phase 2: GET /api/legal/<slug>/my-acceptance/ returns the current
+    user's acceptance state for a slug, used by the public LegalPage to
+    render the re-acceptance banner.
+    """
+
+    def test_anonymous_returns_401(self, client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        resp = client.get('/api/legal/privacy-policy/my-acceptance/')
+        assert resp.status_code == 401
+
+    def test_unknown_slug_returns_404(self, api_client):
+        resp = api_client.get('/api/legal/unknown/my-acceptance/')
+        assert resp.status_code == 404
+
+    def test_never_accepted_returns_not_accepted(self, api_client):
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        resp = api_client.get('/api/legal/privacy-policy/my-acceptance/')
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['accepted'] is False
+        assert data['accepted_version'] is None
+        assert data['accepted_at'] is None
+        assert data['current_version'] == 1
+
+    def test_accepted_returns_accepted(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        LegalAcceptance.objects.create(
+            user=api_client.user, document=doc, version=doc.version,
+        )
+        resp = api_client.get('/api/legal/privacy-policy/my-acceptance/')
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['accepted'] is True
+        assert data['accepted_version'] == 1
+        assert data['current_version'] == 1
+
+    def test_accepted_v1_current_v2_after_publish(self, api_client):
+        """User accepted v1; admin published v2. The endpoint should report
+        the user's prior v1 acceptance and the current v2 version.
+        """
+        v1 = LegalDocument.objects.publish_new(
+            slug='privacy-policy',
+            title='PP v1', content='v1',
+            version=1, published_at=timezone.now(),
+        )
+        LegalAcceptance.objects.create(
+            user=api_client.user, document=v1, version=1,
+        )
+        v2 = LegalDocument.objects.publish_new(
+            slug='privacy-policy',
+            title='PP v2', content='v2',
+            version=2, published_at=timezone.now(),
+        )
+        resp = api_client.get('/api/legal/privacy-policy/my-acceptance/')
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data['accepted'] is True
+        assert data['accepted_version'] == 1
+        assert data['current_version'] == 2
+
+
+class TestLegalAcceptanceVersionMismatch:
+    """Phase 2: POST /api/legal/<slug>/accept/ with a wrong version
+    returns 400 (not 409).
+    """
+
+    def test_correct_version_is_accepted(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=3, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.post(
+            '/api/legal/privacy-policy/accept/',
+            {'version': 3}, format='json',
+        )
+        assert resp.status_code == 200
+        assert LegalAcceptance.objects.filter(
+            user=api_client.user, document=doc, version=3,
+        ).exists()
+
+    def test_wrong_version_returns_400(self, api_client):
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=3, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.post(
+            '/api/legal/privacy-policy/accept/',
+            {'version': 1}, format='json',
+        )
+        assert resp.status_code == 400
+        assert 'Version mismatch' in resp.json()['detail']
+        assert 'current version is 3' in resp.json()['detail']
+
+    def test_no_version_field_still_works(self, api_client):
+        """Backwards-compat: existing clients that don't send a version
+        keep working.
+        """
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=2, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.post('/api/legal/privacy-policy/accept/')
+        assert resp.status_code == 200
+        assert LegalAcceptance.objects.filter(
+            user=api_client.user, document=doc, version=2,
+        ).exists()
+
+    def test_invalid_version_value_returns_400(self, api_client):
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=2, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.post(
+            '/api/legal/privacy-policy/accept/',
+            {'version': 'not-a-number'}, format='json',
+        )
+        assert resp.status_code == 400
+
+
+class TestPhase2SimplifiedHasAccepted:
+    """Phase 2: with the partial UniqueConstraint guaranteeing at most one
+    active row per slug, the simplified has_accepted check (matching on
+    document pk alone) means a user who accepts the latest version is
+    not re-prompted for stale rows of the same slug.
+    """
+
+    def test_user_accepted_v2_not_in_pending_after_publish(self, api_client):
+        v1 = LegalDocument.objects.publish_new(
+            slug='privacy-policy',
+            title='PP v1', content='v1',
+            version=1, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        v2 = LegalDocument.objects.publish_new(
+            slug='privacy-policy',
+            title='PP v2', content='v2',
+            version=2, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        # User accepts v2 (the current active version)
+        LegalAcceptance.objects.create(
+            user=api_client.user, document=v2, version=2,
+        )
+        # Pending-acceptance should be empty even though the user never
+        # explicitly accepted v1
+        resp = api_client.get('/api/legal/pending-acceptance/')
+        assert resp.status_code == 200
+        assert len(resp.json()['pending_documents']) == 0
+
+    def test_user_with_no_acceptance_still_in_pending(self, api_client):
+        LegalDocument.objects.publish_new(
+            slug='privacy-policy',
+            title='PP', content='x',
+            version=1, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.get('/api/legal/pending-acceptance/')
+        assert resp.status_code == 200
+        assert len(resp.json()['pending_documents']) == 1
+
+    def test_two_distinct_slugs_both_pending(self, api_client):
+        LegalDocument.objects.publish_new(
+            slug='privacy-policy', title='PP', content='x',
+            version=1, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        LegalDocument.objects.publish_new(
+            slug='terms-of-service', title='ToS', content='x',
+            version=1, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.get('/api/legal/pending-acceptance/')
+        assert resp.status_code == 200
+        slugs = {d['slug'] for d in resp.json()['pending_documents']}
+        assert slugs == {'privacy-policy', 'terms-of-service'}
+
+
 class TestPublishNew:
     """Phase 1: tests for the LegalDocumentManager.publish_new helper
     and the partial UniqueConstraint that enforces 'one active version
