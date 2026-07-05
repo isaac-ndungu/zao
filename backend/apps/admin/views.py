@@ -1,6 +1,9 @@
 import logging
 import uuid
 import secrets
+import csv
+import json
+from io import StringIO
 from datetime import timedelta
 
 from django.conf import settings
@@ -26,6 +29,63 @@ from apps.auth_api.models import TwoFactorOTP
 from apps.auth_api.serializers import INVITE_TOKEN_SALT
 
 logger = logging.getLogger(__name__)
+
+
+# CSV export helpers (used by AdminAnalyticsViewSet and AdminAuditLogView)
+
+
+def _wants_csv_export(request):
+    """Check whether the request wants a CSV export.
+
+    Accepts both ``?format=csv`` and ``?export=csv`` so the frontend's
+    ``exportCsv(...)`` helper (which passes ``?export=csv``) and the
+    legal audit log export (which uses ``?format=csv``) both work.
+    """
+    fmt = (request.query_params.get('format') or request.query_params.get('export') or '').lower()
+    return fmt == 'csv'
+
+
+def _analytics_csv_response(data, filename):
+    """Build a proper CSV response (StringIO + HttpResponse) for an analytics
+    result. Handles dict-of-scalars, list-of-dicts, generic dict, and an
+    optional ``comparison`` block for the previous period. The lineterminator
+    is captured by the StringIO buffer 
+    """
+    buf = StringIO()
+    writer = csv.writer(buf)
+    if isinstance(data, dict):
+        period = data.get('period')
+        if period:
+            writer.writerow([f"### Period: {period.get('start', '')} to {period.get('end', '')}"])
+        body = data.get('data', data)
+    else:
+        body = data
+    if isinstance(body, dict) and body and all(isinstance(v, (int, float, str, type(None))) for v in body.values()):
+        writer.writerow(['metric', 'value'])
+        for k, v in body.items():
+            writer.writerow([k, '' if v is None else v])
+    elif isinstance(body, list) and body and isinstance(body[0], dict):
+        headers = list(body[0].keys())
+        writer.writerow(headers)
+        for row in body:
+            writer.writerow(['' if v is None else (json.dumps(v) if isinstance(v, (dict, list)) else v) for v in row.values()])
+    else:
+        writer.writerow(['key', 'value'])
+        items = list(body.items()) if isinstance(body, dict) else []
+        for k, v in items:
+            writer.writerow([k, '' if v is None else (json.dumps(v) if isinstance(v, (dict, list)) else v)])
+    if isinstance(data, dict) and 'comparison' in data:
+        comp = data['comparison']
+        writer.writerow([])
+        writer.writerow(['### Comparison: previous period'])
+        prev = comp.get('previous_period', {})
+        if isinstance(prev, dict):
+            writer.writerow(['metric', 'value'])
+            for k, v in prev.items():
+                writer.writerow([k, '' if v is None else (json.dumps(v) if isinstance(v, (dict, list)) else v)])
+    response = HttpResponse(buf.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 from apps.analytics.cache import get_cached_analytics, record_access, set_cached_analytics
 from apps.analytics.queries.admin import (
     get_admin_dashboard,
@@ -1058,6 +1118,34 @@ class AdminAuditLogView(APIView):
         if date_to:
             qs = qs.filter(created_at__lte=date_to)
 
+        if _wants_csv_export(request):
+            class Echo:
+                def write(self, value):
+                    return value
+            writer = csv.writer(Echo())
+            def row_generator():
+                yield writer.writerow([
+                    'timestamp', 'actor_id', 'actor_email', 'action',
+                    'resource_type', 'resource_id', 'ip_address', 'user_agent',
+                    'previous_value', 'new_value',
+                ])
+                for a in qs:
+                    yield writer.writerow([
+                        a.created_at.isoformat() if a.created_at else '',
+                        str(a.actor_id) if a.actor_id else '',
+                        a.actor.email if a.actor_id else '',
+                        a.action or '',
+                        a.resource_type or '',
+                        str(a.resource_id) if a.resource_id else '',
+                        a.ip_address or '',
+                        a.user_agent or '',
+                        json.dumps(a.previous_value) if a.previous_value else '',
+                        json.dumps(a.new_value) if a.new_value else '',
+                    ])
+            response = StreamingHttpResponse(row_generator(), content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="audit_log.csv"'
+            return response
+
         paginator = AdminPagination()
         page = paginator.paginate_queryset(qs, request)
         if page is not None:
@@ -1263,7 +1351,8 @@ class AdminDeliveryAssignGradeView(APIView):
 
     @idempotent()
     def post(self, request, pk):
-        from django.utils import timezone
+from django.utils import timezone
+from django.http import HttpResponse, StreamingHttpResponse
         from apps.grading.models import Grade
         from apps.grading.views import update_delivery_from_grade
         from apps.grading.tasks import update_inventory_on_grade
@@ -2073,6 +2162,15 @@ class AdminAnalyticsViewSet(ViewSet):
         return Response(result)
 
     def _action(self, fn):
+        if _wants_csv_export(self.request):
+            params = self._parse_params()
+            result = fn(
+                start_date=params['start_date'],
+                end_date=params['end_date'],
+                compare_to=params.get('compare_to'),
+            )
+            action_name = fn.__name__.replace('get_admin_', '')
+            return _analytics_csv_response(result, f'admin_{action_name}.csv')
         params = self._parse_params()
         def compute(p):
             return fn(
@@ -2184,4 +2282,7 @@ class AdminAnalyticsViewSet(ViewSet):
             cache.zadd(redis_key, mapping)
             cache.expire(redis_key, 7200)
 
-        return Response({'type': _type, 'limit': limit, 'period': period, 'data': items})
+        result = {'type': _type, 'limit': limit, 'period': period, 'data': items}
+        if _wants_csv_export(self.request):
+            return _analytics_csv_response(result, 'admin_leaderboard.csv')
+        return Response(result)
