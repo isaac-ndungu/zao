@@ -53,12 +53,16 @@ export default function LegalDocumentEdit() {
     }
   }
 
-  const handlePublish = async () => {
+  const openPublishConfirm = () => {
     if (isNew) {
       showToast({ type: 'error', message: 'Save the document first, then publish a new version.' })
       return
     }
-    if (!confirm('Publish a new version? This will create a v+1 row and mark it active.')) return
+    setShowPublishConfirm(true)
+  }
+
+  const performPublish = async () => {
+    setShowPublishConfirm(false)
     setPublishing(true)
     try {
       const res = await apiFetch(`/api/admin/legal/documents/${id}/publish/`, { method: 'POST' })
@@ -150,7 +154,7 @@ export default function LegalDocumentEdit() {
           {!isNew && (
             <button
               type="button"
-              onClick={handlePublish}
+              onClick={openPublishConfirm}
               disabled={publishing}
               className="px-4 py-2 border border-primary text-primary rounded-lg text-label-md font-bold hover:bg-primary/5 transition-colors disabled:opacity-50"
             >
@@ -166,6 +170,16 @@ export default function LegalDocumentEdit() {
           </button>
         </div>
       </form>
+
+      <ConfirmModal
+        open={showPublishConfirm}
+        title="Publish new version"
+        message={`This will create version v${(existing?.version || 0) + 1} of "${existing?.title || slug}" and mark it active. Users will see this new version going forward; the current version (v${existing?.version || 0}) remains in the system as part of the version history.`}
+        confirmLabel={`Publish v${(existing?.version || 0) + 1}`}
+        loading={publishing}
+        onConfirm={performPublish}
+        onCancel={() => setShowPublishConfirm(false)}
+      />
     </div>
   )
 }
