@@ -51,6 +51,9 @@ class AuditAction(models.TextChoices):
     ADMIN_PURGE = 'ADMIN_PURGE', 'Admin Purge'
     SNAPSHOT_FAILED = 'SNAPSHOT_FAILED', 'Snapshot Failed'
     EXPORT_FAILED = 'EXPORT_FAILED', 'Export Failed'
+    PUBLISH = 'PUBLISH', 'Published legal document'
+    ACCEPT = 'ACCEPT', 'Accepted legal document'
+    DEACTIVATE = 'DEACTIVATE', 'Deactivated legal document'
 
 
 class LocationMixin(models.Model):

@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.base.idempotency import idempotent
+from apps.base.models import AuditAction
 from apps.base.utils import log_audit
 
 from .models import LegalDocument, LegalAcceptance
@@ -122,7 +123,7 @@ class LegalAcceptanceView(APIView):
                 actor=request.user,
                 resource_type='legal_document',
                 resource_id=doc.pk,
-                action='ACCEPT',
+                action=AuditAction.ACCEPT,
                 new_value={'slug': doc.slug, 'version': doc.version},
                 ip_address=request.META.get('REMOTE_ADDR'),
             )

@@ -173,6 +173,7 @@ urlpatterns = [
     path('legal/documents/', LegalDocumentAdminViewSet.as_view({'get': 'list', 'post': 'create'})),
     path('legal/documents/<uuid:id>/', LegalDocumentAdminViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})),
     path('legal/documents/<uuid:id>/publish/', LegalDocumentAdminViewSet.as_view({'post': 'publish'})),
+    path('legal/documents/<uuid:id>/deactivate/', LegalDocumentAdminViewSet.as_view({'post': 'deactivate'})),
     path('legal/acceptances/', LegalAcceptanceLogView.as_view()),
     path('legal/compliance/', LegalComplianceView.as_view()),
     path('legal/recent-activity/', LegalRecentActivityView.as_view()),

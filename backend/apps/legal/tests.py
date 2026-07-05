@@ -688,3 +688,208 @@ class TestSyncLegalDocumentsCommand:
                 .filter(slug='privacy-policy').count()) == 1
         assert (LegalDocument.objects
                 .filter(slug='privacy-policy', version=1).count()) == 1
+
+
+class TestAuditActionEnum:
+    """Phase 3: PUBLISH, ACCEPT, DEACTIMATE must be in the enum so the
+    audit log displays a friendly label instead of the raw string.
+    """
+
+    def test_publish_in_enum(self):
+        from apps.base.models import AuditAction
+        assert AuditAction.PUBLISH.value == 'PUBLISH'
+
+    def test_accept_in_enum(self):
+        from apps.base.models import AuditAction
+        assert AuditAction.ACCEPT.value == 'ACCEPT'
+
+    def test_deactivate_in_enum(self):
+        from apps.base.models import AuditAction
+        assert AuditAction.DEACTIVATE.value == 'DEACTIVATE'
+
+
+class TestLegalDocumentAdminSerializerReadOnlyFields:
+    """Phase 3: slug, is_active, requires_acceptance, published_at are
+    read-only on PATCH/PUT. Only the dedicated actions can mutate them.
+    """
+
+    def test_slug_is_read_only_on_patch(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        resp = api_client.patch(
+            f'/api/admin/legal/documents/{doc.id}/',
+            {'slug': 'new-slug', 'title': 'PP renamed'},
+            format='json',
+        )
+        assert resp.status_code == 200
+        doc.refresh_from_db()
+        assert doc.slug == 'privacy-policy'
+        assert doc.title == 'PP renamed'
+
+    def test_is_active_is_read_only_on_patch(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        resp = api_client.patch(
+            f'/api/admin/legal/documents/{doc.id}/',
+            {'is_active': False},
+            format='json',
+        )
+        assert resp.status_code == 200
+        doc.refresh_from_db()
+        assert doc.is_active is True
+
+    def test_requires_acceptance_is_read_only_on_patch(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        resp = api_client.patch(
+            f'/api/admin/legal/documents/{doc.id}/',
+            {'requires_acceptance': False},
+            format='json',
+        )
+        assert resp.status_code == 200
+        doc.refresh_from_db()
+        assert doc.requires_acceptance is True
+
+
+class TestDeactivateAction:
+    """Phase 3: POST /api/admin/legal/documents/<id>/deactivate/
+    deactivates a single version. Requires ?confirm=true to guard
+    against misclicks; writes a DEACTIVATE audit log.
+    """
+
+    def test_deactivate_without_confirm_returns_400(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        resp = api_client.post(
+            f'/api/admin/legal/documents/{doc.id}/deactivate/',
+        )
+        assert resp.status_code == 400
+        assert 'confirm=true' in resp.json()['detail']
+        doc.refresh_from_db()
+        assert doc.is_active is True
+
+    def test_deactivate_with_confirm_succeeds(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        resp = api_client.post(
+            f'/api/admin/legal/documents/{doc.id}/deactivate/?confirm=true',
+        )
+        assert resp.status_code == 200
+        doc.refresh_from_db()
+        assert doc.is_active is False
+        assert 'no active version' in resp.json()['detail']
+
+    def test_deactivate_already_inactive_returns_400(self, api_client):
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=False, published_at=timezone.now(),
+        )
+        resp = api_client.post(
+            f'/api/admin/legal/documents/{doc.id}/deactivate/?confirm=true',
+        )
+        assert resp.status_code == 400
+        assert 'already inactive' in resp.json()['detail']
+
+    def test_deactivate_writes_audit_log(self, api_client):
+        from apps.base.models import AuditAction
+        doc = LegalDocument.objects.create(
+            slug='privacy-policy', title='PP', content='## C',
+            version=1, is_active=True, published_at=timezone.now(),
+        )
+        api_client.post(
+            f'/api/admin/legal/documents/{doc.id}/deactivate/?confirm=true',
+        )
+        log = AuditLog.objects.filter(
+            resource_id=doc.id, action=AuditAction.DEACTIVATE,
+        ).first()
+        assert log is not None
+        assert log.previous_value['is_active'] is True
+        assert log.new_value['is_active'] is False
+
+
+class TestLegalRecentActivity:
+    """Phase 3: pending_required_count removed; recent_publishes deduped
+    by slug.
+    """
+
+    def test_no_pending_required_count_in_response(self, api_client):
+        resp = api_client.get('/api/admin/legal/recent-activity/')
+        assert resp.status_code == 200
+        assert 'pending_required_count' not in resp.json()
+
+    def test_publishes_deduped_by_slug(self, api_client):
+        from datetime import timedelta
+        now = timezone.now()
+        # Same slug, three versions
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP v1', content='v1',
+            version=1, is_active=False,
+            published_at=now - timedelta(days=2),
+        )
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP v2', content='v2',
+            version=2, is_active=False,
+            published_at=now - timedelta(days=1),
+        )
+        LegalDocument.objects.create(
+            slug='privacy-policy', title='PP v3', content='v3',
+            version=3, is_active=True,
+            published_at=now,
+        )
+        # Different slug
+        LegalDocument.objects.create(
+            slug='terms-of-service', title='ToS v1', content='tos',
+            version=1, is_active=True,
+            published_at=now,
+        )
+        resp = api_client.get('/api/admin/legal/recent-activity/')
+        data = resp.json()
+        slugs = [d['slug'] for d in data['recent_publishes']]
+        # privacy-policy appears once (the v3 publish), not three times
+        assert slugs.count('privacy-policy') == 1
+        assert 'terms-of-service' in slugs
+
+
+class TestLegalComplianceReport:
+    """Phase 3: compliance report counts only the current active version
+    (no per-version duplicates)."""
+
+    def test_compliance_only_includes_current_version(self, api_client):
+        v1 = LegalDocument.objects.publish_new(
+            slug='privacy-policy', title='PP v1', content='v1',
+            version=1, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        # 3 users accept v1
+        for _ in range(3):
+            from apps.conftest import UserFactory
+            user = UserFactory()
+            LegalAcceptance.objects.create(user=user, document=v1, version=1)
+        # Publish v2
+        v2 = LegalDocument.objects.publish_new(
+            slug='privacy-policy', title='PP v2', content='v2',
+            version=2, requires_acceptance=True,
+            published_at=timezone.now(),
+        )
+        # 1 user accepts v2
+        from apps.conftest import UserFactory
+        user = UserFactory()
+        LegalAcceptance.objects.create(user=user, document=v2, version=2)
+        resp = api_client.get('/api/admin/legal/compliance/')
+        assert resp.status_code == 200
+        rows = resp.json()['required_documents']
+        # Only v2 should be in the report (one row, not two)
+        assert len(rows) == 1
+        assert rows[0]['version'] == 2
+        assert rows[0]['accepted_count'] == 1

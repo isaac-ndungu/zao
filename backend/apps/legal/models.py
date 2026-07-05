@@ -18,6 +18,7 @@ class LegalDocumentManager(models.Manager):
         if the transaction ever commits with two active rows for the same
         slug, the database will reject the second insert.
         """
+        from apps.base.models import AuditAction
         from apps.base.utils import log_audit
 
         with transaction.atomic():
@@ -32,7 +33,7 @@ class LegalDocumentManager(models.Manager):
                 actor=actor,
                 resource_type='LegalDocument',
                 resource_id=new_doc.pk,
-                action='PUBLISH',
+                action=AuditAction.PUBLISH,
                 new_value={
                     'slug': slug,
                     'version': new_doc.version,

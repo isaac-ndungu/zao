@@ -1,5 +1,6 @@
 import csv
 
+from django.db import transaction
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse, StreamingHttpResponse
 from django.utils import timezone
@@ -8,6 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.base.models import AuditAction
 from apps.base.permissions import IsAdminOrSuperUser
 from apps.base.utils import log_audit
 
@@ -39,7 +41,7 @@ class LegalDocumentAdminViewSet(viewsets.ModelViewSet):
             actor=self.request.user,
             resource_type='legal_document',
             resource_id=instance.id,
-            action='CREATE',
+            action=AuditAction.CREATE,
             new_value=serializer.data,
             ip_address=self.request.META.get('REMOTE_ADDR'),
         )
@@ -50,7 +52,7 @@ class LegalDocumentAdminViewSet(viewsets.ModelViewSet):
             actor=self.request.user,
             resource_type='legal_document',
             resource_id=instance.id,
-            action='UPDATE',
+            action=AuditAction.UPDATE,
             new_value=serializer.data,
             ip_address=self.request.META.get('REMOTE_ADDR'),
         )
@@ -60,7 +62,7 @@ class LegalDocumentAdminViewSet(viewsets.ModelViewSet):
             actor=self.request.user,
             resource_type='legal_document',
             resource_id=instance.id,
-            action='DELETE',
+            action=AuditAction.DELETE,
             previous_value={'slug': instance.slug, 'version': instance.version},
             ip_address=self.request.META.get('REMOTE_ADDR'),
         )
@@ -86,6 +88,58 @@ class LegalDocumentAdminViewSet(viewsets.ModelViewSet):
             published_at=timezone.now(),
         )
         return Response(LegalDocumentAdminSerializer(new_doc).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, id=None):
+        """Emergency takedown: mark a single version inactive.
+
+        Guards:
+        * The doc must currently be ``is_active=True`` (deactivating an
+          already-inactive row is a no-op error).
+        * Requires ``?confirm=true`` query param so a misclick doesn't
+          silently leave the platform without an active privacy policy /
+          ToS. Without confirm, returns 400 with a clear message.
+        """
+        if request.query_params.get('confirm') != 'true':
+            return Response(
+                {
+                    'detail': (
+                        "Deactivation requires ?confirm=true. NOTE: this will "
+                        "leave no active version of the document; users will "
+                        "not be prompted to accept any version of this "
+                        "document until a new version is published."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        doc = self.get_object()
+        if not doc.is_active:
+            return Response(
+                {'detail': f"{doc.slug} v{doc.version} is already inactive."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            doc.is_active = False
+            doc.save(update_fields=['is_active', 'updated_at'])
+            log_audit(
+                actor=request.user,
+                resource_type='LegalDocument',
+                resource_id=doc.pk,
+                action=AuditAction.DEACTIVATE,
+                previous_value={
+                    'slug': doc.slug, 'version': doc.version, 'is_active': True,
+                },
+                new_value={
+                    'slug': doc.slug, 'version': doc.version, 'is_active': False,
+                },
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        return Response({
+            'detail': (
+                f"Deactivated {doc.slug} v{doc.version}. There is now no "
+                f"active version of '{doc.slug}'."
+            ),
+        })
 
 
 class LegalAcceptanceLogView(APIView):
@@ -137,7 +191,12 @@ class LegalAcceptanceLogView(APIView):
 
 
 class LegalComplianceView(APIView):
-    """Per-document compliance: accepted_count / total_active_users."""
+    """Per-document compliance: accepted_count / total_active_users.
+
+    With the partial UniqueConstraint in place, there is at most one
+    active row per slug, so a single ``has_accepted`` Exists per row is
+    sufficient — no version-matching needed.
+    """
     permission_classes = [IsAdminOrSuperUser]
 
     def get(self, request):
@@ -145,7 +204,6 @@ class LegalComplianceView(APIView):
             LegalAcceptance.objects.filter(
                 user=OuterRef('user'),
                 document=OuterRef('pk'),
-                version=OuterRef('version'),
             )
         )
         required_docs = (
@@ -167,7 +225,7 @@ class LegalComplianceView(APIView):
         results = []
         for doc in required_docs:
             accepted_count = LegalAcceptance.objects.filter(
-                document=doc, version=doc.version,
+                document=doc,
             ).values('user').distinct().count()
             rate = (accepted_count / total_active_users) if total_active_users else 0.0
             results.append({
@@ -187,30 +245,27 @@ class LegalComplianceView(APIView):
 class LegalRecentActivityView(APIView):
     """Feed for the admin appbar 'Legal history' dropdown.
 
-    Returns the count of currently-required-acceptance documents
-    (so the appbar can show a badge), plus recent acceptances and
-    recent publishes for the dropdown body.
+    Returns recent acceptances and recent publishes for the dropdown
+    body. ``pending_required_count`` was removed in Phase 3 — the
+    frontend (Phase 4) drops the badge entirely; this endpoint now
+    just provides the activity feed.
     """
     permission_classes = [IsAdminOrSuperUser]
 
     def get(self, request):
-        pending_count = (
-            LegalDocument.objects.filter(
-                is_active=True,
-                requires_acceptance=True,
-                published_at__lte=timezone.now(),
-            ).count()
-        )
         recent_acceptances = (
             LegalAcceptance.objects.select_related('user', 'document')
             .order_by('-accepted_at')[:10]
         )
+        # Newest publish event per slug (so a single re-published slug
+        # doesn't fill the dropdown).
         recent_publishes = (
-            LegalDocument.objects.filter(published_at__isnull=False)
-            .order_by('-published_at', '-version')[:5]
+            LegalDocument.objects
+            .filter(published_at__isnull=False)
+            .order_by('slug', '-published_at')
+            .distinct('slug')[:5]
         )
         return Response({
-            'pending_required_count': pending_count,
             'recent_acceptances': LegalAcceptanceAdminSerializer(recent_acceptances, many=True).data,
             'recent_publishes': LegalDocumentListSerializer(recent_publishes, many=True).data,
         })

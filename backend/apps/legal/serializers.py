@@ -47,17 +47,29 @@ class PendingLegalDocumentSerializer(serializers.Serializer):
 
 
 class LegalDocumentAdminSerializer(serializers.ModelSerializer):
-    """Full admin serializer for LegalDocument (all fields, writable).
+    """Full admin serializer for LegalDocument.
 
-    `published_at` is intentionally read-only here: the `publish`
-    action on the viewset creates a new versioned row and sets
-    `published_at` there. That keeps version history intact and
-    prevents admins from silently re-publishing an old version.
+    The following fields are intentionally read-only on PATCH/PUT — they
+    are only mutated by their dedicated admin actions, never by a plain
+    update. This keeps the 'one active version per slug' invariant safe
+    from accidental admin edits:
+
+    * ``slug`` — immutable post-creation (changing it would orphan
+      existing acceptance links and break ``/legal/<slug>/`` URLs).
+    * ``is_active`` — only the ``publish`` and ``deactivate`` actions
+      change this; PATCH cannot toggle it directly.
+    * ``requires_acceptance`` — must be set at creation time; toggling
+      it later would silently re-prompt or de-prompt every user.
+    * ``published_at`` — only the ``publish`` action sets this so that
+      version history is preserved.
     """
     class Meta:
         model = LegalDocument
         fields = '__all__'
-        read_only_fields = ['id', 'created_at', 'updated_at', 'published_at']
+        read_only_fields = [
+            'id', 'created_at', 'updated_at',
+            'slug', 'is_active', 'requires_acceptance', 'published_at',
+        ]
 
 
 class LegalAcceptanceAdminSerializer(serializers.ModelSerializer):
