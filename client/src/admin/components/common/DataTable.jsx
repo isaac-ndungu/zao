@@ -22,7 +22,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
     return (
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
         <div className="p-8 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" role="status" aria-label="Loading data" />
         </div>
       </div>
     )
@@ -42,6 +42,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                     ref={(el) => { if (el) el.indeterminate = someSelected }}
                     onChange={handleSelectAll}
                     className="accent-primary rounded"
+                    aria-label={someSelected ? 'Select some rows' : allSelected ? 'Deselect all rows' : 'Select all rows'}
                   />
                 </th>
               )}
@@ -55,11 +56,15 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                       onSort(col.key, sortField === col.key && sortOrder === 'asc' ? 'desc' : 'asc')
                     }
                   }}
+                  aria-sort={col.sortable && sortField === col.key ? (sortOrder === 'asc' ? 'ascending' : 'descending') : col.sortable ? 'none' : undefined}
                 >
                   <span className="flex items-center gap-1">
+                    {col.sortable && (
+                      <span className="sr-only">{sortField === col.key ? `Sorted by ${col.label} ${sortOrder === 'asc' ? 'ascending' : 'descending'}. Select to ${sortOrder === 'asc' ? 'sort descending' : 'sort ascending'}` : `Sort by ${col.label}`}</span>
+                    )}
                     {col.label}
                     {col.sortable && sortField === col.key && (
-                      <span className="material-symbols-outlined text-[14px]">
+                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
                         {sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward'}
                       </span>
                     )}
@@ -70,11 +75,11 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+              {data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (onSelectionChange ? 1 : 0) + (rowActions ? 1 : 0)} className="px-4 py-12 text-center text-body-md text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[32px] block mb-2 text-outline-variant">inbox</span>
-                  {emptyMessage}
+                  <span className="material-symbols-outlined text-[32px] block mb-2 text-outline-variant" aria-hidden="true">inbox</span>
+                  <span className="sr-only">No data:</span> {emptyMessage}
                 </td>
               </tr>
             ) : data.filter(row => row != null).map((row, idx) => (
@@ -92,6 +97,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                       onChange={() => handleSelectRow(row.id)}
                       className="accent-primary rounded"
                       onClick={(e) => e.stopPropagation()}
+                      aria-label={`Select row ${row.id}`}
                     />
                   </td>
                 )}

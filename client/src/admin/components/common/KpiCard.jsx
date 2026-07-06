@@ -25,12 +25,12 @@ export default function KpiCard({ icon, label, value, subvalue, highlighted, tre
         <div className={`p-2.5 rounded-xl flex items-center justify-center ${
           highlighted ? 'bg-white/15 text-white' : 'bg-primary/10 text-primary'
         }`}>
-          <span className="material-symbols-outlined text-[22px]">{icon}</span>
+          <span className="material-symbols-outlined text-[22px]" aria-hidden="true">{icon}</span>
         </div>
 
         {trend !== undefined && trend !== null && (
           <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1 ${trendBg}`}>
-            <span className="material-symbols-outlined text-[13px] font-bold">
+            <span className="material-symbols-outlined text-[13px] font-bold" aria-hidden="true">
               {trend >= 0 ? 'trending_up' : 'trending_down'}
             </span>
             {Math.abs(trend)}%

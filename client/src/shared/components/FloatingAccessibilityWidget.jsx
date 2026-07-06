@@ -71,7 +71,7 @@ function applyPrefs(prefs) {
 
 export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [prefs, updatePref] = useA11yPrefs()
+  const { prefs, updatePref } = useA11yPrefs()
   const panelRef = useRef(null)
   const triggerRef = useRef(null)
 

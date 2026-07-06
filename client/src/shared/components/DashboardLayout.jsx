@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { ToastProvider } from './ToastProvider'
 import OfflineBanner from './OfflineBanner'
 import ChatWidget from './ChatWidget'
-import FloatingAccessibilityWidget from './FloatingAccessibilityWidget'
+import FloatingAccessibilityWidget, { A11yProvider } from './FloatingAccessibilityWidget'
 import SkipLink from './SkipLink'
 
 export default function DashboardLayout({ sidebar, header, children }) {
@@ -11,8 +11,9 @@ export default function DashboardLayout({ sidebar, header, children }) {
   const [sidebarMinimized, setSidebarMinimized] = useState(true)
 
   return (
-    <ToastProvider>
-      <SkipLink />
+    <A11yProvider>
+      <ToastProvider>
+        <SkipLink />
       <div className="flex min-h-screen bg-background">
         {sidebar && (
           <>
@@ -44,6 +45,7 @@ export default function DashboardLayout({ sidebar, header, children }) {
           <FloatingAccessibilityWidget mode="staff" />
         </div>
       </div>
-    </ToastProvider>
+      </ToastProvider>
+    </A11yProvider>
   )
 }

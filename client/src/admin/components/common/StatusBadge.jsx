@@ -23,7 +23,7 @@ export default function StatusBadge({ status, label }) {
   const style = statusStyles[status] || 'bg-surface-container-high text-on-surface-variant'
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide ${style}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${status === 'active' || status === true || status === 'true' || status === 'completed' || status === 'paid' || status === 'accepted' || status === 'processing' ? 'bg-current' : 'bg-current opacity-50'}`} />
+      <span className={`w-1.5 h-1.5 rounded-full ${status === 'active' || status === true || status === 'true' || status === 'completed' || status === 'paid' || status === 'accepted' || status === 'processing' ? 'bg-current' : 'bg-current opacity-50'}`} aria-hidden="true" />
       {label || String(status)}
     </span>
   )

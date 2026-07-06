@@ -37,7 +37,7 @@ export default function SlideOutPanel({ open, onClose, title, children, width = 
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
           <h3 className="font-headline-sm text-headline-sm text-on-surface">{title}</h3>
           <button onClick={onClose} className="p-1 hover:bg-surface-container-high rounded-lg transition-colors" aria-label="Close panel">
-            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">close</span>
           </button>
         </div>
         <div className="overflow-y-auto h-[calc(100%-65px)] p-6">

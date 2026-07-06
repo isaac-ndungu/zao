@@ -38,7 +38,7 @@ export default function ConfirmModal({ open, title, message, confirmLabel = 'Con
             <ul className="space-y-0.5">
               {impactSummary.map((item, i) => (
                 <li key={i} className="text-body-sm text-on-surface-variant flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[14px] text-primary">{item.icon}</span>
+                  <span className="material-symbols-outlined text-[14px] text-primary" aria-hidden="true">{item.icon}</span>
                   {item.count} {item.label}
                 </li>
               ))}
@@ -57,14 +57,15 @@ export default function ConfirmModal({ open, title, message, confirmLabel = 'Con
             ref={confirmRef}
             onClick={onConfirm}
             disabled={loading}
+            aria-describedby={loading ? 'confirm-loading' : undefined}
             className={`px-4 py-2 rounded-lg text-label-md font-bold text-white transition-colors disabled:opacity-50 ${
               destructive ? 'bg-error hover:bg-error/90' : 'bg-primary hover:bg-primary/90'
             }`}
           >
             {loading ? (
-              <span className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-3 w-3 border-b border-white" />
-                Processing...
+              <span className="flex items-center gap-2" id="confirm-loading">
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-white" aria-hidden="true" />
+                <span>Processing...</span>
               </span>
             ) : confirmLabel}
           </button>
