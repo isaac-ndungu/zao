@@ -11,6 +11,7 @@ function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0'
 
 const statusColors = {
   PENDING: 'bg-warning-container text-warning',
+  ACTIVE: 'bg-info-container text-info',
   APPROVED: 'bg-info-container text-info',
   DISBURSED: 'bg-success-container text-success',
   COMPLETED: 'bg-primary-container text-primary',

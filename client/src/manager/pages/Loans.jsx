@@ -187,6 +187,27 @@ export default function Loans() {
                 </div>
               </div>
             )}
+            {Array.isArray(detailLoan.repayments) && detailLoan.repayments.length > 0 && (
+              <div>
+                <p className="text-label-md text-on-surface-variant mb-2">Repayments</p>
+                <div className="space-y-2">
+                  {detailLoan.repayments.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2 bg-surface-container rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]">payments</span>
+                        <div>
+                          <p className="text-body-md text-on-surface">KES {Number(r.amount || 0).toLocaleString()}</p>
+                          <p className="text-xs text-on-surface-variant">{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '-'}</p>
+                        </div>
+                      </div>
+                      <span className={`text-label-sm px-2 py-0.5 rounded-full ${r.status?.toLowerCase() === 'completed' ? 'bg-success-container text-success' : 'bg-warning-container text-warning'}`}>
+                        {r.status || 'PENDING'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </SlideOutPanel>
