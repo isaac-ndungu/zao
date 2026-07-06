@@ -13,6 +13,7 @@ from apps.base.permissions import IsAdminOrManager, IsFarmer, IsGrader, IsManage
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 from apps.base.export_mixins import CsvExportMixin
+from apps.notifications.models import Notification
 
 from .models import Grade, GradeImage, GradePrice, FarmerGradeDispute
 from .serializers import (
@@ -270,6 +271,14 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
         grade.is_inventory_updated = False
         grade.save()
 
+        pending_disputes = FarmerGradeDispute.objects.filter(grade=grade, status='PENDING')
+        for dispute in pending_disputes:
+            dispute.status = 'RESOLVED'
+            dispute.resolved_by = request.user
+            dispute.resolution_notes = f'Auto-resolved when grade was overridden to {grade.grade_letter}.'
+            dispute.resolved_at = timezone.now()
+            dispute.save(update_fields=['status', 'resolved_by', 'resolution_notes', 'resolved_at'])
+
         update_delivery_from_grade(grade)
 
         log_audit(
@@ -426,15 +435,47 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
         dispute.resolution_notes = serializer.validated_data.get('notes', '')
         dispute.resolved_at = timezone.now()
         dispute.save(update_fields=['status', 'resolved_by', 'resolution_notes', 'resolved_at'])
+
+        grade = dispute.grade
+        audit_values = {
+            'status': dispute.status,
+            'resolution_notes': dispute.resolution_notes,
+        }
+        if serializer.validated_data.get('override_grade'):
+            new_grade = serializer.validated_data['new_grade_letter']
+            new_price = serializer.validated_data.get('new_price_per_unit')
+            old_grade = grade.grade_letter
+            old_price = grade.price_per_unit
+            grade.grade_letter = new_grade
+            if new_price is not None:
+                grade.price_per_unit = new_price
+            grade.is_overridden = True
+            grade.overridden_by = request.user
+            grade.save(update_fields=['grade_letter', 'price_per_unit', 'is_overridden', 'overridden_by'])
+            audit_values['grade_override'] = {
+                'old_grade': old_grade,
+                'new_grade': new_grade,
+                'old_price': str(old_price),
+                'new_price': str(new_price) if new_price else None,
+            }
+            Notification.objects.create(
+                cooperative=grade.cooperative,
+                recipient=grade.delivery.farmer,
+                channel='IN_APP',
+                notification_type='GRADE_RESULT',
+                content=(
+                    f'Your dispute has been {dispute.status.lower()}. '
+                    f'Grade updated from {old_grade} to {new_grade}.'
+                ),
+                status='PENDING',
+            )
+
         log_audit(
             actor=request.user,
             resource_type='grade_dispute',
             resource_id=dispute.id,
             action='RESOLVE',
-            new_value={
-                'status': dispute.status,
-                'resolution_notes': dispute.resolution_notes,
-            },
+            new_value=audit_values,
             cooperative_id=request.cooperative_id,
         )
         return Response(GradeDisputeSerializer(dispute).data)

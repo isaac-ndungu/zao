@@ -1,10 +1,18 @@
 import { apiFetch } from '../../admin/api/client'
 import * as offlineQueue from './offlineQueue'
 
+const MAX_RETRIES = 3
+const RETRYABLE_ERRORS = ['Server error', 'Network error', 'ECONNREFUSED', 'ETIMEDOUT']
+
 function chunk(arr, size) {
   const result = []
   for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size))
   return result
+}
+
+function isRetryable(error) {
+  if (!error) return true
+  return RETRYABLE_ERRORS.some(e => String(error).includes(e))
 }
 
 class SyncManager {
@@ -17,10 +25,12 @@ class SyncManager {
     let synced = 0
     let failed = 0
 
-    // -- Sync deliveries --
     const pendingDeliveries = await offlineQueue.getPendingDeliveries()
-    if (pendingDeliveries.length > 0) {
-      const batches = chunk(pendingDeliveries, 50)
+    const toRetry = pendingDeliveries.filter(d => d.retry_count > 0 && d.retry_count < MAX_RETRIES && isRetryable(d.last_error))
+    const toProcess = pendingDeliveries.filter(d => !d.retry_count || d.retry_count < MAX_RETRIES)
+
+    if (toProcess.length > 0) {
+      const batches = chunk(toProcess, 50)
       for (const batch of batches) {
         const payload = {
           deliveries: batch.map(d => ({
@@ -51,20 +61,62 @@ class SyncManager {
               synced += errData.conflicts.length
             }
           } else {
-            for (const d of batch) { await offlineQueue.markFailed(d.local_id, 'Server error') }
-            failed += batch.length
+            const errData = await res.json().catch(() => ({}))
+            const errorMsg = Object.values(errData).flat().join(', ') || 'Server error'
+            for (const d of batch) {
+              if (d.retry_count >= MAX_RETRIES - 1) {
+                await offlineQueue.markFailed(d.local_id, errorMsg)
+                failed++
+              }
+            }
           }
         } catch (e) {
-          for (const d of batch) { await offlineQueue.markFailed(d.local_id, e.message) }
-          failed += batch.length
+          for (const d of batch) {
+            if (d.retry_count >= MAX_RETRIES - 1) {
+              await offlineQueue.markFailed(d.local_id, e.message)
+              failed++
+            }
+          }
         }
       }
       await offlineQueue.deleteSynced()
     }
 
-    // -- Sync grades --
+    if (toRetry.length > 0) {
+      const batches = chunk(toRetry, 50)
+      for (const batch of batches) {
+        const payload = {
+          deliveries: batch.map(d => ({
+            local_id: d.local_id,
+            farmer: d.farmer_id,
+            product_type: d.product_type,
+            quantity_kg: d.quantity_kg,
+            volume_litres: d.volume_litres,
+            shift: d.shift,
+            quality_metrics: d.quality_metrics,
+            latitude: d.latitude,
+            longitude: d.longitude,
+            status: 'PENDING',
+          })),
+        }
+        try {
+          const res = await apiFetch('/api/deliveries/sync/', { method: 'POST', body: JSON.stringify(payload) })
+          if (res.ok) {
+            const data = await res.json()
+            if (data.synced) {
+              for (const s of data.synced) { await offlineQueue.markSynced(s.local_id) }
+              synced += data.synced.length
+            }
+          }
+        } catch {}
+      }
+    }
+
     const pendingGrades = await offlineQueue.getPendingGrades()
     for (const grade of pendingGrades) {
+      if (grade.retry_count >= MAX_RETRIES && isRetryable(grade.last_error)) {
+        continue
+      }
       try {
         const body = {}
         body.delivery = grade.delivery_id
@@ -82,16 +134,13 @@ class SyncManager {
           await offlineQueue.markGradeSynced(grade.local_id, result.id)
           synced++
         } else if (res.status === 400) {
-          // Likely duplicate — delivery already graded. Mark as synced to avoid retry spam.
           await offlineQueue.markGradeSynced(grade.local_id, null)
           synced++
         } else {
           await offlineQueue.markGradeFailed(grade.local_id, 'Server error')
-          failed++
         }
       } catch (e) {
         await offlineQueue.markGradeFailed(grade.local_id, e.message)
-        failed++
       }
     }
 

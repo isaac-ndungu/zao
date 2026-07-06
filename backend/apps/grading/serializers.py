@@ -190,11 +190,24 @@ class GradeDisputeResolveSerializer(serializers.Serializer):
         choices=['RESOLVED', 'REJECTED'], default='RESOLVED', required=False,
     )
     notes = serializers.CharField(required=False, allow_blank=True)
+    override_grade = serializers.BooleanField(default=False, required=False)
+    new_grade_letter = serializers.ChoiceField(
+        choices=['A', 'B', 'C', 'PREMIUM', 'STANDARD'],
+        required=False, allow_null=True,
+    )
+    new_price_per_unit = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True, min_value=0,
+    )
 
     def validate(self, attrs):
-        unknown = set(self.initial_data) - {'resolution', 'notes'}
+        unknown = set(self.initial_data) - {'resolution', 'notes', 'override_grade', 'new_grade_letter', 'new_price_per_unit'}
         if unknown:
             raise serializers.ValidationError(
                 f"Unknown fields: {', '.join(sorted(unknown))}"
             )
+        if attrs.get('override_grade'):
+            if not attrs.get('new_grade_letter'):
+                raise serializers.ValidationError(
+                    {'new_grade_letter': 'Required when override_grade is true.'}
+                )
         return attrs
