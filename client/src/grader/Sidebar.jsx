@@ -1,5 +1,42 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useState, useCallback } from 'react'
+import { useAuth } from '../shared/hooks/useAuth'
+
+function LogoutButton({ minimized }) {
+  const { logout } = useAuth()
+  const [confirming, setConfirming] = useState(false)
+
+  const handleLogout = async () => {
+    if (!confirming) {
+      setConfirming(true)
+      setTimeout(() => setConfirming(false), 3000)
+      return
+    }
+    await logout()
+  }
+
+  if (confirming) {
+    return (
+      <button
+        onClick={handleLogout}
+        className="w-full flex items-center gap-2 px-4 py-2 text-on-primary/90 hover:text-on-primary transition-colors text-[13px]"
+      >
+        <span className="material-symbols-outlined text-[16px]">logout</span>
+        {!minimized && <span>Confirm logout</span>}
+      </button>
+    )
+  }
+
+  return (
+    <button
+      onClick={handleLogout}
+      className="w-full flex items-center gap-2 px-4 py-2 text-on-primary/50 hover:text-on-primary/80 transition-colors text-[13px]"
+    >
+      <span className="material-symbols-outlined text-[16px]">logout</span>
+      {!minimized && <span>Logout</span>}
+    </button>
+  )
+}
 
 const navItems = [
   { to: '/grader/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -61,7 +98,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
         })}
       </nav>
 
-      <div className={`mt-auto pt-6 border-t border-on-primary/10 ${minimized ? 'space-y-2' : 'space-y-4'}`}>
+      <div className={`mt-auto pt-4 border-t border-on-primary/10 ${minimized ? 'space-y-2' : 'space-y-4'}`}>
         {bottomItems.map((item) => (
           <Link
             key={item.to}
@@ -74,6 +111,8 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
             {!minimized && <span className="font-label-md text-label-md">{item.label}</span>}
           </Link>
         ))}
+
+        <LogoutButton minimized={minimized} />
       </div>
     </aside>
   )
