@@ -139,6 +139,34 @@ export async function getCount() {
   })
 }
 
+export async function getFailedDeliveries() {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DELIVERY_STORE, 'readonly')
+    const store = tx.objectStore(DELIVERY_STORE)
+    const request = store.getAll()
+    request.onsuccess = () => {
+      const all = request.result || []
+      resolve(all.filter(d => d.sync_status === 'failed'))
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+export async function getFailedGrades() {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(GRADE_STORE, 'readonly')
+    const store = tx.objectStore(GRADE_STORE)
+    const request = store.getAll()
+    request.onsuccess = () => {
+      const all = request.result || []
+      resolve(all.filter(g => g.sync_status === 'failed'))
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
 
 export async function saveGrade(item) {
   const db = await openDB()

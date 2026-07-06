@@ -3,6 +3,7 @@ import * as offlineQueue from './offlineQueue'
 
 const MAX_RETRIES = 3
 const RETRYABLE_ERRORS = ['Server error', 'Network error', 'ECONNREFUSED', 'ETIMEDOUT']
+const DELIVERY_NOT_FOUND_CODES = ['not found', 'does not exist', 'invalid']
 
 function chunk(arr, size) {
   const result = []
@@ -15,6 +16,12 @@ function isRetryable(error) {
   return RETRYABLE_ERRORS.some(e => String(error).includes(e))
 }
 
+function isDeliveryNotFoundError(error) {
+  if (!error) return false
+  const lower = String(error).toLowerCase()
+  return DELIVERY_NOT_FOUND_CODES.some(code => lower.includes(code))
+}
+
 class SyncManager {
   constructor() {
     this._interval = null
@@ -24,6 +31,7 @@ class SyncManager {
     if (!navigator.onLine) return { synced: 0, failed: 0 }
     let synced = 0
     let failed = 0
+    const syncedDeliveryIds = new Set()
 
     const pendingDeliveries = await offlineQueue.getPendingDeliveries()
     const toRetry = pendingDeliveries.filter(d => d.retry_count > 0 && d.retry_count < MAX_RETRIES && isRetryable(d.last_error))
@@ -51,13 +59,19 @@ class SyncManager {
           if (res.ok) {
             const data = await res.json()
             if (data.synced) {
-              for (const s of data.synced) { await offlineQueue.markSynced(s.local_id) }
+              for (const s of data.synced) {
+                await offlineQueue.markSynced(s.local_id)
+                syncedDeliveryIds.add(s.delivery_id)
+              }
               synced += data.synced.length
             }
           } else if (res.status === 409) {
             const errData = await res.json()
             if (errData.conflicts) {
-              for (const c of errData.conflicts) { await offlineQueue.markSynced(c.local_id) }
+              for (const c of errData.conflicts) {
+                await offlineQueue.markSynced(c.local_id)
+                if (c.delivery_id) syncedDeliveryIds.add(c.delivery_id)
+              }
               synced += errData.conflicts.length
             }
           } else {
@@ -104,7 +118,10 @@ class SyncManager {
           if (res.ok) {
             const data = await res.json()
             if (data.synced) {
-              for (const s of data.synced) { await offlineQueue.markSynced(s.local_id) }
+              for (const s of data.synced) {
+                await offlineQueue.markSynced(s.local_id)
+                if (s.delivery_id) syncedDeliveryIds.add(s.delivery_id)
+              }
               synced += data.synced.length
             }
           }
@@ -114,7 +131,11 @@ class SyncManager {
 
     const pendingGrades = await offlineQueue.getPendingGrades()
     for (const grade of pendingGrades) {
-      if (grade.retry_count >= MAX_RETRIES && isRetryable(grade.last_error)) {
+      const waitingForDelivery = grade.last_error === 'Delivery not synced yet. Will retry.'
+      if (grade.retry_count >= MAX_RETRIES && isRetryable(grade.last_error) && !waitingForDelivery) {
+        continue
+      }
+      if (waitingForDelivery && grade.delivery_id && !syncedDeliveryIds.has(grade.delivery_id)) {
         continue
       }
       try {
@@ -134,8 +155,14 @@ class SyncManager {
           await offlineQueue.markGradeSynced(grade.local_id, result.id)
           synced++
         } else if (res.status === 400) {
-          await offlineQueue.markGradeSynced(grade.local_id, null)
-          synced++
+          const errData = await res.json().catch(() => ({}))
+          const errorMsg = Object.values(errData).flat().join(', ') || 'Bad request'
+          if (isDeliveryNotFoundError(errorMsg)) {
+            await offlineQueue.markGradeFailed(grade.local_id, 'Delivery not synced yet. Will retry.')
+          } else {
+            await offlineQueue.markGradeFailed(grade.local_id, errorMsg)
+            failed++
+          }
         } else {
           await offlineQueue.markGradeFailed(grade.local_id, 'Server error')
         }
