@@ -192,6 +192,19 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
     finally { setSubmitting(false) }
   }
 
+  const uploadPhotos = async (gradeId) => {
+    if (photos.length === 0) return
+    for (const photo of photos) {
+      try {
+        const fd = new FormData()
+        fd.append('image', photo)
+        await apiFetch(`/api/grades/${gradeId}/images/`, { method: 'POST', headers: {}, body: fd })
+      } catch {
+        showToast({ type: 'warning', message: `Photo upload failed — grade was saved.` })
+      }
+    }
+  }
+
   const handleGrade = async () => {
     if (!grade) {
       showToast({ type: 'error', message: 'Select a grade.' })
@@ -227,13 +240,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
       const gradeResult = await res.json()
       const gradeId = gradeResult.id
 
-      if (photos.length > 0 && gradeId) {
-        for (const photo of photos) {
-          const fd = new FormData()
-          fd.append('image', photo)
-          await apiFetch(`/api/grades/${gradeId}/images/`, { method: 'POST', headers: {}, body: fd })
-        }
-      }
+      await uploadPhotos(gradeId)
 
       showToast({ type: 'success', message: `Graded as ${grade}.` })
       onComplete()
@@ -314,7 +321,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
                 grade === g
                   ? 'bg-primary text-on-primary ring-2 ring-primary'
                   : 'bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high'
-              }`}
+              } ${rejectReason ? 'opacity-40 pointer-events-none' : ''}`}
             >
               <div>{g}</div>
               {priceMap[g] && <div className="text-[10px] opacity-80">KES {priceMap[g]}</div>}
@@ -376,12 +383,12 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
           Back to Queue
         </button>
         <div className="flex-1" />
-        {rejectReason.trim() && (
+        {rejectReason.trim() && !grade && (
           <button onClick={handleReject} disabled={submitting} className="px-6 py-2.5 bg-error text-on-error rounded-lg text-label-md font-bold hover:bg-error/90 transition-colors disabled:opacity-50">
             {submitting ? 'Saving...' : isOnline ? 'Reject Delivery' : 'Save Rejection Offline'}
           </button>
         )}
-        {grade && (
+        {grade && !rejectReason.trim() && (
           <button onClick={handleGrade} disabled={submitting} className="px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50">
             {submitting ? 'Saving...' : isOnline ? `Submit Grade ${grade}` : `Save Grade ${grade} Offline`}
           </button>
