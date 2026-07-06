@@ -181,12 +181,29 @@ let currentLang = 'en'
 
 export function setLanguage(lang) {
   if (translations[lang]) currentLang = lang
+  try {
+    localStorage.setItem('zao_farmer_lang', lang)
+  } catch {}
 }
 
 export function getLanguage() {
+  try {
+    const stored = localStorage.getItem('zao_farmer_lang')
+    if (stored && translations[stored]) currentLang = stored
+  } catch {}
   return currentLang
 }
 
 export function t(key) {
   return translations[currentLang]?.[key] || translations.en[key] || key
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('zao-lang-change', (e) => {
+    const lang = e.detail?.language
+    if (lang && translations[lang]) {
+      currentLang = lang
+      window.dispatchEvent(new CustomEvent('zao-i18n-change', { detail: { language: lang } }))
+    }
+  })
 }

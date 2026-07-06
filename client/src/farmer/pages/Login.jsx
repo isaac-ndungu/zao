@@ -164,9 +164,9 @@ export default function FarmerLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
+          <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="material-symbols-outlined text-on-primary text-3xl">agriculture</span>
+            <span className="material-symbols-outlined text-on-primary text-3xl" aria-hidden="true">agriculture</span>
           </div>
           <h1 className="text-2xl font-bold text-primary mb-1">Zao Farmer</h1>
           <p className="text-on-surface-variant text-sm">Sign in to your account</p>

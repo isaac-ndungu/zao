@@ -1,6 +1,6 @@
 export default function ErrorState({ title = 'Something went wrong', message, action }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-8 text-center gap-4 text-on-surface-variant">
+    <div role="alert" className="flex flex-col items-center justify-center py-16 px-8 text-center gap-4 text-on-surface-variant">
       <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
         <path d="M28 6L4 50h48L28 6z" stroke="#f87171" strokeWidth="2.5" strokeLinejoin="round" fill="rgba(248,113,113,0.08)" />
         <path d="M28 24v12" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" />

@@ -74,9 +74,11 @@ const TYPE_STYLES = {
 
 function Toast({ toast, onDismiss }) {
   const s = TYPE_STYLES[toast.type] || TYPE_STYLES.info
+  const isError = toast.type === 'error'
   return (
     <div
-      role="alert"
+      role={isError ? 'alert' : 'status'}
+      aria-live={isError ? 'assertive' : 'polite'}
       style={{
         display: 'flex',
         alignItems: 'flex-start',
@@ -92,7 +94,7 @@ function Toast({ toast, onDismiss }) {
         animation: 'slideInRight 0.2s ease',
       }}
     >
-      <span style={{
+      <span aria-hidden="true" style={{
         flexShrink: 0,
         width: '1.25rem',
         height: '1.25rem',

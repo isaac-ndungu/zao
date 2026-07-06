@@ -13,6 +13,7 @@ import { FarmerAuthProvider } from './farmer/context/FarmerAuthContext'
 import { ToastProvider } from './farmer/components/Toast'
 import BottomNav from './farmer/components/BottomNav'
 import ChatWidget from './shared/components/ChatWidget'
+import FloatingAccessibilityWidget, { A11yProvider } from './shared/components/FloatingAccessibilityWidget'
 
 // Public pages
 const Home = lazy(() => import('./pages/Home'))
@@ -159,6 +160,7 @@ function FarmerLayoutWithNav() {
       </div>
       <BottomNav />
       {!isChatPage && <ChatWidget />}
+      <FloatingAccessibilityWidget mode="farmer" />
     </div>
   )
 }
@@ -196,8 +198,9 @@ function SuspenseWrapper({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <AdminAuthProvider>
-        <Routes>
+      <A11yProvider>
+        <AdminAuthProvider>
+          <Routes>
           {/* Public marketing routes */}
           <Route path="/" element={<SuspenseWrapper><Home /></SuspenseWrapper>} />
           <Route path="/solutions" element={<SuspenseWrapper><Solutions /></SuspenseWrapper>} />
@@ -378,6 +381,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AdminAuthProvider>
+      </A11yProvider>
     </BrowserRouter>
   )
 }
