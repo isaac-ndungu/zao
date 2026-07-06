@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from apps.base.export_mixins import CsvExportMixin
+
 from .models import Inventory, Stock
 from .serializers import (
     InventoryDetailSerializer,
@@ -16,12 +18,13 @@ from .serializers import (
 )
 
 
-class InventoryViewSet(ReadOnlyModelViewSet):
+class InventoryViewSet(CsvExportMixin, ReadOnlyModelViewSet):
     queryset = Inventory.objects.all().select_related('cooperative')
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['batch_id', 'grade', 'product_type']
     ordering_fields = ['batch_id', 'product_type', 'grade', 'created_at']
     ordering = ['-created_at']
+    csv_filename = 'inventory.csv'
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)

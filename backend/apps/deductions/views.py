@@ -106,7 +106,8 @@ class DeductionViewSet(CsvExportMixin, CooperativeScopedViewSet):
         instance.delete()
 
 
-class FarmInputCreditViewSet(CooperativeScopedViewSet):
+class FarmInputCreditViewSet(CsvExportMixin, CooperativeScopedViewSet):
+    csv_filename = 'farm_input_credits.csv'
     queryset = FarmInputCredit.objects.all().select_related(
         'farmer', 'cooperative',
     )

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from apps.base.export_mixins import CsvExportMixin
 from apps.base.models import AuditLog
 from apps.base.permissions import IsAccountantOrManager, IsFarmer, IsManagerOrAuditor, IsAnyAuditor, IsExternalAuditor
 from apps.deductions.models import Deduction
@@ -396,10 +397,11 @@ class AnnualReportView(APIView):
         })
 
 
-class AuditLogViewSet(ReadOnlyModelViewSet):
+class AuditLogViewSet(CsvExportMixin, ReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related('actor', 'cooperative')
     serializer_class = AuditLogSerializer
     permission_classes = [IsAuthenticated, IsManagerOrAuditor]
+    csv_filename = 'audit_log.csv'
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = [
         'resource_type', 'action', 'actor__first_name', 'actor__last_name',
