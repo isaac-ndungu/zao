@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import DataTable from '../../admin/components/common/DataTable'
@@ -16,9 +16,32 @@ export default function ManagerUsers() {
   const [createForm, setCreateForm] = useState({ email: '', phone_number: '', first_name: '', last_name: '', role: 'grader' })
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(null)
+  const [usersData, setUsersData] = useState(null)
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersError, setUsersError] = useState(null)
 
-  const { data, loading, error, refetch } = useApi('/api/users/?page_size=100')
-  const allUsers = data?.results || data || []
+  const { data: coop } = useApi('/api/cooperatives/me/')
+
+  const fetchUsers = useCallback(() => {
+    if (!coop?.id) return
+    setUsersLoading(true)
+    setUsersError(null)
+    apiFetch(`/api/users/?coop_id=${coop.id}&page_size=100`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch users')
+        return res.json()
+      })
+      .then(data => { setUsersData(data); setUsersLoading(false) })
+      .catch(err => { setUsersError(err.message); setUsersLoading(false) })
+  }, [coop?.id])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
+
+  const loading = usersLoading || !usersData
+  const error = usersError
+  const allUsers = usersData?.results || usersData || []
 
   const staffUsers = allUsers.filter(u => u.role === 'grader' || u.role === 'accountant' || u.role === 'auditor')
   const filteredUsers = tab === 'all' ? staffUsers : staffUsers.filter(u => u.role === tab)
@@ -35,7 +58,7 @@ export default function ManagerUsers() {
       showToast({ type: 'success', message: `${createForm.first_name} ${createForm.last_name} added as ${createForm.role}. An email with login credentials has been sent.` })
       setShowCreate(false)
       setCreateForm({ email: '', phone_number: '', first_name: '', last_name: '', role: 'grader' })
-      refetch()
+      fetchUsers()
     } catch (err) {
       showToast({ type: 'error', message: err.message })
     } finally {
@@ -48,7 +71,7 @@ export default function ManagerUsers() {
       const res = await apiFetch(`/api/users/${user.id}/`, { method: 'PATCH', body: JSON.stringify({ is_active: !user.is_active }) })
       if (!res.ok) throw new Error('Failed to update user')
       showToast({ type: 'success', message: `${user.first_name} ${user.last_name} ${user.is_active ? 'deactivated' : 'activated'}.` })
-      refetch()
+      fetchUsers()
     } catch (err) {
       showToast({ type: 'error', message: err.message })
     }
@@ -61,7 +84,7 @@ export default function ManagerUsers() {
       if (!res.ok) throw new Error('Failed to remove staff member')
       showToast({ type: 'success', message: `${deleting.first_name} ${deleting.last_name} removed from cooperative.` })
       setDeleting(null)
-      refetch()
+      fetchUsers()
     } catch (err) {
       showToast({ type: 'error', message: err.message })
     }
@@ -125,7 +148,7 @@ export default function ManagerUsers() {
       {loading ? (
         <TableSkeleton rows={8} cols={6} />
       ) : error ? (
-        <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
+        <ErrorState message={error} action={{ label: 'Retry', onClick: fetchUsers }} />
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-16">
           <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">group_off</span>

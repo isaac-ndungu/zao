@@ -28,10 +28,20 @@ class UserViewSet(CooperativeScopedViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        coop_id = self.request.query_params.get('coop_id')
+
         if user.is_authenticated and getattr(user, 'role', None) == 'admin':
             qs = self.queryset
+            if coop_id:
+                qs = qs.filter(cooperative_id=coop_id)
         else:
-            qs = self.queryset.filter(cooperative_id=self.request.cooperative_id)
+            session_coop_id = getattr(user, 'cooperative_id', None)
+            if coop_id:
+                if session_coop_id and str(session_coop_id) != str(coop_id):
+                    return self.queryset.none()
+                qs = self.queryset.filter(cooperative_id=coop_id)
+            else:
+                qs = self.queryset.filter(cooperative_id=self.request.cooperative_id)
 
         role = self.request.query_params.get('role')
         if role:

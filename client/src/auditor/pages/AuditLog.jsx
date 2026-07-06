@@ -62,12 +62,12 @@ export default function AuditorAuditLog() {
   }
 
   const columns = [
-    { key: 'created_at', label: 'Timestamp', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleString() : '-' },
-    { key: 'actor', label: 'Actor', render: (row) => row.actor_name || row.actor?.email || `#${row.actor}` },
+    { key: 'created_at', label: 'Timestamp', sortable: true, render: (value) => value ? new Date(value).toLocaleString() : '-' },
+    { key: 'actor', label: 'Actor', render: (_, row) => row.actor_name || row.actor?.email || `#${row.actor}` },
     { key: 'action', label: 'Action', sortable: true },
     { key: 'resource_type', label: 'Resource', sortable: true },
-    { key: 'resource_id', label: 'Resource ID', render: (row) => row.resource_id ? String(row.resource_id).slice(0, 8) + '...' : '-' },
-    { key: 'details', label: 'Details', render: (row) => row.details ? JSON.stringify(row.details).slice(0, 60) + (JSON.stringify(row.details).length > 60 ? '...' : '') : '-' },
+    { key: 'resource_id', label: 'Resource ID', render: (value) => value ? String(value).slice(0, 8) + '...' : '-' },
+    { key: 'details', label: 'Details', render: (value) => value ? JSON.stringify(value).slice(0, 60) + (JSON.stringify(value).length > 60 ? '...' : '') : '-' },
   ]
 
   return (
