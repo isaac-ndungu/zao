@@ -14,8 +14,9 @@ function timeAgo(date) {
 
 export default function Sync() {
   const isOnline = useOnlineStatus()
-  const { pendingCount, pendingGradesCount, syncStatus, lastSyncResult, triggerSync } = useOfflineSync()
+  const { pendingCount, pendingGradesCount, syncStatus, lastSyncResult, failedDetails, triggerSync } = useOfflineSync()
   const [syncing, setSyncing] = useState(false)
+  const [showFailed, setShowFailed] = useState(false)
 
   const totalPending = pendingCount + pendingGradesCount
 
@@ -113,11 +114,28 @@ export default function Sync() {
 
       {syncStatus === 'error' && lastSyncResult && lastSyncResult.failed > 0 && (
         <div className="mb-6 px-4 py-3 bg-error-container text-on-error-container rounded-xl text-body-md">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-2">
             <span className="material-symbols-outlined">error</span>
             <span className="font-medium">{lastSyncResult.failed} items failed</span>
           </div>
-          <button onClick={handleSync} className="text-label-md font-bold underline mt-1">
+          <button
+            onClick={() => setShowFailed(!showFailed)}
+            className="text-label-md font-bold underline mb-2"
+          >
+            {showFailed ? 'Hide details' : 'Show details'}
+          </button>
+          {showFailed && failedDetails.length > 0 && (
+            <div className="mt-2 space-y-2 text-label-sm">
+              {failedDetails.map((item, i) => (
+                <div key={i} className="bg-error/10 rounded-lg px-3 py-2">
+                  <p className="font-medium">{item.type === 'delivery' ? 'Delivery' : 'Grade'}: {item.batchId}</p>
+                  <p className="text-on-error-container/80">Farmer: {item.farmerName || 'Unknown'}</p>
+                  <p className="text-on-error-container/80">Error: {item.error || 'Unknown error'}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <button onClick={handleSync} className="text-label-md font-bold underline mt-2">
             Tap to retry
           </button>
         </div>
