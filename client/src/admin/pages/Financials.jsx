@@ -313,9 +313,9 @@ export default function Financials() {
                   const canUnlock = cycle.status === 'LOCKED'
                   return (
                     <div className="flex gap-1">
-                      {canRun && <button onClick={() => handleRunComputation(cycle)} disabled={actionLoading} className="p-1.5 rounded-lg hover:bg-primary-container text-primary transition-colors" title="Run Computation"><span className="material-symbols-outlined text-[18px]">play_arrow</span></button>}
-                      {canLock && <button onClick={() => handleCycleAction(cycle, 'lock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Lock"><span className="material-symbols-outlined text-[18px]">lock</span></button>}
-                      {canUnlock && <button onClick={() => handleCycleAction(cycle, 'unlock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Unlock"><span className="material-symbols-outlined text-[18px]">lock_open</span></button>}
+                      {canRun && <button onClick={() => handleRunComputation(cycle)} disabled={actionLoading} className="p-1.5 rounded-lg hover:bg-primary-container text-primary transition-colors" aria-label="Run computation"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">play_arrow</span></button>}
+                      {canLock && <button onClick={() => handleCycleAction(cycle, 'lock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" aria-label="Lock cycle"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">lock</span></button>}
+                      {canUnlock && <button onClick={() => handleCycleAction(cycle, 'unlock')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" aria-label="Unlock cycle"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">lock_open</span></button>}
                     </div>
                   )
                 }}
@@ -355,8 +355,8 @@ export default function Financials() {
                   const canApprove = batch.status === 'PENDING'
                   return (
                     <div className="flex gap-1">
-                      {canApprove && <button onClick={() => handleBatchAction(batch, 'approve')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" title="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>}
-                      {canApprove && <button onClick={() => handleBatchAction(batch, 'reject')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-error transition-colors" title="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>}
+                      {canApprove && <button onClick={() => handleBatchAction(batch, 'approve')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-primary transition-colors" aria-label="Approve batch"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span></button>}
+                      {canApprove && <button onClick={() => handleBatchAction(batch, 'reject')} className="p-1.5 rounded-lg hover:bg-surface-container-high text-error transition-colors" aria-label="Reject batch"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">cancel</span></button>}
                     </div>
                   )
                 }}
@@ -435,16 +435,16 @@ export default function Financials() {
       )}
 
       {createOpen && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Payment Cycle</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="create-cycle-title">
+            <h3 id="create-cycle-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Payment Cycle</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Define a new payment cycle for farmer payouts.</p>
             <form onSubmit={handleCreateCycle} className="space-y-3">
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input required value={cycleForm.name} onChange={(e) => setCycleForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. June 2026 Payout" /></div>
+              <div><label htmlFor="cycle-create-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="cycle-create-name" required value={cycleForm.name} onChange={(e) => setCycleForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. June 2026 Payout" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Start Date *</label><input type="date" required value={cycleForm.start_date} onChange={(e) => setCycleForm(f => ({ ...f, start_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">End Date *</label><input type="date" required value={cycleForm.end_date} onChange={(e) => setCycleForm(f => ({ ...f, end_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="cycle-create-start" className="block text-label-md font-bold text-on-surface-variant mb-1">Start Date *</label><input id="cycle-create-start" type="date" required value={cycleForm.start_date} onChange={(e) => setCycleForm(f => ({ ...f, start_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="cycle-create-end" className="block text-label-md font-bold text-on-surface-variant mb-1">End Date *</label><input id="cycle-create-end" type="date" required value={cycleForm.end_date} onChange={(e) => setCycleForm(f => ({ ...f, end_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>

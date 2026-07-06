@@ -92,7 +92,7 @@ export default function LegalDocumentEdit() {
   return (
     <div className="max-w-3xl mx-auto">
       <header className="mb-6">
-        <button onClick={() => navigate('/admin/legal')} className="text-primary text-body-md hover:underline mb-2">← Back to Legal Documents</button>
+        <button onClick={() => navigate('/admin/legal')} className="text-primary text-body-md hover:underline mb-2" aria-label="Back to legal documents"><span aria-hidden="true">←</span> Back to Legal Documents</button>
         <h2 className="text-3xl font-bold text-on-surface">{isNew ? 'New legal document' : `Edit: ${existing?.title || slug}`}</h2>
         {!isNew && existing && (
           <p className="text-sm text-on-surface-variant mt-1">
@@ -103,8 +103,9 @@ export default function LegalDocumentEdit() {
 
       <form onSubmit={handleSave} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-5">
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Title</label>
+          <label htmlFor="legal-title" className="block text-label-md text-on-surface-variant mb-1">Title</label>
           <input
+            id="legal-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -112,8 +113,9 @@ export default function LegalDocumentEdit() {
           />
         </div>
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Slug</label>
+          <label htmlFor="legal-slug" className="block text-label-md text-on-surface-variant mb-1">Slug</label>
           <input
+            id="legal-slug"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             required
@@ -122,8 +124,9 @@ export default function LegalDocumentEdit() {
           />
         </div>
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Content (Markdown)</label>
+          <label htmlFor="legal-content" className="block text-label-md text-on-surface-variant mb-1">Content (Markdown)</label>
           <textarea
+            id="legal-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             required
@@ -143,7 +146,7 @@ export default function LegalDocumentEdit() {
         </div>
 
         {error && (
-          <div className="px-3 py-2 bg-error-container text-on-error-container rounded-lg text-body-md whitespace-pre-wrap">{error}</div>
+          <div role="alert" className="px-3 py-2 bg-error-container text-on-error-container rounded-lg text-body-md whitespace-pre-wrap">{error}</div>
         )}
 
         <div className="flex gap-3 pt-2">

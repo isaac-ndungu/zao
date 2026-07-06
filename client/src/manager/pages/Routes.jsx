@@ -75,8 +75,8 @@ export default function Routes() {
     {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" title="Edit Route"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete Route"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" aria-label={`Edit ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label={`Delete ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
         </div>
       ),
     },
@@ -84,8 +84,8 @@ export default function Routes() {
 
   const routeForm = (defaults = {}, onSubmit, submitLabel) => (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div><label className="block text-label-md text-on-surface-variant mb-1">Name</label><input name="name" defaultValue={defaults.name || ''} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
-      <div><label className="block text-label-md text-on-surface-variant mb-1">Description</label><textarea name="description" defaultValue={defaults.description || ''} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+      <div><label htmlFor="create-name" className="block text-label-md text-on-surface-variant mb-1">Name</label><input id="create-name" name="name" defaultValue={defaults.name || ''} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+      <div><label htmlFor="create-description" className="block text-label-md text-on-surface-variant mb-1">Description</label><textarea id="create-description" name="description" defaultValue={defaults.description || ''} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
       <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">{submitLabel}</button>
     </form>
   )
@@ -104,7 +104,8 @@ export default function Routes() {
 
       <div className="mb-4">
         <form onSubmit={(e) => { e.preventDefault(); setSearch(new FormData(e.target).get('search') || ''); setPage(1) }} className="flex gap-2">
-          <input name="search" defaultValue={search} placeholder="Search routes..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"/>
+          <label htmlFor="routes-search" className="sr-only">Search routes</label>
+          <input id="routes-search" name="search" defaultValue={search} placeholder="Search routes..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"/>
           <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
         </form>
       </div>

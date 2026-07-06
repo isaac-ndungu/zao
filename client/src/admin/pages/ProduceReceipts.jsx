@@ -399,13 +399,13 @@ export default function ProduceReceipts() {
 
       {/* Assign Grade Modal */}
       {gradeDelivery && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { if (!gradeLoading) setGradeDelivery(null) }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="assign-grade-title">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">Assign Grade</h3>
-              <button onClick={() => setGradeDelivery(null)} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={gradeLoading}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+              <h3 id="assign-grade-title" className="font-headline-sm text-headline-sm text-on-surface">Assign Grade</h3>
+              <button onClick={() => setGradeDelivery(null)} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={gradeLoading} aria-label="Close">
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
             <p className="text-label-md text-on-surface-variant mb-4">
@@ -413,11 +413,12 @@ export default function ProduceReceipts() {
             </p>
             <form onSubmit={handleAssignGrade} className="space-y-4">
               <div>
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3 mb-3" role="radiogroup" aria-label="Grade or reject">
                   <button
                     type="button"
                     onClick={() => setGradeForm(f => ({ ...f, grade_letter: f.grade_letter || 'A', rejection_reason: '' }))}
                     className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${!gradeForm.rejection_reason ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}
+                    aria-pressed={!gradeForm.rejection_reason}
                   >
                     Grade
                   </button>
@@ -425,6 +426,7 @@ export default function ProduceReceipts() {
                     type="button"
                     onClick={() => setGradeForm(f => ({ ...f, rejection_reason: ' ', grade_letter: '' }))}
                     className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${gradeForm.rejection_reason ? 'bg-error text-white' : 'bg-surface-container text-on-surface-variant'}`}
+                    aria-pressed={!!gradeForm.rejection_reason}
                   >
                     Reject
                   </button>
@@ -433,8 +435,9 @@ export default function ProduceReceipts() {
               {!gradeForm.rejection_reason ? (
                 <>
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface mb-1.5">Grade Letter</label>
+                    <label htmlFor="grade-letter" className="block text-label-md font-bold text-on-surface mb-1.5">Grade Letter</label>
                     <select
+                      id="grade-letter"
                       value={gradeForm.grade_letter}
                       onChange={(e) => setGradeForm(f => ({ ...f, grade_letter: e.target.value }))}
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -446,8 +449,9 @@ export default function ProduceReceipts() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface mb-1.5">Price per Unit</label>
+                    <label htmlFor="grade-price" className="block text-label-md font-bold text-on-surface mb-1.5">Price per Unit</label>
                     <input
+                      id="grade-price"
                       type="number"
                       step="0.01"
                       min="0"
@@ -461,8 +465,9 @@ export default function ProduceReceipts() {
                 </>
               ) : (
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Rejection Reason</label>
+                  <label htmlFor="rejection-reason" className="block text-label-md font-bold text-on-surface mb-1.5">Rejection Reason</label>
                   <textarea
+                    id="rejection-reason"
                     value={gradeForm.rejection_reason === ' ' ? '' : gradeForm.rejection_reason}
                     onChange={(e) => setGradeForm(f => ({ ...f, rejection_reason: e.target.value }))}
                     placeholder="Reason for rejection..."
@@ -473,8 +478,9 @@ export default function ProduceReceipts() {
                 </div>
               )}
               <div>
-                <label className="block text-label-md font-bold text-on-surface mb-1.5">Override Reason</label>
+                <label htmlFor="override-reason" className="block text-label-md font-bold text-on-surface mb-1.5">Override Reason</label>
                 <textarea
+                  id="override-reason"
                   value={gradeForm.override_reason}
                   onChange={(e) => setGradeForm(f => ({ ...f, override_reason: e.target.value }))}
                   placeholder="Why is this being overridden?"
@@ -497,7 +503,7 @@ export default function ProduceReceipts() {
                   disabled={gradeLoading || (!gradeForm.grade_letter && !gradeForm.rejection_reason.trim())}
                   className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  {gradeLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {gradeLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />}
                   {gradeLoading ? 'Assigning...' : 'Assign Grade'}
                 </button>
               </div>
@@ -569,20 +575,21 @@ export default function ProduceReceipts() {
 
       {/* Create Delivery Modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') } }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-delivery-title">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-headline-sm text-headline-sm text-on-surface">New Delivery</h3>
-              <button onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+              <h3 id="create-delivery-title" className="font-headline-sm text-headline-sm text-on-surface">New Delivery</h3>
+              <button onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading} aria-label="Close">
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div ref={farmerRef} className="relative">
-                <label className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
+                <label htmlFor="delivery-create-farmer" className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
                 <div className="relative">
                   <input
+                    id="delivery-create-farmer"
                     type="text"
                     value={selectedFarmerName || farmerSearch}
                     onChange={(e) => { setFarmerSearch(e.target.value); setSelectedFarmerName(''); setCreateForm(f => ({ ...f, farmer: '' })); setFarmerSearchOpen(true) }}
@@ -591,13 +598,17 @@ export default function ProduceReceipts() {
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 pr-10 text-body-md text-on-surface placeholder:text-on-surface-variant"
                     disabled={formLoading}
                     autoComplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="farmer-search-list"
                   />
                   {farmerSearchOpen && farmerOptions.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div id="farmer-search-list" className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto" role="listbox">
                       {farmerOptions.map(f => (
                         <button
                           key={f.id}
                           type="button"
+                          role="option"
+                          aria-selected="false"
                           onClick={() => { setSelectedFarmerName(`${f.first_name} ${f.last_name} (${f.phone_number || f.id.slice(0, 8)})`); setCreateForm(ff => ({ ...ff, farmer: f.id })); setFarmerSearchOpen(false); setFarmerSearch('') }}
                           className="w-full text-left px-3 py-2 text-body-md text-on-surface hover:bg-surface-container transition-colors"
                         >
@@ -615,8 +626,9 @@ export default function ProduceReceipts() {
                 </div>
               </div>
               <div>
-                <label className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
+                <label htmlFor="delivery-create-product" className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
                 <select
+                  id="delivery-create-product"
                   value={createForm.product_type}
                   onChange={(e) => setCreateForm(f => ({ ...f, product_type: e.target.value }))}
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -629,8 +641,9 @@ export default function ProduceReceipts() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Quantity (kg)</label>
+                  <label htmlFor="delivery-create-qty" className="block text-label-md font-bold text-on-surface mb-1.5">Quantity (kg)</label>
                   <input
+                    id="delivery-create-qty"
                     type="number"
                     step="0.01"
                     min="0"
@@ -642,8 +655,9 @@ export default function ProduceReceipts() {
                   />
                 </div>
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Volume (L)</label>
+                  <label htmlFor="delivery-create-volume" className="block text-label-md font-bold text-on-surface mb-1.5">Volume (L)</label>
                   <input
+                    id="delivery-create-volume"
                     type="number"
                     step="0.01"
                     min="0"
@@ -657,8 +671,9 @@ export default function ProduceReceipts() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
+                  <label htmlFor="delivery-create-shift" className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
                   <select
+                    id="delivery-create-shift"
                     value={createForm.shift}
                     onChange={(e) => setCreateForm(f => ({ ...f, shift: e.target.value }))}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -670,8 +685,9 @@ export default function ProduceReceipts() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Date Delivered</label>
+                  <label htmlFor="delivery-create-date" className="block text-label-md font-bold text-on-surface mb-1.5">Date Delivered</label>
                   <input
+                    id="delivery-create-date"
                     type="date"
                     value={createForm.date_delivered}
                     onChange={(e) => setCreateForm(f => ({ ...f, date_delivered: e.target.value }))}
@@ -694,7 +710,7 @@ export default function ProduceReceipts() {
                   disabled={formLoading || !createForm.farmer}
                   className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  {formLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {formLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />}
                   {formLoading ? 'Creating...' : 'Create Delivery'}
                 </button>
               </div>

@@ -134,8 +134,8 @@ export default function Deliveries() {
     {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} className="text-on-surface-variant hover:text-primary" title="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} className="text-on-surface-variant hover:text-primary" aria-label="Edit delivery"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label="Delete delivery"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
         </div>
       ),
     },
@@ -170,7 +170,8 @@ export default function Deliveries() {
       )}
 
       <div className="mb-4 flex items-center gap-4 flex-wrap">
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="status-filter" className="sr-only">Filter by status</label>
+        <select id="status-filter" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
           <option value="GRADED">Graded</option>
@@ -178,7 +179,8 @@ export default function Deliveries() {
           <option value="REJECTED">Rejected</option>
           <option value="PAID">Paid</option>
         </select>
-        <select value={productFilter} onChange={(e) => { setProductFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="product-filter" className="sr-only">Filter by product</label>
+        <select id="product-filter" value={productFilter} onChange={(e) => { setProductFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Products</option>
           <option value="MILK">Milk</option>
           <option value="COFFEE_CHERRIES">Coffee Cherries</option>
@@ -243,10 +245,10 @@ export default function Deliveries() {
       <SlideOutPanel open={showCreate} onClose={() => setShowCreate(false)} title="Record Delivery" width="max-w-md">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
-            <input value={farmerSearch} onChange={(e) => searchFarmer(e.target.value)} placeholder="Search by name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/>
+            <label htmlFor="create-farmer-search" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
+            <input id="create-farmer-search" value={farmerSearch} onChange={(e) => searchFarmer(e.target.value)} placeholder="Search by name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/>
             {farmerResults.length > 0 && (
-              <div className="mt-1 border border-outline-variant rounded-lg overflow-hidden">
+              <div className="mt-1 border border-outline-variant rounded-lg overflow-hidden" role="listbox">
                 {farmerResults.map(f => (
                   <label key={f.id} className="flex items-center gap-2 px-3 py-2 hover:bg-surface-container cursor-pointer">
                     <input type="radio" name="farmer_id" value={f.id} defaultChecked className="accent-primary"/>
@@ -256,18 +258,18 @@ export default function Deliveries() {
               </div>
             )}
           </div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select name="product_type" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
+          <div><label htmlFor="create-product-type" className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select id="create-product-type" name="product_type" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input name="quantity_kg" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input name="volume_litres" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label htmlFor="create-quantity-kg" className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input id="create-quantity-kg" name="quantity_kg" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label htmlFor="create-volume-litres" className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input id="create-volume-litres" name="volume_litres" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Shift</label><select name="shift" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="AM">AM</option><option value="PM">PM</option></select></div>
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input name="date_delivered" type="date" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label htmlFor="create-shift" className="block text-label-md text-on-surface-variant mb-1">Shift</label><select id="create-shift" name="shift" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="AM">AM</option><option value="PM">PM</option></select></div>
+            <div><label htmlFor="create-date-delivered" className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input id="create-date-delivered" name="date_delivered" type="date" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Latitude (optional)</label><input name="latitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Longitude (optional)</label><input name="longitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label htmlFor="create-latitude" className="block text-label-md text-on-surface-variant mb-1">Latitude (optional)</label><input id="create-latitude" name="latitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div><label htmlFor="create-longitude" className="block text-label-md text-on-surface-variant mb-1">Longitude (optional)</label><input id="create-longitude" name="longitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
           </div>
           <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Record Delivery</button>
         </form>
@@ -277,25 +279,25 @@ export default function Deliveries() {
         {showEdit && (
           <form onSubmit={handleEdit} className="space-y-4">
             <div>
-              <label className="block text-label-md text-on-surface-variant mb-1">Batch ID</label>
+              <p className="text-label-md text-on-surface-variant">Batch ID</p>
               <p className="text-body-md text-on-surface font-medium">{showEdit.batch_id}</p>
             </div>
             <div>
-              <label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
+              <p className="text-label-md text-on-surface-variant">Farmer</p>
               <p className="text-body-md text-on-surface font-medium">{showEdit.farmer_name}</p>
             </div>
-            <div><label className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select value={editForm.product_type} onChange={(e) => setEditForm(f => ({ ...f, product_type: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
+            <div><label htmlFor="edit-product-type" className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select id="edit-product-type" value={editForm.product_type} onChange={(e) => setEditForm(f => ({ ...f, product_type: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input type="number" step="0.01" value={editForm.quantity_kg} onChange={(e) => setEditForm(f => ({ ...f, quantity_kg: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input type="number" step="0.01" value={editForm.volume_litres} onChange={(e) => setEditForm(f => ({ ...f, volume_litres: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-quantity-kg" className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input id="edit-quantity-kg" type="number" step="0.01" value={editForm.quantity_kg} onChange={(e) => setEditForm(f => ({ ...f, quantity_kg: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-volume-litres" className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input id="edit-volume-litres" type="number" step="0.01" value={editForm.volume_litres} onChange={(e) => setEditForm(f => ({ ...f, volume_litres: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Shift</label><select value={editForm.shift} onChange={(e) => setEditForm(f => ({ ...f, shift: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="AM">AM</option><option value="PM">PM</option></select></div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input type="date" value={editForm.date_delivered} onChange={(e) => setEditForm(f => ({ ...f, date_delivered: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-shift" className="block text-label-md text-on-surface-variant mb-1">Shift</label><select id="edit-shift" value={editForm.shift} onChange={(e) => setEditForm(f => ({ ...f, shift: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="AM">AM</option><option value="PM">PM</option></select></div>
+              <div><label htmlFor="edit-date-delivered" className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input id="edit-date-delivered" type="date" value={editForm.date_delivered} onChange={(e) => setEditForm(f => ({ ...f, date_delivered: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Latitude</label><input type="number" step="any" value={editForm.latitude} onChange={(e) => setEditForm(f => ({ ...f, latitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Longitude</label><input type="number" step="any" value={editForm.longitude} onChange={(e) => setEditForm(f => ({ ...f, longitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-latitude" className="block text-label-md text-on-surface-variant mb-1">Latitude</label><input id="edit-latitude" type="number" step="any" value={editForm.latitude} onChange={(e) => setEditForm(f => ({ ...f, latitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-longitude" className="block text-label-md text-on-surface-variant mb-1">Longitude</label><input id="edit-longitude" type="number" step="any" value={editForm.longitude} onChange={(e) => setEditForm(f => ({ ...f, longitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
             </div>
             <button type="submit" disabled={editLoading} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold flex items-center justify-center gap-2">
               {editLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}

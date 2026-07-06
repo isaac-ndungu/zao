@@ -248,7 +248,7 @@ export default function Loans() {
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">Loans</h2>
           <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">add</span>
             New Loan
           </button>
         </div>
@@ -297,19 +297,19 @@ export default function Loans() {
           emptyMessage="No loans found."
           rowActions={(item) => (
             <div className="flex items-center gap-1">
-              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View" title="View Details"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+              <button onClick={() => { setPanelItem(item); setPanelOpen(true) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant" aria-label="View loan details"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">visibility</span></button>
               {item.status === 'pending' && (
                 <>
-                  <button onClick={() => openEditLoan(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit" title="Edit Loan"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-                  <button onClick={() => handleStatusAction(item, 'approved')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Approve" title="Approve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
-                  <button onClick={() => handleStatusAction(item, 'rejected')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Reject" title="Reject"><span className="material-symbols-outlined text-[18px]">cancel</span></button>
+                  <button onClick={() => openEditLoan(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Edit loan"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
+                  <button onClick={() => handleStatusAction(item, 'approved')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Approve loan"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span></button>
+                  <button onClick={() => handleStatusAction(item, 'rejected')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Reject loan"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">cancel</span></button>
                 </>
               )}
               {item.status === 'approved' && (
                 <>
-                  <button onClick={() => handleDisburse(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Disburse" title="Disburse"><span className="material-symbols-outlined text-[18px]">payments</span></button>
-                  <button onClick={() => handleStatusAction(item, 'defaulted')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Mark Defaulted" title="Mark Defaulted"><span className="material-symbols-outlined text-[18px]">warning</span></button>
-                  <button onClick={() => handleStatusAction(item, 'completed')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Mark Completed" title="Mark Completed"><span className="material-symbols-outlined text-[18px]">task_alt</span></button>
+                  <button onClick={() => handleDisburse(item)} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Disburse loan"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">payments</span></button>
+                  <button onClick={() => handleStatusAction(item, 'defaulted')} className="p-1.5 rounded-lg hover:bg-error-container text-error" aria-label="Mark as defaulted"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">warning</span></button>
+                  <button onClick={() => handleStatusAction(item, 'completed')} className="p-1.5 rounded-lg hover:bg-primary-container text-primary" aria-label="Mark as completed"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">task_alt</span></button>
                 </>
               )}
             </div>
@@ -356,26 +356,26 @@ export default function Loans() {
       </SlideOutPanel>
 
       {createOpen && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Loan</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-loan-title">
+            <h3 id="create-loan-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Loan</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Issue a new loan to a farmer.</p>
             <form onSubmit={handleCreateLoan} className="space-y-3">
               <div ref={farmerRef} className="relative">
-                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer *</label>
+                <label htmlFor="loan-create-farmer" className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer *</label>
                 {selectedFarmerName ? (
                   <div className="flex items-center gap-2 w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
                     <span className="flex-1">{selectedFarmerName}</span>
-                    <button type="button" onClick={() => { setLoanForm(f => ({ ...f, farmer: '' })); setSelectedFarmerName('') }} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined text-[16px]">close</span></button>
+                    <button type="button" onClick={() => { setLoanForm(f => ({ ...f, farmer: '' })); setSelectedFarmerName('') }} className="text-on-surface-variant hover:text-on-surface" aria-label="Clear farmer selection"><span className="material-symbols-outlined text-[16px]" aria-hidden="true">close</span></button>
                   </div>
                 ) : (
-                  <input value={farmerSearch} onChange={(e) => { setFarmerSearch(e.target.value); setFarmerSearchOpen(true) }} onFocus={() => setFarmerSearchOpen(true)} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="Search farmer by name, phone, ID..." />
+                  <input id="loan-create-farmer" value={farmerSearch} onChange={(e) => { setFarmerSearch(e.target.value); setFarmerSearchOpen(true) }} onFocus={() => setFarmerSearchOpen(true)} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="Search farmer by name, phone, ID..." />
                 )}
                 {farmerSearchOpen && farmerOptions.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-50 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto" role="listbox">
                     {farmerOptions.map(f => (
-                      <button key={f.id} type="button" onClick={() => selectFarmer(f)} className="flex items-center gap-3 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors text-left">
+                      <button key={f.id} type="button" role="option" aria-selected="false" onClick={() => selectFarmer(f)} className="flex items-center gap-3 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors text-left">
                         <div className="w-7 h-7 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-[10px]">{f.first_name?.[0]}{f.last_name?.[0]}</div>
                         <div><p className="font-medium">{f.first_name} {f.last_name}</p><p className="text-[11px] text-on-surface-variant">{f.phone_number || f.email || f.id_number}</p></div>
                       </button>
@@ -384,12 +384,12 @@ export default function Loans() {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES) *</label><input type="number" min="0" step="0.01" required value={loanForm.amount_principal} onChange={(e) => setLoanForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%) *</label><input type="number" min="0" step="0.1" required value={loanForm.interest_rate} onChange={(e) => setLoanForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="loan-create-amount" className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES) *</label><input id="loan-create-amount" type="number" min="0" step="0.01" required value={loanForm.amount_principal} onChange={(e) => setLoanForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="loan-create-rate" className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%) *</label><input id="loan-create-rate" type="number" min="0" step="0.1" required value={loanForm.interest_rate} onChange={(e) => setLoanForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Installments *</label><input type="number" min="1" required value={loanForm.number_of_installments} onChange={(e) => setLoanForm(f => ({ ...f, number_of_installments: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Purpose</label><input value={loanForm.purpose} onChange={(e) => setLoanForm(f => ({ ...f, purpose: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Notes</label><textarea rows={2} value={loanForm.notes} onChange={(e) => setLoanForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="loan-create-installments" className="block text-label-md font-bold text-on-surface-variant mb-1">Installments *</label><input id="loan-create-installments" type="number" min="1" required value={loanForm.number_of_installments} onChange={(e) => setLoanForm(f => ({ ...f, number_of_installments: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="loan-create-purpose" className="block text-label-md font-bold text-on-surface-variant mb-1">Purpose</label><input id="loan-create-purpose" value={loanForm.purpose} onChange={(e) => setLoanForm(f => ({ ...f, purpose: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="loan-create-notes" className="block text-label-md font-bold text-on-surface-variant mb-1">Notes</label><textarea id="loan-create-notes" rows={2} value={loanForm.notes} onChange={(e) => setLoanForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
                 <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
@@ -402,20 +402,20 @@ export default function Loans() {
       <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} loading={actionLoading} destructive={modalConfig.destructive} />
 
       {editOpen && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditLoan(null) }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Loan</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-loan-title">
+            <h3 id="edit-loan-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Loan</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update loan details.</p>
             <form onSubmit={handleEditLoan} className="space-y-3">
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer</label><input value={editLoan?.farmer_name || editForm.farmer} disabled className="w-full bg-surface-container/50 border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface opacity-60" /></div>
+              <div><label htmlFor="loan-edit-farmer" className="block text-label-md font-bold text-on-surface-variant mb-1">Farmer</label><input id="loan-edit-farmer" value={editLoan?.farmer_name || editForm.farmer} disabled className="w-full bg-surface-container/50 border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface opacity-60" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES)</label><input type="number" min="0" step="0.01" required value={editForm.amount_principal} onChange={(e) => setEditForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%)</label><input type="number" min="0" step="0.1" required value={editForm.interest_rate} onChange={(e) => setEditForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="loan-edit-amount" className="block text-label-md font-bold text-on-surface-variant mb-1">Amount (KES)</label><input id="loan-edit-amount" type="number" min="0" step="0.01" required value={editForm.amount_principal} onChange={(e) => setEditForm(f => ({ ...f, amount_principal: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="loan-edit-rate" className="block text-label-md font-bold text-on-surface-variant mb-1">Interest Rate (%)</label><input id="loan-edit-rate" type="number" min="0" step="0.1" required value={editForm.interest_rate} onChange={(e) => setEditForm(f => ({ ...f, interest_rate: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Installments</label><input type="number" min="1" required value={editForm.number_of_installments} onChange={(e) => setEditForm(f => ({ ...f, number_of_installments: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Purpose</label><input value={editForm.purpose} onChange={(e) => setEditForm(f => ({ ...f, purpose: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Notes</label><textarea rows={2} value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="loan-edit-installments" className="block text-label-md font-bold text-on-surface-variant mb-1">Installments</label><input id="loan-edit-installments" type="number" min="1" required value={editForm.number_of_installments} onChange={(e) => setEditForm(f => ({ ...f, number_of_installments: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="loan-edit-purpose" className="block text-label-md font-bold text-on-surface-variant mb-1">Purpose</label><input id="loan-edit-purpose" value={editForm.purpose} onChange={(e) => setEditForm(f => ({ ...f, purpose: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="loan-edit-notes" className="block text-label-md font-bold text-on-surface-variant mb-1">Notes</label><textarea id="loan-edit-notes" rows={2} value={editForm.notes} onChange={(e) => setEditForm(f => ({ ...f, notes: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setEditOpen(false); setEditLoan(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
                 <button type="submit" disabled={editLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{editLoading ? 'Saving...' : 'Save'}</button>

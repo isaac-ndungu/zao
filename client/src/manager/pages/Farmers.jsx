@@ -226,9 +226,9 @@ export default function Farmers() {
               setShowEdit(row)
             }}
             className="text-primary hover:text-primary/80"
-            title="Edit"
+            aria-label="Edit farmer"
           >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span>
           </button>
           <button
             onClick={(e) => {
@@ -236,9 +236,9 @@ export default function Farmers() {
               setShowDelete(row)
             }}
             className="text-error hover:text-error/80"
-            title="Delete"
+            aria-label="Delete farmer"
           >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
           </button>
         </div>
       ),
@@ -260,8 +260,9 @@ export default function Farmers() {
         { name: 'village', label: 'Village' },
       ].map(({ name, label, required, type }) => (
         <div key={name}>
-          <label className="block text-label-md text-on-surface-variant mb-1">{label}</label>
+          <label htmlFor={`create-${name}`} className="block text-label-md text-on-surface-variant mb-1">{label}</label>
           <input
+            id={`create-${name}`}
             name={name}
             required={required}
             type={type || 'text'}
@@ -295,10 +296,11 @@ export default function Farmers() {
     <form onSubmit={handleEdit} className="space-y-4">
       {editFields.map(({ name, label, type }) => (
         <div key={name}>
-          <label className="block text-label-md text-on-surface-variant mb-1 capitalize">
+          <label htmlFor={`edit-${name}`} className="block text-label-md text-on-surface-variant mb-1 capitalize">
             {label}
           </label>
           <input
+            id={`edit-${name}`}
             name={name}
             type={type || 'text'}
             defaultValue={showEdit[name] || ''}
@@ -359,7 +361,9 @@ export default function Farmers() {
 
       <div className="mb-4">
         <form onSubmit={handleSearch} className="flex gap-2">
+          <label htmlFor="farmer-search" className="sr-only">Search farmers</label>
           <input
+            id="farmer-search"
             name="search"
             defaultValue={search}
             placeholder="Search farmers..."
@@ -449,7 +453,10 @@ export default function Farmers() {
             Upload a CSV file with columns: first_name, last_name, phone_number, id_number, county
           </p>
           {!importPreview ? (
-            <input type="file" accept=".csv" onChange={handleImportSelect} className="block w-full text-body-md" />
+            <div>
+              <label htmlFor="import-csv" className="block text-label-md text-on-surface-variant mb-1">Upload CSV file</label>
+              <input id="import-csv" type="file" accept=".csv" onChange={handleImportSelect} className="block w-full text-body-md" />
+            </div>
           ) : (
             <div>
               <div className="flex gap-4 mb-4">

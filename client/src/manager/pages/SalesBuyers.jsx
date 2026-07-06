@@ -90,7 +90,7 @@ function SalesSection() {
     {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete Sale"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label={`Delete sale ${row.invoice_number || ''}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
         </div>
       ),
     },
@@ -100,7 +100,8 @@ function SalesSection() {
     <div>
       <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
         <div className="flex gap-2">
-          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+          <label htmlFor="sales-status-filter" className="sr-only">Filter by status</label>
+          <select id="sales-status-filter" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
             <option value="">All Statuses</option>
             <option value="PENDING">Pending</option>
             <option value="COMPLETED">Completed</option>
@@ -229,10 +230,10 @@ function CreateSaleForm({ onClose, onSuccess }) {
     <SlideOutPanel open onClose={onClose} title="Record Sale" width="max-w-lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Buyer</label>
+          <label htmlFor="create-buyer" className="block text-label-md text-on-surface-variant mb-1">Buyer</label>
           {!selectedBuyer ? (
             <>
-              <input value={buyerSearch} onChange={(e) => searchBuyer(e.target.value)} placeholder="Search buyers..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <input id="create-buyer" value={buyerSearch} onChange={(e) => searchBuyer(e.target.value)} placeholder="Search buyers..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               {buyerResults.length > 0 && (
                 <div className="mt-1 border border-outline-variant rounded-lg overflow-hidden max-h-40 overflow-y-auto">
                   {buyerResults.map(b => (
@@ -250,8 +251,8 @@ function CreateSaleForm({ onClose, onSuccess }) {
         </div>
 
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Product / Grade (Stock)</label>
-          <select value={stockId} onChange={(e) => setStockId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+          <label htmlFor="create-stock" className="block text-label-md text-on-surface-variant mb-1">Product / Grade (Stock)</label>
+          <select id="create-stock" value={stockId} onChange={(e) => setStockId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
             <option value="">Select stock...</option>
             {stockItems.map(s => (
               <option key={s.id} value={s.id}>
@@ -266,34 +267,34 @@ function CreateSaleForm({ onClose, onSuccess }) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Quantity ({selectedStock?.unit || 'unit'})</label>
-            <input type="number" step="0.001" min="0" value={quantity || ''} onChange={(e) => setQuantity(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-quantity" className="block text-label-md text-on-surface-variant mb-1">Quantity ({selectedStock?.unit || 'unit'})</label>
+            <input id="create-quantity" type="number" step="0.001" min="0" value={quantity || ''} onChange={(e) => setQuantity(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Price per Unit (KES)</label>
-            <input type="number" step="0.01" min="0" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-price_per_unit" className="block text-label-md text-on-surface-variant mb-1">Price per Unit (KES)</label>
+            <input id="create-price_per_unit" type="number" step="0.01" min="0" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
         </div>
 
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Total Amount</label>
+          <span className="block text-label-md text-on-surface-variant mb-1">Total Amount</span>
           <div className="px-3 py-2 bg-surface-container-low rounded-lg text-body-md font-bold text-primary">KES {totalAmount.toLocaleString()}</div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Sale Date</label>
-            <input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-sale_date" className="block text-label-md text-on-surface-variant mb-1">Sale Date</label>
+            <input id="create-sale_date" type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Invoice #</label>
-            <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-invoice_number" className="block text-label-md text-on-surface-variant mb-1">Invoice #</label>
+            <input id="create-invoice_number" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
         </div>
 
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Notes</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+          <label htmlFor="create-notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label>
+          <textarea id="create-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
         </div>
 
         {validationError && (
@@ -387,8 +388,8 @@ function BuyersSection() {
     {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" title="Edit Buyer"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" title="Delete Buyer"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" aria-label={`Edit ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label={`Delete ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
         </div>
       ),
     },
@@ -407,11 +408,11 @@ function BuyersSection() {
     <form onSubmit={onSubmit} className="space-y-4">
       {buyerFormFields.map(({ key, label, required, textarea }) => (
         <div key={key}>
-          <label className="block text-label-md text-on-surface-variant mb-1 capitalize">{label}</label>
+          <label htmlFor={`create-${key}`} className="block text-label-md text-on-surface-variant mb-1 capitalize">{label}</label>
           {textarea ? (
-            <textarea name={key} defaultValue={defaults[key] || ''} rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <textarea id={`create-${key}`} name={key} defaultValue={defaults[key] || ''} rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           ) : (
-            <input name={key} defaultValue={defaults[key] || ''} required={required} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id={`create-${key}`} name={key} defaultValue={defaults[key] || ''} required={required} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           )}
         </div>
       ))}
@@ -423,7 +424,8 @@ function BuyersSection() {
     <div>
       <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
         <form onSubmit={(e) => { e.preventDefault(); setSearch(new FormData(e.target).get('search') || ''); setPage(1) }} className="flex gap-2">
-          <input name="search" defaultValue={search} placeholder="Search buyers..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"/>
+          <label htmlFor="buyers-search" className="sr-only">Search buyers</label>
+          <input id="buyers-search" name="search" defaultValue={search} placeholder="Search buyers..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"/>
           <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
         </form>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">

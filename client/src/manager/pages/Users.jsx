@@ -109,16 +109,16 @@ export default function ManagerUsers() {
           <button
             onClick={(e) => { e.stopPropagation(); handleToggleActive(row) }}
             className={`${row.is_active ? 'text-error hover:text-error/80' : 'text-primary hover:text-primary/80'}`}
-            title={row.is_active ? 'Deactivate' : 'Activate'}
+            aria-label={row.is_active ? `Deactivate ${row.first_name} ${row.last_name}` : `Activate ${row.first_name} ${row.last_name}`}
           >
-            <span className="material-symbols-outlined text-[18px]">{row.is_active ? 'toggle_off' : 'toggle_on'}</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{row.is_active ? 'toggle_off' : 'toggle_on'}</span>
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setDeleting(row) }}
             className="text-on-surface-variant hover:text-error"
-            title="Remove User"
+            aria-label={`Remove ${row.first_name} ${row.last_name}`}
           >
-            <span className="material-symbols-outlined text-[18px]">person_remove</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_remove</span>
           </button>
         </div>
       ),
@@ -162,24 +162,24 @@ export default function ManagerUsers() {
       <SlideOutPanel open={showCreate} onClose={() => setShowCreate(false)} title="Add Staff Member" width="max-w-md">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">First Name *</label>
-            <input required value={createForm.first_name} onChange={(e) => setCreateForm(p => ({ ...p, first_name: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-first_name" className="block text-label-md text-on-surface-variant mb-1">First Name *</label>
+            <input id="create-first_name" required value={createForm.first_name} onChange={(e) => setCreateForm(p => ({ ...p, first_name: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Last Name *</label>
-            <input required value={createForm.last_name} onChange={(e) => setCreateForm(p => ({ ...p, last_name: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-last_name" className="block text-label-md text-on-surface-variant mb-1">Last Name *</label>
+            <input id="create-last_name" required value={createForm.last_name} onChange={(e) => setCreateForm(p => ({ ...p, last_name: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Email *</label>
-            <input required type="email" value={createForm.email} onChange={(e) => setCreateForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-email" className="block text-label-md text-on-surface-variant mb-1">Email *</label>
+            <input id="create-email" required type="email" value={createForm.email} onChange={(e) => setCreateForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Phone *</label>
-            <input required value={createForm.phone_number} onChange={(e) => setCreateForm(p => ({ ...p, phone_number: e.target.value }))} placeholder="0712345678" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="create-phone_number" className="block text-label-md text-on-surface-variant mb-1">Phone *</label>
+            <input id="create-phone_number" required value={createForm.phone_number} onChange={(e) => setCreateForm(p => ({ ...p, phone_number: e.target.value }))} placeholder="0712345678" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Role *</label>
-            <select required value={createForm.role} onChange={(e) => setCreateForm(p => ({ ...p, role: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+            <label htmlFor="create-role" className="block text-label-md text-on-surface-variant mb-1">Role *</label>
+            <select id="create-role" required value={createForm.role} onChange={(e) => setCreateForm(p => ({ ...p, role: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
               {roleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
