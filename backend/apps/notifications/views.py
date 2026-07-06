@@ -8,8 +8,6 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from apps.base.permissions import IsStaff
-
 from .models import Notification
 from .serializers import NotificationListSerializer, NotificationDetailSerializer
 from .ussd import handle_ussd
@@ -37,7 +35,7 @@ def ussd_callback(request):
 class NotificationLogViewSet(ReadOnlyModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationListSerializer
-    permission_classes = [IsAuthenticated, IsStaff]
+    permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = [
         'content', 'channel', 'notification_type', 'status',
@@ -60,8 +58,10 @@ class NotificationLogViewSet(ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = self.queryset.select_related('recipient', 'cooperative')
-        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+        role = getattr(user, 'role', None)
+        if role == 'admin':
             return qs
-        return qs.filter(
-            cooperative_id=self.request.cooperative_id,
-        )
+        farmer = getattr(user, 'farmer_profile', None)
+        if farmer:
+            return qs.filter(recipient=farmer)
+        return qs.filter(cooperative_id=self.request.cooperative_id)

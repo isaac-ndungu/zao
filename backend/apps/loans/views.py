@@ -58,7 +58,7 @@ class LoanViewSet(CsvExportMixin, CooperativeScopedViewSet):
         if self.action == 'mark_completed':
             return [IsAuthenticated(), IsAccountant()]
         if self.action == 'mark_defaulted':
-            return [IsAuthenticated(), IsManager()]
+            return [IsAuthenticated(), IsAccountantOrManager()]
         if self.action in ('add_guarantor', 'remove_guarantor'):
             return [IsAuthenticated(), IsAccountantOrManager()]
         return [IsAuthenticated()]
