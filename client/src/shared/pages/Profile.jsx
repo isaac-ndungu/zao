@@ -89,7 +89,7 @@ export default function Profile({ settingsPath }) {
 
       <button
         onClick={() => setShowLogoutConfirm(true)}
-        className="w-full py-3 rounded-xl bg-error text-white text-sm font-bold hover:opacity-80 transition-opacity flex items-center justify-center gap-2"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-error hover:bg-error-container/10 rounded-lg transition-colors"
       >
         <span className="material-symbols-outlined text-[18px]">logout</span>
         Logout
