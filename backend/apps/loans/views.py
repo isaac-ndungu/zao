@@ -127,6 +127,17 @@ class LoanViewSet(CsvExportMixin, CooperativeScopedViewSet):
             action='APPROVE',
             cooperative_id=self.request.cooperative_id,
         )
+        try:
+            Notification.objects.create(
+                cooperative=loan.cooperative,
+                recipient=loan.farmer,
+                channel='IN_APP',
+                notification_type='LOAN_APPROVAL',
+                content=f'Your loan of KES {loan.amount_principal} has been approved.',
+                status='PENDING',
+            )
+        except Exception:
+            pass
         serializer = self.get_serializer(loan)
         return Response(serializer.data)
 
@@ -154,6 +165,17 @@ class LoanViewSet(CsvExportMixin, CooperativeScopedViewSet):
             action='DISBURSE',
             cooperative_id=self.request.cooperative_id,
         )
+        try:
+            Notification.objects.create(
+                cooperative=loan.cooperative,
+                recipient=loan.farmer,
+                channel='IN_APP',
+                notification_type='LOAN_DISBURSEMENT',
+                content=f'Your loan of KES {loan.amount_principal} has been disbursed.',
+                status='PENDING',
+            )
+        except Exception:
+            pass
         serializer = self.get_serializer(loan)
         return Response(serializer.data)
 

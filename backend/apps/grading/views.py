@@ -272,14 +272,36 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
         grade.save()
 
         pending_disputes = FarmerGradeDispute.objects.filter(grade=grade, status='PENDING')
+        resolved_dispute_ids = []
         for dispute in pending_disputes:
             dispute.status = 'RESOLVED'
             dispute.resolved_by = request.user
             dispute.resolution_notes = f'Auto-resolved when grade was overridden to {grade.grade_letter}.'
             dispute.resolved_at = timezone.now()
             dispute.save(update_fields=['status', 'resolved_by', 'resolution_notes', 'resolved_at'])
+            resolved_dispute_ids.append(str(dispute.id))
+
+        try:
+            Notification.objects.create(
+                cooperative=grade.cooperative,
+                recipient=delivery.farmer,
+                channel='IN_APP',
+                notification_type='GRADE_RESULT',
+                content=f'Your grade has been updated to {grade.grade_letter}. Reason: {grade.override_reason or "Grade correction"}.',
+                status='PENDING',
+            )
+        except Exception:
+            pass
 
         update_delivery_from_grade(grade)
+
+        new_value = {
+            'grade_letter': grade.grade_letter,
+            'price_per_unit': str(grade.price_per_unit),
+            'override_reason': grade.override_reason,
+        }
+        if resolved_dispute_ids:
+            new_value['auto_resolved_disputes'] = resolved_dispute_ids
 
         log_audit(
             actor=request.user,
@@ -287,11 +309,7 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
             resource_id=grade.id,
             action='OVERRIDE',
             previous_value=previous,
-            new_value={
-                'grade_letter': grade.grade_letter,
-                'price_per_unit': str(grade.price_per_unit),
-                'override_reason': grade.override_reason,
-            },
+            new_value=new_value,
             cooperative_id=request.cooperative_id,
         )
         update_inventory_on_grade.delay(str(grade.id))
