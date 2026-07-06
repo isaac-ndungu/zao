@@ -22,25 +22,22 @@ export default function RecordDelivery() {
   const [selectedFarmer, setSelectedFarmer] = useState(null)
   const [cachedFarmersList, setCachedFarmersList] = useState(null)
   const [justSelected, setJustSelected] = useState(false)
+
   useEffect(() => {
-    if (!isOnline) {
-      getCachedFarmers().then(cached => {
-        if (cached) setCachedFarmersList(cached)
-      })
-      return
-    }
     getCachedFarmers().then(cached => {
       if (cached) setCachedFarmersList(cached)
     })
-    apiFetch('/api/farmers/?page_size=500').then(r => {
-      if (!r.ok) return null
-      return r.json()
-    }).then(data => {
-      if (data?.results) {
-        setCachedFarmersList(data.results)
-        cacheFarmers(data.results)
-      }
-    })
+    if (isOnline) {
+      apiFetch('/api/farmers/?page_size=500').then(r => {
+        if (!r.ok) return null
+        return r.json()
+      }).then(data => {
+        if (data?.results) {
+          setCachedFarmersList(data.results)
+          cacheFarmers(data.results)
+        }
+      })
+    }
   }, [isOnline])
 
   const [form, setForm] = useState({
@@ -60,8 +57,12 @@ export default function RecordDelivery() {
     setSelectedFarmer(null)
     setForm(f => ({ ...f, farmer: '' }))
     if (q.length < 2) { setFarmerOptions([]); return }
-    if (!isOnline && cachedFarmersList) {
-      setFarmerOptions(searchCachedFarmers(cachedFarmersList, q))
+    if (!isOnline) {
+      if (cachedFarmersList) {
+        setFarmerOptions(searchCachedFarmers(cachedFarmersList, q))
+      } else {
+        setFarmerOptions([])
+      }
       return
     }
     try {
@@ -129,6 +130,9 @@ export default function RecordDelivery() {
             disabled={submitting}
             autoComplete="off"
           />
+          {!isOnline && !cachedFarmersList && (
+            <p className="text-label-sm text-on-surface-variant mt-1 px-1">Loading offline farmer data...</p>
+          )}
           {farmerOptions.length > 0 && (
             <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
               {farmerOptions.map(f => (
