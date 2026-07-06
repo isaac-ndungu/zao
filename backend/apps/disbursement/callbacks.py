@@ -182,6 +182,21 @@ def mpesa_result_callback(request):
             FarmerPayment.objects.filter(id=txn.farmer_payment_id).update(
                 payment_status='PAID',
             )
+            try:
+                from apps.notifications.models import Notification, NotificationChannel, NotificationType
+                from apps.farmers.models import Farmer
+                farmer = txn.farmer
+                if farmer:
+                    Notification.objects.create(
+                        cooperative=txn.batch.cooperative,
+                        recipient=farmer,
+                        channel=NotificationChannel.IN_APP,
+                        notification_type=NotificationType.PAYMENT_SENT,
+                        content=f'Payment of KES {float(txn.amount):,.2f} has been sent to your M-Pesa.',
+                        status='PENDING',
+                    )
+            except Exception:
+                logger.warning('Failed to create PAYMENT_SENT notification for farmer %s', txn.farmer_id)
     else:
         txn.status = 'FAILED'
         txn.failure_reason = result_desc
@@ -210,6 +225,21 @@ def mpesa_result_callback(request):
         FarmerPayment.objects.filter(id=txn.farmer_payment_id).update(
             payment_status='FAILED',
         )
+        try:
+            from apps.notifications.models import Notification, NotificationChannel, NotificationType
+            from apps.farmers.models import Farmer
+            farmer = txn.farmer
+            if farmer:
+                Notification.objects.create(
+                    cooperative=txn.batch.cooperative,
+                    recipient=farmer,
+                    channel=NotificationChannel.IN_APP,
+                    notification_type=NotificationType.PAYMENT_FAILED,
+                    content=f'Your payment of KES {float(txn.amount):,.2f} has failed. Please contact your cooperative.',
+                    status='PENDING',
+                )
+        except Exception:
+            logger.warning('Failed to create PAYMENT_FAILED notification for farmer %s', txn.farmer_id)
 
     return JsonResponse({'accepted': True})
 
