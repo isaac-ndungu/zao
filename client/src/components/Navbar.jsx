@@ -59,8 +59,9 @@ export default function Navbar({ activeLink }) {
           onClick={() => setMenuOpen(!menuOpen)}
           className="md:hidden p-2 rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant"
           aria-label="Toggle menu"
+          aria-expanded={menuOpen}
         >
-          {menuOpen ? <HiOutlineXMark className="w-6 h-6" /> : <HiOutlineBars3 className="w-6 h-6" />}
+          {menuOpen ? <HiOutlineXMark className="w-6 h-6" aria-hidden="true" /> : <HiOutlineBars3 className="w-6 h-6" aria-hidden="true" />}
         </button>
       </div>
 

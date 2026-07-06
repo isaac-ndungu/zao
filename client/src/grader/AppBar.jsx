@@ -24,7 +24,7 @@ export default function GraderAppBar({ onMenuClick, minimized, onToggle }) {
           className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           aria-label="Toggle menu"
         >
-          <span className="material-symbols-outlined">menu</span>
+          <span className="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
 
         <button
@@ -32,7 +32,7 @@ export default function GraderAppBar({ onMenuClick, minimized, onToggle }) {
           className="hidden lg:flex p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           aria-label={minimized ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <span className="material-symbols-outlined">{minimized ? 'menu' : 'menu_open'}</span>
+          <span className="material-symbols-outlined" aria-hidden="true">{minimized ? 'menu' : 'menu_open'}</span>
         </button>
 
         <SearchBar role="grader" placeholder="Search deliveries or grades..." />

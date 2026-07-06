@@ -37,7 +37,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           aria-label="Toggle menu"
         >
-          <span className="material-symbols-outlined">menu</span>
+          <span className="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
 
         <button
@@ -45,7 +45,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           className="hidden lg:flex p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           aria-label={minimized ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <span className="material-symbols-outlined">{minimized ? 'menu' : 'menu_open'}</span>
+          <span className="material-symbols-outlined" aria-hidden="true">{minimized ? 'menu' : 'menu_open'}</span>
         </button>
 
         <SearchBar role="admin" placeholder="Search operations, records, or farmers..." />
@@ -60,13 +60,15 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           <div className="relative">
             <button
               onClick={() => setAnalyticsDropdownOpen(!analyticsDropdownOpen)}
+              aria-haspopup="menu"
+              aria-expanded={analyticsDropdownOpen}
               className={`font-label-md text-label-md transition-colors whitespace-nowrap flex items-center gap-1 ${['/admin/dashboard', '/admin/analytics/seasonal', '/admin/analytics/retention'].some(p => pathname.startsWith(p))
                   ? 'text-primary font-bold border-b-2 border-primary pb-1'
                   : 'text-on-surface-variant font-medium hover:text-primary'
                 }`}
             >
               Analytics
-              <span className="material-symbols-outlined text-sm">{analyticsDropdownOpen ? 'expand_less' : 'expand_more'}</span>
+              <span className="material-symbols-outlined text-sm" aria-hidden="true">{analyticsDropdownOpen ? 'expand_less' : 'expand_more'}</span>
             </button>
             {analyticsDropdownOpen && (
               <div className="absolute top-full left-0 mt-1 min-w-[180px] bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden z-50">

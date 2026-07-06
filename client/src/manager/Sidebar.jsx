@@ -36,8 +36,9 @@ function NavItem({ item, pathname, minimized, showTooltip, hideTooltip }) {
           ? 'bg-secondary-container text-on-secondary-container rounded-lg'
           : 'text-on-primary/80 hover:text-on-primary hover:bg-primary-fixed-dim/10 rounded-lg'
       }`}
+      aria-current={isActive ? 'page' : undefined}
     >
-      <span className="material-symbols-outlined">{item.icon}</span>
+      <span className="material-symbols-outlined" aria-hidden="true">{item.icon}</span>
       {!minimized && <span className="font-body-md text-body-md">{item.label}</span>}
     </Link>
   )
@@ -51,7 +52,7 @@ function BottomItem({ item, minimized, showTooltip, hideTooltip }) {
       onMouseLeave={hideTooltip}
       className="flex items-center gap-3 px-4 py-2 text-on-primary/80 hover:text-on-primary transition-colors"
     >
-      <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+      <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{item.icon}</span>
       {!minimized && <span className="font-label-md text-label-md">{item.label}</span>}
     </Link>
   )
@@ -75,7 +76,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
   }, [])
 
   const sidebarContent = (
-    <aside className={`${minimized ? 'w-16 px-2' : 'w-64 px-4'} h-full bg-primary flex flex-col py-6 overflow-y-auto transition-all duration-300`}>
+    <aside aria-label="Manager sidebar" className={`${minimized ? 'w-16 px-2' : 'w-64 px-4'} h-full bg-primary flex flex-col py-6 overflow-y-auto transition-all duration-300`}>
       <div className={`mb-10 ${minimized ? 'px-0 text-center' : 'px-2'}`}>
         {minimized ? (
           <h1 className="font-headline-lg text-headline-lg font-bold text-on-primary">Z</h1>

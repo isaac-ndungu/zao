@@ -33,11 +33,11 @@ export default function Footer() {
           &copy; 2024 Zao Agricultural Management. All rights reserved.
         </p>
         <div className="flex gap-4">
-          <a className="text-on-surface-variant hover:text-primary transition-colors" href="#">
-            <HiOutlineGlobeAmericas className="w-5 h-5" />
+          <a className="text-on-surface-variant hover:text-primary transition-colors" href="#" aria-label="Visit our website">
+            <HiOutlineGlobeAmericas className="w-5 h-5" aria-hidden="true" />
           </a>
-          <a className="text-on-surface-variant hover:text-primary transition-colors" href="#">
-            <HiOutlineAtSymbol className="w-5 h-5" />
+          <a className="text-on-surface-variant hover:text-primary transition-colors" href="#" aria-label="Email us">
+            <HiOutlineAtSymbol className="w-5 h-5" aria-hidden="true" />
           </a>
         </div>
       </div>
