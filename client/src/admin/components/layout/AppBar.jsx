@@ -8,16 +8,22 @@ import SearchBar from '../../../shared/components/SearchBar'
 import LegalHistoryDropdown from './LegalHistoryDropdown'
 
 const appBarTabs = [
-  { label: 'Analytics', path: '/admin/dashboard' },
-  { label: 'Reports', path: '/admin/financials' },
+  { label: 'Financials', path: '/admin/financials' },
   { label: 'Audit Trail', path: '/admin/audit' },
+]
+
+const analyticsDropdownItems = [
+  { label: 'Dashboard', path: '/admin/dashboard' },
+  { label: 'Seasonal Patterns', path: '/admin/analytics/seasonal' },
+  { label: 'Farmer Retention', path: '/admin/analytics/retention' },
 ]
 
 export default function AppBar({ onMenuClick, minimized, onToggle }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { user } = useAdminAuth()
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [analyticsDropdownOpen, setAnalyticsDropdownOpen] = useState(false)
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
 
   const initials = user
     ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase()
@@ -50,7 +56,35 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           </div>
         )}
 
-        <nav className="hidden xl:flex gap-6 ml-auto">
+        <nav className="hidden xl:flex gap-6 ml-auto items-center">
+          <div className="relative">
+            <button
+              onClick={() => setAnalyticsDropdownOpen(!analyticsDropdownOpen)}
+              className={`font-label-md text-label-md transition-colors whitespace-nowrap flex items-center gap-1 ${['/admin/dashboard', '/admin/analytics/seasonal', '/admin/analytics/retention'].some(p => pathname.startsWith(p))
+                  ? 'text-primary font-bold border-b-2 border-primary pb-1'
+                  : 'text-on-surface-variant font-medium hover:text-primary'
+                }`}
+            >
+              Analytics
+              <span className="material-symbols-outlined text-sm">{analyticsDropdownOpen ? 'expand_less' : 'expand_more'}</span>
+            </button>
+            {analyticsDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 min-w-[180px] bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden z-50">
+                {analyticsDropdownItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); setAnalyticsDropdownOpen(false) }}
+                    className={`w-full text-left px-4 py-2.5 text-body-md transition-colors ${pathname.startsWith(item.path)
+                      ? 'bg-secondary-container text-on-secondary-container'
+                      : 'text-on-surface hover:bg-surface-container'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {appBarTabs.map((tab) => {
             const isActive = pathname.startsWith(tab.path)
             return (
@@ -84,7 +118,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
             </p>
           </div>
           <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+            onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
             className="w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-primary-fixed flex items-center justify-center border border-outline-variant text-primary font-bold text-sm overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary transition-all cursor-pointer"
             aria-label="Open profile menu"
           >
@@ -94,11 +128,11 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
               initials
             )}
           </button>
-          {dropdownOpen && (
+          {profileDropdownOpen && (
             <ProfileDropdown
               profilePath="/admin/profile"
               roleLabel="Super Admin"
-              onClose={() => setDropdownOpen(false)}
+              onClose={() => setProfileDropdownOpen(false)}
             />
           )}
         </div>

@@ -12,8 +12,6 @@ const navItems = [
   { to: '/admin/loans', icon: 'account_balance', label: 'Loans' },
   { to: '/admin/farmer-payments', icon: 'payments', label: 'Farmer Payments' },
   { to: '/admin/grade-prices', icon: 'monetization_on', label: 'Grade Prices' },
-  { to: '/admin/analytics/seasonal', icon: 'calendar_month', label: 'Seasonal Patterns' },
-  { to: '/admin/analytics/retention', icon: 'group_work', label: 'Farmer Retention' },
 ]
 
 const systemItems = [
