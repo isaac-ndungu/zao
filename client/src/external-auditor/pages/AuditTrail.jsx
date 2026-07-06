@@ -66,7 +66,7 @@ export default function ExternalAuditTrail() {
           <h2 className="font-headline-lg text-display-md text-primary mb-1">Audit Trail</h2>
           <p className="text-on-surface-variant font-body-md">{totalCount} financial entries</p>
         </div>
-        <button onClick={handleExportCSV} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">Export CSV</button>
+        <button onClick={handleExportCSV} aria-label="Export CSV" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">Export CSV</button>
       </header>
 
       <div className="flex flex-wrap gap-3 mb-4 items-end">
@@ -85,10 +85,10 @@ export default function ExternalAuditTrail() {
           <option value="DELETE">DELETE</option>
         </select>
         <div className="flex gap-2 items-center">
-          <label className="text-label-md text-on-surface-variant">From</label>
-          <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
-          <label className="text-label-md text-on-surface-variant">To</label>
-          <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+          <label htmlFor="audit-date-from" className="text-label-md text-on-surface-variant">From</label>
+          <input id="audit-date-from" type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+          <label htmlFor="audit-date-to" className="text-label-md text-on-surface-variant">To</label>
+          <input id="audit-date-to" type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
         </div>
       </div>
 

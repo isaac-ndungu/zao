@@ -44,72 +44,72 @@ export default function CooperativeForm({ form, onChange, onSubmit, loading, sub
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div>
-        <label className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label>
-        <input required value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+        <label htmlFor="coop-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label>
+        <input id="coop-name" required value={form.name} onChange={(e) => onChange({ ...form, name: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label>
-          <input value={form.prefix} onChange={(e) => onChange({ ...form, prefix: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" />
+          <label htmlFor="coop-prefix" className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label>
+          <input id="coop-prefix" value={form.prefix} onChange={(e) => onChange({ ...form, prefix: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" />
         </div>
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label>
-          <input required value={form.registration_number} onChange={(e) => onChange({ ...form, registration_number: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+          <label htmlFor="coop-reg-number" className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label>
+          <input id="coop-reg-number" required value={form.registration_number} onChange={(e) => onChange({ ...form, registration_number: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label>
-          <select required value={form.county} onChange={(e) => onChange({ ...form, county: e.target.value })} disabled={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
+          <label htmlFor="coop-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label>
+          <select id="coop-county" required value={form.county} onChange={(e) => onChange({ ...form, county: e.target.value })} disabled={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
             {KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label>
-          <input value={form.sub_county} onChange={(e) => onChange({ ...form, sub_county: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+          <label htmlFor="coop-sub-county" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label>
+          <input id="coop-sub-county" value={form.sub_county} onChange={(e) => onChange({ ...form, sub_county: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label>
-          <input value={form.ward} onChange={(e) => onChange({ ...form, ward: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+          <label htmlFor="coop-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label>
+          <input id="coop-ward" value={form.ward} onChange={(e) => onChange({ ...form, ward: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
         </div>
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label>
-          <select required value={form.produce_type} onChange={(e) => onChange({ ...form, produce_type: e.target.value })} disabled={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
+          <label htmlFor="coop-produce-type" className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label>
+          <select id="coop-produce-type" required value={form.produce_type} onChange={(e) => onChange({ ...form, produce_type: e.target.value })} disabled={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
             {produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label>
-          <select required value={form.payment_model} onChange={(e) => onChange({ ...form, payment_model: e.target.value })} disabled={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
+          <label htmlFor="coop-payment-model" className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label>
+          <select id="coop-payment-model" required value={form.payment_model} onChange={(e) => onChange({ ...form, payment_model: e.target.value })} disabled={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">
             {paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label>
-          <input required type="number" step="0.01" min="0" max="100" value={form.levy_percentage} onChange={(e) => onChange({ ...form, levy_percentage: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+          <label htmlFor="coop-levy" className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label>
+          <input id="coop-levy" required type="number" step="0.01" min="0" max="100" value={form.levy_percentage} onChange={(e) => onChange({ ...form, levy_percentage: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label>
-          <input required type="number" step="0.01" min="0" value={form.monthly_fee} onChange={(e) => onChange({ ...form, monthly_fee: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+          <label htmlFor="coop-monthly-fee" className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label>
+          <input id="coop-monthly-fee" required type="number" step="0.01" min="0" value={form.monthly_fee} onChange={(e) => onChange({ ...form, monthly_fee: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
         </div>
         <div>
-          <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
-          <input type="email" value={form.email} onChange={(e) => onChange({ ...form, email: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+          <label htmlFor="coop-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
+          <input id="coop-email" type="email" value={form.email} onChange={(e) => onChange({ ...form, email: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
         </div>
       </div>
       <div>
-        <label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
-        <input type="tel" value={form.phone_number} onChange={(e) => onChange({ ...form, phone_number: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+        <label htmlFor="coop-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
+        <input id="coop-phone" type="tel" value={form.phone_number} onChange={(e) => onChange({ ...form, phone_number: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
       </div>
       <div>
-        <label className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label>
-        <textarea rows={2} value={form.physical_address} onChange={(e) => onChange({ ...form, physical_address: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+        <label htmlFor="coop-address" className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label>
+        <textarea id="coop-address" rows={2} value={form.physical_address} onChange={(e) => onChange({ ...form, physical_address: e.target.value })} readOnly={readOnly} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
       </div>
       {!readOnly && (
         <div className="flex justify-end gap-3 pt-2">

@@ -63,15 +63,17 @@ export default function LegalAcceptances() {
         <button
           onClick={handleExport}
           className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2"
+          aria-label="Export CSV"
         >
-          <span className="material-symbols-outlined text-[18px]">download</span>Export CSV
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>Export CSV
         </button>
       </header>
 
       <form onSubmit={apply} className="mb-4 flex flex-wrap gap-2 items-end">
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Document slug</label>
+          <label htmlFor="slug" className="block text-label-md text-on-surface-variant mb-1">Document slug</label>
           <input
+            id="slug"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="e.g. privacy-policy"
@@ -79,8 +81,9 @@ export default function LegalAcceptances() {
           />
         </div>
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">From</label>
+          <label htmlFor="dateFrom" className="block text-label-md text-on-surface-variant mb-1">From</label>
           <input
+            id="dateFrom"
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
@@ -88,8 +91,9 @@ export default function LegalAcceptances() {
           />
         </div>
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">To</label>
+          <label htmlFor="dateTo" className="block text-label-md text-on-surface-variant mb-1">To</label>
           <input
+            id="dateTo"
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
@@ -106,7 +110,7 @@ export default function LegalAcceptances() {
         <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
       ) : items.length === 0 ? (
         <div className="text-center py-16 bg-surface-container-lowest border border-outline-variant rounded-xl">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">verified</span>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">verified</span>
           <p className="text-on-surface-variant">No acceptances match the current filters.</p>
         </div>
       ) : (

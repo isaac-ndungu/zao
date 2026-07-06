@@ -2,16 +2,20 @@ export default function SearchOverlay({ results, loading, onResultClick, onViewA
   if (!results || results.length === 0) return null
 
   return (
-    <div className="absolute left-0 right-0 top-full mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-[999] overflow-hidden max-h-[70vh] overflow-y-auto">
+    <div
+      className="absolute left-0 right-0 top-full mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-[999] overflow-hidden max-h-[70vh] overflow-y-auto"
+      role="listbox"
+      aria-label="Search results"
+    >
       {loading && (
         <div className="p-3 text-center text-sm text-on-surface-variant">
-          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mr-2 align-middle" />
+          <span className="inline-block animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full mr-2 align-middle" aria-hidden="true" />
           Searching...
         </div>
       )}
 
       {results.map((group) => (
-        <div key={group.key}>
+        <div key={group.key} role="group" aria-label={group.label}>
           <div className="px-4 py-2 text-[10px] uppercase tracking-wider text-on-surface-variant font-bold bg-surface-container/50">
             {group.label}
           </div>
@@ -20,8 +24,9 @@ export default function SearchOverlay({ results, loading, onResultClick, onViewA
               key={`${item.type}-${item.id}`}
               onMouseDown={(e) => { e.preventDefault(); onResultClick(item) }}
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-surface-container transition-colors text-left"
+              role="option"
             >
-              <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0">{item.icon || 'search'}</span>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant shrink-0" aria-hidden="true">{item.icon || 'search'}</span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-on-surface truncate">{item.label}</p>
                 <p className="text-xs text-on-surface-variant truncate">{item.subtitle}</p>

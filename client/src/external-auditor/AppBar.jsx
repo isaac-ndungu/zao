@@ -16,7 +16,7 @@ export default function ExternalAuditorAppBar({ onMenuClick, minimized, onToggle
   const coopName = coop?.name || ''
 
   return (
-    <header className={`fixed top-0 right-0 ${minimized ? 'lg:left-16' : 'lg:left-64'} h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-4 lg:px-6 z-30 transition-all duration-300`}>
+    <header role="banner" className={`fixed top-0 right-0 ${minimized ? 'lg:left-16' : 'lg:left-64'} h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-4 lg:px-6 z-30 transition-all duration-300`}>
       <div className="flex items-center gap-3 lg:gap-8 flex-1 min-w-0">
         <button
           onClick={onMenuClick}

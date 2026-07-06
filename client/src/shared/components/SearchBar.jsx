@@ -77,7 +77,7 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
       onSubmit={handleSubmit}
       className="relative hidden sm:block sm:w-60 lg:w-72 flex-shrink-0"
     >
-      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
+      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" aria-hidden="true">
         search
       </span>
       <input
@@ -87,6 +87,7 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
         onBlur={() => setTimeout(() => setShowOverlay(false), 200)}
         className="w-full bg-surface-container border-none rounded-full py-2 pl-10 pr-4 text-body-md focus:ring-1 focus:ring-primary"
         placeholder={placeholder}
+        aria-label={placeholder}
       />
       {showOverlay && (results.length > 0 || loading) && (
         <SearchOverlay

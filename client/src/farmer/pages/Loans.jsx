@@ -92,7 +92,7 @@ export default function FarmerLoans() {
 
       {loans.length === 0 ? (
         <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3">account_balance_wallet</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3" aria-hidden="true">account_balance_wallet</span>
           <p className="text-on-surface-variant mb-4">{t('noLoans')}</p>
           <button onClick={() => setShowApply(true)} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80">
             {t('applyLoan')}
@@ -106,7 +106,7 @@ export default function FarmerLoans() {
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-1 ${
                   loan.status === 'COMPLETED' ? 'bg-success-container' : loan.status === 'DEFAULTED' ? 'bg-error-container' : 'bg-warning-container'
                 }`}>
-                  <span className={`material-symbols-outlined ${
+                  <span aria-hidden="true" className={`material-symbols-outlined ${
                     loan.status === 'COMPLETED' ? 'text-success' : loan.status === 'DEFAULTED' ? 'text-error' : 'text-warning'
                   }`}>account_balance_wallet</span>
                 </div>
@@ -138,7 +138,7 @@ export default function FarmerLoans() {
                     </div>
                   )}
                 </div>
-                <span className="material-symbols-outlined text-on-surface-variant text-xl mt-2">
+                <span aria-hidden="true" className="material-symbols-outlined text-on-surface-variant text-xl mt-2">
                   {selected?.id === loan.id ? 'expand_less' : 'expand_more'}
                 </span>
               </div>
@@ -154,24 +154,24 @@ export default function FarmerLoans() {
             <h3 className="font-bold text-lg mb-4">{t('applyLoan')}</h3>
             <form onSubmit={handleApply} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('loanAmount')} (KES)</label>
-                <input type="number" min="1" value={form.amount_principal} onChange={(e) => setForm(p => ({ ...p, amount_principal: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <label htmlFor="loan_amount" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('loanAmount')} (KES)</label>
+                <input id="loan_amount" type="number" min="1" value={form.amount_principal} onChange={(e) => setForm(p => ({ ...p, amount_principal: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('interestRate')} (%)</label>
-                <input type="number" step="0.1" min="0" value={form.interest_rate} onChange={(e) => setForm(p => ({ ...p, interest_rate: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <label htmlFor="interest_rate" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('interestRate')} (%)</label>
+                <input id="interest_rate" type="number" step="0.1" min="0" value={form.interest_rate} onChange={(e) => setForm(p => ({ ...p, interest_rate: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('installments')}</label>
-                <input type="number" min="1" max="60" value={form.number_of_installments} onChange={(e) => setForm(p => ({ ...p, number_of_installments: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <label htmlFor="number_of_installments" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('installments')}</label>
+                <input id="number_of_installments" type="number" min="1" max="60" value={form.number_of_installments} onChange={(e) => setForm(p => ({ ...p, number_of_installments: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('description')}</label>
-                <textarea value={form.notes} onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <label htmlFor="notes" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('description')}</label>
+                <textarea id="notes" value={form.notes} onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div className="flex gap-3">
                 <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">
-                  {saving ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('applyLoan')}
+                  {saving ? <span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('applyLoan')}
                 </button>
                 <button type="button" onClick={() => setShowApply(false)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">
                   {t('cancel')}

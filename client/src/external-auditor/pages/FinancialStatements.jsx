@@ -81,8 +81,8 @@ export default function ExternalFinancialStatements() {
 
       <div className="flex flex-wrap gap-4 items-center mb-8">
         <div className="flex items-center gap-2">
-          <label className="text-label-md text-on-surface-variant">Financial Year</label>
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+          <label htmlFor="financial-year" className="text-label-md text-on-surface-variant">Financial Year</label>
+          <select id="financial-year" value={year} onChange={(e) => setYear(Number(e.target.value))} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
             {Array.from({ length: 5 }, (_, i) => currentYear - i).map((y) => (
               <option key={y} value={y}>{y}/{y + 1}</option>
             ))}
@@ -193,7 +193,7 @@ export default function ExternalFinancialStatements() {
 
       {!report && (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center">
-          <span className="material-symbols-outlined text-[48px] text-on-surface-variant/40 mb-4">finance</span>
+          <span className="material-symbols-outlined text-[48px] text-on-surface-variant/40 mb-4" aria-hidden="true">finance</span>
           <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Select a financial year</h3>
           <p className="text-body-md text-on-surface-variant">Choose a year above and click "View Annual Report" to see the financial statements.</p>
         </div>

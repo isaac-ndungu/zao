@@ -84,7 +84,7 @@ export default function MyGrades() {
 
       {grades.length === 0 ? (
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-12 text-center">
-          <span className="material-symbols-outlined text-[48px] text-on-surface-variant">fact_check</span>
+          <span className="material-symbols-outlined text-[48px] text-on-surface-variant" aria-hidden="true">fact_check</span>
           <h3 className="font-headline-sm text-headline-sm text-on-surface mt-4">No grades yet</h3>
           <p className="text-body-md text-on-surface-variant mt-2">Grades you assign will appear here.</p>
         </div>
@@ -98,7 +98,7 @@ export default function MyGrades() {
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                 grade.grade_letter === 'REJECTED' ? 'bg-error-container' : 'bg-primary-container'
               }`}>
-                <span className={`material-symbols-outlined text-[20px] ${
+                <span aria-hidden="true" className={`material-symbols-outlined text-[20px] ${
                   grade.grade_letter === 'REJECTED' ? 'text-error' : 'text-primary'
                 }`}>
                   {grade.grade_letter === 'REJECTED' ? 'close' : 'grading'}
@@ -128,11 +128,11 @@ export default function MyGrades() {
                 )}
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEdit(grade)} className="text-on-surface-variant hover:text-primary p-1" title="Edit Grade">
-                  <span className="material-symbols-outlined text-[18px]">edit</span>
+                <button onClick={() => openEdit(grade)} aria-label="Edit Grade" className="text-on-surface-variant hover:text-primary p-1">
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span>
                 </button>
-                <button onClick={() => setDeleting(grade)} className="text-error hover:text-error/80 p-1" title="Delete Grade">
-                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                <button onClick={() => setDeleting(grade)} aria-label="Delete Grade" className="text-error hover:text-error/80 p-1">
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
                 </button>
               </div>
             </div>
@@ -154,8 +154,8 @@ export default function MyGrades() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">Edit Grade</h3>
-              <button onClick={() => setEditing(null)} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={submitting}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+              <button onClick={() => setEditing(null)} aria-label="Close" className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={submitting}>
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
             <div className="space-y-4">
@@ -186,7 +186,7 @@ export default function MyGrades() {
                   Cancel
                 </button>
                 <button onClick={handleEdit} disabled={submitting || !editGrade} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2">
-                  {submitting && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  {submitting && <span aria-hidden="true" className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                   {submitting ? 'Saving...' : 'Save'}
                 </button>
               </div>

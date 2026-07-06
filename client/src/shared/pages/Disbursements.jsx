@@ -339,7 +339,7 @@ export default function Disbursements() {
           aria-label="Actions"
           title="Batch actions"
         >
-          <span className="material-symbols-outlined text-lg">more_vert</span>
+          <span className="material-symbols-outlined text-lg" aria-hidden="true">more_vert</span>
         </button>
         {isOpen && (
           <div className="absolute right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-lg z-50 min-w-[160px] py-1 overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -601,8 +601,8 @@ export default function Disbursements() {
             <h3 className="font-headline-sm text-headline-sm mb-4">Initiate Disbursements from Cycle</h3>
             <form onSubmit={handleInitiate} className="space-y-4">
               <div>
-                <label className="block text-label-md text-on-surface-variant mb-1">Payment Cycle</label>
-                <select value={initCycleId} onChange={(e) => setInitCycleId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+                <label htmlFor="payment-cycle" className="block text-label-md text-on-surface-variant mb-1">Payment Cycle</label>
+                <select id="payment-cycle" value={initCycleId} onChange={(e) => setInitCycleId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
                   <option value="">Select cycle...</option>
                   {cycles.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.status})</option>

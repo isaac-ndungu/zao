@@ -103,7 +103,7 @@ export default function Contact() {
               {CONTACT_INFO.map((item) => (
                 <div key={item.label} className="bg-white/70 backdrop-blur-md rounded-xl p-5 border border-outline-variant/20 shadow-sm group hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
                   <div className="mb-3 w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary transition-transform duration-300 group-hover:scale-110">
-                    <item.icon className="w-5 h-5" />
+                    <item.icon className="w-5 h-5" aria-hidden="true" />
                   </div>
                   <h3 className="font-label-md text-label-md text-on-surface-variant mb-1">{item.label}</h3>
                   {item.href ? (
@@ -119,9 +119,9 @@ export default function Contact() {
           <div className="bg-white/70 backdrop-blur-md rounded-2xl p-8 border border-outline-variant/20 shadow-md">
             <h2 className="font-headline-sm text-headline-sm text-primary mb-6">Send Us a Message</h2>
             {submitted ? (
-              <div className="text-center py-12">
-                <HiOutlineCheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-                <p className="font-headline-sm text-headline-sm text-primary mb-2">Message Ready to Send</p>
+                <div className="text-center py-12">
+                  <HiOutlineCheckCircle className="w-16 h-16 text-primary mx-auto mb-4" aria-hidden="true" />
+                  <p className="font-headline-sm text-headline-sm text-primary mb-2">Message Ready to Send</p>
                 <p className="font-body-md text-body-md text-on-surface-variant mb-6">
                   Your default email client will open with the message pre-filled. Just click send.
                 </p>
@@ -136,8 +136,9 @@ export default function Contact() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface mb-1.5">Your Name *</label>
+                    <label htmlFor="contact-name" className="block text-label-md font-bold text-on-surface mb-1.5">Your Name *</label>
                     <input
+                      id="contact-name"
                       type="text"
                       required
                       value={form.name}
@@ -147,8 +148,9 @@ export default function Contact() {
                     />
                   </div>
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface mb-1.5">Your Email *</label>
+                    <label htmlFor="contact-email" className="block text-label-md font-bold text-on-surface mb-1.5">Your Email *</label>
                     <input
+                      id="contact-email"
                       type="email"
                       required
                       value={form.email}
@@ -159,8 +161,9 @@ export default function Contact() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Subject *</label>
+                  <label htmlFor="contact-subject" className="block text-label-md font-bold text-on-surface mb-1.5">Subject *</label>
                   <input
+                    id="contact-subject"
                     type="text"
                     required
                     value={form.subject}
@@ -170,8 +173,9 @@ export default function Contact() {
                   />
                 </div>
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface mb-1.5">Message *</label>
+                  <label htmlFor="contact-message" className="block text-label-md font-bold text-on-surface mb-1.5">Message *</label>
                   <textarea
+                    id="contact-message"
                     required
                     rows={5}
                     value={form.message}
@@ -184,7 +188,7 @@ export default function Contact() {
                   type="submit"
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary/90 transition-colors active:scale-[0.98]"
                 >
-                  <HiOutlinePaperAirplane className="w-5 h-5" />
+                  <HiOutlinePaperAirplane className="w-5 h-5" aria-hidden="true" />
                   Send Message
                 </button>
               </form>
@@ -201,7 +205,7 @@ export default function Contact() {
               <details key={faq.q} className="bg-white/70 backdrop-blur-md rounded-xl border border-outline-variant/20 group open:shadow-md transition-all">
                 <summary className="px-6 py-4 font-headline-sm text-headline-sm text-on-surface cursor-pointer hover:text-primary transition-colors flex items-center justify-between list-none">
                   {faq.q}
-                  <span className="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform text-[20px]">expand_more</span>
+                  <span className="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform text-[20px]" aria-hidden="true">expand_more</span>
                 </summary>
                 <div className="px-6 pb-4">
                   <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">{faq.a}</p>

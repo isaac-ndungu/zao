@@ -22,7 +22,7 @@ export default function SlideOutPanel({ open, onClose, title, children, width = 
         <div
           className="fixed inset-0 bg-black/20 z-[55] transition-opacity duration-300"
           onClick={onClose}
-          role="presentation"
+          aria-hidden="true"
         />
       )}
       <div

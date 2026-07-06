@@ -384,9 +384,9 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
             </div>
           ))}
           {photos.length < 5 && (
-            <label className="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors">
+            <label htmlFor="photo-upload" className="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors">
               <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">add</span>
-              <input type="file" accept="image/*" capture="environment" onChange={handlePhotoAdd} className="hidden" aria-label="Add photo to delivery" />
+              <input id="photo-upload" type="file" accept="image/*" capture="environment" onChange={handlePhotoAdd} className="hidden" aria-label="Add photo to delivery" />
             </label>
           )}
         </div>

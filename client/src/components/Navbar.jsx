@@ -13,7 +13,7 @@ export default function Navbar({ activeLink }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
+    <nav aria-label="Main navigation" className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
       <div className="flex justify-between items-center w-full px-container-margin py-stack-md max-w-7xl mx-auto">
         <Link to="/" className="font-headline-sm text-headline-sm font-bold text-primary">
           Zao

@@ -73,8 +73,8 @@ export default function GradePrices() {
     {
       key: 'actions', label: '', render: (_v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} className="text-on-surface-variant hover:text-primary" title="Edit"><span className="material-symbols-outlined text-[18px]">edit</span></button>
-          <button onClick={(e) => { e.stopPropagation(); setDeleting(row) }} className="text-error hover:text-error/80" title="Delete"><span className="material-symbols-outlined text-[18px]">delete</span></button>
+          <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} aria-label="Edit" className="text-on-surface-variant hover:text-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setDeleting(row) }} aria-label="Delete" className="text-error hover:text-error/80"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
         </div>
       ),
     },
@@ -88,7 +88,7 @@ export default function GradePrices() {
           <p className="text-on-surface-variant font-body-md">Manage pricing tiers per grade letter</p>
         </div>
         <button onClick={openCreate} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">add</span>Add Price
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Add Price
         </button>
       </header>
 
@@ -107,8 +107,8 @@ export default function GradePrices() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-headline-sm text-headline-sm text-on-surface">{editing ? 'Edit Price' : 'New Price'}</h3>
-              <button onClick={() => { setShowForm(false); setEditing(null) }} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading}>
-                <span className="material-symbols-outlined text-[20px]">close</span>
+              <button onClick={() => { setShowForm(false); setEditing(null) }} aria-label="Close" className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading}>
+                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">

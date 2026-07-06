@@ -88,6 +88,15 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                 className={`group border-b border-outline-variant/50 transition-colors ${idx % 2 === 0 ? 'bg-surface-container-lowest' : 'bg-surface-container'
                   } ${onRowClick ? 'cursor-pointer hover:bg-surface-container-high' : ''}`}
                 onClick={() => onRowClick?.(row)}
+                onKeyDown={(e) => {
+                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault()
+                    onRowClick(row)
+                  }
+                }}
+                tabIndex={onRowClick ? 0 : undefined}
+                role={onRowClick ? 'button' : undefined}
+                aria-label={onRowClick ? `View details for row ${idx + 1}` : undefined}
               >
                 {onSelectionChange && (
                   <td className="px-4 py-3">

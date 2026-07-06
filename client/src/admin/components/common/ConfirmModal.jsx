@@ -28,7 +28,7 @@ export default function ConfirmModal({ open, title, message, confirmLabel = 'Con
       aria-modal="true"
       aria-label={title}
     >
-      <div className="fixed inset-0 bg-black/30 transition-opacity duration-200" onClick={onCancel} />
+      <div className="fixed inset-0 bg-black/30 transition-opacity duration-200" onClick={onCancel} aria-hidden="true" />
       <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl transform transition-all duration-200 scale-100">
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">{title}</h3>
         <p className="text-body-md text-on-surface-variant mb-6">{message}</p>

@@ -85,7 +85,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav aria-label="Main navigation" className="flex-1 space-y-1">
         {navItems.map((item) => (
           <NavItem key={item.to} item={item} pathname={pathname} minimized={minimized} showTooltip={showTooltip} hideTooltip={hideTooltip} />
         ))}
@@ -102,7 +102,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
   return (
     <>
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} aria-hidden="true" />
       )}
       <div className={`hidden lg:fixed lg:inset-y-0 lg:flex ${minimized ? 'lg:w-16' : 'lg:w-64'} z-50 transition-all duration-300`}>
         {sidebarContent}

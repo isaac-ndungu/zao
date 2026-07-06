@@ -35,11 +35,11 @@ export default function NotificationBell({ endpoint = '/api/notifications/?page=
       <button
         onClick={() => setOpen(!open)}
         className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors relative"
-        aria-label="Notifications"
+        aria-label={notifications.length > 0 ? `Notifications, ${notifications.length} unread` : 'Notifications'}
       >
-        <span className="material-symbols-outlined">notifications</span>
+        <span className="material-symbols-outlined" aria-hidden="true">notifications</span>
         {notifications.length > 0 && (
-          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface" aria-hidden="true" />
         )}
       </button>
 
@@ -66,6 +66,7 @@ export default function NotificationBell({ endpoint = '/api/notifications/?page=
                       className={`material-symbols-outlined text-[18px] mt-0.5 ${
                         n.status === 'failed' ? 'text-error' : n.status === 'sent' ? 'text-primary' : 'text-on-surface-variant'
                       }`}
+                      aria-hidden="true"
                     >
                       {n.channel === 'email' ? 'mail' : n.channel === 'sms' ? 'sms' : 'notifications'}
                     </span>

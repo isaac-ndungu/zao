@@ -63,14 +63,14 @@ export default function FarmerProfile() {
         <div className="flex items-center gap-3">
           <NotificationBell viewAllPath="/farmer/notifications" />
           <button onClick={() => navigate('/farmer/settings')} aria-label={t('settings')} className="p-1">
-            <span className="material-symbols-outlined text-on-surface-variant">settings</span>
+            <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">settings</span>
           </button>
         </div>
       </div>
 
       <div className="text-center mb-6">
         <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mx-auto mb-3">
-          <span className="material-symbols-outlined text-primary text-3xl">person</span>
+          <span className="material-symbols-outlined text-primary text-3xl" aria-hidden="true">person</span>
         </div>
         <h3 className="font-bold text-lg">{profile?.first_name} {profile?.last_name}</h3>
         <p className="text-sm text-on-surface-variant">{t('memberNumber')}: {profile?.member_number}</p>
@@ -100,14 +100,14 @@ export default function FarmerProfile() {
       ) : (
         <div className="bg-surface-container rounded-xl border border-outline-variant p-4">
           <form onSubmit={handleSave} className="space-y-4">
-            <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('phoneNumber')}</label><input value={form.phone_number} onChange={(e) => setForm(p => ({ ...p, phone_number: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('email')}</label><input value={form.email} onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))} type="email" className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('village')}</label><input value={form.village} onChange={(e) => setForm(p => ({ ...p, village: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('ward')}</label><input value={form.ward} onChange={(e) => setForm(p => ({ ...p, ward: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('subCounty')}</label><input value={form.sub_county} onChange={(e) => setForm(p => ({ ...p, sub_county: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="phone_number" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('phoneNumber')}</label><input id="phone_number" value={form.phone_number} onChange={(e) => setForm(p => ({ ...p, phone_number: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="email" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('email')}</label><input id="email" value={form.email} onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))} type="email" className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="village" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('village')}</label><input id="village" value={form.village} onChange={(e) => setForm(p => ({ ...p, village: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="ward" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('ward')}</label><input id="ward" value={form.ward} onChange={(e) => setForm(p => ({ ...p, ward: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="sub_county" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('subCounty')}</label><input id="sub_county" value={form.sub_county} onChange={(e) => setForm(p => ({ ...p, sub_county: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
             <div className="flex gap-3">
               <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">
-                {saving ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('save')}
+                {saving ? <span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('save')}
               </button>
               <button type="button" onClick={() => setEditing(false)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">
                 {t('cancel')}
@@ -119,7 +119,7 @@ export default function FarmerProfile() {
 
       <div className="mt-6">
         <button onClick={() => setShowLogoutConfirm(true)} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">
-          <span className="material-symbols-outlined">logout</span>
+          <span className="material-symbols-outlined" aria-hidden="true">logout</span>
           {t('logout')}
         </button>
       </div>

@@ -90,21 +90,21 @@ export default function Settings() {
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
-              <input type="text" value={form.first_name} onChange={(e) => setForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+              <label htmlFor="id-first-name" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
+              <input id="id-first-name" type="text" value={form.first_name} onChange={(e) => setForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
             </div>
             <div>
-              <label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
-              <input type="text" value={form.last_name} onChange={(e) => setForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+              <label htmlFor="id-last-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
+              <input id="id-last-name" type="text" value={form.last_name} onChange={(e) => setForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
             </div>
           </div>
           <div>
-            <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
-            <input type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+            <label htmlFor="id-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
+            <input id="id-email" type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
           </div>
           <div>
-            <label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
-            <input type="tel" value={form.phone_number} onChange={(e) => setForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
+            <label htmlFor="id-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
+            <input id="id-phone" type="tel" value={form.phone_number} onChange={(e) => setForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" />
           </div>
           <div className="pt-2">
             <button type="submit" disabled={saving} className="px-6 py-2 bg-primary text-on-primary rounded-lg font-bold text-label-md hover:bg-primary/90 transition-colors disabled:opacity-50">
@@ -128,9 +128,9 @@ export default function Settings() {
           </div>
           {pwOpen && (
             <form onSubmit={handlePasswordChange} className="space-y-3 pt-2">
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Current Password</label><input type="password" required value={pwForm.current_password} onChange={(e) => setPwForm(f => ({ ...f, current_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">New Password</label><input type="password" required value={pwForm.new_password} onChange={(e) => setPwForm(f => ({ ...f, new_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Confirm New Password</label><input type="password" required value={pwForm.confirm_password} onChange={(e) => setPwForm(f => ({ ...f, confirm_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="id-current-password" className="block text-label-md font-bold text-on-surface-variant mb-1">Current Password</label><input id="id-current-password" type="password" required value={pwForm.current_password} onChange={(e) => setPwForm(f => ({ ...f, current_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="id-new-password" className="block text-label-md font-bold text-on-surface-variant mb-1">New Password</label><input id="id-new-password" type="password" required value={pwForm.new_password} onChange={(e) => setPwForm(f => ({ ...f, new_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="id-confirm-password" className="block text-label-md font-bold text-on-surface-variant mb-1">Confirm New Password</label><input id="id-confirm-password" type="password" required value={pwForm.confirm_password} onChange={(e) => setPwForm(f => ({ ...f, confirm_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <button type="submit" disabled={pwSaving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 disabled:opacity-50">{pwSaving ? 'Saving...' : 'Update Password'}</button>
             </form>
           )}
@@ -169,6 +169,7 @@ export default function Settings() {
                 </p>
                 <div className="flex gap-3">
                   <input
+                    id="id-2fa-password"
                     type="password"
                     required
                     value={twoFAPassword}

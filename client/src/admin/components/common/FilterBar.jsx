@@ -41,20 +41,20 @@ export default function FilterBar({ search, onSearchChange, filters = [], filter
 
 
       {filters.map((filter) => (
-        <select
-          key={filter.key}
-          value={filterValues[filter.key] || ''}
-          onChange={(e) => onFilterChange({ ...filterValues, [filter.key]: e.target.value })}
-          className="bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface-variant focus:outline-none focus:ring-1 focus:ring-primary"
-        >
-
-          <option value="">{filter.label}</option>
-
-          {filter.options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-          
-        </select>
+        <div key={filter.key} className="relative">
+          <label htmlFor={`filter-${filter.key}`} className="sr-only">{filter.label}</label>
+          <select
+            id={`filter-${filter.key}`}
+            value={filterValues[filter.key] || ''}
+            onChange={(e) => onFilterChange({ ...filterValues, [filter.key]: e.target.value })}
+            className="bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface-variant focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="">{filter.label}</option>
+            {filter.options.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
       ))}
       <div className="flex items-center gap-1 ml-auto">
         {hasActiveFilters && (

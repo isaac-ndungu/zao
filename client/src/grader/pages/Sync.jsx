@@ -57,7 +57,7 @@ export default function Sync() {
             <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
               pendingCount > 0 ? 'bg-warning-container' : 'bg-primary-container'
             }`}>
-              <span className={`material-symbols-outlined text-[28px] ${
+              <span aria-hidden="true" className={`material-symbols-outlined text-[28px] ${
                 pendingCount > 0 ? 'text-warning' : 'text-primary'
               }`}>cloud_upload</span>
             </div>
@@ -71,7 +71,7 @@ export default function Sync() {
             <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
               pendingGradesCount > 0 ? 'bg-warning-container' : 'bg-primary-container'
             }`}>
-              <span className={`material-symbols-outlined text-[28px] ${
+              <span aria-hidden="true" className={`material-symbols-outlined text-[28px] ${
                 pendingGradesCount > 0 ? 'text-warning' : 'text-primary'
               }`}>grading</span>
             </div>
@@ -87,7 +87,7 @@ export default function Sync() {
           disabled={syncing || !isOnline || totalPending === 0}
           className="w-full py-3 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          <span className={`material-symbols-outlined text-[20px] ${syncing ? 'animate-spin' : ''}`}>
+          <span aria-hidden="true" className={`material-symbols-outlined text-[20px] ${syncing ? 'animate-spin' : ''}`}>
             sync
           </span>
           {syncing
@@ -100,14 +100,14 @@ export default function Sync() {
 
       {syncStatus === 'syncing' && (
         <div className="mb-6 px-4 py-3 bg-primary-container text-on-primary-container rounded-xl text-body-md font-medium flex items-center gap-3">
-          <span className="material-symbols-outlined animate-spin">sync</span>
+          <span aria-hidden="true" className="material-symbols-outlined animate-spin">sync</span>
           Syncing data...
         </div>
       )}
 
       {syncStatus === 'done' && lastSyncResult && (
         <div className="mb-6 px-4 py-3 bg-success-container text-on-success-container rounded-xl text-body-md font-medium flex items-center gap-3">
-          <span className="material-symbols-outlined">check_circle</span>
+          <span aria-hidden="true" className="material-symbols-outlined">check_circle</span>
           {lastSyncResult.synced} items synced successfully
         </div>
       )}
@@ -115,7 +115,7 @@ export default function Sync() {
       {syncStatus === 'error' && lastSyncResult && lastSyncResult.failed > 0 && (
         <div className="mb-6 px-4 py-3 bg-error-container text-on-error-container rounded-xl text-body-md">
           <div className="flex items-center gap-2 mb-2">
-            <span className="material-symbols-outlined">error</span>
+            <span aria-hidden="true" className="material-symbols-outlined">error</span>
             <span className="font-medium">{lastSyncResult.failed} items failed</span>
           </div>
           <button
@@ -144,7 +144,7 @@ export default function Sync() {
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-3">Sync History</h3>
         <div className="flex items-center gap-2 text-label-md text-on-surface-variant">
-          <span className="material-symbols-outlined text-[16px]">history</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[16px]">history</span>
           {lastSyncResult?.timestamp
             ? `Last synced: ${timeAgo(lastSyncResult.timestamp)}`
             : 'No sync history'}

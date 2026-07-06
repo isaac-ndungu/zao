@@ -32,7 +32,7 @@ function LogoutButton({ minimized }) {
     <button
       onClick={handleLogout}
       className="w-full flex items-center gap-2 px-4 py-2 text-on-primary/50 hover:text-on-primary/80 transition-colors text-[13px]"
-      aria-label={minimized ? 'Logout' : undefined}
+      aria-label="Logout"
     >
       <span className="material-symbols-outlined text-[16px]" aria-hidden="true">logout</span>
       {!minimized && <span>Logout</span>}
@@ -123,7 +123,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
   return (
     <>
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} aria-hidden="true" />
       )}
       <div className={`hidden lg:fixed lg:inset-y-0 lg:flex ${minimized ? 'lg:w-16' : 'lg:w-64'} z-50 transition-all duration-300`}>
         {sidebarContent}

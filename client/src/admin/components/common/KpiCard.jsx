@@ -20,6 +20,7 @@ export default function KpiCard({ icon, label, value, subvalue, highlighted, tre
     <Wrapper
       onClick={onClick}
       className={`${baseClasses} ${clickClasses} ${styleClasses}`}
+      aria-label={onClick ? label : undefined}
     >
       <div className="flex justify-between items-start mb-5">
         <div className={`p-2.5 rounded-xl flex items-center justify-center ${
