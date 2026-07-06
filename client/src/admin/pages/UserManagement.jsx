@@ -335,11 +335,11 @@ export default function UserManagement() {
             {tab === 'users' && (
               <>
                 <button onClick={() => setSuperuserModal(true)} className="flex items-center gap-2 px-3 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">admin_panel_settings</span>
                   <span className="hidden sm:inline">Create Superuser</span>
                 </button>
                 <button onClick={() => setInviteModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">person_add</span>
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">person_add</span>
                   Invite User
                 </button>
               </>
@@ -397,9 +397,8 @@ export default function UserManagement() {
                     aria-label="User actions"
                     aria-haspopup="true"
                     aria-expanded={openDropdownId === user.id}
-                    title="User actions"
                   >
-                    <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">more_vert</span>
                   </button>
                   {openDropdownId === user.id && (
                     <div
@@ -407,37 +406,37 @@ export default function UserManagement() {
                       role="menu"
                     >
                       <button onClick={() => handleView(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">visibility</span>View Details
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">visibility</span>View Details
                       </button>
                       {user.is_active ? (
                         <button onClick={() => handleUserAction(user, 'deactivate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                          <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
+                          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">block</span>Deactivate
                         </button>
                       ) : (
                         <>
                           <button onClick={() => handleUserAction(user, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                            <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
+                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">check_circle</span>Activate
                           </button>
                           <button onClick={() => handleUserAction(user, 'restore')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                            <span className="material-symbols-outlined text-[16px]">restore</span>Restore
+                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">restore</span>Restore
                           </button>
                         </>
                       )}
                       <button onClick={() => handleUserAction(user, 'toggle-2fa')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">security</span>Toggle 2FA
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">security</span>Toggle 2FA
                       </button>
                       <button onClick={() => handleUserAction(user, 'reset-password')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">key</span>Reset Password
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">key</span>Reset Password
                       </button>
                       <button onClick={() => handleUserAction(user, 'force-logout')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">logout</span>Force Logout
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">logout</span>Force Logout
                       </button>
                       <button onClick={() => handleImpersonate(user)} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">switch_account</span>Impersonate
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">switch_account</span>Impersonate
                       </button>
                       <div className="border-t border-outline-variant my-1" />
                       <button onClick={() => handleUserAction(user, 'delete')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">delete</span>Delete
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>Delete
                       </button>
                     </div>
                   )}
@@ -488,8 +487,8 @@ export default function UserManagement() {
                       <td className="px-4 py-3 text-right">
                         {inv.status === 'PENDING' && (
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => handleResendInvite(inv)} disabled={actionLoading} className="p-1.5 rounded-lg text-primary hover:bg-primary-container transition-colors disabled:opacity-50" title="Resend Invite"><span className="material-symbols-outlined text-[16px]">forward_to_inbox</span></button>
-                            <button onClick={() => handleRevokeInvite(inv)} disabled={actionLoading} className="p-1.5 rounded-lg text-error hover:bg-error-container transition-colors disabled:opacity-50" title="Revoke Invite"><span className="material-symbols-outlined text-[16px]">cancel</span></button>
+                            <button onClick={() => handleResendInvite(inv)} disabled={actionLoading} className="p-1.5 rounded-lg text-primary hover:bg-primary-container transition-colors disabled:opacity-50" aria-label="Resend invite"><span className="material-symbols-outlined text-[16px]" aria-hidden="true">forward_to_inbox</span></button>
+                            <button onClick={() => handleRevokeInvite(inv)} disabled={actionLoading} className="p-1.5 rounded-lg text-error hover:bg-error-container transition-colors disabled:opacity-50" aria-label="Revoke invite"><span className="material-symbols-outlined text-[16px]" aria-hidden="true">cancel</span></button>
                           </div>
                         )}
                       </td>
@@ -572,27 +571,27 @@ export default function UserManagement() {
       />
 
       {inviteModal && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { setInviteModal(false); setInviteErrors({}) }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Invite User</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="invite-user-title">
+            <h3 id="invite-user-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Invite User</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Send an invitation to join the platform.</p>
             <form onSubmit={handleInvite}>
               <div className="mb-4">
-                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email Address</label>
-                <input type="email" required value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.email; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.email ? 'border-error' : 'border-outline-variant'}`} placeholder="user@example.com" />
-                {inviteErrors.email && <p className="text-label-sm text-error mt-1">{inviteErrors.email.join(', ')}</p>}
+                <label htmlFor="invite-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email Address</label>
+                <input id="invite-email" type="email" required value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.email; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.email ? 'border-error' : 'border-outline-variant'}`} placeholder="user@example.com" />
+                {inviteErrors.email && <p className="text-label-sm text-error mt-1" role="alert">{inviteErrors.email.join(', ')}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
-                  <input type="text" required value={inviteFirstName} onChange={(e) => { setInviteFirstName(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.first_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.first_name ? 'border-error' : 'border-outline-variant'}`} placeholder="First" />
-                  {inviteErrors.first_name && <p className="text-label-sm text-error mt-1">{inviteErrors.first_name.join(', ')}</p>}
+                  <label htmlFor="invite-firstname" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
+                  <input id="invite-firstname" type="text" required value={inviteFirstName} onChange={(e) => { setInviteFirstName(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.first_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.first_name ? 'border-error' : 'border-outline-variant'}`} placeholder="First" />
+                  {inviteErrors.first_name && <p className="text-label-sm text-error mt-1" role="alert">{inviteErrors.first_name.join(', ')}</p>}
                 </div>
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
-                  <input type="text" required value={inviteLastName} onChange={(e) => { setInviteLastName(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.last_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.last_name ? 'border-error' : 'border-outline-variant'}`} placeholder="Last" />
-                  {inviteErrors.last_name && <p className="text-label-sm text-error mt-1">{inviteErrors.last_name.join(', ')}</p>}
+                  <label htmlFor="invite-lastname" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
+                  <input id="invite-lastname" type="text" required value={inviteLastName} onChange={(e) => { setInviteLastName(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.last_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.last_name ? 'border-error' : 'border-outline-variant'}`} placeholder="Last" />
+                  {inviteErrors.last_name && <p className="text-label-sm text-error mt-1" role="alert">{inviteErrors.last_name.join(', ')}</p>}
                 </div>
               </div>
               <div className="flex justify-end gap-3">
@@ -605,38 +604,38 @@ export default function UserManagement() {
       )}
 
       {superuserModal && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { setSuperuserModal(false); setSuErrors({}) }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Superuser</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="create-superuser-title">
+            <h3 id="create-superuser-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Superuser</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Create a new admin with full system access.</p>
             <form onSubmit={handleCreateSuperuser} className="space-y-3">
               <div>
-                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
-                <input type="email" required value={suForm.email} onChange={(e) => { setSuForm(f => ({ ...f, email: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.email; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.email ? 'border-error' : 'border-outline-variant'}`} />
-                {suErrors.email && <p className="text-label-sm text-error mt-1">{suErrors.email.join(', ')}</p>}
+                <label htmlFor="su-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
+                <input id="su-email" type="email" required value={suForm.email} onChange={(e) => { setSuForm(f => ({ ...f, email: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.email; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.email ? 'border-error' : 'border-outline-variant'}`} />
+                {suErrors.email && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.email.join(', ')}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
-                  <input type="text" required value={suForm.first_name} onChange={(e) => { setSuForm(f => ({ ...f, first_name: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.first_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.first_name ? 'border-error' : 'border-outline-variant'}`} />
-                  {suErrors.first_name && <p className="text-label-sm text-error mt-1">{suErrors.first_name.join(', ')}</p>}
+                  <label htmlFor="su-firstname" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
+                  <input id="su-firstname" type="text" required value={suForm.first_name} onChange={(e) => { setSuForm(f => ({ ...f, first_name: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.first_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.first_name ? 'border-error' : 'border-outline-variant'}`} />
+                  {suErrors.first_name && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.first_name.join(', ')}</p>}
                 </div>
                 <div>
-                  <label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
-                  <input type="text" required value={suForm.last_name} onChange={(e) => { setSuForm(f => ({ ...f, last_name: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.last_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.last_name ? 'border-error' : 'border-outline-variant'}`} />
-                  {suErrors.last_name && <p className="text-label-sm text-error mt-1">{suErrors.last_name.join(', ')}</p>}
+                  <label htmlFor="su-lastname" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
+                  <input id="su-lastname" type="text" required value={suForm.last_name} onChange={(e) => { setSuForm(f => ({ ...f, last_name: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.last_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.last_name ? 'border-error' : 'border-outline-variant'}`} />
+                  {suErrors.last_name && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.last_name.join(', ')}</p>}
                 </div>
               </div>
               <div>
-                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
-                <input type="tel" value={suForm.phone_number} onChange={(e) => { setSuForm(f => ({ ...f, phone_number: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.phone_number; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.phone_number ? 'border-error' : 'border-outline-variant'}`} />
-                {suErrors.phone_number && <p className="text-label-sm text-error mt-1">{suErrors.phone_number.join(', ')}</p>}
+                <label htmlFor="su-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
+                <input id="su-phone" type="tel" value={suForm.phone_number} onChange={(e) => { setSuForm(f => ({ ...f, phone_number: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.phone_number; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.phone_number ? 'border-error' : 'border-outline-variant'}`} />
+                {suErrors.phone_number && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.phone_number.join(', ')}</p>}
               </div>
               <div>
-                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Password</label>
-                <input type="password" required value={suForm.password} onChange={(e) => { setSuForm(f => ({ ...f, password: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.password; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.password ? 'border-error' : 'border-outline-variant'}`} />
-                {suErrors.password && <p className="text-label-sm text-error mt-1">{suErrors.password.join(', ')}</p>}
+                <label htmlFor="su-password" className="block text-label-md font-bold text-on-surface-variant mb-1">Password</label>
+                <input id="su-password" type="password" required value={suForm.password} onChange={(e) => { setSuForm(f => ({ ...f, password: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.password; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.password ? 'border-error' : 'border-outline-variant'}`} />
+                {suErrors.password && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.password.join(', ')}</p>}
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setSuperuserModal(false); setSuErrors({}) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>

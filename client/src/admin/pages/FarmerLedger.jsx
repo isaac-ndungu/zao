@@ -251,7 +251,7 @@ export default function FarmerLedger() {
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-headline-lg text-display-md text-primary">Farmer Ledger</h2>
           <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">person_add</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">person_add</span>
             Register Farmer
           </button>
         </div>
@@ -329,29 +329,29 @@ export default function FarmerLedger() {
         emptyMessage="No farmers found matching your criteria."
         rowActions={(farmer) => (
           <div className="relative flex items-center">
-            <button onClick={() => handleViewFarmer(farmer)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" title="View Details">
-              <span className="material-symbols-outlined text-[18px]">visibility</span>
+            <button onClick={() => handleViewFarmer(farmer)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors" aria-label="View farmer details">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">visibility</span>
             </button>
-            <button onClick={() => toggleDropdown(farmer.id)} className={`p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors ${openDropdownId === farmer.id ? 'opacity-100' : ''}`} aria-label="Farmer actions" aria-haspopup="true" aria-expanded={openDropdownId === farmer.id} title="More actions">
-              <span className="material-symbols-outlined text-[18px]">more_vert</span>
+            <button onClick={() => toggleDropdown(farmer.id)} className={`p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors ${openDropdownId === farmer.id ? 'opacity-100' : ''}`} aria-label="Farmer actions" aria-haspopup="true" aria-expanded={openDropdownId === farmer.id}>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">more_vert</span>
             </button>
             {openDropdownId === farmer.id && (
               <div className="absolute right-0 top-full mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-50 py-1" role="menu">
                 <button onClick={() => { setOpenDropdownId(null); openEditFarmer(farmer) }} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">edit</span>Edit
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">edit</span>Edit
                 </button>
                 {farmer.is_active ? (
                   <button onClick={() => handleFarmerAction(farmer, 'deactivate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">block</span>Deactivate
+                    <span className="material-symbols-outlined text-[16px]" aria-hidden="true">block</span>Deactivate
                   </button>
                 ) : (
                   <button onClick={() => handleFarmerAction(farmer, 'activate')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-on-surface hover:bg-surface-container-high transition-colors">
-                    <span className="material-symbols-outlined text-[16px]">check_circle</span>Activate
+                    <span className="material-symbols-outlined text-[16px]" aria-hidden="true">check_circle</span>Activate
                   </button>
                 )}
                 <div className="border-t border-outline-variant my-1" />
                 <button onClick={() => handleFarmerAction(farmer, 'delete')} role="menuitem" className="flex items-center gap-2 w-full px-3 py-2 text-label-md text-error hover:bg-error-container transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">delete</span>Delete
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">delete</span>Delete
                 </button>
               </div>
             )}
@@ -405,31 +405,31 @@ export default function FarmerLedger() {
       <ConfirmModal open={modalConfig.open} title={modalConfig.title} message={modalConfig.message} onConfirm={modalConfig.onConfirm} onCancel={() => setModalConfig({ open: false })} loading={actionLoading} destructive={modalConfig.destructive} />
 
       {editOpen && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditFarmer(null) }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Farmer</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-farmer-title">
+            <h3 id="edit-farmer-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Farmer</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update farmer details.</p>
             <form onSubmit={handleEditFarmer} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label><input required value={editForm.first_name} onChange={(e) => setEditForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label><input required value={editForm.last_name} onChange={(e) => setEditForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-firstname" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label><input id="farmer-edit-firstname" required value={editForm.first_name} onChange={(e) => setEditForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-lastname" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label><input id="farmer-edit-lastname" required value={editForm.last_name} onChange={(e) => setEditForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input required value={editForm.phone_number} onChange={(e) => setEditForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input id="farmer-edit-email" type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input id="farmer-edit-phone" required value={editForm.phone_number} onChange={(e) => setEditForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input value={editForm.id_number} onChange={(e) => setEditForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Date of Birth</label><input type="date" value={editForm.date_of_birth} onChange={(e) => setEditForm(f => ({ ...f, date_of_birth: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-id" className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input id="farmer-edit-id" value={editForm.id_number} onChange={(e) => setEditForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-dob" className="block text-label-md font-bold text-on-surface-variant mb-1">Date of Birth</label><input id="farmer-edit-dob" type="date" value={editForm.date_of_birth} onChange={(e) => setEditForm(f => ({ ...f, date_of_birth: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County</label><input value={editForm.county} onChange={(e) => setEditForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input value={editForm.sub_county} onChange={(e) => setEditForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County</label><input id="farmer-edit-county" value={editForm.county} onChange={(e) => setEditForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-subcounty" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input id="farmer-edit-subcounty" value={editForm.sub_county} onChange={(e) => setEditForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={editForm.ward} onChange={(e) => setEditForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input value={editForm.village} onChange={(e) => setEditForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input id="farmer-edit-ward" value={editForm.ward} onChange={(e) => setEditForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-edit-village" className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input id="farmer-edit-village" value={editForm.village} onChange={(e) => setEditForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setEditOpen(false); setEditFarmer(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
@@ -441,15 +441,16 @@ export default function FarmerLedger() {
       )}
 
       {createOpen && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedCoopName(''); setCoopSearch('') } }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">Register Farmer</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-farmer-title">
+            <h3 id="create-farmer-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Register Farmer</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Create a new farmer record and user account.</p>
             <form onSubmit={handleCreateFarmer} className="space-y-3">
               <div ref={coopRef} className="relative">
-                <label className="block text-label-md font-bold text-on-surface-variant mb-1">Cooperative *</label>
+                <label htmlFor="farmer-create-coop" className="block text-label-md font-bold text-on-surface-variant mb-1">Cooperative *</label>
                 <input
+                  id="farmer-create-coop"
                   type="text"
                   value={selectedCoopName || coopSearch}
                   onChange={(e) => { setCoopSearch(e.target.value); setSelectedCoopName(''); setCreateForm(f => ({ ...f, cooperative: '' })); setCoopSearchOpen(true) }}
@@ -458,13 +459,17 @@ export default function FarmerLedger() {
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 pr-10 text-body-md text-on-surface placeholder:text-on-surface-variant"
                   disabled={formLoading}
                   autoComplete="off"
+                  aria-autocomplete="list"
+                  aria-controls="coop-search-list"
                 />
                 {coopSearchOpen && coopOptions.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div id="coop-search-list" className="absolute z-10 mt-1 w-full bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg max-h-48 overflow-y-auto" role="listbox">
                     {coopOptions.map(c => (
                       <button
                         key={c.id}
                         type="button"
+                        role="option"
+                        aria-selected="false"
                         onClick={() => { setSelectedCoopName(`${c.name} (${c.registration_number})`); setCreateForm(ff => ({ ...ff, cooperative: c.id })); setCoopSearchOpen(false); setCoopSearch('') }}
                         className="w-full text-left px-3 py-2 text-body-md text-on-surface hover:bg-surface-container transition-colors"
                       >
@@ -481,24 +486,24 @@ export default function FarmerLedger() {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">First Name *</label><input required value={createForm.first_name} onChange={(e) => setCreateForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name *</label><input required value={createForm.last_name} onChange={(e) => setCreateForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-firstname" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name *</label><input id="farmer-create-firstname" required value={createForm.first_name} onChange={(e) => setCreateForm(f => ({ ...f, first_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-lastname" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name *</label><input id="farmer-create-lastname" required value={createForm.last_name} onChange={(e) => setCreateForm(f => ({ ...f, last_name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Phone *</label><input required value={createForm.phone_number} onChange={(e) => setCreateForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input id="farmer-create-email" type="email" value={createForm.email} onChange={(e) => setCreateForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone *</label><input id="farmer-create-phone" required value={createForm.phone_number} onChange={(e) => setCreateForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input value={createForm.id_number} onChange={(e) => setCreateForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Date of Birth</label><input type="date" value={createForm.date_of_birth} onChange={(e) => setCreateForm(f => ({ ...f, date_of_birth: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-id" className="block text-label-md font-bold text-on-surface-variant mb-1">ID Number</label><input id="farmer-create-id" value={createForm.id_number} onChange={(e) => setCreateForm(f => ({ ...f, id_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-dob" className="block text-label-md font-bold text-on-surface-variant mb-1">Date of Birth</label><input id="farmer-create-dob" type="date" value={createForm.date_of_birth} onChange={(e) => setCreateForm(f => ({ ...f, date_of_birth: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><input required value={createForm.county} onChange={(e) => setCreateForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input value={createForm.sub_county} onChange={(e) => setCreateForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><input id="farmer-create-county" required value={createForm.county} onChange={(e) => setCreateForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-subcounty" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input id="farmer-create-subcounty" value={createForm.sub_county} onChange={(e) => setCreateForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input value={createForm.ward} onChange={(e) => setCreateForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input value={createForm.village} onChange={(e) => setCreateForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input id="farmer-create-ward" value={createForm.ward} onChange={(e) => setCreateForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="farmer-create-village" className="block text-label-md font-bold text-on-surface-variant mb-1">Village</label><input id="farmer-create-village" value={createForm.village} onChange={(e) => setCreateForm(f => ({ ...f, village: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setCreateOpen(false); setSelectedCoopName(''); setCoopSearch('') }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
