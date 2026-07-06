@@ -102,7 +102,15 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
       <div>
         <div className="flex justify-between items-center mb-3">
           <p className="text-label-md text-on-surface-variant font-bold">Guarantors ({loan.guarantors?.length || 0})</p>
-          <button onClick={() => setAddingGuarantor(true)} disabled={actionLoading === 'guarantor'} className="text-primary hover:text-primary/80 disabled:opacity-50" title="Add Guarantor"><span className="material-symbols-outlined text-[18px]">person_add</span></button>
+          <button
+            onClick={() => setAddingGuarantor(true)}
+            disabled={actionLoading === 'guarantor'}
+            className="text-primary hover:text-primary/80 disabled:opacity-50"
+            aria-label="Add a guarantor to this loan"
+            title="Add Guarantor"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>
+          </button>
         </div>
         {loan.guarantors?.length > 0 ? (
           <div className="space-y-2">
@@ -120,38 +128,104 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
 
       {addingGuarantor && (
         <form onSubmit={handleAddGuarantor} className="bg-surface-container rounded-xl p-4 space-y-3" ref={guarantorRef}>
-          <div className="relative">
-            <input value={guarantorSearch} onChange={(e) => { setGuarantorSearch(e.target.value); setSelectedGuarantor(null) }} placeholder="Search farmer by name or phone..." required={!selectedGuarantor} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface" />
-            {selectedGuarantor && <p className="text-sm text-on-surface-variant mt-1">Selected: {selectedGuarantor.first_name} {selectedGuarantor.last_name} ({selectedGuarantor.phone_number})</p>}
+          <div>
+            <label htmlFor="guarantor-search" className="block text-label-md text-on-surface-variant mb-1">Search for Guarantor</label>
+            <div
+              role="combobox"
+              aria-expanded={guarantorSearchOpen && guarantorResults.length > 0}
+              aria-haspopup="listbox"
+              aria-owns="guarantor-listbox"
+            >
+              <input
+                id="guarantor-search"
+                type="text"
+                value={guarantorSearch}
+                onChange={(e) => { setGuarantorSearch(e.target.value); setSelectedGuarantor(null) }}
+                placeholder="Search farmer by name or phone..."
+                required={!selectedGuarantor}
+                className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface"
+                aria-autocomplete="list"
+                aria-controls="guarantor-listbox"
+                aria-activedescendant={selectedGuarantor ? `guarantor-option-${selectedGuarantor.id}` : undefined}
+              />
+            </div>
+            {selectedGuarantor && (
+              <p className="text-sm text-on-surface-variant mt-1" role="status">
+                Selected: {selectedGuarantor.first_name} {selectedGuarantor.last_name} ({selectedGuarantor.phone_number})
+              </p>
+            )}
             {guarantorSearchOpen && guarantorResults.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full border border-outline-variant rounded-lg bg-surface shadow-lg max-h-40 overflow-y-auto">
+              <ul
+                role="listbox"
+                id="guarantor-listbox"
+                aria-label="Guarantor search results"
+                className="absolute z-10 mt-1 w-full border border-outline-variant rounded-lg bg-surface shadow-lg max-h-40 overflow-y-auto"
+              >
                 {guarantorResults.map(f => (
-                  <button key={f.id} type="button" onClick={() => { setSelectedGuarantor(f); setGuarantorSearch(`${f.first_name} ${f.last_name}`); setGuarantorSearchOpen(false) }} className="w-full text-left px-3 py-2 hover:bg-surface-container text-body-md">{f.first_name} {f.last_name} — {f.phone_number}</button>
+                  <li
+                    key={f.id}
+                    id={`guarantor-option-${f.id}`}
+                    role="option"
+                    aria-selected={selectedGuarantor?.id === f.id}
+                    onClick={() => { setSelectedGuarantor(f); setGuarantorSearch(`${f.first_name} ${f.last_name}`); setGuarantorSearchOpen(false) }}
+                    className="w-full text-left px-3 py-2 hover:bg-surface-container text-body-md cursor-pointer"
+                  >
+                    {f.first_name} {f.last_name} — {f.phone_number}
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={!selectedGuarantor || actionLoading === 'guarantor'} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{actionLoading === 'guarantor' ? 'Adding...' : 'Add'}</button>
-            <button type="button" onClick={() => { setAddingGuarantor(false); setGuarantorSearch(''); setSelectedGuarantor(null); setGuarantorResults([]) }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+            <button
+              type="submit"
+              disabled={!selectedGuarantor || actionLoading === 'guarantor'}
+              className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50"
+              aria-label={actionLoading === 'guarantor' ? 'Adding guarantor...' : 'Add selected guarantor to this loan'}
+            >
+              {actionLoading === 'guarantor' ? 'Adding...' : 'Add'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAddingGuarantor(false); setGuarantorSearch(''); setSelectedGuarantor(null); setGuarantorResults([]) }}
+              className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold"
+              aria-label="Cancel and close guarantor search"
+            >
+              Cancel
+            </button>
           </div>
         </form>
       )}
 
       <div className="pt-4 border-t border-outline-variant space-y-3">
         {loan.status === 'APPROVED' && (
-          <button onClick={() => handleAction('disburse')} disabled={!canDisburse || actionLoading} className={`w-full py-2 rounded-lg text-label-md font-bold transition-colors inline-flex items-center justify-center gap-2 ${canDisburse ? 'bg-success-container text-on-success-container hover:bg-success-container/80' : 'bg-surface-container text-on-surface-variant cursor-not-allowed'}`}>
-            {actionLoading === 'disburse' ? '...' : <><span className="material-symbols-outlined text-[18px]">payments</span> {canDisburse ? 'Disburse Loan' : 'Add Guarantor First'}</>}
+          <button
+            onClick={() => handleAction('disburse')}
+            disabled={!canDisburse || actionLoading}
+            className={`w-full py-2 rounded-lg text-label-md font-bold transition-colors inline-flex items-center justify-center gap-2 ${canDisburse ? 'bg-success-container text-on-success-container hover:bg-success-container/80' : 'bg-surface-container text-on-surface-variant cursor-not-allowed'}`}
+            aria-label={actionLoading === 'disburse' ? 'Disbursing loan...' : canDisburse ? 'Disburse this loan' : 'Add a guarantor before disbursing'}
+          >
+            {actionLoading === 'disburse' ? '...' : <><span className="material-symbols-outlined text-[18px]" aria-hidden="true">payments</span> {canDisburse ? 'Disburse Loan' : 'Add Guarantor First'}</>}
           </button>
         )}
         {loan.status === 'DISBURSED' && (
-          <button onClick={() => handleAction('mark_completed')} disabled={actionLoading} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2">
-            {actionLoading === 'mark_completed' ? '...' : <><span className="material-symbols-outlined text-[18px]">check_circle</span> Mark Completed</>}
+          <button
+            onClick={() => handleAction('mark_completed')}
+            disabled={actionLoading}
+            className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            aria-label={actionLoading === 'mark_completed' ? 'Marking loan as completed...' : 'Mark this loan as completed'}
+          >
+            {actionLoading === 'mark_completed' ? '...' : <><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span> Mark Completed</>}
           </button>
         )}
         {(loan.status === 'APPROVED' || loan.status === 'DISBURSED') && (
-          <button onClick={() => handleAction('mark_defaulted')} disabled={actionLoading} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2">
-            {actionLoading === 'mark_defaulted' ? '...' : <><span className="material-symbols-outlined text-[18px]">block</span> Mark Defaulted</>}
+          <button
+            onClick={() => handleAction('mark_defaulted')}
+            disabled={actionLoading}
+            className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            aria-label={actionLoading === 'mark_defaulted' ? 'Marking loan as defaulted...' : 'Mark this loan as defaulted'}
+          >
+            {actionLoading === 'mark_defaulted' ? '...' : <><span className="material-symbols-outlined text-[18px]" aria-hidden="true">block</span> Mark Defaulted</>}
           </button>
         )}
       </div>
@@ -224,17 +298,34 @@ export default function AccountantLoans() {
           <h2 className="font-headline-lg text-display-md text-primary mb-1">Loans</h2>
           <p className="text-on-surface-variant font-body-md">{totalCount} loans</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">+ New Loan</button>
+        <button
+          onClick={() => setShowForm(true)}
+          className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors"
+          aria-label="Create a new loan"
+        >
+          + New Loan
+        </button>
       </header>
 
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <form onSubmit={handleSearch} className="flex-1 flex gap-2">
-              <input name="search" defaultValue={search} placeholder="Search farmers..." className="flex-1 px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
-              <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+              <input
+                name="search"
+                defaultValue={search}
+                placeholder="Search farmers..."
+                className="flex-1 px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+                aria-label="Search loans by farmer name"
+              />
+              <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold" aria-label="Submit search">Search</button>
             </form>
-            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+              className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+              aria-label="Filter loans by status"
+            >
               {statuses.map((s) => <option key={s} value={s}>{s || 'All Statuses'}</option>)}
             </select>
           </div>
@@ -263,31 +354,89 @@ export default function AccountantLoans() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowForm(false)}>
-          <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-headline-sm text-headline-sm mb-4">Create Loan</h3>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowForm(false)} role="presentation">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-loan-title"
+            className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[90vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="create-loan-title" className="font-headline-sm text-headline-sm mb-4">Create Loan</h3>
             <form onSubmit={handleCreate} className="space-y-4">
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
-                <select value={formData.farmer} onChange={(e) => setFormData(p => ({ ...p, farmer: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+              <div>
+                <label htmlFor="loan-farmer" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
+                <select
+                  id="loan-farmer"
+                  value={formData.farmer}
+                  onChange={(e) => setFormData(p => ({ ...p, farmer: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+                >
                   <option value="">Select farmer...</option>
                   {farmers?.results?.map((f) => <option key={f.id} value={f.id}>{f.full_name} ({f.phone_number})</option>)}
                 </select>
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Amount Principal (KES)</label>
-                <input type="number" min="1" value={formData.amount_principal} onChange={(e) => setFormData(p => ({ ...p, amount_principal: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div>
+                <label htmlFor="loan-amount" className="block text-label-md text-on-surface-variant mb-1">Amount Principal (KES)</label>
+                <input
+                  id="loan-amount"
+                  type="number" min="1"
+                  value={formData.amount_principal}
+                  onChange={(e) => setFormData(p => ({ ...p, amount_principal: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+                />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Interest Rate (%)</label>
-                <input type="number" step="0.1" min="0" value={formData.interest_rate} onChange={(e) => setFormData(p => ({ ...p, interest_rate: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div>
+                <label htmlFor="loan-interest" className="block text-label-md text-on-surface-variant mb-1">Interest Rate (%)</label>
+                <input
+                  id="loan-interest"
+                  type="number" step="0.1" min="0"
+                  value={formData.interest_rate}
+                  onChange={(e) => setFormData(p => ({ ...p, interest_rate: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+                />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Number of Installments</label>
-                <input type="number" min="1" value={formData.number_of_installments} onChange={(e) => setFormData(p => ({ ...p, number_of_installments: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div>
+                <label htmlFor="loan-installments" className="block text-label-md text-on-surface-variant mb-1">Number of Installments</label>
+                <input
+                  id="loan-installments"
+                  type="number" min="1"
+                  value={formData.number_of_installments}
+                  onChange={(e) => setFormData(p => ({ ...p, number_of_installments: e.target.value }))}
+                  required
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+                />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label>
-                <textarea value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div>
+                <label htmlFor="loan-notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label>
+                <textarea
+                  id="loan-notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+                />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>
-                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50"
+                  aria-label={saving ? 'Creating loan...' : 'Create this loan'}
+                >
+                  {saving ? '...' : 'Create'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold"
+                  aria-label="Cancel and close"
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>

@@ -79,14 +79,20 @@ export default function Grade() {
         <>
           <div className="mb-4 flex items-center gap-4">
             <form onSubmit={(e) => { e.preventDefault(); setQueueSearch(new FormData(e.target).get('search') || ''); setPage(1) }} className="flex gap-2">
-              <input name="search" defaultValue={queueSearch} placeholder="Search batch ID or farmer..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-72"/>
-              <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+              <input
+                name="search"
+                defaultValue={queueSearch}
+                placeholder="Search batch ID or farmer..."
+                className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-72"
+                aria-label="Search deliveries by batch ID or farmer name"
+              />
+              <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold" aria-label="Submit search">Search</button>
             </form>
-            <button onClick={() => { setSelectedDelivery(null); refetch() }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">refresh</span>Refresh
+            <button onClick={() => { setSelectedDelivery(null); refetch() }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold flex items-center gap-2" aria-label="Refresh delivery queue">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">refresh</span>Refresh
             </button>
             {showCached && (
-              <span className="text-label-md text-warning">Showing cached data (offline)</span>
+              <span className="text-label-md text-warning" role="status">Showing cached data (offline)</span>
             )}
           </div>
 
@@ -266,8 +272,9 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Quality Metrics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Temperature (°C)</label>
+            <label htmlFor="temperature" className="block text-label-md text-on-surface-variant mb-1">Temperature (°C)</label>
             <input
+              id="temperature"
               type="number" step="0.1"
               onChange={(e) => {
                 try {
@@ -281,8 +288,9 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
             />
           </div>
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Fat Content (%)</label>
+            <label htmlFor="fat-content" className="block text-label-md text-on-surface-variant mb-1">Fat Content (%)</label>
             <input
+              id="fat-content"
               type="number" step="0.01"
               onChange={(e) => {
                 try {
@@ -297,25 +305,33 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
           </div>
         </div>
         <div>
-          <label className="block text-label-md text-on-surface-variant mb-1">Additional Metrics (JSON)</label>
+          <label htmlFor="additional-metrics" className="block text-label-md text-on-surface-variant mb-1">Additional Metrics (JSON)</label>
           <textarea
+            id="additional-metrics"
             value={qualityMetrics}
             onChange={(e) => handleJsonChange(e.target.value)}
             rows={3}
             placeholder='{"acidity": 0.15, "density": 1.032}'
             className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container font-mono"
           />
-          {jsonError && <p className="text-error text-label-md mt-1">{jsonError}</p>}
+          {jsonError && <p role="alert" className="text-error text-label-md mt-1">{jsonError}</p>}
         </div>
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 mb-6">
-        <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Grade Selection</h3>
-        <div className="flex flex-wrap gap-3 mb-4">
+        <h3 id="grade-selection-label" className="font-headline-sm text-headline-sm text-on-surface mb-4">Grade Selection</h3>
+        <div
+          role="radiogroup"
+          aria-labelledby="grade-selection-label"
+          className="flex flex-wrap gap-3 mb-4"
+        >
           {gradeOptions.map(g => (
             <button
               key={g}
               type="button"
+              role="radio"
+              aria-checked={grade === g}
+              aria-label={g === 'REJECT' ? 'Reject this delivery' : `Grade ${g}`}
               onClick={() => { setGrade(g); setRejectReason('') }}
               className={`px-6 py-3 rounded-lg text-label-md font-bold transition-colors ${
                 grade === g
@@ -330,7 +346,7 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         </div>
 
         {grade && priceMap[grade] && (
-          <div className="px-4 py-3 bg-primary-container text-on-primary-container rounded-lg text-body-md font-medium">
+          <div className="px-4 py-3 bg-primary-container text-on-primary-container rounded-lg text-body-md font-medium" role="status">
             Price: KES {priceMap[grade]}/unit
           </div>
         )}
@@ -340,12 +356,15 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Rejection</h3>
         <p className="text-body-md text-on-surface-variant mb-3">Use this section to reject the delivery instead of grading it.</p>
         <textarea
+          id="rejection-reason"
           value={rejectReason}
           onChange={(e) => { setRejectReason(e.target.value); if (e.target.value) setGrade('') }}
           rows={3}
           placeholder="Enter rejection reason..."
           className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+          aria-describedby="rejection-help"
         />
+        <p id="rejection-help" className="text-label-md text-on-surface-variant mt-1">Providing a rejection reason will prevent grade selection.</p>
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 mb-6">
@@ -353,25 +372,25 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         <div className="flex flex-wrap gap-3 mb-3">
           {photoPreviews.map((url, i) => (
             <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-outline-variant">
-              <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+              <img src={url} alt={`Photo ${i + 1} of delivery`} className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => handlePhotoRemove(i)}
                 aria-label={`Remove photo ${i + 1}`}
                 className="absolute top-0 right-0 bg-error text-on-error rounded-bl-lg p-0.5"
               >
-                <span className="material-symbols-outlined text-[14px]">close</span>
+                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">close</span>
               </button>
             </div>
           ))}
           {photos.length < 5 && (
             <label className="w-20 h-20 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center cursor-pointer hover:bg-surface-container transition-colors">
-              <span className="material-symbols-outlined text-on-surface-variant">add</span>
-              <input type="file" accept="image/*" capture="environment" onChange={handlePhotoAdd} className="hidden" />
+              <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">add</span>
+              <input type="file" accept="image/*" capture="environment" onChange={handlePhotoAdd} className="hidden" aria-label="Add photo to delivery" />
             </label>
           )}
         </div>
-        <p className="text-label-md text-on-surface-variant">
+        <p className="text-label-md text-on-surface-variant" role="status">
           {isOnline
             ? 'Upload photos of the delivery for quality verification.'
             : 'Photos cannot be taken offline. Grade now and add photos later.'}
@@ -379,18 +398,32 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="px-6 py-2.5 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors">
+        <button
+          onClick={onBack}
+          className="px-6 py-2.5 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+          aria-label="Back to grading queue"
+        >
           Back to Queue
         </button>
         <div className="flex-1" />
         {rejectReason.trim() && !grade && (
-          <button onClick={handleReject} disabled={submitting} className="px-6 py-2.5 bg-error text-on-error rounded-lg text-label-md font-bold hover:bg-error/90 transition-colors disabled:opacity-50">
-            {submitting ? 'Saving...' : isOnline ? 'Reject Delivery' : 'Save Rejection Offline'}
+          <button
+            onClick={handleReject}
+            disabled={submitting}
+            className="px-6 py-2.5 bg-error text-on-error rounded-lg text-label-md font-bold hover:bg-error/90 transition-colors disabled:opacity-50"
+            aria-label={submitting ? 'Saving rejection...' : 'Reject this delivery'}
+          >
+            {submitting ? <><span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-error/30 border-t-error rounded-full mr-2" /> Saving...</> : isOnline ? 'Reject Delivery' : 'Save Rejection Offline'}
           </button>
         )}
         {grade && !rejectReason.trim() && (
-          <button onClick={handleGrade} disabled={submitting} className="px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50">
-            {submitting ? 'Saving...' : isOnline ? `Submit Grade ${grade}` : `Save Grade ${grade} Offline`}
+          <button
+            onClick={handleGrade}
+            disabled={submitting}
+            className="px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
+            aria-label={submitting ? 'Saving grade...' : `Submit grade ${grade} for this delivery`}
+          >
+            {submitting ? <><span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full mr-2" /> Saving...</> : isOnline ? `Submit Grade ${grade}` : `Save Grade ${grade} Offline`}
           </button>
         )}
       </div>

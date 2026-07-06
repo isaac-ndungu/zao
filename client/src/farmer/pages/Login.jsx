@@ -6,6 +6,12 @@ import { getToken } from '../api/client'
 function OTPInput({ value, onChange, onSubmit, error, autoFocus }) {
   const inputRefs = useRef([])
 
+  useEffect(() => {
+    if (autoFocus && inputRefs.current[0]) {
+      inputRefs.current[0].focus()
+    }
+  }, [autoFocus])
+
   const handleChange = (newValue) => {
     const digits = newValue.replace(/\D/g, '').slice(0, 6)
     onChange(digits)
@@ -34,7 +40,6 @@ function OTPInput({ value, onChange, onSubmit, error, autoFocus }) {
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace') {
       if (value[index]) {
-        // Clear current cell
         const newValue = value.split('')
         newValue[index] = ''
         handleChange(newValue.join(''))
@@ -53,14 +58,18 @@ function OTPInput({ value, onChange, onSubmit, error, autoFocus }) {
     const pastedData = e.clipboardData.getData('text/plain')
     const digits = pastedData.replace(/\D/g, '').slice(0, 6)
     handleChange(digits)
-    // Focus last filled cell or first empty
     const nextIndex = Math.min(digits.length, 5)
     inputRefs.current[nextIndex]?.focus()
   }
 
   return (
     <div>
-      <div className="flex gap-2 justify-center mb-2" onPaste={handlePaste}>
+      <div
+        className="flex gap-2 justify-center mb-2"
+        onPaste={handlePaste}
+        role="group"
+        aria-label="One-time password input, 6 digits"
+      >
         {Array.from({ length: 6 }).map((_, i) => (
           <input
             key={i}
@@ -72,10 +81,15 @@ function OTPInput({ value, onChange, onSubmit, error, autoFocus }) {
             onChange={(e) => handleInputChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             className="w-11 h-12 text-center text-xl font-bold border border-outline-variant rounded-lg bg-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+            aria-label={`Digit ${i + 1} of 6`}
           />
         ))}
       </div>
-      {error && <p className="text-error text-sm text-center mt-2">{error}</p>}
+      {error && (
+        <p role="alert" className="text-error text-sm text-center mt-2">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
@@ -159,7 +173,7 @@ export default function FarmerLogin() {
         </div>
 
         {sessionExpired && (
-          <div className="mb-4 px-4 py-3 bg-warning-container text-on-warning-container rounded-xl text-sm text-center border border-warning">
+          <div role="alert" className="mb-4 px-4 py-3 bg-warning-container text-on-warning-container rounded-xl text-sm text-center border border-warning">
             Your session has expired. Please sign in again.
           </div>
         )}
@@ -168,8 +182,9 @@ export default function FarmerLogin() {
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1.5">Phone Number</label>
+                <label htmlFor="phone-input" className="block text-xs font-semibold text-on-surface-variant mb-1.5">Phone Number</label>
                 <input
+                  id="phone-input"
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
@@ -179,20 +194,30 @@ export default function FarmerLogin() {
                   className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]"
                 />
               </div>
-              {error && <div className="bg-error-container text-error text-sm px-3 py-2 rounded-lg">{error}</div>}
-              <button type="submit" disabled={loading || !phoneNumber.trim()} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full">
-                {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" /> Sending...</> : 'Send OTP'}
+              {error && <div role="alert" className="bg-error-container text-error text-sm px-3 py-2 rounded-lg">{error}</div>}
+              <button
+                type="submit"
+                disabled={loading || !phoneNumber.trim()}
+                className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full"
+                aria-label={loading ? 'Sending one-time password' : 'Send one-time password'}
+              >
+                {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" aria-hidden="true" /> Sending...</> : 'Send OTP'}
               </button>
             </form>
           ) : (
             <form onSubmit={(e) => { e.preventDefault(); handleVerifyOtp() }} className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-on-surface-variant mb-1.5 text-center">Verification Code</label>
+                <span id="otp-label" className="block text-xs font-semibold text-on-surface-variant mb-1.5 text-center">Verification Code</span>
                 <OTPInput value={otpCode} onChange={setOtpCode} onSubmit={handleVerifyOtp} error={error} autoFocus />
                 <p className="text-xs text-on-surface-variant text-center mt-2">A 6-digit code was sent to your phone.</p>
               </div>
-              <button type="submit" disabled={loading || otpCode.length !== 6} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full">
-                {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" /> Verifying...</> : 'Verify'}
+              <button
+                type="submit"
+                disabled={loading || otpCode.length !== 6}
+                className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full"
+                aria-label={loading ? 'Verifying one-time password' : 'Verify and sign in'}
+              >
+                {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" aria-hidden="true" /> Verifying...</> : 'Verify'}
               </button>
               <button
                 type="button"
@@ -200,10 +225,11 @@ export default function FarmerLogin() {
                   setStep('phone')
                   setError('')
                   setOtpCode('')
-                  setLoading(false)         // stop loading spinner
-                  ignoreRef.current = true  // ignore any in‑flight OTP request
+                  setLoading(false)
+                  ignoreRef.current = true
                 }}
                 className="w-full text-center text-sm text-primary font-medium hover:underline mt-2"
+                aria-label="Back to login"
               >
                 Back to login
               </button>
