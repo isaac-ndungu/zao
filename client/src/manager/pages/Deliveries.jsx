@@ -11,6 +11,7 @@ import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import MapView from '../../shared/components/MapView'
 
 export default function Deliveries() {
   const [page, setPage] = useState(1)
@@ -194,13 +195,17 @@ export default function Deliveries() {
               Showing {withLocationCount} of {totalMapItems} deliveries {totalMapItems > 0 && withLocationCount < totalMapItems ? `(${totalMapItems - withLocationCount} have no location data)` : ''}
             </span>
           </div>
-          <div className="bg-surface-container-high rounded-lg h-80 flex items-center justify-center text-on-surface-variant">
-            <div className="text-center">
-              <span className="material-symbols-outlined text-[48px]">map</span>
-              <p className="text-body-md mt-2">Map view requires Leaflet/MapBox integration</p>
-              <p className="text-label-md text-on-surface-variant mt-1">{withLocationCount} deliveries with coordinates</p>
+          {withLocationCount > 0 ? (
+            <MapView deliveries={mapData || []} height="320px" />
+          ) : (
+            <div className="bg-surface-container-high rounded-lg h-80 flex items-center justify-center text-on-surface-variant">
+              <div className="text-center">
+                <span className="material-symbols-outlined text-[48px]">map</span>
+                <p className="text-body-md mt-2">No deliveries with location data</p>
+                <p className="text-label-md text-on-surface-variant mt-1">Add coordinates to deliveries to see them on the map</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
