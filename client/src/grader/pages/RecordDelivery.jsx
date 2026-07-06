@@ -120,8 +120,9 @@ export default function RecordDelivery() {
 
       <form onSubmit={handleSubmit} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4">
         <div className="relative">
-          <label className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
+          <label htmlFor="record-farmer" className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
           <input
+            id="record-farmer"
             type="text"
             value={farmerSearch}
             onChange={(e) => searchFarmer(e.target.value)}
@@ -151,8 +152,9 @@ export default function RecordDelivery() {
         </div>
 
         <div>
-          <label className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
+          <label htmlFor="record-product-type" className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
           <select
+            id="record-product-type"
             value={form.product_type}
             onChange={(e) => setForm(f => ({ ...f, product_type: e.target.value }))}
             className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -164,8 +166,9 @@ export default function RecordDelivery() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-label-md font-bold text-on-surface mb-1.5">Quantity (kg)</label>
+            <label htmlFor="record-quantity" className="block text-label-md font-bold text-on-surface mb-1.5">Quantity (kg)</label>
             <input
+              id="record-quantity"
               type="number" step="0.01" min="0"
               value={form.quantity_kg}
               onChange={(e) => setForm(f => ({ ...f, quantity_kg: e.target.value }))}
@@ -175,8 +178,9 @@ export default function RecordDelivery() {
             />
           </div>
           <div>
-            <label className="block text-label-md font-bold text-on-surface mb-1.5">Volume (L)</label>
+            <label htmlFor="record-volume" className="block text-label-md font-bold text-on-surface mb-1.5">Volume (L)</label>
             <input
+              id="record-volume"
               type="number" step="0.01" min="0"
               value={form.volume_litres}
               onChange={(e) => setForm(f => ({ ...f, volume_litres: e.target.value }))}
@@ -189,8 +193,9 @@ export default function RecordDelivery() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
+            <label htmlFor="record-shift" className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
             <select
+              id="record-shift"
               value={form.shift}
               onChange={(e) => setForm(f => ({ ...f, shift: e.target.value }))}
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
@@ -201,8 +206,9 @@ export default function RecordDelivery() {
             </select>
           </div>
           <div>
-            <label className="block text-label-md font-bold text-on-surface mb-1.5">Date Delivered</label>
+            <label htmlFor="record-date" className="block text-label-md font-bold text-on-surface mb-1.5">Date Delivered</label>
             <input
+              id="record-date"
               type="date"
               value={form.date_delivered}
               onChange={(e) => setForm(f => ({ ...f, date_delivered: e.target.value }))}
@@ -214,8 +220,9 @@ export default function RecordDelivery() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-label-md font-bold text-on-surface mb-1.5">Latitude</label>
+            <label htmlFor="record-latitude" className="block text-label-md font-bold text-on-surface mb-1.5">Latitude</label>
             <input
+              id="record-latitude"
               type="number" step="any"
               value={form.latitude}
               onChange={(e) => setForm(f => ({ ...f, latitude: e.target.value }))}
@@ -225,8 +232,9 @@ export default function RecordDelivery() {
             />
           </div>
           <div>
-            <label className="block text-label-md font-bold text-on-surface mb-1.5">Longitude</label>
+            <label htmlFor="record-longitude" className="block text-label-md font-bold text-on-surface mb-1.5">Longitude</label>
             <input
+              id="record-longitude"
               type="number" step="any"
               value={form.longitude}
               onChange={(e) => setForm(f => ({ ...f, longitude: e.target.value }))}

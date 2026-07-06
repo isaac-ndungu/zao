@@ -133,14 +133,14 @@ export default function SearchResults({ resourceLinks }) {
                           }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-surface-container transition-colors text-left border-b border-outline-variant/30 last:border-none"
                         >
-                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant shrink-0">
+                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant shrink-0" aria-hidden="true">
                             {item.icon || resourceIcons[group.key] || 'search'}
                           </span>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-on-surface truncate">{item.label}</p>
                             <p className="text-xs text-on-surface-variant truncate">{item.subtitle}</p>
                           </div>
-                          <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">
+                          <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0" aria-hidden="true">
                             chevron_right
                           </span>
                         </button>

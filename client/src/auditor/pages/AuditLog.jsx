@@ -77,29 +77,33 @@ export default function AuditorAuditLog() {
           <h2 className="font-headline-lg text-display-md text-primary mb-1">Audit Log</h2>
           <p className="text-on-surface-variant font-body-md">{totalCount} entries</p>
         </div>
-        <button onClick={handleExportCSV} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">Export CSV</button>
+        <button onClick={handleExportCSV} aria-label="Export audit log as CSV" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">Export CSV</button>
       </header>
 
       <div className="flex flex-wrap gap-3 mb-4 items-end">
         <form onSubmit={handleSearch} className="flex gap-2">
-          <input name="search" defaultValue={search} placeholder="Search actor, action..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-48" />
+          <label htmlFor="audit-search" className="sr-only">Search actor, action</label>
+          <input id="audit-search" name="search" defaultValue={search} placeholder="Search actor, action..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-48" />
           <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
         </form>
-        <select value={resourceType} onChange={(e) => { setResourceType(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="audit-resource-type" className="sr-only">Filter by resource type</label>
+        <select id="audit-resource-type" value={resourceType} onChange={(e) => { setResourceType(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           {resourceTypes.map((r) => <option key={r} value={r}>{r || 'All Resources'}</option>)}
         </select>
-        <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="audit-action-filter" className="sr-only">Filter by action</label>
+        <select id="audit-action-filter" value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           {actions.map((a) => <option key={a} value={a}>{a || 'All Actions'}</option>)}
         </select>
-        <select value={actionCategory} onChange={(e) => { setActionCategory(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="audit-action-category" className="sr-only">Filter by category</label>
+        <select id="audit-action-category" value={actionCategory} onChange={(e) => { setActionCategory(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Categories</option>
           <option value="financial">Financial Only</option>
         </select>
         <div className="flex gap-2 items-center">
-          <label className="text-label-md text-on-surface-variant">From</label>
-          <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
-          <label className="text-label-md text-on-surface-variant">To</label>
-          <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+          <label htmlFor="audit-date-from" className="text-label-md text-on-surface-variant">From</label>
+          <input id="audit-date-from" type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+          <label htmlFor="audit-date-to" className="text-label-md text-on-surface-variant">To</label>
+          <input id="audit-date-to" type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
         </div>
       </div>
 

@@ -71,7 +71,9 @@ export default function Settings() {
               </div>
               {editing === key ? (
                 <div className="flex items-center gap-2">
+                  <label htmlFor={`edit-${key}`} className="sr-only">{label}</label>
                   <input
+                    id={`edit-${key}`}
                     type={type}
                     step={step}
                     min="0"
@@ -79,8 +81,8 @@ export default function Settings() {
                     onChange={(e) => setFormData(p => ({ ...p, [key]: e.target.value }))}
                     className="w-32 px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container text-right"
                   />
-                  <button onClick={() => handleSave(key)} disabled={saving} className="px-3 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">{saving ? '...' : 'Save'}</button>
-                  <button onClick={() => setEditing(null)} className="px-3 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+                  <button onClick={() => handleSave(key)} disabled={saving} aria-label={saving ? `Saving ${label}` : `Save ${label}`} className="px-3 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">{saving ? '...' : 'Save'}</button>
+                  <button onClick={() => setEditing(null)} aria-label="Cancel editing" className="px-3 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
                 </div>
               ) : (
                 <button onClick={() => startEdit(key)} className="px-3 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-primary hover:bg-surface-container-high transition-colors">Edit</button>

@@ -113,12 +113,12 @@ export default function Loans() {
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' && (
             <>
-              <button onClick={(e) => { e.stopPropagation(); setShowAddGuarantor(row) }} className="text-primary hover:text-primary/80" title="Add Guarantor"><span className="material-symbols-outlined text-[18px]">person_add</span></button>
-              <button onClick={(e) => { e.stopPropagation(); setShowApprove(row) }} className="text-success hover:text-success/80" title="Approve Loan"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
+              <button onClick={(e) => { e.stopPropagation(); setShowAddGuarantor(row) }} className="text-primary hover:text-primary/80" aria-label={`Add guarantor to loan for ${row.farmer_name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span></button>
+              <button onClick={(e) => { e.stopPropagation(); setShowApprove(row) }} className="text-success hover:text-success/80" aria-label={`Approve loan for ${row.farmer_name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span></button>
             </>
           )}
           {row.status === 'ACTIVE' && (
-            <button onClick={(e) => { e.stopPropagation(); setShowDefault(row) }} className="text-error hover:text-error/80" title="Mark Default"><span className="material-symbols-outlined text-[18px]">block</span></button>
+            <button onClick={(e) => { e.stopPropagation(); setShowDefault(row) }} className="text-error hover:text-error/80" aria-label={`Mark loan for ${row.farmer_name} as defaulted`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">block</span></button>
           )}
         </div>
       ),
@@ -135,7 +135,8 @@ export default function Loans() {
       </header>
 
       <div className="mb-4 flex items-center gap-4 flex-wrap">
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="loans-status-filter" className="sr-only">Filter by status</label>
+        <select id="loans-status-filter" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
           <option value="ACTIVE">Active</option>
@@ -216,8 +217,8 @@ export default function Loans() {
         <div className="space-y-4" ref={guarantorRef}>
           <p className="text-body-md text-on-surface-variant">Search for a farmer to add as guarantor.</p>
           <div className="relative">
-            <label className="block text-label-md text-on-surface-variant mb-1">Search Farmer</label>
-            <input value={guarantorSearch} onChange={(e) => { setGuarantorSearch(e.target.value); setSelectedGuarantor(null) }} placeholder="Name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <label htmlFor="guarantor-search" className="block text-label-md text-on-surface-variant mb-1">Search Farmer</label>
+            <input id="guarantor-search" value={guarantorSearch} onChange={(e) => { setGuarantorSearch(e.target.value); setSelectedGuarantor(null) }} placeholder="Name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
             {selectedGuarantor && <p className="text-sm text-on-surface-variant mt-1">Selected: {selectedGuarantor.first_name} {selectedGuarantor.last_name} ({selectedGuarantor.phone_number})</p>}
             {guarantorSearchOpen && guarantorResults.length > 0 && (
               <div className="absolute z-10 mt-1 w-full border border-outline-variant rounded-lg bg-surface shadow-lg max-h-40 overflow-y-auto">

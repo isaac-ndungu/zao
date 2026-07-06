@@ -239,17 +239,17 @@ export default function AccountantCycles() {
           <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Create Payment Cycle</h3>
             <form onSubmit={handleCreate} className="space-y-4">
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Name</label>
-                <input value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. June 2026 Payout" />
+              <div><label htmlFor="cycle-name" className="block text-label-md text-on-surface-variant mb-1">Name</label>
+                <input id="cycle-name" value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. June 2026 Payout" />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Period Start</label>
-                <input type="date" value={formData.start_date} onChange={(e) => setFormData(p => ({ ...p, start_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label htmlFor="cycle-start-date" className="block text-label-md text-on-surface-variant mb-1">Period Start</label>
+                <input id="cycle-start-date" type="date" value={formData.start_date} onChange={(e) => setFormData(p => ({ ...p, start_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">End Date</label>
-                <input type="date" value={formData.end_date} onChange={(e) => setFormData(p => ({ ...p, end_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label htmlFor="cycle-end-date" className="block text-label-md text-on-surface-variant mb-1">End Date</label>
+                <input id="cycle-end-date" type="date" value={formData.end_date} onChange={(e) => setFormData(p => ({ ...p, end_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
-              <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label>
-                <textarea value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              <div><label htmlFor="cycle-notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label>
+                <textarea id="cycle-notes" value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div className="flex gap-3">
                 <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>

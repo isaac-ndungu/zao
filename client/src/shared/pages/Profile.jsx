@@ -80,7 +80,7 @@ export default function Profile({ settingsPath }) {
               onClick={() => navigate(settingsPath)}
               className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-primary hover:bg-surface-container-high transition-colors flex items-center gap-2"
             >
-              <span className="material-symbols-outlined text-[18px]">settings</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">settings</span>
               Go to Settings
             </button>
           </div>
@@ -91,7 +91,7 @@ export default function Profile({ settingsPath }) {
         onClick={() => setShowLogoutConfirm(true)}
         className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-error hover:bg-error-container/10 rounded-lg transition-colors"
       >
-        <span className="material-symbols-outlined text-[18px]">logout</span>
+        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">logout</span>
         Logout
       </button>
 

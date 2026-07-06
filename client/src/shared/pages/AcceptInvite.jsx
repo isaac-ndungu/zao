@@ -149,8 +149,9 @@ export default function AcceptInvite() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Verification Code *</label>
+            <label htmlFor="invite-otp" className="block text-label-md text-on-surface-variant mb-1">Verification Code *</label>
             <input
+              id="invite-otp"
               value={otpCode}
               onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
@@ -162,8 +163,9 @@ export default function AcceptInvite() {
           </div>
 
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Phone Number *</label>
+            <label htmlFor="invite-phone" className="block text-label-md text-on-surface-variant mb-1">Phone Number *</label>
             <input
+              id="invite-phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="0712345678"
@@ -173,8 +175,9 @@ export default function AcceptInvite() {
           </div>
 
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Password *</label>
+            <label htmlFor="invite-password" className="block text-label-md text-on-surface-variant mb-1">Password *</label>
             <input
+              id="invite-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -186,8 +189,9 @@ export default function AcceptInvite() {
           </div>
 
           <div>
-            <label className="block text-label-md text-on-surface-variant mb-1">Confirm Password *</label>
+            <label htmlFor="invite-confirm-password" className="block text-label-md text-on-surface-variant mb-1">Confirm Password *</label>
             <input
+              id="invite-confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

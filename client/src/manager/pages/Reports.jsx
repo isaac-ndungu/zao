@@ -36,7 +36,7 @@ export default function Reports() {
               onClick={() => navigate(card.to)}
               className="text-left bg-surface-container rounded-2xl border border-outline-variant/40 p-5 shadow-sm hover:bg-surface-container-high transition-colors"
             >
-              <span className="material-symbols-outlined text-primary text-[32px] mb-2">{card.icon}</span>
+              <span className="material-symbols-outlined text-primary text-[32px] mb-2" aria-hidden="true">{card.icon}</span>
               <h4 className="font-headline-sm text-title-md text-on-surface mb-1">{card.label}</h4>
               <p className="text-body-md text-on-surface-variant">{card.desc}</p>
             </button>
@@ -54,13 +54,13 @@ export default function Reports() {
               className="text-left bg-surface-container rounded-2xl border border-outline-variant/40 p-5 shadow-sm hover:bg-surface-container-high transition-colors"
             >
               <div className="flex items-center gap-3 mb-2">
-                <span className="material-symbols-outlined text-primary">{card.icon}</span>
+                <span className="material-symbols-outlined text-primary" aria-hidden="true">{card.icon}</span>
                 <h4 className="font-headline-sm text-title-md text-on-surface">{card.label}</h4>
               </div>
               <p className="text-body-md text-on-surface-variant mb-3">{card.desc}</p>
-              <span className="text-label-md font-bold text-primary flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">download</span>Download CSV
-              </span>
+                <span className="text-label-md font-bold text-primary flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">download</span>Download CSV
+                </span>
             </button>
           ))}
         </div>

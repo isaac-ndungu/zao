@@ -99,7 +99,8 @@ export default function AccountantDeductions() {
           )}
 
           <div className="flex gap-3 mb-4">
-            <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+            <label htmlFor="deduction-type-filter" className="sr-only">Filter by type</label>
+            <select id="deduction-type-filter" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
               <option value="">All Types</option>
               {Object.keys(deductionTypeColors).map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
             </select>
@@ -132,17 +133,17 @@ export default function AccountantDeductions() {
               <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
                 <h3 className="font-headline-sm text-headline-sm mb-4">New Farm Input Credit</h3>
                 <form onSubmit={handleCreateCredit} className="space-y-4">
-                  <div><label className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
-                    <select value={creditForm.farmer} onChange={(e) => setCreditForm(p => ({ ...p, farmer: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+                  <div><label htmlFor="credit-farmer" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
+                    <select id="credit-farmer" value={creditForm.farmer} onChange={(e) => setCreditForm(p => ({ ...p, farmer: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
                       <option value="">Select farmer...</option>
                       {farmers?.results?.map((f) => <option key={f.id} value={f.id}>{f.full_name} ({f.phone_number})</option>)}
                     </select>
                   </div>
-                  <div><label className="block text-label-md text-on-surface-variant mb-1">Amount (KES)</label>
-                    <input type="number" min="1" value={creditForm.amount} onChange={(e) => setCreditForm(p => ({ ...p, amount: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+                  <div><label htmlFor="credit-amount" className="block text-label-md text-on-surface-variant mb-1">Amount (KES)</label>
+                    <input id="credit-amount" type="number" min="1" value={creditForm.amount} onChange={(e) => setCreditForm(p => ({ ...p, amount: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
                   </div>
-                  <div><label className="block text-label-md text-on-surface-variant mb-1">Description</label>
-                    <textarea value={creditForm.item_description} onChange={(e) => setCreditForm(p => ({ ...p, item_description: e.target.value }))} rows={3} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. Fertilizer, Seeds..." />
+                  <div><label htmlFor="credit-description" className="block text-label-md text-on-surface-variant mb-1">Description</label>
+                    <textarea id="credit-description" value={creditForm.item_description} onChange={(e) => setCreditForm(p => ({ ...p, item_description: e.target.value }))} rows={3} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. Fertilizer, Seeds..." />
                   </div>
                   <div className="flex gap-3">
                     <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>

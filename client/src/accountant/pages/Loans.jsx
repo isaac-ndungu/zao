@@ -311,20 +311,22 @@ export default function AccountantLoans() {
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+              <label htmlFor="loan-search" className="sr-only">Search loans by farmer name</label>
               <input
+                id="loan-search"
                 name="search"
                 defaultValue={search}
                 placeholder="Search farmers..."
                 className="flex-1 px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-                aria-label="Search loans by farmer name"
               />
               <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold" aria-label="Submit search">Search</button>
             </form>
+            <label htmlFor="loan-status-filter" className="sr-only">Filter loans by status</label>
             <select
+              id="loan-status-filter"
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
               className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-              aria-label="Filter loans by status"
             >
               {statuses.map((s) => <option key={s} value={s}>{s || 'All Statuses'}</option>)}
             </select>

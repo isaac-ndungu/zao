@@ -84,7 +84,7 @@ export default function GradingQueue() {
     {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          <button onClick={(e) => { e.stopPropagation(); setShowOverride(row); setOverrideData({ grade_letter: row.grade_letter, override_reason: '' }) }} className="text-primary hover:text-primary/80" title="Override Grade"><span className="material-symbols-outlined text-[18px]">edit_note</span></button>
+          <button onClick={(e) => { e.stopPropagation(); setShowOverride(row); setOverrideData({ grade_letter: row.grade_letter, override_reason: '' }) }} className="text-primary hover:text-primary/80" aria-label="Override grade"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_note</span></button>
         </div>
       ),
     },
@@ -108,9 +108,9 @@ export default function GradingQueue() {
       key: 'actions', label: '', render: (row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' ? (
-            <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" title="Resolve"><span className="material-symbols-outlined text-[18px]">check_circle</span></button>
+            <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" aria-label="Resolve dispute"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span></button>
           ) : (
-            <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" title="View"><span className="material-symbols-outlined text-[18px]">visibility</span></button>
+            <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" aria-label="View dispute"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">visibility</span></button>
           )}
         </div>
       ),
@@ -172,17 +172,17 @@ export default function GradingQueue() {
 
       <SlideOutPanel open={!!showOverride} onClose={() => setShowOverride(null)} title="Override Grade" width="max-w-md">
         <div className="space-y-4">
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Grade Letter</label><select value={overrideData.grade_letter} onChange={(e) => setOverrideData(p => ({ ...p, grade_letter: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="PREMIUM">Premium</option><option value="STANDARD">Standard</option></select></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Price per Unit</label><input type="number" step="0.01" min="0" value={overrideData.price_per_unit} onChange={(e) => setOverrideData(p => ({ ...p, price_per_unit: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Reason</label><textarea value={overrideData.override_reason} onChange={(e) => setOverrideData(p => ({ ...p, override_reason: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
+          <div><label htmlFor="override-grade_letter" className="block text-label-md text-on-surface-variant mb-1">Grade Letter</label><select id="override-grade_letter" value={overrideData.grade_letter} onChange={(e) => setOverrideData(p => ({ ...p, grade_letter: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="PREMIUM">Premium</option><option value="STANDARD">Standard</option></select></div>
+          <div><label htmlFor="override-price_per_unit" className="block text-label-md text-on-surface-variant mb-1">Price per Unit</label><input id="override-price_per_unit" type="number" step="0.01" min="0" value={overrideData.price_per_unit} onChange={(e) => setOverrideData(p => ({ ...p, price_per_unit: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
+          <div><label htmlFor="override-override_reason" className="block text-label-md text-on-surface-variant mb-1">Reason</label><textarea id="override-override_reason" value={overrideData.override_reason} onChange={(e) => setOverrideData(p => ({ ...p, override_reason: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
           <button onClick={handleOverride} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Override Grade</button>
         </div>
       </SlideOutPanel>
 
       <SlideOutPanel open={!!showResolve} onClose={() => setShowResolve(null)} title="Resolve Dispute" width="max-w-md">
         <div className="space-y-4">
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Status</label><select value={resolveData.status} onChange={(e) => setResolveData(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="RESOLVED">Resolved</option><option value="REJECTED">Rejected</option></select></div>
-          <div><label className="block text-label-md text-on-surface-variant mb-1">Notes</label><textarea value={resolveData.resolution_notes} onChange={(e) => setResolveData(p => ({ ...p, resolution_notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
+          <div><label htmlFor="resolve-status" className="block text-label-md text-on-surface-variant mb-1">Status</label><select id="resolve-status" value={resolveData.status} onChange={(e) => setResolveData(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="RESOLVED">Resolved</option><option value="REJECTED">Rejected</option></select></div>
+          <div><label htmlFor="resolve-resolution_notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label><textarea id="resolve-resolution_notes" value={resolveData.resolution_notes} onChange={(e) => setResolveData(p => ({ ...p, resolution_notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
           <button onClick={handleResolve} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Submit Resolution</button>
         </div>
       </SlideOutPanel>

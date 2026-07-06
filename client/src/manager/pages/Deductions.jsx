@@ -56,7 +56,8 @@ export default function Deductions() {
       </header>
 
       <div className="mb-4">
-        <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="deductions-type-filter" className="sr-only">Filter by type</label>
+        <select id="deductions-type-filter" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Types</option>
           <option value="LOAN_REPAYMENT">Loan Repayment</option>
           <option value="FARM_INPUT">Farm Input</option>
