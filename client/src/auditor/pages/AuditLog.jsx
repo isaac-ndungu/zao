@@ -4,6 +4,7 @@ import { useApi } from '../../admin/hooks/useApi'
 import ErrorState from '../../shared/components/ErrorState'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import Pagination from '../../admin/components/common/Pagination'
 
 const resourceTypes = ['', 'Farmer', 'Delivery', 'Grade', 'PaymentCycle', 'FarmerPayment', 'Loan', 'Deduction', 'DisbursementBatch', 'Sale', 'FarmInputCredit', 'Cooperative', 'User']
 
@@ -108,6 +109,7 @@ export default function AuditorAuditLog() {
           data={logs}
         />
       )}
+      <Pagination page={page} pageSize={25} total={data?.count || 0} onPageChange={setPage} />
     </div>
   )
 }
