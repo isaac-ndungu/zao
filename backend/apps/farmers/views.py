@@ -17,7 +17,7 @@ from rest_framework.response import Response
 
 from apps.auth_api.models import User
 from apps.base.constants import UserRole
-from apps.base.permissions import IsManager
+from apps.base.permissions import IsManager, IsManagerOrGrader
 from apps.base.utils import log_audit
 from apps.base.views import CooperativeScopedViewSet
 from apps.base.export_mixins import CsvExportMixin
@@ -191,21 +191,32 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
                 {'error': 'Either phone or name query parameter is required.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        cooperative_id = request.cooperative_id
         farmers = Farmer.objects.none()
         if phone:
             phone_clean = phone.lstrip('+')
-            farmers = Farmer.objects.filter(phone_number__endswith=phone_clean)
+            farmers = Farmer.objects.filter(
+                memberships__cooperative_id=cooperative_id,
+                memberships__is_active=True,
+                phone_number__endswith=phone_clean,
+            ).distinct()
         elif name:
             parts = name.split()
             if len(parts) == 1:
                 farmers = Farmer.objects.filter(
+                    memberships__cooperative_id=cooperative_id,
+                    memberships__is_active=True,
                     first_name__icontains=parts[0]
                 ) | Farmer.objects.filter(
+                    memberships__cooperative_id=cooperative_id,
+                    memberships__is_active=True,
                     last_name__icontains=parts[0]
                 )
                 farmers = farmers.distinct()
             else:
                 farmers = Farmer.objects.filter(
+                    memberships__cooperative_id=cooperative_id,
+                    memberships__is_active=True,
                     first_name__icontains=parts[0],
                     last_name__icontains=parts[-1],
                 )

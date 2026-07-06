@@ -4,6 +4,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
+from apps.farmers.models import Farmer
 from .models import Delivery
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ class DeliveryDetailSerializer(serializers.ModelSerializer):
 
 class DeliveryCreateSerializer(serializers.ModelSerializer):
     cooperative_id = serializers.UUIDField(required=False, write_only=True)
+    farmer = serializers.PrimaryKeyRelatedField(queryset=Farmer.objects.all(), required=True)
 
     class Meta:
         model = Delivery
@@ -89,6 +91,8 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_farmer(self, value):
+        if value is None:
+            return value
         if not value.is_active:
             raise serializers.ValidationError('Farmer is not active.')
         request = self.context.get('request')

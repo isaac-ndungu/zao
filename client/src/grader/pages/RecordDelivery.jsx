@@ -21,6 +21,7 @@ export default function RecordDelivery() {
   const [farmerOptions, setFarmerOptions] = useState([])
   const [selectedFarmer, setSelectedFarmer] = useState(null)
   const [cachedFarmersList, setCachedFarmersList] = useState(null)
+  const [justSelected, setJustSelected] = useState(false)
   useEffect(() => {
     if (!isOnline) {
       getCachedFarmers().then(cached => {
@@ -54,6 +55,7 @@ export default function RecordDelivery() {
   })
 
   const searchFarmer = async (q) => {
+    if (justSelected) { setJustSelected(false); return }
     setFarmerSearch(q)
     setSelectedFarmer(null)
     setForm(f => ({ ...f, farmer: '' }))
@@ -78,6 +80,7 @@ export default function RecordDelivery() {
     setForm(f => ({ ...f, farmer: farmer.id }))
     setFarmerSearch(`${farmer.first_name} ${farmer.last_name} (${farmer.phone_number || farmer.id.slice(0, 8)})`)
     setFarmerOptions([])
+    setJustSelected(true)
   }
 
   const handleSubmit = async (e) => {
