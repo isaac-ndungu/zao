@@ -1,12 +1,40 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from apps.base.constants import UserRole
 from apps.farmers.models import Farmer, FarmerCooperativeMembership, FarmerPaymentMethod
 
 pytestmark = pytest.mark.django_db
+
+User = get_user_model()
+
+
+@pytest.fixture
+def manager_api_client(db, cooperative):
+    manager = User.objects.create_user(
+        'farmer-mgr@test.com', '+25470000999', 'Mgr', 'Farmer',
+        password='testpass123', role=UserRole.MANAGER, cooperative=cooperative,
+    )
+    client = APIClient()
+    client.force_authenticate(user=manager)
+    client.user = manager
+    return client
+
+
+@pytest.fixture
+def grader_api_client(db, cooperative):
+    grader = User.objects.create_user(
+        'farmer-grader@test.com', '+25470000777', 'Grader', 'Farmer',
+        password='testpass123', role=UserRole.GRADER, cooperative=cooperative,
+    )
+    client = APIClient()
+    client.force_authenticate(user=grader)
+    client.user = grader
+    return client
 
 
 class TestFarmerModel:
@@ -759,3 +787,158 @@ class TestMembershipDeactivateReactivate:
             f'/api/farmers/{farmer.id}/memberships/{membership.id}/deactivate/'
         )
         assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# =============================================================================
+# Farmer location (lat/lng) tests
+# =============================================================================
+
+
+class TestFarmerLocationAction:
+    def _farmer_in_coop(self, cooperative):
+        from apps.farmers.models import Farmer
+        return Farmer.objects.create(
+            first_name='Loc', last_name='Test',
+            id_number='LOC001', phone_number='+25470000500',
+            county='Nairobi', cooperative=cooperative,
+        )
+
+    def test_get_location_unset(self, manager_api_client, cooperative):
+        farmer = self._farmer_in_coop(cooperative)
+        resp = manager_api_client.get(f'/api/farmers/{farmer.id}/location/')
+        assert resp.status_code == status.HTTP_200_OK
+        data = resp.json()
+        assert data['latitude'] is None
+        assert data['longitude'] is None
+        assert data['route_stops'] == []
+
+    def test_get_location_with_coords(self, manager_api_client, cooperative):
+        from decimal import Decimal
+        farmer = self._farmer_in_coop(cooperative)
+        farmer.latitude = Decimal('-1.283333')
+        farmer.longitude = Decimal('36.816667')
+        farmer.save(update_fields=['latitude', 'longitude'])
+        resp = manager_api_client.get(f'/api/farmers/{farmer.id}/location/')
+        assert resp.status_code == status.HTTP_200_OK
+        data = resp.json()
+        assert abs(data['latitude'] - (-1.283333)) < 1e-6
+        assert abs(data['longitude'] - 36.816667) < 1e-6
+
+    def test_get_location_includes_route_stops(self, manager_api_client, cooperative):
+        from apps.routes.models import CollectionRoute, RouteStop
+        from decimal import Decimal
+        farmer = self._farmer_in_coop(cooperative)
+        route = CollectionRoute.objects.create(cooperative=cooperative, name='R1', path={})
+        stop = RouteStop.objects.create(
+            route=route, latitude=Decimal('0'), longitude=Decimal('0'), stop_order=1,
+        )
+        stop.farmers.add(farmer)
+        resp = manager_api_client.get(f'/api/farmers/{farmer.id}/location/')
+        assert resp.status_code == status.HTTP_200_OK
+        data = resp.json()
+        assert len(data['route_stops']) == 1
+        assert data['route_stops'][0]['route_name'] == 'R1'
+
+    def test_patch_location_as_manager(self, manager_api_client, cooperative):
+        from decimal import Decimal
+        farmer = self._farmer_in_coop(cooperative)
+        resp = manager_api_client.patch(
+            f'/api/farmers/{farmer.id}/location/',
+            {'latitude': '-1.28', 'longitude': '36.82'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK, resp.content
+        farmer.refresh_from_db()
+        assert farmer.latitude == Decimal('-1.28')
+        assert farmer.longitude == Decimal('36.82')
+
+    def test_patch_location_as_grader(self, grader_api_client, cooperative):
+        from decimal import Decimal
+        farmer = self._farmer_in_coop(cooperative)
+        resp = grader_api_client.patch(
+            f'/api/farmers/{farmer.id}/location/',
+            {'latitude': '-1.28', 'longitude': '36.82'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK, resp.content
+        farmer.refresh_from_db()
+        assert farmer.latitude == Decimal('-1.28')
+
+    def test_patch_location_as_accountant_denied(self, cooperative):
+        accountant = User.objects.create_user(
+            'acct@farmer.com', '+25470000900', 'Acct', 'User',
+            password='testpass123', role=UserRole.ACCOUNTANT, cooperative=cooperative,
+        )
+        c = APIClient()
+        c.force_authenticate(user=accountant)
+        farmer = self._farmer_in_coop(cooperative)
+        resp = c.patch(
+            f'/api/farmers/{farmer.id}/location/',
+            {'latitude': '0', 'longitude': '0'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_patch_location_partial_rejected(self, manager_api_client, cooperative):
+        farmer = self._farmer_in_coop(cooperative)
+        resp = manager_api_client.patch(
+            f'/api/farmers/{farmer.id}/location/',
+            {'latitude': '0'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_patch_location_out_of_range(self, manager_api_client, cooperative):
+        farmer = self._farmer_in_coop(cooperative)
+        resp = manager_api_client.patch(
+            f'/api/farmers/{farmer.id}/location/',
+            {'latitude': '200', 'longitude': '0'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+class TestFarmerSelfUpdateLocation:
+    def _farmer_with_user(self, cooperative):
+        from apps.farmers.models import Farmer
+        farmer_user = User.objects.create_user(
+            'farmer-user@test.com', '+25470000501', 'LocUser', 'Test',
+            password='testpass123', role=UserRole.FARMER, cooperative=cooperative,
+            is_active=True,
+        )
+        farmer = Farmer.objects.create(
+            first_name='LocUser', last_name='Test',
+            id_number='LOC002', phone_number=farmer_user.phone_number,
+            county='Nairobi', cooperative=cooperative,
+            user=farmer_user,
+        )
+        farmer.refresh_from_db()
+        return farmer, farmer_user
+
+    def test_farmer_patches_own_location(self, cooperative):
+        from rest_framework.test import APIClient
+        from decimal import Decimal
+        farmer, farmer_user = self._farmer_with_user(cooperative)
+        c = APIClient()
+        c.force_authenticate(user=farmer_user)
+        resp = c.patch(
+            '/api/farmers/me/',
+            {'latitude': '-1.30', 'longitude': '36.80'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK, resp.content
+        farmer.refresh_from_db()
+        assert farmer.latitude == Decimal('-1.30')
+        assert farmer.longitude == Decimal('36.80')
+
+    def test_farmer_location_validation(self, cooperative):
+        from rest_framework.test import APIClient
+        farmer, farmer_user = self._farmer_with_user(cooperative)
+        c = APIClient()
+        c.force_authenticate(user=farmer_user)
+        resp = c.patch(
+            '/api/farmers/me/',
+            {'latitude': '500', 'longitude': '0'},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST

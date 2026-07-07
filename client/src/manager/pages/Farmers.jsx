@@ -10,6 +10,7 @@ import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import PickupLocationEditor from '../../shared/components/PickupLocationEditor'
 
 export default function Farmers() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -415,6 +416,19 @@ export default function Farmers() {
                   <p className="text-body-md text-on-surface font-medium">{String(detailFarmer[f] ?? '-')}</p>
                 </div>
               ))}
+            </div>
+            <div className="pt-2 border-t border-outline-variant">
+              <h3 className="text-label-lg font-bold mb-2">Pickup Location</h3>
+              {detailFarmer.latitude != null && detailFarmer.longitude != null && (
+                <p className="text-body-sm text-on-surface-variant mb-2">
+                  Current: {Number(detailFarmer.latitude).toFixed(5)}, {Number(detailFarmer.longitude).toFixed(5)}
+                </p>
+              )}
+              <PickupLocationEditor
+                farmerId={detailFarmer.id}
+                initial={detailFarmer.latitude != null ? { latitude: detailFarmer.latitude, longitude: detailFarmer.longitude } : null}
+                onSaved={() => refetch()}
+              />
             </div>
           </div>
         )}

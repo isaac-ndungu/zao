@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast'
 import NotificationBell from '../components/NotificationBell'
 import { CardSkeleton } from '../components/LoadingSkeleton'
 import ConfirmModal from '../components/ConfirmModal'
+import PickupLocationEditor from '../../shared/components/PickupLocationEditor'
 import { t } from '../i18n'
 
 export default function FarmerProfile() {
@@ -116,6 +117,23 @@ export default function FarmerProfile() {
           </form>
         </div>
       )}
+
+      <div className="mt-6 bg-surface-container rounded-xl border border-outline-variant p-4 space-y-3">
+        <h3 className="text-base font-bold">{t('pickupLocation')}</h3>
+        {profile?.latitude != null && profile?.longitude != null ? (
+          <p className="text-label-sm text-on-surface-variant">
+            {Number(profile.latitude).toFixed(5)}, {Number(profile.longitude).toFixed(5)}
+          </p>
+        ) : (
+          <p className="text-label-sm text-on-surface-variant">{t('pickupLocationEmpty')}</p>
+        )}
+        <PickupLocationEditor
+          farmerId={profile?.id}
+          initial={profile?.latitude != null ? { latitude: profile.latitude, longitude: profile.longitude } : null}
+          onSaved={() => refetch()}
+          height="200px"
+        />
+      </div>
 
       <div className="mt-6">
         <button onClick={() => setShowLogoutConfirm(true)} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">

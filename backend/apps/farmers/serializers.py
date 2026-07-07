@@ -14,6 +14,24 @@ KENYA_PHONE_RE = re.compile(r'^(?:\+254|0|254)?[17]\d{8}$')
 KENYA_ID_RE = re.compile(r'^\d{6,8}$')
 
 
+def _validate_lat(value):
+    if value is None:
+        return value
+    f = float(value)
+    if not -90.0 <= f <= 90.0:
+        raise serializers.ValidationError('Latitude must be between -90 and 90.')
+    return value
+
+
+def _validate_lng(value):
+    if value is None:
+        return value
+    f = float(value)
+    if not -180.0 <= f <= 180.0:
+        raise serializers.ValidationError('Longitude must be between -180 and 180.')
+    return value
+
+
 class MembershipSerializer(serializers.ModelSerializer):
     cooperative_name = serializers.CharField(source='cooperative.name', read_only=True)
 
@@ -64,7 +82,7 @@ class FarmerListSerializer(serializers.ModelSerializer):
             'id', 'member_number', 'first_name', 'last_name',
             'phone_number', 'payment_method',
             'is_active', 'date_joined', 'email', 'county',
-            'primary_cooperative_name',
+            'primary_cooperative_name', 'latitude', 'longitude',
         ]
 
     def get_member_number(self, obj):
@@ -85,6 +103,14 @@ class FarmerDetailSerializer(serializers.ModelSerializer):
     bank_name = serializers.SerializerMethodField()
     bank_account = serializers.SerializerMethodField()
     bank_branch = serializers.SerializerMethodField()
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lat],
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lng],
+    )
 
     class Meta:
         model = Farmer
@@ -132,6 +158,14 @@ class FarmerDetailSerializer(serializers.ModelSerializer):
 
 class FarmerCreateSerializer(serializers.ModelSerializer):
     cooperative_id = serializers.UUIDField(required=False, write_only=True)
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lat],
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lng],
+    )
 
     class Meta:
         model = Farmer
@@ -139,6 +173,7 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'email', 'id_number', 'phone_number',
             'date_of_birth', 'county', 'sub_county',
             'ward', 'village',
+            'latitude', 'longitude',
             'cooperative_id',
         ]
         extra_kwargs = {
@@ -194,13 +229,44 @@ class FarmerCreateSerializer(serializers.ModelSerializer):
 
 
 class FarmerSelfUpdateSerializer(serializers.ModelSerializer):
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lat],
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lng],
+    )
+
     class Meta:
         model = Farmer
         fields = [
             'phone_number', 'email',
             'village', 'ward', 'sub_county',
+            'latitude', 'longitude',
         ]
         extra_kwargs = {field: {'required': False} for field in fields}
+
+
+class FarmerLocationPatchSerializer(serializers.Serializer):
+    """Used by the FarmerViewSet.location action PATCH body."""
+    latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lat],
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        validators=[_validate_lng],
+    )
+
+    def validate(self, attrs):
+        lat = attrs.get('latitude')
+        lng = attrs.get('longitude')
+        if (lat is None) ^ (lng is None):
+            raise serializers.ValidationError(
+                'Both latitude and longitude must be provided together.'
+            )
+        return attrs
 
     def validate_phone_number(self, value):
         if value:

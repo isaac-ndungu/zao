@@ -29,6 +29,7 @@ from .serializers import (
     FarmerCreateSerializer,
     FarmerDetailSerializer,
     FarmerListSerializer,
+    FarmerLocationPatchSerializer,
     FarmerSelfUpdateSerializer,
     MembershipCreateSerializer,
     MembershipSerializer,
@@ -112,7 +113,7 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
             return [IsAuthenticated()]
         if self.action in ('create', 'update', 'partial_update', 'destroy', 'import_csv'):
             return [IsAuthenticated(), IsManager()]
-        if self.action in ('lookup',):
+        if self.action in ('lookup', 'location'):
             return [IsAuthenticated(), IsManagerOrGrader()]
         return [IsAuthenticated()]
 
@@ -284,6 +285,58 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
         return Response(
             FarmerDetailSerializer(farmer, context={'request': request}).data
         )
+
+    @action(detail=True, methods=['get', 'patch'])
+    def location(self, request, pk=None):
+        """GET: farmer location + their assigned route stops.
+        PATCH: update farmer pickup location (ManagerOrGrader)."""
+        farmer = self.get_object()
+
+        if request.method == 'GET':
+            stops = (
+                farmer.route_stops.select_related('route')
+                .filter(route__deleted_at__isnull=True)
+                .order_by('route__name', 'stop_order')
+            )
+            return Response({
+                'id': str(farmer.id),
+                'latitude': float(farmer.latitude) if farmer.latitude is not None else None,
+                'longitude': float(farmer.longitude) if farmer.longitude is not None else None,
+                'route_stops': [
+                    {
+                        'id': s.id,
+                        'route_id': s.route_id,
+                        'route_name': s.route.name,
+                        'stop_order': s.stop_order,
+                    }
+                    for s in stops
+                ],
+            })
+
+        # PATCH
+        serializer = FarmerLocationPatchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if 'latitude' in data and 'longitude' in data:
+            farmer.latitude = data['latitude']
+            farmer.longitude = data['longitude']
+            farmer.save(update_fields=['latitude', 'longitude', 'updated_at'])
+            log_audit(
+                actor=request.user,
+                resource_type='farmer',
+                resource_id=farmer.id,
+                action='UPDATE',
+                new_value={
+                    'latitude': float(farmer.latitude) if farmer.latitude else None,
+                    'longitude': float(farmer.longitude) if farmer.longitude else None,
+                },
+                cooperative_id=request.cooperative_id,
+            )
+        return Response({
+            'id': str(farmer.id),
+            'latitude': float(farmer.latitude) if farmer.latitude is not None else None,
+            'longitude': float(farmer.longitude) if farmer.longitude is not None else None,
+        })
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
