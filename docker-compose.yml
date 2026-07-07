@@ -74,7 +74,11 @@ services:
         condition: service_started
 
   client:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        VITE_API_PROXY: http://web:8000
     volumes:
       - ./client:/app
       - /app/node_modules

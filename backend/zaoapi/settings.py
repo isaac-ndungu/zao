@@ -497,7 +497,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 
 # Content Security Policy
-CONTENT_SECURITY_POLICY = "default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: res.cloudinary.com; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
+# Allows Google Identity Services for OAuth sign-in and Google APIs
+GOOGLE_SCRIPT_SRC = "https://accounts.google.com https://ajax.googleapis.com https://accounts.google.com/gsi/client"
+CONTENT_SECURITY_POLICY = f"default-src 'self'; script-src 'self' 'unsafe-inline' {GOOGLE_SCRIPT_SRC}; style-src 'self' 'unsafe-inline'; img-src 'self' data: res.cloudinary.com; font-src 'self'; connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'"
 
 # Permissions Policy
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), sync-xhr=()"
