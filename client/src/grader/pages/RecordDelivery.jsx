@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { useOnlineStatus } from '../../shared/hooks/useOnlineStatus'
-import { saveDelivery, cacheFarmers, getCachedFarmers, searchCachedFarmers } from '../services/offlineQueue'
+import {
+  saveDelivery,
+  cacheFarmers,
+  getCachedFarmers,
+  searchCachedFarmers,
+  cacheFarmerLocation,
+  getCachedFarmerLocation,
+} from '../services/offlineQueue'
+import MapView from '../../shared/components/MapView'
 
 const productTypes = [
   { value: 'MILK', label: 'Milk' },
@@ -22,6 +30,9 @@ export default function RecordDelivery() {
   const [selectedFarmer, setSelectedFarmer] = useState(null)
   const [cachedFarmersList, setCachedFarmersList] = useState(null)
   const [justSelected, setJustSelected] = useState(false)
+  const [routeStops, setRouteStops] = useState([])
+  const [pickedStop, setPickedStop] = useState('')
+  const [geoBusy, setGeoBusy] = useState(false)
 
   useEffect(() => {
     getCachedFarmers().then(cached => {
@@ -49,13 +60,16 @@ export default function RecordDelivery() {
     date_delivered: new Date().toISOString().slice(0, 10),
     latitude: '',
     longitude: '',
+    route_stop: '',
   })
 
   const searchFarmer = async (q) => {
     if (justSelected) { setJustSelected(false); return }
     setFarmerSearch(q)
     setSelectedFarmer(null)
-    setForm(f => ({ ...f, farmer: '' }))
+    setForm(f => ({ ...f, farmer: '', latitude: '', longitude: '', route_stop: '' }))
+    setRouteStops([])
+    setPickedStop('')
     if (q.length < 2) { setFarmerOptions([]); return }
     if (!isOnline) {
       if (cachedFarmersList) {
@@ -76,12 +90,62 @@ export default function RecordDelivery() {
     } catch {}
   }
 
-  const selectFarmer = (farmer) => {
+  const selectFarmer = async (farmer) => {
     setSelectedFarmer(farmer)
-    setForm(f => ({ ...f, farmer: farmer.id }))
+    setForm(f => ({ ...f, farmer: farmer.id, latitude: '', longitude: '', route_stop: '' }))
     setFarmerSearch(`${farmer.first_name} ${farmer.last_name} (${farmer.phone_number || farmer.id.slice(0, 8)})`)
     setFarmerOptions([])
     setJustSelected(true)
+    setPickedStop('')
+    setRouteStops([])
+
+    // Try to fetch farmer location and route stops
+    if (isOnline) {
+      try {
+        const res = await apiFetch(`/api/farmers/${farmer.id}/location/`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.latitude != null && data.longitude != null) {
+            setForm(f => ({ ...f, latitude: String(data.latitude), longitude: String(data.longitude) }))
+          }
+          setRouteStops(data.route_stops || [])
+          // Cache for offline use
+          cacheFarmerLocation(farmer.id, {
+            latitude: data.latitude,
+            longitude: data.longitude,
+            route_stops: data.route_stops || [],
+          })
+        }
+      } catch {}
+    } else {
+      // Offline: use cached
+      const cached = await getCachedFarmerLocation(farmer.id).catch(() => null)
+      if (cached) {
+        if (cached.latitude != null && cached.longitude != null) {
+          setForm(f => ({ ...f, latitude: String(cached.latitude), longitude: String(cached.longitude) }))
+        }
+        setRouteStops(cached.route_stops || [])
+      }
+    }
+  }
+
+  const useMyLocation = () => {
+    if (!('geolocation' in navigator)) {
+      showToast({ type: 'error', message: 'Geolocation not available.' })
+      return
+    }
+    setGeoBusy(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setForm(f => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }))
+        setGeoBusy(false)
+      },
+      (err) => {
+        setGeoBusy(false)
+        showToast({ type: 'error', message: err.message || 'Could not get your location.' })
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    )
   }
 
   const handleSubmit = async (e) => {
@@ -97,6 +161,7 @@ export default function RecordDelivery() {
       if (!body.volume_litres) delete body.volume_litres
       if (!body.latitude) delete body.latitude
       if (!body.longitude) delete body.longitude
+      if (!body.route_stop) delete body.route_stop
       if (isOnline) {
         const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
         if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create delivery') }
@@ -110,6 +175,10 @@ export default function RecordDelivery() {
     } catch (err) { showToast({ type: 'error', message: err.message }) }
     finally { setSubmitting(false) }
   }
+
+  const pickup = (form.latitude && form.longitude)
+    ? { lat: Number(form.latitude), lng: Number(form.longitude) }
+    : null
 
   return (
     <div className="max-w-lg mx-auto">
@@ -150,6 +219,36 @@ export default function RecordDelivery() {
             </div>
           )}
         </div>
+
+        {selectedFarmer && routeStops.length > 0 && (
+          <div>
+            <label htmlFor="record-route-stop" className="block text-label-md font-bold text-on-surface mb-1.5">Pickup stop</label>
+            <select
+              id="record-route-stop"
+              value={pickedStop}
+              onChange={(e) => setPickedStop(e.target.value)}
+              className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
+              disabled={submitting}
+            >
+              <option value="">— None —</option>
+              {routeStops.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.route_name} — Stop {s.stop_order}
+                </option>
+              ))}
+            </select>
+            <p className="text-label-sm text-on-surface-variant mt-1">
+              Coordinates below are pre-filled from the farmer's saved pickup location.
+            </p>
+          </div>
+        )}
+
+        {pickup && (
+          <div>
+            <p className="block text-label-md font-bold text-on-surface mb-1.5">Pickup location</p>
+            <MapView deliveries={[]} pickupLocation={pickup} pickupLabel={selectedFarmer ? `${selectedFarmer.first_name}'s pickup` : 'Pickup'} height="180px" />
+          </div>
+        )}
 
         <div>
           <label htmlFor="record-product-type" className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
@@ -243,6 +342,16 @@ export default function RecordDelivery() {
               disabled={submitting}
             />
           </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={geoBusy}
+            className="text-label-sm text-primary font-bold disabled:opacity-50"
+          >
+            {geoBusy ? 'Locating…' : 'Use my current location'}
+          </button>
         </div>
 
         <div className="flex items-center gap-3 pt-2">

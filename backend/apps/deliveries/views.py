@@ -38,6 +38,7 @@ class DeliveryViewSet(CsvExportMixin, CooperativeScopedViewSet):
     ]
     ordering_fields = [
         'date_delivered', 'batch_id', 'product_type', 'status',
+        'route_stop',
     ]
     ordering = ['-date_delivered']
 
@@ -53,6 +54,12 @@ class DeliveryViewSet(CsvExportMixin, CooperativeScopedViewSet):
         farmer_id = self.request.query_params.get('farmer')
         if farmer_id:
             qs = qs.filter(farmer_id=farmer_id)
+        route_stop = self.request.query_params.get('route_stop')
+        if route_stop:
+            qs = qs.filter(route_stop_id=route_stop)
+        route = self.request.query_params.get('route')
+        if route:
+            qs = qs.filter(route_stop__route_id=route)
         date_from = self.request.query_params.get('date_from')
         if date_from:
             qs = qs.filter(date_delivered__date__gte=date_from)

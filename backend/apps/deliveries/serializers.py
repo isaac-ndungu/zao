@@ -5,6 +5,7 @@ from rest_framework import serializers
 
 from apps.cooperatives.models import Cooperative
 from apps.farmers.models import Farmer
+from apps.routes.models import RouteStop
 from .models import Delivery
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 class DeliveryListSerializer(serializers.ModelSerializer):
     farmer_name = serializers.SerializerMethodField()
+    route_stop = serializers.UUIDField(read_only=True)
+    route_id = serializers.SerializerMethodField()
+    route_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Delivery
@@ -19,21 +23,35 @@ class DeliveryListSerializer(serializers.ModelSerializer):
             'id', 'batch_id', 'farmer_name', 'product_type',
             'quantity_kg', 'volume_litres', 'grade', 'status',
             'date_delivered', 'shift',
+            'route_stop', 'route_id', 'route_name',
         ]
 
     def get_farmer_name(self, obj):
         return f'{obj.farmer.first_name} {obj.farmer.last_name}'
 
+    def get_route_id(self, obj):
+        if obj.route_stop_id:
+            return str(obj.route_stop.route_id)
+        return None
+
+    def get_route_name(self, obj):
+        if obj.route_stop_id:
+            return obj.route_stop.route.name
+        return None
+
 
 class DeliveryDetailSerializer(serializers.ModelSerializer):
     farmer_name = serializers.SerializerMethodField()
     grader_name = serializers.SerializerMethodField()
+    route_id = serializers.SerializerMethodField()
+    route_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Delivery
         fields = '__all__'
         read_only_fields = [
             'id', 'batch_id', 'cooperative', 'date_delivered', 'updated_at',
+            'route_id', 'route_name',
         ]
 
     def get_farmer_name(self, obj):
@@ -44,10 +62,23 @@ class DeliveryDetailSerializer(serializers.ModelSerializer):
             return obj.grader.get_full_name() or obj.grader.email
         return None
 
+    def get_route_id(self, obj):
+        if obj.route_stop_id:
+            return str(obj.route_stop.route_id)
+        return None
+
+    def get_route_name(self, obj):
+        if obj.route_stop_id:
+            return obj.route_stop.route.name
+        return None
+
 
 class DeliveryCreateSerializer(serializers.ModelSerializer):
     cooperative_id = serializers.UUIDField(required=False, write_only=True)
     farmer = serializers.PrimaryKeyRelatedField(queryset=Farmer.objects.all(), required=True)
+    route_stop = serializers.PrimaryKeyRelatedField(
+        queryset=RouteStop.objects.all(), required=False, allow_null=True,
+    )
 
     class Meta:
         model = Delivery
@@ -56,7 +87,8 @@ class DeliveryCreateSerializer(serializers.ModelSerializer):
             'quantity_kg', 'volume_litres',
             'grade', 'quality_metrics', 'rejection_reason',
             'status', 'shift', 'is_synced', 'local_id',
-            'date_delivered',
+            'date_delivered', 'route_stop',
+            'latitude', 'longitude',
             'cooperative_id',
         ]
         extra_kwargs = {

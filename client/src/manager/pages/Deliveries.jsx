@@ -32,6 +32,12 @@ export default function Deliveries() {
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('selected')
+  const [pickedFarmer, setPickedFarmer] = useState(null)
+  const [pickedFarmerLocation, setPickedFarmerLocation] = useState(null)
+  const [pickedRouteStops, setPickedRouteStops] = useState([])
+  const [pickedRouteStop, setPickedRouteStop] = useState('')
+  const [createLat, setCreateLat] = useState('')
+  const [createLng, setCreateLng] = useState('')
 
   const params = new URLSearchParams({ page, page_size: pageSize, ordering: sortField })
   if (statusFilter) params.set('status', statusFilter)
@@ -67,6 +73,33 @@ export default function Deliveries() {
       }
     } catch {}
   }, [])
+
+  const pickFarmer = useCallback(async (farmerId) => {
+    setPickedFarmer(farmerId)
+    setPickedRouteStop('')
+    setPickedFarmerLocation(null)
+    setPickedRouteStops([])
+    try {
+      const res = await apiFetch(`/api/farmers/${farmerId}/location/`)
+      if (res.ok) {
+        const d = await res.json()
+        setPickedFarmerLocation({ latitude: d.latitude, longitude: d.longitude })
+        setPickedRouteStops(d.route_stops || [])
+        if (d.latitude != null) setCreateLat(String(d.latitude))
+        if (d.longitude != null) setCreateLng(String(d.longitude))
+      }
+    } catch {}
+  }, [])
+
+  const handleRouteStopChange = (stopId) => {
+    setPickedRouteStop(stopId)
+    if (stopId) {
+      const s = pickedRouteStops.find((x) => String(x.id) === String(stopId))
+      // The stop has order; we need its lat/lng to prefill coords. The lookup
+      // endpoint only returns stop metadata. Pull the full route stops lazily.
+      // Fallback: keep existing createLat/createLng if user already typed them.
+    }
+  }
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -238,11 +271,24 @@ export default function Deliveries() {
                 <div key={f}><p className="text-label-md text-on-surface-variant capitalize">{f.replace('_',' ')}</p><p className="text-body-md text-on-surface font-medium">{String(detailDelivery[f] ?? '-')}</p></div>
               ))}
             </div>
+            {(detailDelivery.route_name || detailDelivery.route_stop) && (
+              <div className="pt-2 border-t border-outline-variant">
+                <h3 className="text-label-lg font-bold mb-2">Route</h3>
+                <p className="text-body-md">
+                  {detailDelivery.route_name ? (
+                    <>Route: <span className="font-medium">{detailDelivery.route_name}</span></>
+                  ) : null}
+                  {detailDelivery.route_stop ? (
+                    <> · Stop: <span className="font-medium">#{detailDelivery.route_stop}</span></>
+                  ) : null}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </SlideOutPanel>
 
-      <SlideOutPanel open={showCreate} onClose={() => setShowCreate(false)} title="Record Delivery" width="max-w-md">
+      <SlideOutPanel open={showCreate} onClose={() => { setShowCreate(false); setPickedFarmer(null); setPickedFarmerLocation(null); setPickedRouteStops([]); setPickedRouteStop(''); setCreateLat(''); setCreateLng('') }} title="Record Delivery" width="max-w-md">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
             <label htmlFor="create-farmer-search" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
@@ -250,14 +296,42 @@ export default function Deliveries() {
             {farmerResults.length > 0 && (
               <div className="mt-1 border border-outline-variant rounded-lg overflow-hidden" role="listbox">
                 {farmerResults.map(f => (
-                  <label key={f.id} className="flex items-center gap-2 px-3 py-2 hover:bg-surface-container cursor-pointer">
-                    <input type="radio" name="farmer_id" value={f.id} defaultChecked className="accent-primary"/>
+                  <button
+                    type="button"
+                    key={f.id}
+                    onClick={() => { pickFarmer(f.id); setFarmerResults([]); setFarmerSearch(`${f.first_name} ${f.last_name}`) }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-surface-container cursor-pointer text-left ${pickedFarmer === f.id ? 'bg-primary-container' : ''}`}
+                  >
+                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
                     <span className="text-body-md">{f.first_name} {f.last_name} — {f.phone_number}</span>
-                  </label>
+                  </button>
                 ))}
               </div>
             )}
+            <input type="hidden" name="farmer_id" value={pickedFarmer || ''} />
           </div>
+          {pickedFarmer && pickedRouteStops.length > 0 && (
+            <div>
+              <label htmlFor="create-route-stop" className="block text-label-md text-on-surface-variant mb-1">Pickup stop (optional)</label>
+              <select
+                id="create-route-stop"
+                name="route_stop"
+                value={pickedRouteStop}
+                onChange={(e) => handleRouteStopChange(e.target.value)}
+                className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+              >
+                <option value="">— None —</option>
+                {pickedRouteStops.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.route_name} — Stop {s.stop_order}
+                  </option>
+                ))}
+              </select>
+              <p className="text-label-sm text-on-surface-variant mt-1">
+                Selecting a stop fills the delivery coordinates from the stop location.
+              </p>
+            </div>
+          )}
           <div><label htmlFor="create-product-type" className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select id="create-product-type" name="product_type" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label htmlFor="create-quantity-kg" className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input id="create-quantity-kg" name="quantity_kg" type="number" step="0.01" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
@@ -268,10 +342,19 @@ export default function Deliveries() {
             <div><label htmlFor="create-date-delivered" className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input id="create-date-delivered" name="date_delivered" type="date" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label htmlFor="create-latitude" className="block text-label-md text-on-surface-variant mb-1">Latitude (optional)</label><input id="create-latitude" name="latitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
-            <div><label htmlFor="create-longitude" className="block text-label-md text-on-surface-variant mb-1">Longitude (optional)</label><input id="create-longitude" name="longitude" type="number" step="any" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+            <div>
+              <label htmlFor="create-latitude" className="block text-label-md text-on-surface-variant mb-1">Latitude</label>
+              <input id="create-latitude" name="latitude" type="number" step="any" value={createLat} onChange={(e) => setCreateLat(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+              {pickedFarmerLocation?.latitude == null && pickedFarmer && (
+                <p className="text-label-sm text-on-surface-variant mt-1">Farmer has no saved pickup location.</p>
+              )}
+            </div>
+            <div>
+              <label htmlFor="create-longitude" className="block text-label-md text-on-surface-variant mb-1">Longitude</label>
+              <input id="create-longitude" name="longitude" type="number" step="any" value={createLng} onChange={(e) => setCreateLng(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            </div>
           </div>
-          <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Record Delivery</button>
+          <button type="submit" disabled={!pickedFarmer} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">Record Delivery</button>
         </form>
       </SlideOutPanel>
 

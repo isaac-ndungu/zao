@@ -275,6 +275,7 @@ export async function cachePendingDeliveries(deliveries) {
 }
 
 const FARMER_CACHE_KEY = 'farmers'
+const FARMER_LOCATIONS_KEY = 'farmer-locations'
 
 export async function cacheFarmers(farmers) {
   const db = await openDB()
@@ -284,6 +285,43 @@ export async function cacheFarmers(farmers) {
     store.put({ key: FARMER_CACHE_KEY, data: farmers, cached_at: new Date().toISOString() })
     tx.oncomplete = () => resolve()
     tx.onerror = () => reject(tx.error)
+  })
+}
+
+export async function cacheFarmerLocation(farmerId, location) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CACHE_STORE, 'readwrite')
+    const store = tx.objectStore(CACHE_STORE)
+    const req = store.get(FARMER_LOCATIONS_KEY)
+    req.onsuccess = () => {
+      const entry = req.result || { key: FARMER_LOCATIONS_KEY, data: {}, cached_at: new Date().toISOString() }
+      entry.data[String(farmerId)] = { ...location, cached_at: new Date().toISOString() }
+      entry.cached_at = new Date().toISOString()
+      store.put(entry)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    }
+    req.onerror = () => reject(req.error)
+  })
+}
+
+export async function getCachedFarmerLocation(farmerId) {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CACHE_STORE, 'readonly')
+    const store = tx.objectStore(CACHE_STORE)
+    const req = store.get(FARMER_LOCATIONS_KEY)
+    req.onsuccess = () => {
+      const entry = req.result
+      const data = entry?.data?.[String(farmerId)]
+      if (data && Date.now() - new Date(data.cached_at).getTime() < 7 * 24 * 60 * 60 * 1000) {
+        resolve(data)
+      } else {
+        resolve(null)
+      }
+    }
+    req.onerror = () => reject(req.error)
   })
 }
 

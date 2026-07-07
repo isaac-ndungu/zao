@@ -14,9 +14,17 @@ const defaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = defaultIcon
 
-export default function MapView({ deliveries = [], height = '320px', center = null, zoom = 13 }) {
+export default function MapView({
+  deliveries = [],
+  height = '320px',
+  center = null,
+  zoom = 13,
+  pickupLocation = null,
+  pickupLabel = 'Pickup location',
+}) {
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
+  const pickupMarkerRef = useRef(null)
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -34,6 +42,13 @@ export default function MapView({ deliveries = [], height = '320px', center = nu
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map)
 
+    const pickupIcon = L.divIcon({
+      className: 'pickup-pin',
+      html: '<div style="background:#2563eb;width:18px;height:18px;border-radius:50%;border:2px solid white;box-shadow:0 0 0 1px #2563eb"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    })
+
     deliveriesWithLocation.forEach(delivery => {
       const popupContent = `
         <div style="min-width: 150px;">
@@ -48,10 +63,24 @@ export default function MapView({ deliveries = [], height = '320px', center = nu
         .bindPopup(popupContent)
     })
 
+    if (pickupLocation?.lat != null && pickupLocation?.lng != null) {
+      pickupMarkerRef.current = L.marker([parseFloat(pickupLocation.lat), parseFloat(pickupLocation.lng)], {
+        icon: pickupIcon,
+      })
+        .addTo(map)
+        .bindTooltip(pickupLabel, { direction: 'top' })
+    }
+
+    const points = []
     if (deliveriesWithLocation.length > 0) {
-      const group = L.featureGroup(deliveriesWithLocation.map(d =>
-        L.marker([parseFloat(d.latitude), parseFloat(d.longitude)])
-      ))
+      deliveriesWithLocation.forEach(d => points.push([parseFloat(d.latitude), parseFloat(d.longitude)]))
+    }
+    if (pickupMarkerRef.current) {
+      points.push(pickupMarkerRef.current.getLatLng())
+    }
+
+    if (points.length > 0) {
+      const group = L.featureGroup(points.map(p => L.marker(p)))
       map.fitBounds(group.getBounds().pad(0.1))
     } else if (center) {
       map.setView(center, zoom)
@@ -67,7 +96,7 @@ export default function MapView({ deliveries = [], height = '320px', center = nu
         mapInstanceRef.current = null
       }
     }
-  }, [deliveries, center, zoom])
+  }, [deliveries, center, zoom, pickupLocation?.lat, pickupLocation?.lng, pickupLabel])
 
   return (
     <div className="rounded-lg overflow-hidden" style={{ height }} role="img" aria-label="Map showing delivery locations">

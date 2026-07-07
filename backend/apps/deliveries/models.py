@@ -38,6 +38,12 @@ class Delivery(LocationMixin, CooperativeScopedModel):
         on_delete=models.SET_NULL,
         related_name='graded_deliveries',
     )
+    route_stop = models.ForeignKey(
+        'routes.RouteStop', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='deliveries',
+        db_index=True,
+    )
 
     product_type = models.CharField(max_length=20, choices=ProductType.choices, db_index=True)
     batch_id = models.CharField(max_length=30, unique=True, editable=False, db_index=True)
@@ -72,6 +78,7 @@ class Delivery(LocationMixin, CooperativeScopedModel):
             models.Index(fields=['cooperative', 'date_delivered', 'grade'], name='idx_delivery_coop_date_grade'),
             models.Index(fields=['cooperative', 'date_delivered', 'product_type'], name='idx_del_coop_date_prodtype'),
             models.Index(fields=['cooperative', 'date_delivered', 'shift'], name='idx_delivery_coop_date_shift'),
+            models.Index(fields=['cooperative', 'route_stop', 'date_delivered'], name='idx_del_coop_stop_date'),
             models.Index(fields=['cooperative', '-date_delivered'], condition=models.Q(status='PENDING'), name='idx_del_pending_grader'),
             models.Index(fields=['cooperative'], condition=models.Q(deleted_at__isnull=True), name='idx_delivery_live_records'),
         ]
