@@ -51,7 +51,7 @@ export default function SevenDayChart({ results }) {
         <span className="text-label-md text-on-surface-variant">This Week</span>
         {trend !== null && (
           <span className={`text-label-sm font-bold flex items-center gap-0.5 ${trend >= 0 ? 'text-primary' : 'text-error'}`}>
-            <span className="material-symbols-outlined text-[14px]">
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
               {trend >= 0 ? 'trending_up' : 'trending_down'}
             </span>
             {Math.abs(trend)}%

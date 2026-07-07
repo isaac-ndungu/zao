@@ -6,8 +6,8 @@ export default function GraderOfflineBanner() {
   if (isOnline) return null
 
   return (
-    <div className="sticky top-0 z-30 bg-warning-container text-on-warning-container text-label-md text-center py-2.5 px-4 border-b border-warning flex items-center justify-center gap-2">
-      <span className="material-symbols-outlined text-[16px]">wifi_off</span>
+    <div role="status" aria-live="polite" className="sticky top-0 z-30 bg-warning-container text-on-warning-container text-label-md text-center py-2.5 px-4 border-b border-warning flex items-center justify-center gap-2">
+      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">wifi_off</span>
       You're offline — grades will sync when connection is restored.
     </div>
   )

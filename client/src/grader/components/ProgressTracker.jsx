@@ -2,7 +2,7 @@ export default function ProgressTracker({ graded, total }) {
   if (total === 0) {
     return (
       <div className="bg-primary-container/20 border border-primary/20 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
-        <span className="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+        <span className="material-symbols-outlined text-primary text-[20px]" aria-hidden="true">check_circle</span>
         <span className="text-label-md font-medium text-primary">All done for today</span>
       </div>
     )
@@ -24,6 +24,11 @@ export default function ProgressTracker({ graded, total }) {
         <div
           className={`h-full rounded-full transition-all duration-500 ${barBg}`}
           style={{ width: `${percent}%` }}
+          role="progressbar"
+          aria-valuenow={percent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${percent}% complete`}
         />
       </div>
       <p className="text-label-sm text-on-surface-variant mt-1.5">

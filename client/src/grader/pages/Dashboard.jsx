@@ -87,7 +87,7 @@ function DeliveryCard({ delivery, thresholds, onGrade }) {
         onClick={() => onGrade(delivery.id)}
         className="w-full bg-primary text-on-primary py-2.5 rounded-lg font-bold text-label-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
       >
-        <span className="material-symbols-outlined text-[18px]">grading</span>
+        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">grading</span>
         Grade Now
       </button>
     </div>
@@ -98,7 +98,7 @@ function EmptyState() {
   return (
     <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-10 text-center">
       <div className="w-16 h-16 rounded-full bg-primary-container/30 flex items-center justify-center mx-auto mb-4">
-        <span className="material-symbols-outlined text-[32px] text-primary">check_circle</span>
+        <span className="material-symbols-outlined text-[32px] text-primary" aria-hidden="true">check_circle</span>
       </div>
       <h3 className="font-headline-sm text-on-surface mb-1">All caught up!</h3>
       <p className="text-body-sm text-on-surface-variant">No pending deliveries to grade right now.</p>
