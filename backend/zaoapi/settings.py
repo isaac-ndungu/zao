@@ -107,6 +107,11 @@ MIDDLEWARE = [
 
 FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY")
 
+# OpenRouteService proxy
+ORS_API_KEY = config("ORS_API_KEY", default="")
+ORS_BASE_URL = config("ORS_BASE_URL", default="https://api.openrouteservice.org")
+ORS_CACHE_TTL = config("ORS_CACHE_TTL", default=86400, cast=int)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -413,6 +418,7 @@ REST_FRAMEWORK = {
         'analytics_export': '5/hour',
         'payment_export': '10/hour',
         'global_search': '60/min',
+        'route_ors': '30/min',
     },
 }
 

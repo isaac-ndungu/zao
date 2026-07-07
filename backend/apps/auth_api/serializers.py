@@ -1,6 +1,9 @@
-from django.core.signing import TimestampSigner, BadSignature
+import logging
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.utils import timezone
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 from apps.base.constants import UserRole
 from apps.base.utils import normalize_phone
@@ -52,9 +55,13 @@ class RequestOTPSerializer(serializers.Serializer):
     def validate(self, attrs):
         signer = TimestampSigner(salt=LOGIN_TOKEN_SALT)
         try:
-            email = signer.unsign(attrs['login_token'], max_age=180)
+            email = signer.unsign(attrs['login_token'], max_age=600)
+        except SignatureExpired:
+            logger.warning('Login token expired for request')
+            raise serializers.ValidationError('Login token expired. Please sign in again.')
         except BadSignature:
-            raise serializers.ValidationError('Invalid or expired login token.')
+            logger.warning('Bad signature on login token: token may have been tampered or used twice')
+            raise serializers.ValidationError('Invalid login token. Please sign in again.')
 
         user = User.objects.filter(email=email).first()
         if not user:

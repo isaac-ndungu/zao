@@ -1,6 +1,8 @@
 amqp==5.3.1
 asgiref==3.11.1
 attrs==26.1.0
+httpx==0.28.1
+tenacity==9.1.4
 billiard==4.2.4
 brotli==1.2.0
 celery==5.6.3

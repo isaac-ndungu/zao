@@ -289,7 +289,13 @@ class FarmerRequestOTPView(APIView):
         login_token = signer.sign(f'{user.id}:{otp.id}')
 
         msg = f'Your OTP is: {otp_code}. It expires in 5 minutes.'
-        send_sms(user.phone_number, msg)
+        sms_result = send_sms(user.phone_number, msg)
+
+        if not sms_result['success']:
+            return Response(
+                {'detail': 'Failed to send OTP. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         data = {
             'login_token': login_token,
