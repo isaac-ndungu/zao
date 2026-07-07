@@ -185,11 +185,11 @@ export default function Cooperatives() {
   }
 
   const columns = useMemo(() => [
-    { key: 'name', label: 'Name', sortable: true, render: (r) => <span className="font-medium text-body-md">{r.name}</span> },
-    { key: 'code', label: 'Code', render: (r) => <span className="text-label-md text-on-surface-variant">{r.code || '-'}</span> },
-    { key: 'email', label: 'Email', render: (r) => <span className="text-label-md text-on-surface-variant">{r.email || '-'}</span> },
-    { key: 'phone_number', label: 'Phone', render: (r) => <span className="text-label-md text-on-surface-variant">{r.phone_number || '-'}</span> },
-    { key: 'is_active', label: 'Status', render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
+    { key: 'name', label: 'Name', sortable: true, render: (_, r) => <span className="font-medium text-body-md">{r.name}</span> },
+    { key: 'code', label: 'Code', render: (_, r) => <span className="text-label-md text-on-surface-variant">{r.code || '-'}</span> },
+    { key: 'email', label: 'Email', render: (_, r) => <span className="text-label-md text-on-surface-variant">{r.email || '-'}</span> },
+    { key: 'phone_number', label: 'Phone', render: (_, r) => <span className="text-label-md text-on-surface-variant">{r.phone_number || '-'}</span> },
+    { key: 'is_active', label: 'Status', render: (_, r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
   ], [])
 
   if (error) return <div className="bg-error-container text-error p-4 rounded-xl">Failed to load cooperatives: {error}</div>

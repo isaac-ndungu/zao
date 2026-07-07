@@ -191,13 +191,13 @@ export default function AccountantCycles() {
   }
 
   const columns = [
-    { key: 'id', label: 'ID', render: (row) => row.id },
-    { key: 'name', label: 'Name', render: (row) => row.name },
-    { key: 'status', label: 'Status', render: (c) => <span className={`badge ${statusColors[c.status] || 'badge-default'}`}>{c.status}</span> },
-    { key: 'total_gross', label: 'Gross', render: (c) => formatKes(c.total_gross) },
-    { key: 'net_payout', label: 'Net', render: (c) => formatKes(c.net_payout) },
-    { key: 'farmer_count', label: 'Farmers', render: (c) => c.farmer_count ?? '-' },
-    { key: 'period', label: 'Period', render: (c) => c.period_start ? `${new Date(c.period_start).toLocaleDateString()} - ${new Date(c.period_end).toLocaleDateString()}` : '-' },
+    { key: 'id', label: 'ID', render: (v, row) => row.id },
+    { key: 'name', label: 'Name', render: (v, row) => row.name },
+    { key: 'status', label: 'Status', render: (v, c) => <span className={`badge ${statusColors[c.status] || 'badge-default'}`}>{c.status}</span> },
+    { key: 'total_gross', label: 'Gross', render: (v, c) => formatKes(c.total_gross) },
+    { key: 'net_payout', label: 'Net', render: (v, c) => formatKes(c.net_payout) },
+    { key: 'farmer_count', label: 'Farmers', render: (v, c) => c.farmer_count ?? '-' },
+    { key: 'period', label: 'Period', render: (v, c) => c.period_start ? `${new Date(c.period_start).toLocaleDateString()} - ${new Date(c.period_end).toLocaleDateString()}` : '-' },
   ]
 
   return (

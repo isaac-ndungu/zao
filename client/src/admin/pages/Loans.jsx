@@ -232,12 +232,12 @@ export default function Loans() {
   }
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID', sortable: true, render: (r) => <span className="font-data-mono text-label-md text-on-surface-variant">{r.id?.slice(0, 8)}...</span> },
-    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (r) => <span className="font-medium text-body-md">{r.farmer_name || r.farmer?.name || '-'}</span> },
-    { key: 'amount', label: 'Amount', sortable: true, render: (r) => <span className="font-data-mono text-body-md">KES {r.amount?.toLocaleString() || '-'}</span> },
-    { key: 'interest_rate', label: 'Rate', render: (r) => <span className="text-label-md">{r.interest_rate ? `${r.interest_rate}%` : '-'}</span> },
-    { key: 'status', label: 'Status', sortable: true, render: (r) => <StatusBadge status={statusBadgeMap[r.status] || 'computing'} label={r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : '-'} /> },
-    { key: 'created_at', label: 'Date', sortable: true, render: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', sortable: true, render: (_, r) => <span className="font-data-mono text-label-md text-on-surface-variant">{r.id?.slice(0, 8)}...</span> },
+    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (_, r) => <span className="font-medium text-body-md">{r.farmer_name || r.farmer?.name || '-'}</span> },
+    { key: 'amount', label: 'Amount', sortable: true, render: (_, r) => <span className="font-data-mono text-body-md">KES {r.amount?.toLocaleString() || '-'}</span> },
+    { key: 'interest_rate', label: 'Rate', render: (_, r) => <span className="text-label-md">{r.interest_rate ? `${r.interest_rate}%` : '-'}</span> },
+    { key: 'status', label: 'Status', sortable: true, render: (_, r) => <StatusBadge status={statusBadgeMap[r.status] || 'computing'} label={r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1) : '-'} /> },
+    { key: 'created_at', label: 'Date', sortable: true, render: (_, r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : '-' },
   ], [])
 
   if (error) return <div className="bg-error-container text-error p-4 rounded-xl">Failed to load loans: {error}</div>

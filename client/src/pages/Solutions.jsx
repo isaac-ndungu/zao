@@ -20,7 +20,7 @@ export default function Solutions() {
     <div className="bg-background min-h-screen">
       <Navbar activeLink="/solutions" />
 
-      <main className="max-w-7xl mx-auto px-container-margin py-stack-lg space-y-24">
+      <main id="main-content" className="max-w-7xl mx-auto px-container-margin py-stack-lg space-y-24">
         <section className="mt-12 text-center space-y-stack-md">
           <span className="text-primary font-label-md text-label-md uppercase tracking-widest bg-secondary-container px-3 py-1 rounded-full inline-block">
             The Modern Pipeline
@@ -31,7 +31,7 @@ export default function Solutions() {
           </p>
         </section>
 
-: update UI components and pages        <section className="hidden lg:flex justify-between items-center px-12 py-8 bg-white/60 backdrop-blur-md rounded-2xl border border-outline-variant/20 shadow-sm">
+        <section className="hidden lg:flex justify-between items-center px-12 py-8 bg-white/60 backdrop-blur-md rounded-2xl border border-outline-variant/20 shadow-sm">
           {['The Gate', 'The Engine', 'The Payout', 'Operations'].map((step, i) => (
             <div key={step} className={`flex flex-col items-center space-y-2 text-center ${i === 0 ? 'group cursor-pointer' : 'opacity-50'}`}>
               <div

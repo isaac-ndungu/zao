@@ -66,10 +66,10 @@ export default function GradePrices() {
   }
 
   const columns = [
-    { key: 'grade_letter', label: 'Grade', render: (v) => <span className="font-bold">{v}</span> },
+    { key: 'grade_letter', label: 'Grade', render: (v, _r) => <span className="font-bold">{v}</span> },
     { key: 'price_per_unit', label: 'Price (KES/unit)' },
-    { key: 'effective_from', label: 'Effective From', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
-    { key: 'created_at', label: 'Created', render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'effective_from', label: 'Effective From', render: (v, _r) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'created_at', label: 'Created', render: (v, _r) => v ? new Date(v).toLocaleDateString() : '-' },
     {
       key: 'actions', label: '', render: (_v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">

@@ -78,17 +78,17 @@ function SalesSection() {
   }
 
   const columns = [
-    { key: 'invoice_number', label: 'Invoice', sortable: true, render: (row) => row.invoice_number || '-' },
+    { key: 'invoice_number', label: 'Invoice', sortable: true, render: (v, row) => row.invoice_number || '-' },
     { key: 'buyer_name', label: 'Buyer', sortable: true },
     { key: 'product_type', label: 'Product', sortable: true },
-    { key: 'quantity', label: 'Qty', sortable: true, render: (row) => row.quantity ?? '-' },
-    { key: 'unit', label: 'Unit', render: (row) => row.unit || '-' },
-    { key: 'price_per_unit', label: 'Price/Unit', sortable: true, render: (row) => row.price_per_unit ? `KES ${row.price_per_unit}` : '-' },
-    { key: 'total_amount', label: 'Total', sortable: true, render: (row) => row.total_amount ? `KES ${Number(row.total_amount).toLocaleString()}` : '-' },
-    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
-    { key: 'sale_date', label: 'Date', sortable: true, render: (row) => row.sale_date ? new Date(row.sale_date).toLocaleDateString() : '-' },
+    { key: 'quantity', label: 'Qty', sortable: true, render: (v, row) => row.quantity ?? '-' },
+    { key: 'unit', label: 'Unit', render: (v, row) => row.unit || '-' },
+    { key: 'price_per_unit', label: 'Price/Unit', sortable: true, render: (v, row) => row.price_per_unit ? `KES ${row.price_per_unit}` : '-' },
+    { key: 'total_amount', label: 'Total', sortable: true, render: (v, row) => row.total_amount ? `KES ${Number(row.total_amount).toLocaleString()}` : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (v, row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'sale_date', label: 'Date', sortable: true, render: (v, row) => row.sale_date ? new Date(row.sale_date).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label={`Delete sale ${row.invoice_number || ''}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
         </div>
@@ -380,13 +380,13 @@ function BuyersSection() {
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'contact_person', label: 'Contact', sortable: true, render: (row) => row.contact_person || '-' },
-    { key: 'phone_number', label: 'Phone', sortable: true, render: (row) => row.phone_number || '-' },
-    { key: 'email', label: 'Email', render: (row) => row.email || '-' },
-    { key: 'is_active', label: 'Active', render: (row) => <StatusBadge status={row.is_active} label={row.is_active ? 'Yes' : 'No'} /> },
-    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
+    { key: 'contact_person', label: 'Contact', sortable: true, render: (v, row) => row.contact_person || '-' },
+    { key: 'phone_number', label: 'Phone', sortable: true, render: (v, row) => row.phone_number || '-' },
+    { key: 'email', label: 'Email', render: (v, row) => row.email || '-' },
+    { key: 'is_active', label: 'Active', render: (v, row) => <StatusBadge status={row.is_active} label={row.is_active ? 'Yes' : 'No'} /> },
+    { key: 'created_at', label: 'Created', sortable: true, render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" aria-label={`Edit ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label={`Delete ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>

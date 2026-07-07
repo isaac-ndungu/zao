@@ -104,7 +104,7 @@ export default function Grade() {
                   { key: 'farmer_name', label: 'Farmer' },
                   { key: 'product_type', label: 'Product' },
                   { key: 'quantity_kg', label: 'Qty', render: (v, r) => v ? `${v} kg` : r.volume_litres ? `${r.volume_litres} L` : '-' },
-                  { key: 'date_delivered', label: 'Time', render: (v) => v ? new Date(v).toLocaleString() : '-' },
+                  { key: 'date_delivered', label: 'Time', render: (v, _r) => v ? new Date(v).toLocaleString() : '-' },
                 ]}
                 data={pendingDeliveries}
                 onRowClick={(row) => handleSelectDelivery(row)}

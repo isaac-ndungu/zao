@@ -282,13 +282,13 @@ export default function AccountantLoans() {
   const statuses = ['', 'PENDING', 'APPROVED', 'DISBURSED', 'COMPLETED', 'DEFAULTED', 'WRITTEN_OFF']
 
   const columns = [
-    { key: 'id', label: 'ID', render: (row) => row.id },
-    { key: 'farmer', label: 'Farmer', render: (l) => l.farmer_name || l.farmer?.full_name || `#${l.farmer}` },
-    { key: 'amount', label: 'Amount', render: (l) => formatKes(l.amount) },
-    { key: 'balance', label: 'Balance', render: (l) => formatKes(l.balance) },
-    { key: 'status', label: 'Status', render: (l) => <span className={`badge ${statusColors[l.status] || 'badge-default'}`}>{l.status}</span> },
-    { key: 'due_date', label: 'Due', render: (l) => l.due_date ? new Date(l.due_date).toLocaleDateString() : '-' },
-    { key: 'created_at', label: 'Created', render: (l) => l.created_at ? new Date(l.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (v, row) => row.id },
+    { key: 'farmer', label: 'Farmer', render: (v, l) => l.farmer_name || l.farmer?.full_name || `#${l.farmer}` },
+    { key: 'amount', label: 'Amount', render: (v, l) => formatKes(l.amount) },
+    { key: 'balance', label: 'Balance', render: (v, l) => formatKes(l.balance) },
+    { key: 'status', label: 'Status', render: (v, l) => <span className={`badge ${statusColors[l.status] || 'badge-default'}`}>{l.status}</span> },
+    { key: 'due_date', label: 'Due', render: (v, l) => l.due_date ? new Date(l.due_date).toLocaleDateString() : '-' },
+    { key: 'created_at', label: 'Created', render: (v, l) => l.created_at ? new Date(l.created_at).toLocaleDateString() : '-' },
   ]
 
   return (

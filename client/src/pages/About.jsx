@@ -12,7 +12,7 @@ export default function About() {
     <div className="bg-background text-on-background min-h-screen">
       <Navbar activeLink="/about" />
 
-      <main>
+      <main id="main-content">
         <section className="relative h-[80vh] flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img

@@ -38,25 +38,25 @@ export default function LegalDocuments() {
   }
 
   const columns = [
-    { key: 'slug', label: 'Slug', sortable: true, render: (r) => <code className="text-body-sm">{r.slug}</code> },
+    { key: 'slug', label: 'Slug', sortable: true, render: (_, r) => <code className="text-body-sm">{r.slug}</code> },
     { key: 'title', label: 'Title', sortable: true },
     {
       key: 'version', label: 'Version', sortable: true,
-      render: (r) => <span className="font-mono text-body-sm">v{r.version}</span>,
+      render: (_, r) => <span className="font-mono text-body-sm">v{r.version}</span>,
     },
     {
       key: 'is_active', label: 'Status', sortable: true,
-      render: (r) => <StatusBadge status={r.is_active ? 'success' : 'neutral'} label={r.is_active ? 'Active' : 'Draft'} />,
+      render: (_, r) => <StatusBadge status={r.is_active ? 'success' : 'neutral'} label={r.is_active ? 'Active' : 'Draft'} />,
     },
     {
       key: 'requires_acceptance', label: 'Acceptance',
-      render: (r) => r.requires_acceptance
+      render: (_, r) => r.requires_acceptance
         ? <StatusBadge status="warning" label="Required" />
         : <StatusBadge status="neutral" label="Not required" />,
     },
-    { key: 'published_at', label: 'Published', sortable: true, render: (r) => fmtDate(r.published_at) },
+    { key: 'published_at', label: 'Published', sortable: true, render: (_, r) => fmtDate(r.published_at) },
     {
-      key: 'actions', label: '', render: (r) => (
+      key: 'actions', label: '', render: (_, r) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button
             onClick={() => navigate(`/admin/legal/documents/${r.id}`)}

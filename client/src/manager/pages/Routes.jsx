@@ -70,10 +70,10 @@ export default function Routes() {
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'description', label: 'Description', render: (row) => row.description || '-' },
-    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
+    { key: 'description', label: 'Description', render: (v, row) => row.description || '-' },
+    { key: 'created_at', label: 'Created', sortable: true, render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button onClick={(e) => { e.stopPropagation(); setShowEdit(row) }} className="text-primary hover:text-primary/80" aria-label={`Edit ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label={`Delete ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>

@@ -207,18 +207,18 @@ export default function Farmers() {
     {
       key: 'is_active',
       label: 'Status',
-      render: (row) => <StatusBadge status={row.is_active} label={row.is_active ? 'Active' : 'Inactive'} />,
+      render: (v, row) => <StatusBadge status={row.is_active} label={row.is_active ? 'Active' : 'Inactive'} />,
     },
     {
       key: 'date_joined',
       label: 'Joined',
       sortable: true,
-      render: (row) => (row.date_joined ? new Date(row.date_joined).toLocaleDateString() : '-'),
+      render: (v, row) => (row.date_joined ? new Date(row.date_joined).toLocaleDateString() : '-'),
     },
     {
       key: 'actions',
       label: '',
-      render: (row) => (
+      render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button
             onClick={(e) => {

@@ -140,10 +140,10 @@ export default function ForFarmers() {
                 <table className="w-full text-left border-collapse min-w-[500px]">
                   <thead>
                     <tr className="bg-primary text-white">
-                      <th className="p-3 font-label-md text-label-md rounded-tl-xl">DATE</th>
-                      <th className="p-3 font-label-md text-label-md">PRODUCE</th>
-                      <th className="p-3 font-label-md text-label-md">QUANTITY</th>
-                      <th className="p-3 font-label-md text-label-md rounded-tr-xl">STATUS</th>
+                      <th scope="col" className="p-3 font-label-md text-label-md rounded-tl-xl">DATE</th>
+                      <th scope="col" className="p-3 font-label-md text-label-md">PRODUCE</th>
+                      <th scope="col" className="p-3 font-label-md text-label-md">QUANTITY</th>
+                      <th scope="col" className="p-3 font-label-md text-label-md rounded-tr-xl">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="font-data-mono-sm text-data-mono-sm">

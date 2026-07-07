@@ -101,15 +101,15 @@ export default function Loans() {
   const total = data?.count || 0
 
   const columns = [
-    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (row) => row.farmer_name || '-' },
-    { key: 'amount', label: 'Amount', sortable: true, render: (row) => row.amount ? `KES ${Number(row.amount).toLocaleString()}` : '-' },
-    { key: 'balance', label: 'Balance', sortable: true, render: (row) => row.balance != null ? `KES ${Number(row.balance).toLocaleString()}` : '-' },
-    { key: 'interest_rate', label: 'Interest', sortable: true, render: (row) => row.interest_rate ? `${row.interest_rate}%` : '-' },
-    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
-    { key: 'guarantors', label: 'Guarantors', render: (row) => Array.isArray(row.guarantors) ? row.guarantors.length : 0 },
-    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
+    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (v, row) => row.farmer_name || '-' },
+    { key: 'amount', label: 'Amount', sortable: true, render: (v, row) => row.amount ? `KES ${Number(row.amount).toLocaleString()}` : '-' },
+    { key: 'balance', label: 'Balance', sortable: true, render: (v, row) => row.balance != null ? `KES ${Number(row.balance).toLocaleString()}` : '-' },
+    { key: 'interest_rate', label: 'Interest', sortable: true, render: (v, row) => row.interest_rate ? `${row.interest_rate}%` : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (v, row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'guarantors', label: 'Guarantors', render: (v, row) => Array.isArray(row.guarantors) ? row.guarantors.length : 0 },
+    { key: 'created_at', label: 'Created', sortable: true, render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' && (
             <>

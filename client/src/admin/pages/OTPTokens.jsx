@@ -77,26 +77,26 @@ export default function OTPTokens() {
       key: 'user_email',
       label: 'User',
       sortable: true,
-      render: (r) => (
+      render: (_, r) => (
         <div>
           <span className="font-medium">{r.user_email || r.user?.email || r.user || '-'}</span>
           {r.user_id && <span className="block text-[10px] font-data-mono text-on-surface-variant">{r.user_id?.slice(0, 8)}...</span>}
         </div>
       ),
     },
-    { key: 'purpose', label: 'Purpose', sortable: true, render: (r) => <StatusBadge status={r.purpose?.toLowerCase() === 'login' ? 'active' : r.purpose?.toLowerCase() === 'password_reset' ? 'computing' : 'draft'} label={r.purpose?.replace(/_/g, ' ').toLowerCase() || '-'} /> },
-    { key: 'attempts', label: 'Attempts', sortable: true, render: (r) => <span className="font-data-mono">{r.attempts || 0}</span> },
+    { key: 'purpose', label: 'Purpose', sortable: true, render: (_, r) => <StatusBadge status={r.purpose?.toLowerCase() === 'login' ? 'active' : r.purpose?.toLowerCase() === 'password_reset' ? 'computing' : 'draft'} label={r.purpose?.replace(/_/g, ' ').toLowerCase() || '-'} /> },
+    { key: 'attempts', label: 'Attempts', sortable: true, render: (_, r) => <span className="font-data-mono">{r.attempts || 0}</span> },
     {
       key: 'expires_at',
       label: 'Expires',
       sortable: true,
-      render: (r) => {
+      render: (_, r) => {
         const expired = r.expires_at && new Date(r.expires_at) < new Date()
         return <span className={`font-data-mono ${expired ? 'text-error' : ''}`}>{r.expires_at ? new Date(r.expires_at).toLocaleString() : '-'}</span>
       },
     },
-    { key: 'is_used', label: 'Used', sortable: true, render: (r) => <StatusBadge status={r.is_used ? 'completed' : 'pending'} label={r.is_used ? 'Yes' : 'No'} /> },
-    { key: 'created_at', label: 'Created', sortable: true, render: (r) => <span className="text-on-surface-variant text-label-md">{r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</span> },
+    { key: 'is_used', label: 'Used', sortable: true, render: (_, r) => <StatusBadge status={r.is_used ? 'completed' : 'pending'} label={r.is_used ? 'Yes' : 'No'} /> },
+    { key: 'created_at', label: 'Created', sortable: true, render: (_, r) => <span className="text-on-surface-variant text-label-md">{r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</span> },
   ], [])
 
   if (error) {

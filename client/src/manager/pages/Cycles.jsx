@@ -66,14 +66,14 @@ export default function Cycles() {
 
   const columns = [
     { key: 'name', label: 'Name', sortable: true },
-    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
-    { key: 'start_date', label: 'Start', sortable: true, render: (row) => row.start_date ? new Date(row.start_date).toLocaleDateString() : '-' },
-    { key: 'end_date', label: 'End', sortable: true, render: (row) => row.end_date ? new Date(row.end_date).toLocaleDateString() : '-' },
-    { key: 'total_amount', label: 'Total', sortable: true, render: (row) => row.total_amount ? `KES ${Number(row.total_amount).toLocaleString()}` : '-' },
-    { key: 'farmer_count', label: 'Farmers', sortable: true, render: (row) => row.farmer_count ?? '-' },
-    { key: 'created_at', label: 'Created', sortable: true, render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (v, row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'start_date', label: 'Start', sortable: true, render: (v, row) => row.start_date ? new Date(row.start_date).toLocaleDateString() : '-' },
+    { key: 'end_date', label: 'End', sortable: true, render: (v, row) => row.end_date ? new Date(row.end_date).toLocaleDateString() : '-' },
+    { key: 'total_amount', label: 'Total', sortable: true, render: (v, row) => row.total_amount ? `KES ${Number(row.total_amount).toLocaleString()}` : '-' },
+    { key: 'farmer_count', label: 'Farmers', sortable: true, render: (v, row) => row.farmer_count ?? '-' },
+    { key: 'created_at', label: 'Created', sortable: true, render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' && (
             <button onClick={(e) => { e.stopPropagation(); setShowLock(row) }} className="text-warning hover:text-warning/80" aria-label={`Lock ${row.name}`}><span className="material-symbols-outlined text-[18px]" aria-hidden="true">lock</span></button>

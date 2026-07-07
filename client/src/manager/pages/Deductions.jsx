@@ -35,17 +35,17 @@ export default function Deductions() {
   }, [selectedId, items])
 
   const columns = [
-    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (row) => row.farmer_name || '-' },
+    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (v, row) => row.farmer_name || '-' },
     { key: 'deduction_type', label: 'Type', sortable: true },
-    { key: 'amount', label: 'Amount', sortable: true, render: (row) => row.amount ? `KES ${Number(row.amount).toLocaleString()}` : '-' },
-    { key: 'cycle_name', label: 'Cycle', sortable: true, render: (row) => row.cycle_name || '-' },
-    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
-    { key: 'loan_id', label: 'Related Loan', render: (row) => row.loan_id ? (
+    { key: 'amount', label: 'Amount', sortable: true, render: (v, row) => row.amount ? `KES ${Number(row.amount).toLocaleString()}` : '-' },
+    { key: 'cycle_name', label: 'Cycle', sortable: true, render: (v, row) => row.cycle_name || '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (v, row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'loan_id', label: 'Related Loan', render: (v, row) => row.loan_id ? (
       <button onClick={(e) => { e.stopPropagation(); navigate(`/manager/loans`) }} className="text-primary text-label-md hover:underline underline">
         {typeof row.loan_id === 'string' ? row.loan_id.slice(0, 8) : row.loan_id}
       </button>
     ) : '-' },
-    { key: 'created_at', label: 'Date', sortable: true, render: (v) => v ? new Date(v).toLocaleDateString() : '-' },
+    { key: 'created_at', label: 'Date', sortable: true, render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
   ]
 
   return (

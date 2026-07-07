@@ -53,20 +53,20 @@ export default function AccountantDeductions() {
   }
 
   const dedColumns = [
-    { key: 'id', label: 'ID', render: (row) => row.id },
-    { key: 'farmer', label: 'Farmer', render: (d) => d.farmer_name || d.farmer?.full_name || `#${d.farmer}` },
-    { key: 'deduction_type', label: 'Type', render: (d) => <span className={`badge ${deductionTypeColors[d.deduction_type] || 'badge-default'}`}>{d.deduction_type}</span> },
-    { key: 'amount', label: 'Amount', render: (d) => formatKes(d.amount) },
-    { key: 'description', label: 'Description', render: (d) => d.description || '-' },
-    { key: 'created_at', label: 'Date', render: (d) => d.created_at ? new Date(d.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (v, row) => row.id },
+    { key: 'farmer', label: 'Farmer', render: (v, d) => d.farmer_name || d.farmer?.full_name || `#${d.farmer}` },
+    { key: 'deduction_type', label: 'Type', render: (v, d) => <span className={`badge ${deductionTypeColors[d.deduction_type] || 'badge-default'}`}>{d.deduction_type}</span> },
+    { key: 'amount', label: 'Amount', render: (v, d) => formatKes(d.amount) },
+    { key: 'description', label: 'Description', render: (v, d) => d.description || '-' },
+    { key: 'created_at', label: 'Date', render: (v, d) => d.created_at ? new Date(d.created_at).toLocaleDateString() : '-' },
   ]
 
   const creditColumns = [
-    { key: 'id', label: 'ID', render: (row) => row.id },
-    { key: 'farmer', label: 'Farmer', render: (c) => c.farmer_name || c.farmer?.full_name || `#${c.farmer}` },
-    { key: 'amount', label: 'Amount', render: (c) => formatKes(c.amount) },
-    { key: 'description', label: 'Description', render: (c) => c.description || '-' },
-    { key: 'created_at', label: 'Date', render: (c) => c.created_at ? new Date(c.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (v, row) => row.id },
+    { key: 'farmer', label: 'Farmer', render: (v, c) => c.farmer_name || c.farmer?.full_name || `#${c.farmer}` },
+    { key: 'amount', label: 'Amount', render: (v, c) => formatKes(c.amount) },
+    { key: 'description', label: 'Description', render: (v, c) => c.description || '-' },
+    { key: 'created_at', label: 'Date', render: (v, c) => c.created_at ? new Date(c.created_at).toLocaleDateString() : '-' },
   ]
 
   return (

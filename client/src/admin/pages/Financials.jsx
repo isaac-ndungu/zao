@@ -186,21 +186,21 @@ export default function Financials() {
   }
 
   const cycleColumns = useMemo(() => [
-    { key: 'name', label: 'Name', sortable: true, render: (r) => <span className="font-medium">{r.name}</span> },
-    { key: 'status', label: 'Status', render: (r) => <StatusBadge status={cycleStatusBadge[r.status] || 'draft'} label={r.status} /> },
-    { key: 'start_date', label: 'Start', render: (r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : '-' },
-    { key: 'end_date', label: 'End', render: (r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : '-' },
-    { key: 'total_levy', label: 'Levy', render: (r) => <span className="font-data-mono">KES {r.total_levy?.toLocaleString() || '0'}</span> },
-    { key: 'total_cooperative_fee', label: 'Coop Fee', render: (r) => <span className="font-data-mono">KES {r.total_cooperative_fee?.toLocaleString() || '0'}</span> },
+    { key: 'name', label: 'Name', sortable: true, render: (_, r) => <span className="font-medium">{r.name}</span> },
+    { key: 'status', label: 'Status', render: (_, r) => <StatusBadge status={cycleStatusBadge[r.status] || 'draft'} label={r.status} /> },
+    { key: 'start_date', label: 'Start', render: (_, r) => r.start_date ? new Date(r.start_date).toLocaleDateString() : '-' },
+    { key: 'end_date', label: 'End', render: (_, r) => r.end_date ? new Date(r.end_date).toLocaleDateString() : '-' },
+    { key: 'total_levy', label: 'Levy', render: (_, r) => <span className="font-data-mono">KES {r.total_levy?.toLocaleString() || '0'}</span> },
+    { key: 'total_cooperative_fee', label: 'Coop Fee', render: (_, r) => <span className="font-data-mono">KES {r.total_cooperative_fee?.toLocaleString() || '0'}</span> },
   ], [])
 
   const batchColumns = useMemo(() => [
-    { key: 'id', label: 'Batch ID', render: (r) => <span className="font-data-mono text-primary">{r.id?.slice(0, 8)}...</span> },
-    { key: 'status', label: 'Status', render: (r) => <StatusBadge status={batchStatusBadge[r.status] || 'draft'} label={r.status} /> },
-    { key: 'total_amount', label: 'Amount', render: (r) => <span className="font-data-mono">KES {r.total_amount?.toLocaleString() || '0'}</span> },
-    { key: 'total_transactions', label: 'Transactions', render: (r) => r.total_transactions || 0 },
-    { key: 'successful_count', label: 'Success', render: (r) => <span className="text-primary font-data-mono">{r.successful_count || 0}</span> },
-    { key: 'failed_count', label: 'Failed', render: (r) => <span className="text-error font-data-mono">{r.failed_count || 0}</span> },
+    { key: 'id', label: 'Batch ID', render: (_, r) => <span className="font-data-mono text-primary">{r.id?.slice(0, 8)}...</span> },
+    { key: 'status', label: 'Status', render: (_, r) => <StatusBadge status={batchStatusBadge[r.status] || 'draft'} label={r.status} /> },
+    { key: 'total_amount', label: 'Amount', render: (_, r) => <span className="font-data-mono">KES {r.total_amount?.toLocaleString() || '0'}</span> },
+    { key: 'total_transactions', label: 'Transactions', render: (_, r) => r.total_transactions || 0 },
+    { key: 'successful_count', label: 'Success', render: (_, r) => <span className="text-primary font-data-mono">{r.successful_count || 0}</span> },
+    { key: 'failed_count', label: 'Failed', render: (_, r) => <span className="text-error font-data-mono">{r.failed_count || 0}</span> },
   ], [])
 
   if (error) {

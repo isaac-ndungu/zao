@@ -62,12 +62,12 @@ export default function AuditorAuditLog() {
   }
 
   const columns = [
-    { key: 'created_at', label: 'Timestamp', sortable: true, render: (value) => value ? new Date(value).toLocaleString() : '-' },
+    { key: 'created_at', label: 'Timestamp', sortable: true, render: (v, _r) => v ? new Date(v).toLocaleString() : '-' },
     { key: 'actor', label: 'Actor', render: (_, row) => row.actor_name || row.actor?.email || `#${row.actor}` },
     { key: 'action', label: 'Action', sortable: true },
     { key: 'resource_type', label: 'Resource', sortable: true },
-    { key: 'resource_id', label: 'Resource ID', render: (value) => value ? String(value).slice(0, 8) + '...' : '-' },
-    { key: 'details', label: 'Details', render: (value) => value ? JSON.stringify(value).slice(0, 60) + (JSON.stringify(value).length > 60 ? '...' : '') : '-' },
+    { key: 'resource_id', label: 'Resource ID', render: (v, _r) => v ? String(v).slice(0, 8) + '...' : '-' },
+    { key: 'details', label: 'Details', render: (v, _r) => v ? JSON.stringify(v).slice(0, 60) + (JSON.stringify(v).length > 60 ? '...' : '') : '-' },
   ]
 
   return (

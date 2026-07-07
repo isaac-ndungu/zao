@@ -53,7 +53,7 @@ export default function Home() {
     <div className="bg-background min-h-screen">
       <Navbar activeLink="/" />
 
-      <main>
+      <main id="main-content">
         <section className="relative min-h-[85vh] flex items-center justify-center text-center px-container-margin overflow-hidden">
           <div
             className="absolute inset-0 hero-gradient"

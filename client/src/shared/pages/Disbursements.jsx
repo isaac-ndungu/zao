@@ -299,27 +299,27 @@ export default function Disbursements() {
   const columns = [
     {
       key: 'id', label: 'Batch Ref', sortable: false,
-      render: (row) => <span className="font-mono text-sm">{row.id?.slice(0, 8) || '-'}</span>,
+      render: (v, row) => <span className="font-mono text-sm">{row.id?.slice(0, 8) || '-'}</span>,
     },
     {
       key: 'payment_cycle_name', label: 'Cycle', sortable: false,
-      render: (row) => row.payment_cycle_name || '-',
+      render: (v, row) => row.payment_cycle_name || '-',
     },
     {
       key: 'total_amount', label: 'Total', sortable: true,
-      render: (row) => formatKes(row.total_amount),
+      render: (v, row) => formatKes(row.total_amount),
     },
     {
       key: 'transaction_count', label: 'Farmers', sortable: false,
-      render: (row) => row.transaction_count ?? '-',
+      render: (v, row) => row.transaction_count ?? '-',
     },
     {
       key: 'status', label: 'Status', sortable: true,
-      render: (row) => <StatusBadge status={statusColor(row.status)} label={row.status} />,
+      render: (v, row) => <StatusBadge status={statusColor(row.status)} label={row.status} />,
     },
     {
       key: 'created_at', label: 'Created', sortable: true,
-      render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-',
+      render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-',
     },
   ]
 

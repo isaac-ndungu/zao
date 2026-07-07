@@ -228,17 +228,17 @@ export default function FarmerLedger() {
   const regionCount = analytics?.data?.by_county ? Object.keys(analytics.data.by_county).length : 0
 
   const columns = useMemo(() => [
-    { key: 'name', label: 'Name', sortable: true, render: (r) => <span className="font-medium">{r.first_name} {r.last_name}</span> },
-    { key: 'email', label: 'Email', sortable: true, render: (r) => <span className="text-on-surface-variant">{r.email}</span> },
+    { key: 'name', label: 'Name', sortable: true, render: (_, r) => <span className="font-medium">{r.first_name} {r.last_name}</span> },
+    { key: 'email', label: 'Email', sortable: true, render: (_, r) => <span className="text-on-surface-variant">{r.email}</span> },
     { key: 'phone_number', label: 'Phone', sortable: true },
     { key: 'county', label: 'County', sortable: true },
-    { key: 'id_number', label: 'ID No.', sortable: false, render: (r) => (
+    { key: 'id_number', label: 'ID No.', sortable: false, render: (_, r) => (
       <span title={r.id_number} className="max-w-[120px] truncate inline-block align-middle">
         {r.id_number}
       </span>
     ) },
-    { key: 'is_active', label: 'Status', render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
-    { key: 'date_joined', label: 'Joined', sortable: true, render: (r) => r.date_joined ? new Date(r.date_joined).toLocaleDateString() : '-' },
+    { key: 'is_active', label: 'Status', render: (_, r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
+    { key: 'date_joined', label: 'Joined', sortable: true, render: (_, r) => r.date_joined ? new Date(r.date_joined).toLocaleDateString() : '-' },
   ], [])
 
   if (error) {

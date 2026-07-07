@@ -97,14 +97,14 @@ export default function ManagerUsers() {
   ]
 
   const columns = [
-    { key: 'first_name', label: 'Name', sortable: true, render: (row) => `${row.first_name} ${row.last_name}` },
+    { key: 'first_name', label: 'Name', sortable: true, render: (v, row) => `${row.first_name} ${row.last_name}` },
     { key: 'email', label: 'Email' },
     { key: 'phone_number', label: 'Phone' },
-    { key: 'role', label: 'Role', render: (row) => <StatusBadge status={row.role} label={row.role} /> },
-    { key: 'is_active', label: 'Status', render: (row) => <StatusBadge status={row.is_active ? 'active' : 'inactive'} label={row.is_active ? 'Active' : 'Inactive'} /> },
-    { key: 'date_joined', label: 'Joined', render: (row) => row.date_joined ? new Date(row.date_joined).toLocaleDateString() : '-' },
+    { key: 'role', label: 'Role', render: (v, row) => <StatusBadge status={row.role} label={row.role} /> },
+    { key: 'is_active', label: 'Status', render: (v, row) => <StatusBadge status={row.is_active ? 'active' : 'inactive'} label={row.is_active ? 'Active' : 'Inactive'} /> },
+    { key: 'date_joined', label: 'Joined', render: (v, row) => row.date_joined ? new Date(row.date_joined).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button
             onClick={(e) => { e.stopPropagation(); handleToggleActive(row) }}

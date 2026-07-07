@@ -274,7 +274,7 @@ export default function UserManagement() {
   }
 
   const columns = useMemo(() => [
-    { key: 'name', label: 'User', sortable: true, render: (r) => (
+    { key: 'name', label: 'User', sortable: true, render: (_, r) => (
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs">
           {r.first_name?.[0]}{r.last_name?.[0]}
@@ -285,14 +285,14 @@ export default function UserManagement() {
         </div>
       </div>
     )},
-    { key: 'phone_number', label: 'Phone', render: (r) => <span className="text-on-surface-variant">{r.phone_number || '-'}</span> },
-    { key: 'role', label: 'Role', render: (r) => {
+    { key: 'phone_number', label: 'Phone', render: (_, r) => <span className="text-on-surface-variant">{r.phone_number || '-'}</span> },
+    { key: 'role', label: 'Role', render: (_, r) => {
       const m = roleBadgeMap[r.role] || { status: 'draft', label: r.role }
       return <StatusBadge status={m.status} label={m.label} />
     }},
-    { key: 'is_active', label: 'Status', render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
-    { key: 'two_fa_enabled', label: '2FA', render: (r) => <StatusBadge status={r.two_fa_enabled ? 'true' : 'false'} label={r.two_fa_enabled ? 'On' : 'Off'} /> },
-    { key: 'date_joined', label: 'Joined', sortable: true, render: (r) => r.date_joined ? new Date(r.date_joined).toLocaleDateString() : '-' },
+    { key: 'is_active', label: 'Status', render: (_, r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} label={r.is_active ? 'Active' : 'Inactive'} /> },
+    { key: 'two_fa_enabled', label: '2FA', render: (_, r) => <StatusBadge status={r.two_fa_enabled ? 'true' : 'false'} label={r.two_fa_enabled ? 'On' : 'Off'} /> },
+    { key: 'date_joined', label: 'Joined', sortable: true, render: (_, r) => r.date_joined ? new Date(r.date_joined).toLocaleDateString() : '-' },
   ], [])
 
   const handleRevokeInvite = async (invite) => {
