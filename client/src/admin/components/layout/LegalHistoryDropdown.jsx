@@ -41,7 +41,7 @@ export default function LegalHistoryDropdown() {
         onClick={() => setOpen((o) => !o)}
         className="relative p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors hidden sm:block"
       >
-        <span className="material-symbols-outlined">history_edu</span>
+        <span className="material-symbols-outlined" aria-hidden="true">history_edu</span>
       </button>
 
       {open && (

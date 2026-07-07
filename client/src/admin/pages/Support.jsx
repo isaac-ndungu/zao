@@ -20,7 +20,7 @@ export default function Support() {
             <details key={i} className="group border border-outline-variant rounded-lg overflow-hidden">
               <summary className="flex items-center justify-between px-4 py-3 cursor-pointer bg-surface-container hover:bg-surface-container-high transition-colors">
                 <span className="font-body-md font-medium text-on-surface">{faq.q}</span>
-                <span className="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform">expand_more</span>
+                <span className="material-symbols-outlined text-on-surface-variant group-open:rotate-180 transition-transform" aria-hidden="true">expand_more</span>
               </summary>
               <div className="px-4 py-3 bg-surface-container-lowest">
                 <p className="text-body-md text-on-surface-variant">{faq.a}</p>
@@ -37,11 +37,11 @@ export default function Support() {
         </p>
         <div className="flex gap-4">
           <a href="mailto:support@zao.ag" className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-            <span className="material-symbols-outlined text-[16px]">mail</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">mail</span>
             Email Support
           </a>
           <a href="/api/docs/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-[16px]">description</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">description</span>
             View Docs
           </a>
         </div>

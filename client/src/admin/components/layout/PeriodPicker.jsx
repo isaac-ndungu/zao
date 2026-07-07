@@ -18,6 +18,8 @@ export default function PeriodPicker() {
           <button
             key={p.value}
             onClick={() => setPeriod(p.value)}
+            aria-label={`Select ${p.label} period`}
+            aria-pressed={period === p.value}
             className={`px-3 py-1.5 text-label-md rounded-md transition-colors ${
               period === p.value
                 ? 'bg-white shadow-sm text-on-surface font-bold'

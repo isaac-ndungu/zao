@@ -35,7 +35,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
           <thead>
             <tr className="border-b border-outline-variant bg-surface-container">
               {onSelectionChange && (
-                <th className="w-10 px-4 py-3 text-left">
+                <th scope="col" className="w-10 px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -71,7 +71,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                   </span>
                 </th>
               ))}
-              {rowActions && <th className="w-16 px-4 py-3" />}
+              {rowActions && <th scope="col" className="w-16 px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
@@ -112,7 +112,7 @@ export default function DataTable({ columns, data = [], selectedIds = [], onSele
                 )}
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3 text-body-md text-on-surface">
-                    {col.render ? col.render(row) : row?.[col.key]}
+                    {col.render ? col.render(row[col.key], row) : row?.[col.key]}
                   </td>
                 ))}
                 {rowActions && (

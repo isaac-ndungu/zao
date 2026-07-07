@@ -14,7 +14,7 @@ export default function ChartCard({ title, subtitle, action, children, empty, em
       )}
       {empty ? (
         <div className="flex flex-col items-center justify-center py-12 text-on-surface-variant">
-          <span className="material-symbols-outlined text-[40px] mb-2 text-outline-variant">bar_chart</span>
+          <span className="material-symbols-outlined text-[40px] mb-2 text-outline-variant" aria-hidden="true">bar_chart</span>
           <p className="text-body-md">{emptyMessage}</p>
         </div>
       ) : (

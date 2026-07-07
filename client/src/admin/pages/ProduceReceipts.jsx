@@ -299,7 +299,7 @@ export default function ProduceReceipts() {
           <p className="text-on-surface-variant font-body-md">Track and manage all produce deliveries across cooperatives.</p>
         </div>
         <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-label-md font-bold hover:bg-primary/90 transition-colors">
-          <span className="material-symbols-outlined text-[18px]">add</span>
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>
           New Delivery
         </button>
       </header>
@@ -342,14 +342,14 @@ export default function ProduceReceipts() {
         emptyMessage="No deliveries found."
         rowActions={(delivery) => (
           <div className="flex gap-0.5">
-            <button onClick={() => handleView(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors">
-              <span className="material-symbols-outlined text-[18px]">visibility</span>
+            <button onClick={() => handleView(delivery)} aria-label="View delivery details" className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">visibility</span>
             </button>
-            <button onClick={() => { setPanelOpen(false); setPanelDelivery(null); openForceStatus(delivery) }} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
-              <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
+            <button onClick={() => { setPanelOpen(false); setPanelDelivery(null); openForceStatus(delivery) }} aria-label="Force status" className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Force Status">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">swap_horiz</span>
             </button>
-            <button onClick={() => openAssignGrade(delivery)} className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Assign Grade">
-              <span className="material-symbols-outlined text-[18px]">rate_review</span>
+            <button onClick={() => openAssignGrade(delivery)} aria-label="Assign grade" className="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Assign Grade">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">rate_review</span>
             </button>
           </div>
         )}
@@ -361,14 +361,16 @@ export default function ProduceReceipts() {
 
       {/* Force Status Dropdown Modal */}
       {statusDelivery && (
-        <div className="fixed inset-0 z-[65] flex items-center justify-center">
+        <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30" onClick={() => { setStatusDelivery(null); setStatusTarget('') }} />
-          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface mb-1">Force Status Change</h3>
+          <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="force-status-title">
+            <h3 id="force-status-title" className="font-headline-sm text-headline-sm text-on-surface mb-1">Force Status Change</h3>
             <p className="text-label-md text-on-surface-variant mb-4">
               Delivery: <span className="font-data-mono">{statusDelivery.batch_id}</span>
             </p>
+            <label htmlFor="force-status-select" className="sr-only">Select new status</label>
             <select
+              id="force-status-select"
               value={statusTarget}
               onChange={(e) => setStatusTarget(e.target.value)}
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface mb-4"
@@ -517,7 +519,7 @@ export default function ProduceReceipts() {
           <div className="space-y-4">
             <div className="flex items-center gap-4 mb-4">
               <div className="p-2 rounded-lg bg-primary/5 text-primary">
-                <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+                <span className="material-symbols-outlined text-[24px]" aria-hidden="true">receipt_long</span>
               </div>
               <div>
                 <h4 className="font-headline-sm text-headline-sm text-on-surface">{panelDelivery.batch_id}</h4>

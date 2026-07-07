@@ -132,7 +132,7 @@ export default function AuditTrail() {
           <TableSkeleton />
         ) : logs.length === 0 ? (
           <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">history</span>
+            <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">history</span>
             <p className="text-body-md text-on-surface-variant">No audit log entries found.</p>
           </div>
         ) : (

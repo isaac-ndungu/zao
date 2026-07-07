@@ -35,7 +35,7 @@ function StatusIndicator({ ok, label }) {
 function MigrationItem({ name }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-surface-container/70 border border-outline-variant/20">
-      <span className="material-symbols-outlined text-[16px] text-on-surface-variant">database</span>
+      <span className="material-symbols-outlined text-[16px] text-on-surface-variant" aria-hidden="true">database</span>
       <code className="text-[11px] font-mono text-on-surface-variant truncate">{name}</code>
     </div>
   )
@@ -112,7 +112,7 @@ export default function HealthMonitor() {
     return (
       <div className="bg-error-container/30 border border-error-container/40 text-error p-4 rounded-2xl">
         <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-xl">error</span>
+          <span className="material-symbols-outlined text-xl" aria-hidden="true">error</span>
           <p className="font-medium">Failed to load health data: {error}</p>
         </div>
       </div>
@@ -129,6 +129,8 @@ export default function HealthMonitor() {
             <span className="text-sm text-on-surface-variant">Auto‑refresh</span>
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
+              aria-label={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
+              aria-pressed={autoRefresh}
               className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
                 autoRefresh ? 'bg-primary' : 'bg-surface-container-high'
               }`}
@@ -171,7 +173,7 @@ export default function HealthMonitor() {
           {health?.worker_count > 0 ? (
             <div className="flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10">
               <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-xl">engineering</span>
+                <span className="material-symbols-outlined text-primary text-xl" aria-hidden="true">engineering</span>
               </div>
               <div>
                 <p className="text-2xl font-bold text-on-surface">{health.worker_count}</p>
@@ -206,7 +208,7 @@ export default function HealthMonitor() {
                 </div>
               ) : (
                 <div className="p-4 bg-success-container/10 border border-success/20 rounded-xl flex items-center gap-3">
-                  <span className="material-symbols-outlined text-success text-xl">check_circle</span>
+                  <span className="material-symbols-outlined text-success text-xl" aria-hidden="true">check_circle</span>
                   <p className="text-sm font-medium text-success">All migrations are up to date.</p>
                 </div>
               )}

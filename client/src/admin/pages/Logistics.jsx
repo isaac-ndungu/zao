@@ -151,7 +151,7 @@ export default function Logistics() {
         </>
       ) : view === 'operations' && !ops ? (
         <div className="text-center py-12 text-on-surface-variant">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">local_shipping</span>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">local_shipping</span>
           <p>No operations data available for the selected period.</p>
         </div>
       ) : (

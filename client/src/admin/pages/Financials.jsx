@@ -214,7 +214,7 @@ export default function Financials() {
           <h2 className="font-headline-lg text-display-md text-primary">Financials</h2>
           {tab === 'cycles' && (
             <button onClick={() => setCreateOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
-              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">add</span>
               New Cycle
             </button>
           )}
@@ -277,7 +277,7 @@ export default function Financials() {
 
           {!fin && !loading && deductionsPie.length === 0 && payoutLineData.length === 0 && (
             <div className="text-center py-12 text-on-surface-variant">
-              <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">payments</span>
+              <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">payments</span>
               <p>No financial data available for the selected period.</p>
             </div>
           )}
@@ -398,12 +398,12 @@ export default function Financials() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b border-outline-variant bg-surface-container">
-                          <th className="px-3 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase">Cycle</th>
-                          <th className="px-3 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase">Status</th>
-                          <th className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Comp.</th>
-                          <th className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Approval</th>
-                          <th className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Disburse</th>
-                          <th className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Total</th>
+                          <th scope="col" className="px-3 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase">Cycle</th>
+                          <th scope="col" className="px-3 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase">Status</th>
+                          <th scope="col" className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Comp.</th>
+                          <th scope="col" className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Approval</th>
+                          <th scope="col" className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Disburse</th>
+                          <th scope="col" className="px-3 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase">Total</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -425,7 +425,7 @@ export default function Financials() {
 
               {(!effData?.data?.cycles || effData.data.cycles.length === 0) && (
                 <div className="text-center py-12 text-on-surface-variant">
-                  <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">timer</span>
+                  <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">timer</span>
                   <p>No payment efficiency data for the selected period.</p>
                 </div>
               )}

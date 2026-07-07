@@ -61,17 +61,17 @@ export default function LegalDocuments() {
           <button
             onClick={() => navigate(`/admin/legal/documents/${r.id}`)}
             className="text-primary hover:text-primary/80"
-            title="Edit"
+            aria-label="Edit document"
           >
-            <span className="material-symbols-outlined text-[18px]">edit</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span>
           </button>
           <button
             onClick={() => handleDelete(r.id)}
             disabled={deletingId === r.id}
             className="text-error hover:text-error/80 disabled:opacity-50"
-            title="Delete version"
+            aria-label="Delete version"
           >
-            <span className="material-symbols-outlined text-[18px]">delete</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
           </button>
         </div>
       ),
@@ -89,7 +89,7 @@ export default function LegalDocuments() {
           onClick={() => navigate('/admin/legal/documents/new')}
           className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
         >
-          <span className="material-symbols-outlined text-[18px]">add</span>New document
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>New document
         </button>
       </header>
 
@@ -99,7 +99,7 @@ export default function LegalDocuments() {
         <ErrorState message={error} action={{ label: 'Retry', onClick: refetch }} />
       ) : docs.length === 0 ? (
         <div className="text-center py-16 bg-surface-container-lowest border border-outline-variant rounded-xl">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">policy</span>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">policy</span>
           <p className="text-on-surface-variant">No legal documents yet. The privacy policy and terms of service are seeded automatically on deploy.</p>
         </div>
       ) : (

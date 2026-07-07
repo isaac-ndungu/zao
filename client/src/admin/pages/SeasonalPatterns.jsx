@@ -82,7 +82,7 @@ export default function SeasonalPatterns() {
         />
       ) : (
         <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest border border-outline-variant rounded-xl">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">calendar_month</span>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">calendar_month</span>
           <p>No seasonal data available for the selected period.</p>
         </div>
       )}

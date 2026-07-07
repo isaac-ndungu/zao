@@ -118,12 +118,12 @@ export default function LegalAcceptances() {
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-surface-container border-b border-outline-variant">
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">User</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Document</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Version</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Accepted at</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">IP</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">User agent</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">User</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Document</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Version</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Accepted at</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">IP</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">User agent</th>
               </tr>
             </thead>
             <tbody>

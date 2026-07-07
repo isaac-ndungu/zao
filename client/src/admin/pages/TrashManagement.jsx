@@ -245,7 +245,7 @@ export default function TrashManagement() {
                       : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest'
                 }`}
               >
-                {icon && <span className="material-symbols-outlined text-[14px]">{icon}</span>}
+                {icon && <span className="material-symbols-outlined text-[14px]" aria-hidden="true">{icon}</span>}
                 <span>{label}</span>
                 <span className={`ml-0.5 min-w-[14px] text-center ${activeFilter === key ? 'text-on-primary' : count > 0 ? '' : 'text-outline'}`}>
                   {count}
@@ -256,8 +256,10 @@ export default function TrashManagement() {
 
           <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <div className="relative flex-1 max-w-sm">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-outline">search</span>
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-outline" aria-hidden="true">search</span>
+              <label htmlFor="trash-search" className="sr-only">Search across loaded items</label>
               <input
+                id="trash-search"
                 type="text"
                 placeholder="Search across loaded items..."
                 value={searchQuery}
@@ -272,9 +274,9 @@ export default function TrashManagement() {
               <button
                 onClick={() => { const p = new URLSearchParams(); p.set('export', 'csv'); window.open(`/api/admin/bin/?${p}`, '_blank') }}
                 className="flex items-center gap-1.5 px-3 py-2 text-label-md font-bold text-on-surface-variant hover:text-primary transition-colors"
-                title="Export CSV"
+                aria-label="Export CSV"
               >
-                <span className="material-symbols-outlined text-[18px]">download</span>
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
                 <span className="hidden sm:inline">Export</span>
               </button>
             </div>
@@ -283,12 +285,12 @@ export default function TrashManagement() {
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
             {!activeFilter && totalTrashed > 0 ? (
               <div className="text-center py-12">
-                <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">filter_alt</span>
+                <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">filter_alt</span>
                 <p className="text-body-md text-on-surface-variant">Click a filter above to view trashed items.</p>
               </div>
             ) : totalTrashed === 0 && !activeFilter ? (
               <div className="text-center py-12">
-                <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">delete_sweep</span>
+                <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">delete_sweep</span>
                 <p className="text-body-md text-on-surface-variant">Trash is empty. No soft-deleted records.</p>
               </div>
             ) : filteredItems.length === 0 && Object.keys(loading).some(k => loading[k]) ? (
@@ -306,7 +308,7 @@ export default function TrashManagement() {
               </div>
             ) : filteredItems.length === 0 ? (
               <div className="text-center py-12">
-                <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">search_off</span>
+                <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">search_off</span>
                 <p className="text-body-md text-on-surface-variant">No items match your search or filter.</p>
               </div>
             ) : (
@@ -328,7 +330,7 @@ export default function TrashManagement() {
                   return (
                     <div key={item.id} className="flex items-center justify-between px-6 py-3 hover:bg-surface-container transition-colors">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className={`material-symbols-outlined text-[18px] shrink-0 ${activeFilter === section.key ? 'text-primary' : 'text-on-surface-variant'}`}>
+                        <span className={`material-symbols-outlined text-[18px] shrink-0 ${activeFilter === section.key ? 'text-primary' : 'text-on-surface-variant'}`} aria-hidden="true">
                           {section.icon}
                         </span>
                         <div className="min-w-0 flex-1">
@@ -362,7 +364,7 @@ export default function TrashManagement() {
                           className="p-1.5 rounded-lg bg-primary-container text-primary hover:bg-primary-fixed transition-colors disabled:opacity-50"
                           title="Restore"
                         >
-                          {actionLoadingId === item.id ? <span className="material-symbols-outlined text-[16px] animate-spin">sync</span> : <span className="material-symbols-outlined text-[16px]">restore</span>}
+                          {actionLoadingId === item.id ? <span className="material-symbols-outlined text-[16px] animate-spin" aria-hidden="true">sync</span> : <span className="material-symbols-outlined text-[16px]" aria-hidden="true">restore</span>}
                         </button>
                         {section.purgePrefix && (
                           <button
@@ -371,7 +373,7 @@ export default function TrashManagement() {
                             className="p-1.5 rounded-lg bg-error-container text-error hover:bg-error/10 transition-colors disabled:opacity-50"
                             title="Purge"
                           >
-                            {actionLoadingId === item.id ? <span className="material-symbols-outlined text-[16px] animate-spin">sync</span> : <span className="material-symbols-outlined text-[16px]">delete_forever</span>}
+                            {actionLoadingId === item.id ? <span className="material-symbols-outlined text-[16px] animate-spin" aria-hidden="true">sync</span> : <span className="material-symbols-outlined text-[16px]" aria-hidden="true">delete_forever</span>}
                           </button>
                         )}
                       </div>

@@ -468,11 +468,11 @@ export default function UserManagement() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-outline-variant">
-                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Email</th>
-                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Status</th>
-                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Role</th>
-                    <th className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Created</th>
-                    <th className="text-right px-4 py-3 text-label-md font-bold text-on-surface-variant">Actions</th>
+                    <th scope="col" className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Email</th>
+                    <th scope="col" className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Status</th>
+                    <th scope="col" className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Role</th>
+                    <th scope="col" className="text-left px-4 py-3 text-label-md font-bold text-on-surface-variant">Created</th>
+                    <th scope="col" className="text-right px-4 py-3 text-label-md font-bold text-on-surface-variant">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/50">

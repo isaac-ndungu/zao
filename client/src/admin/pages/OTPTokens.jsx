@@ -142,9 +142,9 @@ export default function OTPTokens() {
                   onClick={() => handleInvalidateAll(row.user_id)}
                   disabled={actionLoading && invalidateUserId === row.user_id}
                   className="p-1.5 rounded-lg hover:bg-error-container text-error transition-colors"
-                  title="Invalidate All"
+                  aria-label="Invalidate all tokens for this user"
                 >
-                  <span className="material-symbols-outlined text-[18px]">block</span>
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">block</span>
                 </button>
               )}
             </div>

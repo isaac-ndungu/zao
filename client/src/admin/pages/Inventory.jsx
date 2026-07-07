@@ -115,7 +115,7 @@ export default function Inventory() {
 
       {!production && (
         <div className="text-center py-12 text-on-surface-variant">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">inventory_2</span>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">inventory_2</span>
           <p>No inventory data available for the selected period.</p>
         </div>
       )}

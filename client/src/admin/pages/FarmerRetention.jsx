@@ -38,7 +38,7 @@ export default function FarmerRetention() {
       {trend && (
         <div className="mb-6">
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${trendConfig[trend]?.bg || 'bg-surface-container'}`}>
-            <span className={`material-symbols-outlined ${trendConfig[trend]?.color || 'text-on-surface-variant'}`}>{trendConfig[trend]?.icon || 'help'}</span>
+            <span className={`material-symbols-outlined ${trendConfig[trend]?.color || 'text-on-surface-variant'}`} aria-hidden="true">{trendConfig[trend]?.icon || 'help'}</span>
             <span className={`font-bold text-label-md ${trendConfig[trend]?.color || 'text-on-surface-variant'}`}>
               {trendConfig[trend]?.label || trend} — {trend === 'STABLE' ? 'Churn rate under 1%. Healthy cohort.' : trend === 'DECLINING' ? 'Churn rate between 1-3% requires attention.' : 'Churn rate above 3% requires immediate action.'}
             </span>
@@ -82,7 +82,7 @@ export default function FarmerRetention() {
         </>
       ) : (
         <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest border border-outline-variant rounded-xl">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">group_off</span>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">group_off</span>
           <p>No retention data available for the selected period.</p>
         </div>
       )}
