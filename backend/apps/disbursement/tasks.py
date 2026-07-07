@@ -9,10 +9,10 @@ from django.db import transaction
 from django.db.models import Case, F, When
 from django.db.models import IntegerField
 from django.db.models.functions import Greatest
-from django.core.mail import send_mail
 from django.utils import timezone
 
 from apps.base.constants import UserRole
+from apps.notifications.email import send_stuck_payments_alert
 from apps.payment_engine.models import FarmerPayment, PaymentCycle
 
 from .models import DisbursementBatch, DisbursementTransaction
@@ -403,8 +403,6 @@ def reconcile_stuck_transactions():
 def _send_stuck_alerts(stuck_by_coop: dict[str, list[DisbursementTransaction]]) -> None:
     from apps.auth_api.models import User
 
-    from_email = settings.DEFAULT_FROM_EMAIL
-
     for coop_id, txns in stuck_by_coop.items():
         if not txns:
             continue
@@ -423,24 +421,7 @@ def _send_stuck_alerts(stuck_by_coop: dict[str, list[DisbursementTransaction]]) 
         if not recipient_emails:
             continue
 
-        details = '\n'.join(
-            f'  • {txn.id} — {txn.recipient_name or "Unknown"} — '
-            f'KES {txn.amount} — {txn.status}'
-            for txn in txns
-        )
-
-        send_mail(
-            f'[ACTION REQUIRED] {len(txns)} Stuck Payment(s) Need Attention',
-            (
-                f'The following {len(txns)} disbursement transaction(s) were found stuck '
-                f'in the reconciliation check and have been processed:\n\n'
-                f'{details}\n\n'
-                f'Please review the disbursement dashboard for full details.'
-            ),
-            from_email,
-            recipient_emails,
-            fail_silently=True,
-        )
+        send_stuck_payments_alert(recipient_emails, txns, getattr(settings, 'FRONTEND_URL', None))
 
         logger.info(
             'Sent stuck transaction alert for coop %s to %s',

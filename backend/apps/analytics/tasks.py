@@ -7,12 +7,12 @@ from datetime import date, timedelta
 from celery import shared_task
 from django.conf import settings
 from django.core.files.storage import default_storage
-from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
 from django.core.cache import cache
 
 from apps.base.models import AuditLog, AuditAction
+from apps.notifications.email import send_export_failed
 from apps.base.utils import log_audit
 from apps.cooperatives.models import Cooperative
 
@@ -407,16 +407,6 @@ def generate_export(self, export_task_id):
 
         if task.requested_by and task.requested_by.email:
             try:
-                send_mail(
-                    subject='Analytics Export Failed',
-                    message=(
-                        f'Your {task.export_type} export has failed.\n\n'
-                        f'Error: {exc}\n\n'
-                        f'Please try again or contact support.'
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[task.requested_by.email],
-                    fail_silently=True,
-                )
+                send_export_failed(task, str(exc), getattr(settings, 'FRONTEND_URL', None))
             except Exception:
                 pass

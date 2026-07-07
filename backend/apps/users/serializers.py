@@ -2,7 +2,6 @@ import logging
 import secrets
 
 from django.conf import settings
-from django.core.mail import send_mail
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
@@ -10,6 +9,7 @@ logger = logging.getLogger(__name__)
 from apps.auth_api.models import User
 from apps.base.utils import KENYA_PHONE_RE, normalize_phone
 from apps.cooperatives.models import Cooperative
+from apps.notifications.email import send_account_credentials
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -55,16 +55,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
         from_email = settings.DEFAULT_FROM_EMAIL
         try:
-            send_mail(
-                'Your Zao Account Credentials',
-                f'Your account has been created.\n\n'
-                f'Email: {user.email}\n'
-                f'Temporary password: {password}\n\n'
-                f'Please log in and change your password on first use.',
-                from_email,
-                [user.email],
-                fail_silently=False,
-            )
+            send_account_credentials(user, password)
         except Exception as exc:
             logger.exception(
                 'Failed to send welcome email to %s: %s', user.email, exc,

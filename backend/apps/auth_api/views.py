@@ -6,7 +6,6 @@ from datetime import timedelta
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
-from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -17,6 +16,12 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.notifications.email import (
+    send_login_otp,
+    send_password_reset_otp,
+    send_invite_otp,
+)
 
 from apps.base.constants import UserRole
 
@@ -151,13 +156,13 @@ class RequestOTPView(APIView):
             )
 
             socket.setdefaulttimeout(10)
-            send_mail(
-                'Your Login OTP',
-                f'Your OTP is: {otp_code}\nIt expires in 5 minutes.',
-                from_email,
-                [user.email],
-                fail_silently=False,
-            )
+            result = send_login_otp(user, otp_code)
+            if not result['success']:
+                logger.error('Failed to send login OTP to %s: %s', user.email, result['error'])
+                return Response(
+                    {'detail': 'Failed to send email. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
 
             data = {'detail': 'OTP sent to your email.'}
             if settings.DEBUG:
@@ -219,19 +224,16 @@ class PasswordResetRequestView(APIView):
         signer = TimestampSigner(salt=PASSWORD_RESET_TOKEN_SALT)
         reset_token = signer.sign(user.email)
 
-        from_email = settings.DEFAULT_FROM_EMAIL
         try:
-            send_mail(
-                'Reset Your Zao Password',
-                f'Your OTP is: {otp_code}\nIt expires in 10 minutes.',
-                from_email,
-                [user.email],
-                fail_silently=False,
-            )
+            result = send_password_reset_otp(user, otp_code)
+            if not result['success']:
+                logger.error('Failed to send password reset OTP to %s: %s', user.email, result['error'])
+                return Response(
+                    {'detail': 'Failed to send email. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
         except Exception as exc:
-            logger.exception(
-                'Failed to send password reset OTP email to %s: %s', user.email, exc,
-            )
+            logger.exception('Failed to send password reset OTP email to %s: %s', user.email, exc)
             return Response(
                 {'detail': 'Failed to send email. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -369,17 +371,15 @@ class InviteRequestOTPView(APIView):
 
         from_email = settings.DEFAULT_FROM_EMAIL
         try:
-            send_mail(
-                'Your Zao Invite Code',
-                f'Your invite code is: {otp_code}\nIt expires in 10 minutes.',
-                from_email,
-                [user.email],
-                fail_silently=False,
-            )
+            result = send_invite_otp(user, otp_code, 'Member', None)
+            if not result['success']:
+                logger.error('Failed to send invite OTP to %s: %s', user.email, result['error'])
+                return Response(
+                    {'detail': 'Failed to send email. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
         except Exception as exc:
-            logger.exception(
-                'Failed to send invite OTP email to %s: %s', user.email, exc,
-            )
+            logger.exception('Failed to send invite OTP email to %s: %s', user.email, exc)
             return Response(
                 {'detail': 'Failed to send email. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,

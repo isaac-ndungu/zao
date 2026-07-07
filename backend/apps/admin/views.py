@@ -9,7 +9,6 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
-from django.core.mail import send_mail
 from django.core.signing import TimestampSigner
 from django.db import connections, transaction
 from django.db.migrations.executor import MigrationExecutor
@@ -18,6 +17,12 @@ from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from apps.notifications.email import (
+    send_account_deactivated,
+    send_password_reset_by_admin,
+    send_invite_otp,
+)
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework.decorators import action
@@ -251,14 +256,7 @@ class AdminUserDeactivateView(APIView):
         user.save(update_fields=['is_active'])
         if notify:
             try:
-                send_mail(
-                    'Account Deactivated',
-                    f'Your account ({user.email}) has been deactivated by an administrator.\n\n'
-                    f'If you believe this is an error, please contact support@zao.app.',
-                    settings.DEFAULT_FROM_EMAIL,
-                    [user.email],
-                    fail_silently=True,
-                )
+                send_account_deactivated(user)
             except Exception:
                 pass
         log_audit(
@@ -289,16 +287,8 @@ class AdminUserResetPasswordView(APIView):
         user.save(update_fields=['password', 'must_change_password'])
         email_sent = False
         try:
-            send_mail(
-                'Password Reset',
-                f'Your password has been reset by an administrator.\n\n'
-                f'New password: {new_password}\n\n'
-                f'Please change your password after logging in.',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=True,
-            )
-            email_sent = True
+            result = send_password_reset_by_admin(user, new_password)
+            email_sent = result['success']
         except Exception:
             pass
         log_audit(
@@ -1773,23 +1763,15 @@ class AdminInviteView(APIView):
 
         from_email = settings.DEFAULT_FROM_EMAIL
         try:
-            send_mail(
-                'You\'ve been invited to Zao',
-                (
-                    'You have been invited to join as a Manager.\n\n'
-                    f'Invite code: {otp_code}\n'
-                    f'Expires in 3 hours.\n\n'
-                    f'Or click: {invite_link}\n\n'
-                    f'This invite expires in 7 days.'
-                ),
-                from_email,
-                [user.email],
-                fail_silently=False,
-            )
+            result = send_invite_otp(user, otp_code, UserRole.MANAGER, invite_link)
+            if not result['success']:
+                logger.error('Failed to send invite email to %s: %s', user.email, result['error'])
+                return Response(
+                    {'detail': 'Failed to send email. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
         except Exception as exc:
-            logger.exception(
-                'Failed to send invite email to %s: %s', user.email, exc,
-            )
+            logger.exception('Failed to send invite email to %s: %s', user.email, exc)
             return Response(
                 {'detail': 'Failed to send email. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -1936,23 +1918,15 @@ class AdminInviteResendView(APIView):
 
         from_email = settings.DEFAULT_FROM_EMAIL
         try:
-            send_mail(
-                'You\'ve been invited to Zao',
-                (
-                    'You have been invited to join as a Manager.\n\n'
-                    f'Invite code: {otp_code}\n'
-                    f'Expires in 3 hours.\n\n'
-                    f'Or click: {invite_link}\n\n'
-                    f'This invite expires in 7 days.'
-                ),
-                from_email,
-                [user.email],
-                fail_silently=False,
-            )
+            result = send_invite_otp(user, otp_code, UserRole.MANAGER, invite_link)
+            if not result['success']:
+                logger.error('Failed to send invite resend email to %s: %s', user.email, result['error'])
+                return Response(
+                    {'detail': 'Failed to send email. Please try again.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
         except Exception as exc:
-            logger.exception(
-                'Failed to send invite resend email to %s: %s', user.email, exc,
-            )
+            logger.exception('Failed to send invite resend email to %s: %s', user.email, exc)
             return Response(
                 {'detail': 'Failed to send email. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
