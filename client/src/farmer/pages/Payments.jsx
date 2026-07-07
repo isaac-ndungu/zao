@@ -66,7 +66,7 @@ export default function FarmerPayments() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold">{t('payments')} {payments.length > 0 && <span className="text-sm font-normal text-on-surface-variant">({payments.length})</span>}</h2>
         <button onClick={handleLatest} disabled={downloadId === 'latest'} className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed">
-          {downloadId === 'latest' ? <span className="inline-block animate-spin h-4 w-4 border-2 border-outline-variant border-t-primary rounded-full" /> : t('latestStatement')}
+          {downloadId === 'latest' ? <span className="inline-block animate-spin h-4 w-4 border-2 border-outline-variant border-t-primary rounded-full" aria-hidden="true" /> : t('latestStatement')}
         </button>
       </div>
 
@@ -94,7 +94,7 @@ export default function FarmerPayments() {
 
       {payments.length === 0 ? (
         <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3">payments</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3" aria-hidden="true">payments</span>
           <p className="text-on-surface-variant">{t('noPayments')}</p>
         </div>
       ) : (
@@ -132,7 +132,7 @@ export default function FarmerPayments() {
                 className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] w-full hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5"
                 title={t('seeStatement')}
               >
-                {downloadId === p.farmer_payment_id ? <span className="inline-block animate-spin h-4 w-4 border-2 border-outline-variant border-t-primary rounded-full" /> : <><span className="material-symbols-outlined text-[16px]">receipt_long</span> {t('seeStatement')}</>}
+                {downloadId === p.farmer_payment_id ? <span className="inline-block animate-spin h-4 w-4 border-2 border-outline-variant border-t-primary rounded-full" /> : <><span className="material-symbols-outlined text-[16px]" aria-hidden="true">receipt_long</span> {t('seeStatement')}</>}
               </button>
             </div>
           ))}

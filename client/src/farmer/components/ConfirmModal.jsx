@@ -2,12 +2,12 @@ export default function ConfirmModal({ open, title, message, confirmLabel, cance
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onCancel}>
-      <div className="bg-surface rounded-2xl w-full max-w-sm p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" role="presentation" onClick={onCancel}>
+      <div className="bg-surface rounded-2xl w-full max-w-sm p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title" onClick={(e) => e.stopPropagation()}>
         <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center mx-auto mb-4">
-          <span className="material-symbols-outlined text-error">logout</span>
+          <span className="material-symbols-outlined text-error" aria-hidden="true">logout</span>
         </div>
-        <h3 className="text-lg font-bold text-center mb-2">{title}</h3>
+        <h3 id="confirm-modal-title" className="text-lg font-bold text-center mb-2">{title}</h3>
         <p className="text-sm text-on-surface-variant text-center mb-6">{message}</p>
         <div className="flex gap-3">
           <button

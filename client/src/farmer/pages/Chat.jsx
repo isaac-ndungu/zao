@@ -60,10 +60,10 @@ export default function FarmerChat() {
     <div className="flex flex-col h-[calc(100vh-100px)]">
       <div className="flex items-center gap-3 mb-4">
         <button onClick={() => navigate('/farmer/dashboard')} aria-label="Back to dashboard" className="p-1">
-          <span className="material-symbols-outlined">arrow_back</span>
+          <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
         </button>
         <div className="w-9 h-9 rounded-full bg-info-container flex items-center justify-center">
-          <span className="material-symbols-outlined text-info text-lg">smart_toy</span>
+          <span className="material-symbols-outlined text-info text-lg" aria-hidden="true">smart_toy</span>
         </div>
         <div>
           <p className="font-semibold text-sm">Zao AI Assistant</p>
@@ -78,7 +78,7 @@ export default function FarmerChat() {
             <div className="flex flex-wrap gap-2 justify-center">
               {suggestions.map((s) => (
                 <button key={s.label} onClick={() => sendMessage(s.label)} className="inline-flex items-center px-4 py-2 rounded-full border-2 border-outline-variant bg-surface-container text-sm whitespace-nowrap min-h-[36px] active:bg-primary-container active:border-primary gap-1.5">
-                  <span className="material-symbols-outlined text-sm">{s.icon}</span>
+                  <span className="material-symbols-outlined text-sm" aria-hidden="true">{s.icon}</span>
                   {s.label}
                 </button>
               ))}
@@ -91,7 +91,7 @@ export default function FarmerChat() {
           </div>
         ))}
         {sending && (
-          <div className="bg-surface-container border border-outline-variant rounded-[18px_18px_18px_4px] px-4 py-3 max-w-[80%] self-start text-sm leading-relaxed">
+          <div className="bg-surface-container border border-outline-variant rounded-[18px_18px_18px_4px] px-4 py-3 max-w-[80%] self-start text-sm leading-relaxed" role="status" aria-label="AI is typing">
             <div className="flex gap-1">
               <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -110,8 +110,8 @@ export default function FarmerChat() {
           className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px] flex-1"
           disabled={sending}
         />
-        <button type="submit" disabled={sending || !input.trim()} className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed !px-4">
-          <span className="material-symbols-outlined">send</span>
+        <button type="submit" disabled={sending || !input.trim()} aria-label="Send message" className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed !px-4">
+          <span className="material-symbols-outlined" aria-hidden="true">send</span>
         </button>
       </form>
     </div>

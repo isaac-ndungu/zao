@@ -64,7 +64,7 @@ export default function FarmerGrades() {
 
       {grades.length === 0 ? (
         <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3">grade</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3" aria-hidden="true">grade</span>
           <p className="text-on-surface-variant">{t('noGrades')}</p>
         </div>
       ) : (
@@ -75,7 +75,7 @@ export default function FarmerGrades() {
               <div key={g.id} className="bg-surface-container rounded-xl border border-outline-variant p-4">
                 <div className="flex items-start gap-3">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-1 ${isRejected ? 'bg-error-container' : 'bg-success-container'}`}>
-                    <span className={`material-symbols-outlined ${isRejected ? 'text-error' : 'text-success'}`}>
+                    <span className={`material-symbols-outlined ${isRejected ? 'text-error' : 'text-success'}`} aria-hidden="true">
                       {isRejected ? 'close' : 'check_circle'}
                     </span>
                   </div>
@@ -92,7 +92,7 @@ export default function FarmerGrades() {
                 <div className="flex gap-2 mt-3">
                   {!isRejected && (
                     <button onClick={() => setDisputeFor(g)} className="bg-transparent border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:bg-gray-50 flex-1 inline-flex items-center justify-center gap-1.5" title={t('disputeGrade')}>
-                      <span className="material-symbols-outlined text-[16px]">feedback</span> {t('disputeGrade')}
+                      <span className="material-symbols-outlined text-[16px]" aria-hidden="true">feedback</span> {t('disputeGrade')}
                     </button>
                   )}
                 </div>
@@ -131,7 +131,7 @@ export default function FarmerGrades() {
             />
             <div className="flex gap-3">
               <button onClick={() => handleDispute(disputeFor.id)} disabled={submitting || !disputeReason.trim()} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">
-                {submitting ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('submitDispute')}
+                {submitting ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" aria-hidden="true" /> : t('submitDispute')}
               </button>
               <button onClick={() => setDisputeFor(null)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">{t('cancel')}</button>
             </div>

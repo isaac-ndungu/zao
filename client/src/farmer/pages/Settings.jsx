@@ -52,7 +52,7 @@ export default function FarmerSettings() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate('/farmer/profile')} aria-label={t('backToProfile')} className="p-1">
-          <span className="material-symbols-outlined">arrow_back</span>
+          <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
         </button>
         <h2 className="text-lg font-bold">{t('settings')}</h2>
       </div>
@@ -84,10 +84,10 @@ export default function FarmerSettings() {
       <div className="bg-surface-container rounded-xl border border-outline-variant p-4 mb-4">
         <h3 className="font-semibold text-sm mb-2">{t('helpSupport')}</h3>
         <a href="tel:+254700000000" className="flex items-center gap-3 py-2 text-sm hover:bg-primary-container/10 rounded-lg px-2 -mx-2">
-          <span className="material-symbols-outlined">call</span> {t('callSupport')}
+          <span className="material-symbols-outlined" aria-hidden="true">call</span> {t('callSupport')}
         </a>
         <a href="https://wa.me/254700000000" target="_blank" rel="noreferrer" className="flex items-center gap-3 py-2 text-sm hover:bg-primary-container/10 rounded-lg px-2 -mx-2">
-          <span className="material-symbols-outlined">chat</span> WhatsApp
+          <span className="material-symbols-outlined" aria-hidden="true">chat</span> WhatsApp
         </a>
       </div>
 
@@ -97,7 +97,7 @@ export default function FarmerSettings() {
       </div>
 
       <button onClick={() => setShowLogoutConfirm(true)} className="bg-error text-white px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full flex items-center justify-center gap-2">
-        <span className="material-symbols-outlined">logout</span>
+        <span className="material-symbols-outlined" aria-hidden="true">logout</span>
         {t('logout')}
       </button>
 

@@ -55,7 +55,7 @@ export default function FarmerDeliveries() {
 
       {deliveries.length === 0 ? (
         <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3">receipt_long</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3" aria-hidden="true">receipt_long</span>
           <p className="text-on-surface-variant">{t('noDeliveries')}</p>
         </div>
       ) : (
@@ -64,7 +64,7 @@ export default function FarmerDeliveries() {
             <button key={d.id} onClick={() => setSelected(d)} className="bg-surface-container rounded-xl border border-outline-variant p-4 w-full text-left hover:bg-primary-container/10 transition-colors">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0 mt-1">
-                  <span className="material-symbols-outlined text-primary text-xl">
+                  <span className="material-symbols-outlined text-primary text-xl" aria-hidden="true">
                     {productIcons[d.product_type] || 'inventory'}
                   </span>
                 </div>
@@ -84,7 +84,7 @@ export default function FarmerDeliveries() {
                   </div>
                   {d.grade && <p className="text-xs text-primary mt-1">{t('gradeLetter')}: {d.grade}</p>}
                 </div>
-                <span className="material-symbols-outlined text-on-surface-variant text-xl mt-2">chevron_right</span>
+                <span className="material-symbols-outlined text-on-surface-variant text-xl mt-2" aria-hidden="true">chevron_right</span>
               </div>
             </button>
           ))}

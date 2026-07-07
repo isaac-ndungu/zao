@@ -32,7 +32,7 @@ export default function FarmerNotifications() {
     if (String(error).includes('403') || String(error).includes('permission')) {
       return (
         <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3">notifications_off</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3" aria-hidden="true">notifications_off</span>
           <p className="text-on-surface-variant">{t('notificationsUnavailable')}</p>
         </div>
       )
@@ -48,7 +48,7 @@ export default function FarmerNotifications() {
 
       {notifications.length === 0 ? (
         <div className="text-center py-12">
-          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3">notifications</span>
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-3" aria-hidden="true">notifications</span>
           <p className="text-on-surface-variant">{t('noNotifications')}</p>
         </div>
       ) : (

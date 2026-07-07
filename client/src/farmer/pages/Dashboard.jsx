@@ -101,7 +101,7 @@ export default function FarmerDashboard() {
       {todayDeliveries > 0 && (
         <div className="bg-primary-container/20 border border-primary-container rounded-xl p-4 mb-5">
           <div className="flex items-center gap-2 mb-2">
-            <span className="material-symbols-outlined text-primary">today</span>
+            <span className="material-symbols-outlined text-primary" aria-hidden="true">today</span>
             <p className="text-xs font-semibold text-primary uppercase tracking-wide">{t('today')}</p>
           </div>
           <div className="flex justify-between items-end">
@@ -153,49 +153,49 @@ export default function FarmerDashboard() {
       <div className="space-y-3 mb-6">
         <button onClick={handleLatestStatement} className="bg-surface-container rounded-xl border border-outline-variant w-full flex items-center gap-4 p-4 hover:bg-primary-container/20 transition-colors text-left">
           <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-primary">description</span>
+            <span className="material-symbols-outlined text-primary" aria-hidden="true">description</span>
           </div>
           <div>
             <p className="font-semibold text-sm text-on-surface">{t('latestStatement')}</p>
             <p className="text-xs text-on-surface-variant">{t('seeStatement')}</p>
           </div>
-          <span className="material-symbols-outlined text-on-surface-variant ml-auto">chevron_right</span>
+          <span className="material-symbols-outlined text-on-surface-variant ml-auto" aria-hidden="true">chevron_right</span>
         </button>
 
         <button onClick={() => navigate('/farmer/chat')} className="bg-surface-container rounded-xl border border-outline-variant w-full flex items-center gap-4 p-4 hover:bg-info-container/20 transition-colors text-left">
           <div className="w-10 h-10 rounded-xl bg-info-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-info">smart_toy</span>
+            <span className="material-symbols-outlined text-info" aria-hidden="true">smart_toy</span>
           </div>
           <div>
             <p className="font-semibold text-sm text-on-surface">{t('chatWithAI')}</p>
             <p className="text-xs text-on-surface-variant">{t('askAbout')}</p>
           </div>
-          <span className="material-symbols-outlined text-on-surface-variant ml-auto">chevron_right</span>
+          <span className="material-symbols-outlined text-on-surface-variant ml-auto" aria-hidden="true">chevron_right</span>
         </button>
 
         {activeLoan && (
           <button onClick={() => navigate('/farmer/loans')} className="bg-surface-container rounded-xl border border-outline-variant w-full flex items-center gap-4 p-4 hover:bg-warning-container/20 transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-warning-container flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-warning">account_balance_wallet</span>
+              <span className="material-symbols-outlined text-warning" aria-hidden="true">account_balance_wallet</span>
             </div>
             <div>
               <p className="font-semibold text-sm text-on-surface">{t('activeLoan')}: {formatKes(activeLoan.amount_principal)}</p>
               <p className="text-xs text-on-surface-variant">{activeLoan.installments_paid || 0}/{activeLoan.number_of_installments} {t('installmentsPaid')}</p>
             </div>
-            <span className="material-symbols-outlined text-on-surface-variant ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-on-surface-variant ml-auto" aria-hidden="true">chevron_right</span>
           </button>
         )}
 
         {lastPayment && (
           <button onClick={() => navigate('/farmer/payments')} className="bg-surface-container rounded-xl border border-outline-variant w-full flex items-center gap-4 p-4 hover:bg-success-container/20 transition-colors text-left">
             <div className="w-10 h-10 rounded-xl bg-success-container flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-success">payments</span>
+              <span className="material-symbols-outlined text-success" aria-hidden="true">payments</span>
             </div>
             <div>
               <p className="font-semibold text-sm text-on-surface">{lastPayment.cycle_name || t('lastPayment')}</p>
               <p className="text-xs text-on-surface-variant">{formatKes(lastPayment.net_amount)} {t('net')} — {lastPayment.status}</p>
             </div>
-            <span className="material-symbols-outlined text-on-surface-variant ml-auto">chevron_right</span>
+            <span className="material-symbols-outlined text-on-surface-variant ml-auto" aria-hidden="true">chevron_right</span>
           </button>
         )}
       </div>
