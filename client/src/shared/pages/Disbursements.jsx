@@ -410,7 +410,8 @@ export default function Disbursements() {
       </header>
 
       <div className="mb-4 flex items-center gap-4 flex-wrap">
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="disbursement-status-filter" className="sr-only">Filter by status</label>
+        <select id="disbursement-status-filter" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
           <option value="APPROVED">Approved</option>
@@ -468,14 +469,16 @@ export default function Disbursements() {
             <div className="border-t border-outline-variant pt-4">
               <h4 className="text-label-lg text-on-surface font-bold mb-3">Transactions</h4>
               <div className="flex gap-2 mb-3">
-                <select value={detailTxnStatus} onChange={(e) => { setDetailTxnStatus(e.target.value); setDetailTxnPage(1) }} className="px-2 py-1 border border-outline-variant rounded text-body-sm bg-surface-container">
+                <label htmlFor="txn-status-filter" className="sr-only">Filter by transaction status</label>
+                <select id="txn-status-filter" value={detailTxnStatus} onChange={(e) => { setDetailTxnStatus(e.target.value); setDetailTxnPage(1) }} className="px-2 py-1 border border-outline-variant rounded text-body-sm bg-surface-container">
                   <option value="">All Statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="SUCCESS">Success</option>
                   <option value="FAILED">Failed</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>
-                <select value={detailTxnMethod} onChange={(e) => { setDetailTxnMethod(e.target.value); setDetailTxnPage(1) }} className="px-2 py-1 border border-outline-variant rounded text-body-sm bg-surface-container">
+                <label htmlFor="txn-method-filter" className="sr-only">Filter by payment method</label>
+                <select id="txn-method-filter" value={detailTxnMethod} onChange={(e) => { setDetailTxnMethod(e.target.value); setDetailTxnPage(1) }} className="px-2 py-1 border border-outline-variant rounded text-body-sm bg-surface-container">
                   <option value="">All Methods</option>
                   <option value="M_PESA">M-Pesa</option>
                   <option value="BANK">Bank</option>
@@ -489,12 +492,12 @@ export default function Disbursements() {
                   <table className="w-full text-left text-body-sm">
                     <thead>
                       <tr className="border-b border-outline-variant text-label-md text-on-surface-variant">
-                        <th className="py-2 pr-2">Farmer</th>
-                        <th className="py-2 pr-2">Amount</th>
-                        <th className="py-2 pr-2">Method</th>
-                        <th className="py-2 pr-2">Status</th>
-                        <th className="py-2 pr-2">Ref</th>
-                        <th className="py-2">Error</th>
+                        <th scope="col" className="py-2 pr-2">Farmer</th>
+                        <th scope="col" className="py-2 pr-2">Amount</th>
+                        <th scope="col" className="py-2 pr-2">Method</th>
+                        <th scope="col" className="py-2 pr-2">Status</th>
+                        <th scope="col" className="py-2 pr-2">Ref</th>
+                        <th scope="col" className="py-2">Error</th>
                       </tr>
                     </thead>
                     <tbody>

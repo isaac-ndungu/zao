@@ -70,7 +70,7 @@ export default function MapView({ deliveries = [], height = '320px', center = nu
   }, [deliveries, center, zoom])
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ height }}>
+    <div className="rounded-lg overflow-hidden" style={{ height }} role="img" aria-label="Map showing delivery locations">
       <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
     </div>
   )

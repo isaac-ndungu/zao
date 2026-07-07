@@ -28,7 +28,7 @@ export default function ProfileDropdown({ profilePath, roleLabel, onClose }) {
     : '??'
 
   return (
-    <div ref={ref} className="absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-[999] overflow-hidden">
+    <div ref={ref} className="absolute right-0 top-full mt-2 w-56 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-[999] overflow-hidden" role="menu">
       <div className="p-4 border-b border-outline-variant/50 flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-sm overflow-hidden flex-shrink-0">
           {initials}
@@ -41,20 +41,22 @@ export default function ProfileDropdown({ profilePath, roleLabel, onClose }) {
       <button
         onClick={() => { navigate(profilePath); onClose() }}
         className="w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors"
+        role="menuitem"
       >
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant">person</span>
+        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">person</span>
         Profile
       </button>
       {!showConfirm ? (
         <button
           onClick={() => setShowConfirm(true)}
           className="w-full flex items-center gap-3 px-4 py-3 text-sm text-error hover:bg-error-container/10 transition-colors border-t border-outline-variant/50"
+          role="menuitem"
         >
-          <span className="material-symbols-outlined text-[18px]">logout</span>
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">logout</span>
           Logout
         </button>
       ) : (
-        <div className="px-4 py-3 border-t border-outline-variant/50 space-y-2">
+        <div className="px-4 py-3 border-t border-outline-variant/50 space-y-2" role="menuitem">
           <p className="text-xs text-on-surface-variant">Are you sure you want to log out?</p>
           <div className="flex gap-2">
             <button
@@ -62,7 +64,7 @@ export default function ProfileDropdown({ profilePath, roleLabel, onClose }) {
               disabled={loggingOut}
               className="flex-1 py-2 rounded-lg bg-error text-white text-xs font-bold hover:opacity-80 transition-opacity disabled:opacity-40"
             >
-              {loggingOut ? <span className="inline-block animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" /> : 'Logout'}
+              {loggingOut ? <span className="inline-block animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" aria-hidden="true" /> : 'Logout'}
             </button>
             <button
               onClick={() => setShowConfirm(false)}

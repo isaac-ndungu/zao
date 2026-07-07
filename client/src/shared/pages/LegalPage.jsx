@@ -57,7 +57,7 @@ export default function LegalPage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-10">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 py-10">
         {loading ? (
           <div className="p-8 text-center text-on-surface-variant">Loading…</div>
         ) : error ? (

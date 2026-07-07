@@ -115,7 +115,7 @@ export default function AcceptInvite() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-container p-4">
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 max-w-md w-full text-center">
-          <span className="material-symbols-outlined text-5xl text-error mb-4">link_off</span>
+          <span className="material-symbols-outlined text-5xl text-error mb-4" aria-hidden="true">link_off</span>
           <h1 className="text-xl font-bold text-on-surface mb-2">Invalid Invite Link</h1>
           <p className="text-on-surface-variant mb-4">No invite token found in the link. Please check the URL or contact your administrator.</p>
         </div>
@@ -127,7 +127,7 @@ export default function AcceptInvite() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-container p-4">
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 max-w-md w-full text-center">
-          <span className="material-symbols-outlined text-5xl text-warning mb-4">timer_off</span>
+          <span className="material-symbols-outlined text-5xl text-warning mb-4" aria-hidden="true">timer_off</span>
           <h1 className="text-xl font-bold text-on-surface mb-2">Invite Expired</h1>
           <p className="text-on-surface-variant mb-6">This invite link has expired. Please contact your platform administrator to send a new invite.</p>
           <button onClick={handleResendOTP} disabled={loading} className="px-6 py-3 bg-primary text-on-primary rounded-xl font-bold disabled:opacity-50">
@@ -142,7 +142,7 @@ export default function AcceptInvite() {
     <div className="min-h-screen flex items-center justify-center bg-surface-container p-4">
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
-          <span className="material-symbols-outlined text-5xl text-primary mb-2">mail</span>
+          <span className="material-symbols-outlined text-5xl text-primary mb-2" aria-hidden="true">mail</span>
           <h1 className="text-xl font-bold text-on-surface">Accept Your Invite</h1>
           <p className="text-on-surface-variant text-sm mt-1">Check your email for the verification code</p>
         </div>

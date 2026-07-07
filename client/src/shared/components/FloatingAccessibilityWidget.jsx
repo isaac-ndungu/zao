@@ -189,7 +189,7 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
                 aria-label="Close accessibility panel"
                 className="p-1 hover:bg-surface-container-high rounded-lg"
               >
-                <span className="material-symbols-outlined text-on-surface-variant">close</span>
+                <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">close</span>
               </button>
             </div>
 

@@ -83,14 +83,14 @@ export default function SearchResults({ resourceLinks }) {
 
       {!loading && !error && !query && (
         <div className="text-center py-12 text-on-surface-variant">
-          <span className="material-symbols-outlined text-4xl mb-2">search</span>
+          <span className="material-symbols-outlined text-4xl mb-2" aria-hidden="true">search</span>
           <p>Type a query above to start searching.</p>
         </div>
       )}
 
       {!loading && !error && allEmpty && (
         <div className="text-center py-12 text-on-surface-variant">
-          <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
+          <span className="material-symbols-outlined text-4xl mb-2" aria-hidden="true">search_off</span>
           <p className="text-lg font-medium text-on-surface">No results found</p>
           <p className="text-sm mt-1">Try adjusting your search terms.</p>
         </div>
@@ -105,7 +105,7 @@ export default function SearchResults({ resourceLinks }) {
               <div key={group.key} className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
                 <div className="px-4 py-3 border-b border-outline-variant/50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">
                       {resourceIcons[group.key] || 'search'}
                     </span>
                     <h2 className="text-sm font-bold text-on-surface uppercase tracking-wider">{group.label}</h2>
