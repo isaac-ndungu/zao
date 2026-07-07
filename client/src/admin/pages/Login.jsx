@@ -316,7 +316,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-label-md text-on-surface-variant mt-6">
-          Zao Farmer Management System
+          <a href="/" className="hover:underline">Back to home</a>
         </p>
       </div>
     </div>
