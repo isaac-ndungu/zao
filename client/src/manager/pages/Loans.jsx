@@ -181,7 +181,7 @@ export default function Loans() {
                 <div className="space-y-2">
                   {detailLoan.guarantors.map((g, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-2 bg-surface-container rounded-lg">
-                      <span className="material-symbols-outlined text-on-surface-variant text-[18px]">person</span>
+                      <span className="material-symbols-outlined text-on-surface-variant text-[18px]" aria-hidden="true">person</span>
                       <span className="text-body-md text-on-surface">{g.farmer_name || g.phone_number || g.name}</span>
                     </div>
                   ))}
@@ -195,7 +195,7 @@ export default function Loans() {
                   {detailLoan.repayments.map((r, i) => (
                     <div key={i} className="flex items-center justify-between px-3 py-2 bg-surface-container rounded-lg">
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]">payments</span>
+                        <span className="material-symbols-outlined text-on-surface-variant text-[18px]" aria-hidden="true">payments</span>
                         <div>
                           <p className="text-body-md text-on-surface">KES {Number(r.amount || 0).toLocaleString()}</p>
                           <p className="text-xs text-on-surface-variant">{r.paid_at ? new Date(r.paid_at).toLocaleDateString() : '-'}</p>

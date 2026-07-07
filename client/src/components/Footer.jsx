@@ -2,7 +2,7 @@ import { HiOutlineGlobeAmericas, HiOutlineAtSymbol } from 'react-icons/hi2'
 
 export default function Footer() {
   return (
-    <footer className="bg-surface-container-highest">
+    <footer className="bg-surface-container-highest" aria-label="Footer">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-stack-lg w-full px-container-margin py-stack-lg max-w-7xl mx-auto">
         <div className="col-span-2 md:col-span-1">
           <div className="font-headline-sm text-headline-sm font-bold text-primary mb-stack-md">Zao</div>

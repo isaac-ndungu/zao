@@ -98,7 +98,7 @@ export default function Routes() {
           <p className="text-on-surface-variant font-body-md">{total} total</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">add</span>Add Route
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Add Route
         </button>
       </header>
 

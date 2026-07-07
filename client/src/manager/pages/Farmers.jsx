@@ -336,25 +336,25 @@ export default function Farmers() {
             }}
             className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">download</span>Export
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>Export
           </button>
           <button
             onClick={() => window.open('/api/farmers/import_template/', '_blank')}
             className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">description</span>Template
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">description</span>Template
           </button>
           <button
             onClick={() => setShowImport(true)}
             className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">upload_file</span>Import CSV
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span>Import CSV
           </button>
           <button
             onClick={() => setShowCreate(true)}
             className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">add</span>Add Farmer
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Add Farmer
           </button>
         </div>
       </header>
@@ -470,7 +470,7 @@ export default function Farmers() {
                   <thead>
                     <tr className="bg-surface-container border-b border-outline-variant">
                       {importPreview.headers.map((h) => (
-                        <th key={h} className="px-3 py-2 text-left text-label-md">{h}</th>
+                        <th key={h} scope="col" className="px-3 py-2 text-left text-label-md">{h}</th>
                       ))}
                     </tr>
                   </thead>

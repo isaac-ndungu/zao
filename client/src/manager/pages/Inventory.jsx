@@ -24,8 +24,9 @@ export default function Inventory() {
 
       {stockItems.length === 0 ? (
         <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest border border-outline-variant rounded-xl">
-          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant">inventory_2</span>
-          <p>No stock recorded yet.</p>
+          <span className="material-symbols-outlined text-[48px] block mb-2 text-outline-variant" aria-hidden="true">inventory_2</span>
+          <p className="text-on-surface mb-2">No stock recorded yet.</p>
+          <p className="text-sm">Stock is created automatically when deliveries are graded. Record deliveries to see inventory here.</p>
         </div>
       ) : (
         <section className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden">
@@ -38,12 +39,12 @@ export default function Inventory() {
           <table className="w-full">
             <thead>
               <tr className="bg-surface-container border-b border-outline-variant">
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Product</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Grade</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Unit</th>
-                <th className="px-4 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Available</th>
-                <th className="px-4 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Low&nbsp;@</th>
-                <th className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Product</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Grade</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Unit</th>
+                <th scope="col" className="px-4 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Available</th>
+                <th scope="col" className="px-4 py-2 text-right text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Low&nbsp;@</th>
+                <th scope="col" className="px-4 py-2 text-left text-label-md font-bold text-on-surface-variant uppercase tracking-wider">Status</th>
               </tr>
             </thead>
             <tbody>

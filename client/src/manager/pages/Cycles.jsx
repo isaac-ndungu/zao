@@ -127,12 +127,12 @@ export default function Cycles() {
             <div className="pt-4 border-t border-outline-variant space-y-3">
               {detailCycle.status === 'ACTIVE' && (
                 <button onClick={() => handleHoldRelease('hold')} className="w-full py-2 bg-warning-container text-on-warning-container rounded-lg text-label-md font-bold hover:bg-warning-container/80 transition-colors inline-flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">pause_circle</span> Hold All Payments
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">pause_circle</span> Hold All Payments
                 </button>
               )}
               {detailCycle.status === 'HOLD' && (
                 <button onClick={() => handleHoldRelease('release')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors inline-flex items-center justify-center gap-2">
-                  <span className="material-symbols-outlined text-[18px]">play_circle</span> Release Payments
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">play_circle</span> Release Payments
                 </button>
               )}
             </div>

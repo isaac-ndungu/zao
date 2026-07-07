@@ -127,12 +127,12 @@ export default function Deliveries() {
     { key: 'batch_id', label: 'Batch ID', sortable: true },
     { key: 'farmer_name', label: 'Farmer', sortable: true },
     { key: 'product_type', label: 'Product', sortable: true },
-    { key: 'quantity_kg', label: 'Qty (kg)', sortable: true, render: (row) => row.quantity_kg || row.volume_litres || '-' },
+    { key: 'quantity_kg', label: 'Qty (kg)', sortable: true, render: (v, row) => row.quantity_kg || row.volume_litres || '-' },
     { key: 'shift', label: 'Shift', sortable: true },
-    { key: 'status', label: 'Status', sortable: true, render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
-    { key: 'date_delivered', label: 'Date', sortable: true, render: (row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
+    { key: 'status', label: 'Status', sortable: true, render: (v, row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'date_delivered', label: 'Date', sortable: true, render: (v, row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button onClick={(e) => { e.stopPropagation(); openEdit(row) }} className="text-on-surface-variant hover:text-primary" aria-label="Edit delivery"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit</span></button>
           <button onClick={(e) => { e.stopPropagation(); setShowDelete(row) }} className="text-error hover:text-error/80" aria-label="Delete delivery"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span></button>
@@ -152,10 +152,10 @@ export default function Deliveries() {
         </div>
         <div className="flex gap-2">
           <button onClick={() => setShowMap(!showMap)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">map</span>Map View
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">map</span>Map View
           </button>
           <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">add</span>Add Delivery
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Add Delivery
           </button>
         </div>
       </header>
@@ -202,7 +202,7 @@ export default function Deliveries() {
           ) : (
             <div className="bg-surface-container-high rounded-lg h-80 flex items-center justify-center text-on-surface-variant">
               <div className="text-center">
-                <span className="material-symbols-outlined text-[48px]">map</span>
+                <span className="material-symbols-outlined text-[48px]" aria-hidden="true">map</span>
                 <p className="text-body-md mt-2">No deliveries with location data</p>
                 <p className="text-label-md text-on-surface-variant mt-1">Add coordinates to deliveries to see them on the map</p>
               </div>

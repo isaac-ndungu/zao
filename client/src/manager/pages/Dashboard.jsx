@@ -131,6 +131,7 @@ export default function ManagerDashboard() {
                     className={`material-symbols-outlined text-xl ${
                       item.type === 'delivery' ? 'text-primary' : item.type === 'grade' ? 'text-secondary' : 'text-tertiary'
                     }`}
+                    aria-hidden="true"
                   >
                     {item.type === 'delivery' ? 'local_shipping' : item.type === 'grade' ? 'grading' : 'payments'}
                   </span>
@@ -154,28 +155,28 @@ export default function ManagerDashboard() {
               onClick={() => navigate('/manager/farmers')}
               className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
             >
-              <span className="material-symbols-outlined text-primary">person_add</span>
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">person_add</span>
               <span className="text-sm font-medium text-on-surface">Register Farmer</span>
             </button>
             <button
               onClick={() => navigate('/manager/deliveries')}
               className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
             >
-              <span className="material-symbols-outlined text-primary">add_circle</span>
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">add_circle</span>
               <span className="text-sm font-medium text-on-surface">Record Delivery</span>
             </button>
             <button
               onClick={() => navigate('/manager/loans')}
               className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
             >
-              <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">account_balance_wallet</span>
               <span className="text-sm font-medium text-on-surface">Review Loans</span>
             </button>
             <button
               onClick={() => navigate('/manager/disbursements')}
               className="w-full flex items-center gap-3 px-4 py-3 bg-surface-container hover:bg-surface-container-high rounded-lg transition-colors text-left"
             >
-              <span className="material-symbols-outlined text-primary">check_circle</span>
+              <span className="material-symbols-outlined text-primary" aria-hidden="true">check_circle</span>
               <span className="text-sm font-medium text-on-surface">Approve Disbursements</span>
               {pendingDisbursementCount > 0 && (
                 <span className="ml-auto bg-error text-on-error text-[10px] font-bold px-2 py-0.5 rounded-full">

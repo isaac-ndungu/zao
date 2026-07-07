@@ -133,7 +133,7 @@ export default function ManagerUsers() {
           <p className="text-sm text-on-surface-variant">{staffUsers.length} staff members</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">person_add</span>Add Staff
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>Add Staff
         </button>
       </header>
 
@@ -151,7 +151,7 @@ export default function ManagerUsers() {
         <ErrorState message={error} action={{ label: 'Retry', onClick: fetchUsers }} />
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-16">
-          <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3">group_off</span>
+          <span className="material-symbols-outlined text-5xl text-on-surface-variant mb-3" aria-hidden="true">group_off</span>
           <p className="text-on-surface-variant">No staff members found.</p>
           <button onClick={() => setShowCreate(true)} className="mt-4 text-primary text-label-md font-bold hover:underline">Add your first staff member</button>
         </div>

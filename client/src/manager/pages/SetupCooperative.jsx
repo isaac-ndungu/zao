@@ -59,7 +59,7 @@ export default function SetupCooperative() {
     <div className="max-w-2xl mx-auto py-8">
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
         <div className="mb-6">
-          <span className="material-symbols-outlined text-4xl text-primary mb-2">domain</span>
+          <span className="material-symbols-outlined text-4xl text-primary mb-2" aria-hidden="true">domain</span>
           <h2 className="text-2xl font-bold text-on-surface">Create Your Cooperative</h2>
           <p className="text-on-surface-variant text-sm mt-1">
             Set up your cooperative to start managing farmers, deliveries, and payments.

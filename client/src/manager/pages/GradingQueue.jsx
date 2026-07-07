@@ -76,13 +76,13 @@ export default function GradingQueue() {
   }
 
   const gradeColumns = [
-    { key: 'id', label: 'ID', render: (row) => row.id?.slice(0, 8) || '' },
-    { key: 'grade_letter', label: 'Grade', render: (row) => <StatusBadge status={row.grade_letter?.toLowerCase()} label={row.grade_letter} /> },
-    { key: 'price_per_unit', label: 'Price/Unit', render: (row) => row.price_per_unit ? `KES ${row.price_per_unit}` : '-' },
-    { key: 'is_overridden', label: 'Overridden', render: (row) => row.is_overridden ? 'Yes' : 'No' },
-    { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
+    { key: 'id', label: 'ID', render: (v, row) => row.id?.slice(0, 8) || '' },
+    { key: 'grade_letter', label: 'Grade', render: (v, row) => <StatusBadge status={row.grade_letter?.toLowerCase()} label={row.grade_letter} /> },
+    { key: 'price_per_unit', label: 'Price/Unit', render: (v, row) => row.price_per_unit ? `KES ${row.price_per_unit}` : '-' },
+    { key: 'is_overridden', label: 'Overridden', render: (v, row) => row.is_overridden ? 'Yes' : 'No' },
+    { key: 'created_at', label: 'Date', render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           <button onClick={(e) => { e.stopPropagation(); setShowOverride(row); setOverrideData({ grade_letter: row.grade_letter, override_reason: '' }) }} className="text-primary hover:text-primary/80" aria-label="Override grade"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_note</span></button>
         </div>
@@ -94,18 +94,18 @@ export default function GradingQueue() {
     { key: 'batch_id', label: 'Batch ID' },
     { key: 'farmer_name', label: 'Farmer' },
     { key: 'product_type', label: 'Product' },
-    { key: 'quantity_kg', label: 'Qty (kg)', render: (row) => row.quantity_kg || row.volume_litres || '-' },
-    { key: 'date_delivered', label: 'Delivered', render: (row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
+    { key: 'quantity_kg', label: 'Qty (kg)', render: (v, row) => row.quantity_kg || row.volume_litres || '-' },
+    { key: 'date_delivered', label: 'Delivered', render: (v, row) => row.date_delivered ? new Date(row.date_delivered).toLocaleDateString() : '-' },
     { key: 'shift', label: 'Shift' },
   ]
 
   const disputeColumns = [
-    { key: 'id', label: 'ID', render: (row) => row.id?.slice(0, 8) || '' },
-    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
+    { key: 'id', label: 'ID', render: (v, row) => row.id?.slice(0, 8) || '' },
+    { key: 'status', label: 'Status', render: (v, row) => <StatusBadge status={row.status?.toLowerCase()} label={row.status} /> },
     { key: 'reason', label: 'Reason' },
-    { key: 'created_at', label: 'Date', render: (row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
+    { key: 'created_at', label: 'Date', render: (v, row) => row.created_at ? new Date(row.created_at).toLocaleDateString() : '-' },
     {
-      key: 'actions', label: '', render: (row) => (
+      key: 'actions', label: '', render: (v, row) => (
         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {row.status === 'PENDING' ? (
             <button onClick={(e) => { e.stopPropagation(); setShowResolve(row); setResolveData({ status: 'RESOLVED', resolution_notes: '' }) }} className="text-primary hover:text-primary/80" aria-label="Resolve dispute"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">check_circle</span></button>

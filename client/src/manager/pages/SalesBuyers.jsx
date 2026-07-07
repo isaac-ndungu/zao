@@ -109,7 +109,7 @@ function SalesSection() {
           </select>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">add</span>Record Sale
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Record Sale
         </button>
       </div>
 
@@ -429,7 +429,7 @@ function BuyersSection() {
           <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
         </form>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">add</span>Add Buyer
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Add Buyer
         </button>
       </div>
 
