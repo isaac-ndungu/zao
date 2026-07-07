@@ -167,7 +167,7 @@ class RequestOTPView(APIView):
         except Exception as exc:
             logger.exception('Unexpected error in RequestOTPView: %s', exc)
             return Response(
-                {'detail': f'Server error: {exc}'},
+                {'detail': 'An error occurred. Please try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
