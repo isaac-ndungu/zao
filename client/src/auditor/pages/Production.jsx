@@ -65,8 +65,8 @@ export default function AuditorProduction() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-outline-variant bg-surface-container">
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Product Type</th>
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Quantity (kg)</th>
+                  <th scope="col" className="px-6 py-3 text-label-md font-bold text-on-surface">Product Type</th>
+                  <th scope="col" className="px-6 py-3 text-label-md font-bold text-on-surface">Quantity (kg)</th>
                 </tr>
               </thead>
               <tbody>
@@ -89,8 +89,8 @@ export default function AuditorProduction() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-outline-variant bg-surface-container">
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Shift</th>
-                  <th className="px-6 py-3 text-label-md font-bold text-on-surface">Total (kg)</th>
+                  <th scope="col" className="px-6 py-3 text-label-md font-bold text-on-surface">Shift</th>
+                  <th scope="col" className="px-6 py-3 text-label-md font-bold text-on-surface">Total (kg)</th>
                 </tr>
               </thead>
               <tbody>

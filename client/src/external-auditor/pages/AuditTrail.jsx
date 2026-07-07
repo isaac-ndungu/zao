@@ -71,10 +71,12 @@ export default function ExternalAuditTrail() {
 
       <div className="flex flex-wrap gap-3 mb-4 items-end">
         <form onSubmit={handleSearch} className="flex gap-2">
-          <input name="search" defaultValue={search} placeholder="Search..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-48" />
+          <label htmlFor="audit-search" className="sr-only">Search audit logs</label>
+          <input id="audit-search" name="search" defaultValue={search} placeholder="Search..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-48" />
           <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
         </form>
-        <select value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+        <label htmlFor="audit-action-filter" className="sr-only">Filter by action</label>
+        <select id="audit-action-filter" value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
           <option value="">All Actions</option>
           <option value="LOCK">LOCK</option>
           <option value="UNLOCK">UNLOCK</option>

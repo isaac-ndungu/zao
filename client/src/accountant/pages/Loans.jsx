@@ -82,7 +82,7 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Loan #{loan.id}</h3>
           <p className="text-body-md text-on-surface-variant">{loan.farmer_name || loan.farmer?.full_name || `Farmer #${loan.farmer}`}</p>
         </div>
-        <button onClick={onClose} aria-label="Close panel" className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <button onClick={onClose} aria-label="Close panel" className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined" aria-hidden="true">close</span></button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

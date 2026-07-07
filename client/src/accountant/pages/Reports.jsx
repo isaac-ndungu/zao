@@ -55,7 +55,7 @@ export default function AccountantReports() {
         {reportCards.map((card) => (
           <div key={card.endpoint} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 hover:shadow-md transition-shadow">
             <div className="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center mb-4">
-              <span className="material-symbols-outlined text-secondary">{card.icon}</span>
+              <span className="material-symbols-outlined text-secondary" aria-hidden="true">{card.icon}</span>
             </div>
             <h3 className="font-headline-sm text-headline-sm text-on-surface mb-2">{card.title}</h3>
             <p className="text-body-md text-on-surface-variant mb-6 leading-relaxed">{card.desc}</p>

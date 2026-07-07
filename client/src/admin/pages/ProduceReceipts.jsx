@@ -277,14 +277,14 @@ export default function ProduceReceipts() {
   }, [data])
 
   const columns = useMemo(() => [
-    { key: 'batch_id', label: 'Batch ID', sortable: true, render: (r) => <span className="font-data-mono text-primary">{r.batch_id}</span> },
-    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (r) => <span className="font-medium">{r.farmer_name}</span> },
-    { key: 'product_type', label: 'Product', sortable: true, render: (r) => <span className="capitalize">{r.product_type?.toLowerCase()}</span> },
-    { key: 'quantity_kg', label: 'Qty (kg)', sortable: true, render: (r) => <span className="font-data-mono">{r.quantity_kg?.toLocaleString()}</span> },
-    { key: 'grade', label: 'Grade', render: (r) => <span className="font-medium">{r.grade || '-'}</span> },
-    { key: 'status', label: 'Status', render: (r) => <StatusBadge status={statusBadgeMap[r.status] || 'draft'} label={r.status} /> },
-    { key: 'shift', label: 'Shift', sortable: true, render: (r) => <span className="capitalize text-on-surface-variant">{(r.shift || '').toLowerCase()}</span> },
-    { key: 'date_delivered', label: 'Date', sortable: true, render: (r) => r.date_delivered ? new Date(r.date_delivered).toLocaleDateString() : '-' },
+    { key: 'batch_id', label: 'Batch ID', sortable: true, render: (v, r) => <span className="font-data-mono text-primary">{r.batch_id}</span> },
+    { key: 'farmer_name', label: 'Farmer', sortable: true, render: (v, r) => <span className="font-medium">{r.farmer_name}</span> },
+    { key: 'product_type', label: 'Product', sortable: true, render: (v, r) => <span className="capitalize">{r.product_type?.toLowerCase()}</span> },
+    { key: 'quantity_kg', label: 'Qty (kg)', sortable: true, render: (v, r) => <span className="font-data-mono">{r.quantity_kg?.toLocaleString()}</span> },
+    { key: 'grade', label: 'Grade', render: (v, r) => <span className="font-medium">{r.grade || '-'}</span> },
+    { key: 'status', label: 'Status', render: (v, r) => <StatusBadge status={statusBadgeMap[r.status] || 'draft'} label={r.status} /> },
+    { key: 'shift', label: 'Shift', sortable: true, render: (v, r) => <span className="capitalize text-on-surface-variant">{(r.shift || '').toLowerCase()}</span> },
+    { key: 'date_delivered', label: 'Date', sortable: true, render: (v, r) => r.date_delivered ? new Date(r.date_delivered).toLocaleDateString() : '-' },
   ], [])
 
   if (error) {

@@ -86,7 +86,7 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
           <h3 className="font-headline-sm text-headline-sm text-on-surface">{cycle.name}</h3>
           <p className="text-body-md text-on-surface-variant">Cycle #{cycle.id}</p>
         </div>
-        <button onClick={onClose} aria-label="Close panel" className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <button onClick={onClose} aria-label="Close panel" className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined" aria-hidden="true">close</span></button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -108,7 +108,7 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
         {running && runProgress ? (
           <div className="bg-surface-container rounded-xl p-4 space-y-2">
             <div className="flex items-center gap-2">
-              <span className={`material-symbols-outlined ${runProgress.status === 'completed' ? 'text-success' : runProgress.status === 'failed' ? 'text-error' : 'text-warning animate-spin'}`}>
+              <span className={`material-symbols-outlined ${runProgress.status === 'completed' ? 'text-success' : runProgress.status === 'failed' ? 'text-error' : 'text-warning animate-spin'}`} aria-hidden="true">
                 {runProgress.status === 'completed' ? 'check_circle' : runProgress.status === 'failed' ? 'error' : 'sync'}
               </span>
               <span className="text-body-md">{runProgress.message}</span>
@@ -118,32 +118,32 @@ function CycleDetailPanel({ cycle, onClose, onAction }) {
           <>
             {cycle.status === 'DRAFT' && (
               <button onClick={handleRunCycle} className="w-full py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors inline-flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">play_arrow</span> Run Cycle
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">play_arrow</span> Run Cycle
               </button>
             )}
             {cycle.status === 'ACTIVE' && (
               <button onClick={() => handleHoldRelease('hold')} className="w-full py-2 bg-warning-container text-on-warning-container rounded-lg text-label-md font-bold hover:bg-warning-container/80 transition-colors inline-flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">pause_circle</span> Hold All Payments
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">pause_circle</span> Hold All Payments
               </button>
             )}
             {cycle.status === 'HOLD' && (
               <button onClick={() => handleHoldRelease('release')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors inline-flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">play_circle</span> Release Payments
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">play_circle</span> Release Payments
               </button>
             )}
             {(cycle.status === 'DRAFT' || cycle.status === 'ACTIVE') && (
               <button onClick={() => handleLockUnlock('lock')} disabled={cycle.status !== 'ACTIVE'} className="w-full py-2 bg-error-container text-on-error-container rounded-lg text-label-md font-bold disabled:opacity-50 transition-colors inline-flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">lock</span> Lock Cycle
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">lock</span> Lock Cycle
               </button>
             )}
             {cycle.status === 'LOCKED' && (
               <button onClick={() => handleLockUnlock('unlock')} className="w-full py-2 bg-success-container text-on-success-container rounded-lg text-label-md font-bold hover:bg-success-container/80 transition-colors inline-flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">lock_open</span> Unlock Cycle
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">lock_open</span> Unlock Cycle
               </button>
             )}
             {cycle.status === 'DRAFT' && (
               <button onClick={() => handleLockUnlock('lock')} className="w-full py-2 border border-error text-error rounded-lg text-label-md font-bold inline-flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[18px]">lock</span> Lock Cycle
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">lock</span> Lock Cycle
               </button>
             )}
           </>

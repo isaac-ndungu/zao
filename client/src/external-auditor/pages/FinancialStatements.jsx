@@ -134,10 +134,10 @@ export default function ExternalFinancialStatements() {
                 <table className="w-full text-left">
                   <thead className="bg-surface-container">
                     <tr>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Type</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Total (kg)</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Volume (L)</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Deliveries</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Type</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Total (kg)</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Volume (L)</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Deliveries</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -162,13 +162,13 @@ export default function ExternalFinancialStatements() {
                 <table className="w-full text-left">
                   <thead className="bg-surface-container">
                     <tr>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Member No.</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Farmer Name</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Quantity</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Gross</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Deductions</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">Net</th>
-                      <th className="px-4 py-3 text-label-md font-bold text-on-surface">WHT</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Member No.</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Farmer Name</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Quantity</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Gross</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Deductions</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">Net</th>
+                      <th scope="col" className="px-4 py-3 text-label-md font-bold text-on-surface">WHT</th>
                     </tr>
                   </thead>
                   <tbody>

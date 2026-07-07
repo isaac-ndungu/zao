@@ -102,7 +102,7 @@ export default function AccountantSettings() {
           {user?.two_fa_enabled ? (
             <>
               <div className="flex items-center gap-3 mb-3">
-                <span className="material-symbols-outlined text-success">verified</span>
+                <span className="material-symbols-outlined text-success" aria-hidden="true">verified</span>
                 <span className="text-body-md text-on-surface font-medium">Two-factor authentication is enabled</span>
               </div>
               <p className="text-body-md text-on-surface-variant">2FA is mandatory for accountant accounts and cannot be disabled.</p>
@@ -110,7 +110,7 @@ export default function AccountantSettings() {
           ) : (
             <>
               <div className="flex items-center gap-3 mb-3">
-                <span className="material-symbols-outlined text-on-surface-variant">security</span>
+                <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">security</span>
                 <span className="text-body-md text-on-surface font-medium">Two-factor authentication is not enabled</span>
               </div>
               <p className="text-body-md text-on-surface-variant mb-4">Enable 2FA to add an extra layer of security to your account.</p>
