@@ -133,11 +133,23 @@ User = get_user_model()
 def manager_api_client(db, cooperative):
     from rest_framework.test import APIClient
     manager = User.objects.create_user(
-        'Test', 'User', email='manager@route.com', phone_number='+25470000999',
+        'manager@route.com', '+25470000999', 'Test', 'User',
         password='testpass123', role=UserRole.MANAGER, cooperative=cooperative,
     )
     client = APIClient()
     client.force_authenticate(user=manager)
+    return client
+
+
+@pytest.fixture
+def grader_api_client(db, cooperative):
+    from rest_framework.test import APIClient
+    grader = User.objects.create_user(
+        'grader@route.com', '+25470000777', 'Grader', 'User',
+        password='testpass123', role=UserRole.GRADER, cooperative=cooperative,
+    )
+    client = APIClient()
+    client.force_authenticate(user=grader)
     return client
 
 
@@ -177,8 +189,10 @@ class TestRouteAPI:
         assert resp.json()['name'] == 'New Route'
 
     def test_create_no_path(self, manager_api_client):
-        resp = manager_api_client.post('/api/routes/', {'name': 'Bad Route'}, format='json')
-        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        # Path is now optional at create time; it auto-builds from stops.
+        resp = manager_api_client.post('/api/routes/', {'name': 'Empty Path'}, format='json')
+        assert resp.status_code == status.HTTP_201_CREATED
+        assert resp.json()['path'] in ({}, '')
 
     def test_create_wrong_path_type(self, manager_api_client):
         resp = manager_api_client.post('/api/routes/', {
@@ -212,7 +226,7 @@ class TestRouteAPI:
     def test_create_permission_accountant_denied(self, cooperative):
         from rest_framework.test import APIClient
         accountant = User.objects.create_user(
-            email='acct@route.com', phone_number='+25470000111',
+            'acct@route.com', '+25470000111', 'Acct', 'User',
             password='testpass123', role=UserRole.ACCOUNTANT, cooperative=cooperative,
         )
         client = APIClient()
@@ -307,7 +321,7 @@ class TestRouteAssignStops:
     def test_assign_stops_permission_accountant_denied(self, cooperative, collection_route):
         from rest_framework.test import APIClient
         accountant = User.objects.create_user(
-            email='acct2@route.com', phone_number='+25470000222',
+            'acct2@route.com', '+25470000222', 'Acct2', 'User',
             password='testpass123', role=UserRole.ACCOUNTANT, cooperative=cooperative,
         )
         client = APIClient()
@@ -321,3 +335,174 @@ class TestRouteAssignStops:
             }],
         }, format='json')
         assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+# =============================================================================
+# Map, assign-farmer, unassign-farmer, path auto-build
+# =============================================================================
+
+
+def _make_route_with_stops(cooperative, count=2):
+    route = CollectionRoute.objects.create(
+        cooperative=cooperative, name='Stops Route', path={},
+    )
+    stops = []
+    for i in range(1, count + 1):
+        stops.append(RouteStop.objects.create(
+            route=route,
+            latitude=Decimal(f'-1.{i}00000'),
+            longitude=Decimal(f'36.{i}00000'),
+            stop_order=i,
+            estimated_minutes=10 * i,
+        ))
+    return route, stops
+
+
+class TestRouteMap:
+    def test_map_returns_stops_and_farmers(self, api_client, collection_route, farmer):
+        stop = RouteStop.objects.create(
+            route=collection_route, latitude=0, longitude=0, stop_order=1,
+        )
+        stop.farmers.add(farmer)
+        resp = api_client.get(f'/api/routes/{collection_route.id}/map/')
+        assert resp.status_code == status.HTTP_200_OK
+        data = resp.json()
+        assert data['id'] == collection_route.id
+        assert len(data['stops']) == 1
+        assert data['stops'][0]['order'] == 1
+        assert len(data['stops'][0]['farmers']) == 1
+        assert data['stops'][0]['farmers'][0]['id'] == str(farmer.id)
+
+    def test_map_unauthenticated(self, client, collection_route):
+        resp = client.get(f'/api/routes/{collection_route.id}/map/')
+        assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestRouteAssignFarmer:
+    def test_assign_farmer_to_stop(self, manager_api_client, farmer, cooperative):
+        route, stops = _make_route_with_stops(cooperative, count=2)
+        resp = manager_api_client.post(
+            f'/api/routes/{route.id}/assign-farmer/',
+            {'farmer_id': str(farmer.id), 'stop_id': stops[1].id},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert stops[1].farmers.filter(id=farmer.id).exists()
+        assert not stops[0].farmers.filter(id=farmer.id).exists()
+
+    def test_assign_farmer_moves_farmer_between_stops(self, manager_api_client, farmer, cooperative):
+        route, stops = _make_route_with_stops(cooperative, count=2)
+        stops[0].farmers.add(farmer)
+        resp = manager_api_client.post(
+            f'/api/routes/{route.id}/assign-farmer/',
+            {'farmer_id': str(farmer.id), 'stop_id': stops[1].id},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert stops[1].farmers.filter(id=farmer.id).exists()
+
+    def test_assign_farmer_invalid_stop(self, manager_api_client, farmer, cooperative):
+        route, _ = _make_route_with_stops(cooperative, count=1)
+        resp = manager_api_client.post(
+            f'/api/routes/{route.id}/assign-farmer/',
+            {'farmer_id': str(farmer.id), 'stop_id': 99999},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_assign_farmer_invalid_farmer(self, manager_api_client, cooperative):
+        from uuid import uuid4
+        route, stops = _make_route_with_stops(cooperative, count=1)
+        resp = manager_api_client.post(
+            f'/api/routes/{route.id}/assign-farmer/',
+            {'farmer_id': str(uuid4()), 'stop_id': stops[0].id},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_assign_farmer_as_grader_allowed(self, grader_api_client, farmer, cooperative):
+        route, stops = _make_route_with_stops(cooperative, count=1)
+        resp = grader_api_client.post(
+            f'/api/routes/{route.id}/assign-farmer/',
+            {'farmer_id': str(farmer.id), 'stop_id': stops[0].id},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK
+
+
+class TestRouteUnassignFarmer:
+    def test_unassign_farmer(self, manager_api_client, farmer, cooperative):
+        route, stops = _make_route_with_stops(cooperative, count=1)
+        stops[0].farmers.add(farmer)
+        resp = manager_api_client.post(
+            f'/api/routes/{route.id}/unassign-farmer/',
+            {'farmer_id': str(farmer.id)},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert not stops[0].farmers.filter(id=farmer.id).exists()
+
+    def test_unassign_farmer_not_on_route(self, manager_api_client, farmer, cooperative):
+        route, _ = _make_route_with_stops(cooperative, count=1)
+        resp = manager_api_client.post(
+            f'/api/routes/{route.id}/unassign-farmer/',
+            {'farmer_id': str(farmer.id)},
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+
+
+class TestRoutePathAutoBuild:
+    def test_create_with_empty_path_autofills_from_stops(self, manager_api_client, cooperative):
+        route = CollectionRoute.objects.create(
+            cooperative=cooperative, name='Empty', path={},
+        )
+        RouteStop.objects.create(route=route, latitude=Decimal('1.0'), longitude=Decimal('36.0'), stop_order=1)
+        RouteStop.objects.create(route=route, latitude=Decimal('2.0'), longitude=Decimal('37.0'), stop_order=2)
+        # Trigger via serializer
+        from apps.routes.views import RouteViewSet
+        view = RouteViewSet()
+        view._autofill_path(route)
+        route.refresh_from_db()
+        assert route.path['type'] == 'LineString'
+        assert len(route.path['coordinates']) == 2
+        assert route.path['coordinates'][0] == [36.0, 1.0]
+        assert route.path['coordinates'][1] == [37.0, 2.0]
+
+    def test_create_with_existing_path_unchanged(self, manager_api_client, collection_route):
+        existing = collection_route.path
+        from apps.routes.views import RouteViewSet
+        view = RouteViewSet()
+        view._autofill_path(collection_route)
+        collection_route.refresh_from_db()
+        assert collection_route.path == existing
+
+    def test_assign_stops_autofills_path(self, manager_api_client, collection_route, farmer):
+        from apps.farmers.models import Farmer as FModel
+        farmer2 = FModel.objects.create(
+            first_name='F2', last_name='P',
+            id_number='RT002A', phone_number='+25470000903',
+            county='Nairobi', cooperative=collection_route.cooperative,
+        )
+        # Use a fresh route with empty path to verify auto-build.
+        empty_route = CollectionRoute.objects.create(
+            cooperative=collection_route.cooperative,
+            name='Empty For Auto',
+            path={},
+        )
+        resp = manager_api_client.post(
+            f'/api/routes/{empty_route.id}/assign-stops/',
+            {
+                'stops': [
+                    {'farmer_ids': [str(farmer.id)], 'latitude': '-1.10', 'longitude': '36.10', 'stop_order': 1},
+                    {'farmer_ids': [str(farmer2.id)], 'latitude': '-1.20', 'longitude': '36.20', 'stop_order': 2},
+                ],
+            },
+            format='json',
+        )
+        assert resp.status_code == status.HTTP_200_OK, resp.content
+        empty_route.refresh_from_db()
+        assert empty_route.path['type'] == 'LineString'
+        first = empty_route.path['coordinates'][0]
+        assert abs(first[0] - 36.1) < 1e-6
+        assert abs(first[1] - (-1.1)) < 1e-6
