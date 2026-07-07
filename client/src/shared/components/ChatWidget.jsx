@@ -163,10 +163,10 @@ export default function ChatWidget() {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-50 hover:bg-primary-container hover:text-primary transition-colors"
+          className="fixed bottom-6 right-6 w-11 h-11 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-50 hover:bg-primary-container hover:text-primary transition-colors"
           aria-label="Open chat"
         >
-          <span className="material-symbols-outlined text-2xl" aria-hidden="true">chat</span>
+          <span className="material-symbols-outlined text-xl" aria-hidden="true">chat</span>
         </button>
       )}
     </>

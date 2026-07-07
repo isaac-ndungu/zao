@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, createPortal } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { FarmerAuthProvider } from './context/FarmerAuthContext'
 import { ToastProvider } from './components/Toast'
@@ -33,10 +33,10 @@ function FarmerLayout({ children }) {
 function TabRoute({ children }) {
   return (
     <ProtectedRoute>
+      {createPortal(<FloatingAccessibilityWidget mode="farmer" />, document.body)}
       <FarmerLayout>
         {children}
         <BottomNav />
-        <FloatingAccessibilityWidget mode="farmer" />
       </FarmerLayout>
     </ProtectedRoute>
   )

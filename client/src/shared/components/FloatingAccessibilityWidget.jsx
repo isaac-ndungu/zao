@@ -102,8 +102,8 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   const widgetPosition = mode === 'farmer'
-    ? 'bottom-20 right-4 sm:right-6'
-    : 'bottom-6 right-20'
+    ? 'bottom-[72px] right-6'
+    : 'bottom-[72px] right-6'
 
   const mobileTouchTarget = mode === 'farmer' ? 'min-h-[48px] min-w-[48px]' : ''
 
@@ -161,15 +161,15 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
         aria-label="Accessibility settings"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className={`fixed ${widgetPosition} z-50 w-12 h-12 bg-primary-container text-on-primary-container rounded-full shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors ${mobileTouchTarget}`}
+        className={`fixed ${widgetPosition} z-50 w-11 h-11 bg-surface border border-outline-variant text-[#8EA896] hover:bg-[#D8F3DC] hover:text-[#2D6A4F] rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${mobileTouchTarget}`}
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0)' }}
       >
-        <span className="material-symbols-outlined text-2xl" aria-hidden="true">accessibility_new</span>
+        <span className="material-symbols-outlined text-xl" aria-hidden="true">accessibility_new</span>
       </button>
 
       {isOpen && createPortal(
         <div
-          className="fixed inset-0 z-[60]"
+          className="fixed inset-0 z-[55]"
           onClick={close}
           role="presentation"
         >
@@ -178,7 +178,7 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="a11y-panel-title"
-            className="absolute bottom-6 right-4 sm:right-6 w-72 max-h-[70vh] overflow-y-auto bg-surface border border-outline-variant rounded-2xl shadow-2xl"
+            className="absolute bottom-6 right-4 sm:right-6 w-72 max-h-[70vh] overflow-y-auto bg-surface border border-outline-variant rounded-2xl shadow-2xl z-[56]"
             onClick={(e) => e.stopPropagation()}
             style={{ marginBottom: 'env(safe-area-inset-bottom, 0)' }}
           >

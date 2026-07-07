@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, createPortal } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AdminAuthProvider } from './admin/contexts/AdminAuthContext'
 import AdminGuard from './admin/components/common/AdminGuard'
@@ -6,7 +6,6 @@ import AdminLayout from './admin/layouts/AdminLayout'
 import RoleGuard from './shared/components/RoleGuard'
 import { useFarmerAuth } from './farmer/context/FarmerAuthContext'
 import { getToken as getFarmerToken } from './farmer/api/client'
-import DashboardLayout from './shared/components/DashboardLayout'
 import LegalAcceptanceGate from './shared/components/LegalAcceptanceGate'
 import ErrorBoundary from './shared/components/ErrorBoundary'
 import { FarmerAuthProvider } from './farmer/context/FarmerAuthContext'
@@ -154,14 +153,16 @@ function FarmerLayoutWithNav() {
   const isChatPage = location.pathname === '/farmer/chat'
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
-      <div className="px-4 pt-4">
-        <Outlet />
+    <>
+      {createPortal(<FloatingAccessibilityWidget mode="farmer" />, document.body)}
+      <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
+        <div className="px-4 pt-4">
+          <Outlet />
+        </div>
+        <BottomNav />
+        {!isChatPage && <ChatWidget />}
       </div>
-      <BottomNav />
-      {!isChatPage && <ChatWidget />}
-      <FloatingAccessibilityWidget mode="farmer" />
-    </div>
+    </>
   )
 }
 
