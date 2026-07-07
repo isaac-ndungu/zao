@@ -1,5 +1,6 @@
 import logging
 import secrets
+import socket
 from datetime import timedelta
 
 logger = logging.getLogger(__name__)
@@ -127,22 +128,29 @@ class RequestOTPView(APIView):
 
     @idempotent()
     def post(self, request):
-        serializer = RequestOTPSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-
-        otp_code = f'{secrets.randbelow(1_000_000):06d}'
-        expires_at = timezone.now() + timedelta(minutes=5)
-
-        TwoFactorOTP.objects.create(
-            user=user,
-            otp_code=otp_code,
-            purpose='LOGIN',
-            expires_at=expires_at,
-        )
-
-        from_email = settings.DEFAULT_FROM_EMAIL
         try:
+            serializer = RequestOTPSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data['user']
+
+            otp_code = f'{secrets.randbelow(1_000_000):06d}'
+            expires_at = timezone.now() + timedelta(minutes=5)
+
+            TwoFactorOTP.objects.create(
+                user=user,
+                otp_code=otp_code,
+                purpose='LOGIN',
+                expires_at=expires_at,
+            )
+
+            from_email = settings.DEFAULT_FROM_EMAIL
+            logger.info(
+                'EMAIL_BACKEND=%s EMAIL_HOST=%s EMAIL_HOST_USER=%s DEFAULT_FROM=%s',
+                settings.EMAIL_BACKEND, settings.EMAIL_HOST,
+                settings.EMAIL_HOST_USER, from_email,
+            )
+
+            socket.setdefaulttimeout(10)
             send_mail(
                 'Your Login OTP',
                 f'Your OTP is: {otp_code}\nIt expires in 5 minutes.',
@@ -150,19 +158,18 @@ class RequestOTPView(APIView):
                 [user.email],
                 fail_silently=False,
             )
+
+            data = {'detail': 'OTP sent to your email.'}
+            if settings.DEBUG:
+                data['otp_code'] = otp_code
+            return Response(data)
+
         except Exception as exc:
-            logger.exception(
-                'Failed to send 2FA login OTP email to %s: %s', user.email, exc,
-            )
+            logger.exception('Unexpected error in RequestOTPView: %s', exc)
             return Response(
-                {'detail': 'Failed to send email. Please try again.'},
+                {'detail': f'Server error: {exc}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-        data = {'detail': 'OTP sent to your email.'}
-        if settings.DEBUG:
-            data['otp_code'] = otp_code
-        return Response(data)
 
 
 class VerifyOTPView(APIView):
