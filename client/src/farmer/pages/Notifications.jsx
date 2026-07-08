@@ -55,7 +55,7 @@ export default function FarmerNotifications() {
         <div className="space-y-3">
           {notifications.map((n) => (
             <div key={n.id} className="bg-surface-container rounded-xl border border-outline-variant p-4">
-              <p className="text-sm text-on-surface font-medium">{n.message || n.title || 'New notification'}</p>
+              <p className="text-sm text-on-surface font-medium">{n.content || n.message || n.title || 'New notification'}</p>
               <p className="text-xs text-on-surface-variant mt-1">{timeSince(n.created_at)}</p>
             </div>
           ))}

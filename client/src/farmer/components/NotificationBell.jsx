@@ -96,7 +96,7 @@ export default function NotificationBell({ viewAllPath }) {
             <div>
               {notifications.map((n) => (
                 <div key={n.id} className="p-3 border-b border-outline-variant/50 hover:bg-primary-container/10 transition-colors">
-                  <p className="text-sm text-on-surface">{n.message || n.title || 'New notification'}</p>
+                  <p className="text-sm text-on-surface">{n.content || n.message || n.title || 'New notification'}</p>
                   <p className="text-xs text-on-surface-variant mt-0.5">{timeSince(n.created_at)}</p>
                 </div>
               ))}
