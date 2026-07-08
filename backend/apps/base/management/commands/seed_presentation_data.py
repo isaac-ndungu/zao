@@ -41,7 +41,7 @@ FARMER_LAST_NAMES = [
     "Ndegwa", "Kinyanjui", "Mureithi", "Njoroge", "Kibaki", "Muthoni",
 ]
 
-GDC_FARMER_PHONES = ["0716227503"] + [f"25472{i:07d}" for i in range(2000002, 2000021)]
+GDC_FARMER_PHONES = ["0739250064"] + [f"25472{i:07d}" for i in range(2000002, 2000021)]
 NCC_FARMER_PHONES = [f"25472{i:07d}" for i in range(3000001, 3000021)]
 
 
@@ -60,47 +60,46 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         import sys
         sys.stdout.write("H0\n"); sys.stdout.flush()
-        with transaction.atomic():
-            sys.stdout.write("H1\n"); sys.stdout.flush()
-            if not options["skip_legal"]:
-                self._sync_legal_documents()
+        sys.stdout.write("H1\n"); sys.stdout.flush()
+        if not options["skip_legal"]:
+            self._sync_legal_documents()
             sys.stdout.write("H2\n"); sys.stdout.flush()
-            self._seed_superadmin()
-            sys.stdout.write("H3\n"); sys.stdout.flush()
-            self._seed_cooperatives()
-            sys.stdout.write("H4\n"); sys.stdout.flush()
-            self._seed_staff_users()
-            sys.stdout.write("H5\n"); sys.stdout.flush()
-            self._seed_farmers()
-            sys.stdout.write("H6\n"); sys.stdout.flush()
-            self._seed_grade_prices()
-            sys.stdout.write("H7\n"); sys.stdout.flush()
-            self._seed_deliveries()
-            sys.stdout.write("H8\n"); sys.stdout.flush()
-            self._seed_grades_and_inventory()
-            sys.stdout.write("H9\n"); sys.stdout.flush()
-            self._seed_buyers()
-            sys.stdout.write("H10\n"); sys.stdout.flush()
-            self._seed_sales_and_inventory()
-            sys.stdout.write("H11\n"); sys.stdout.flush()
-            self._seed_payment_cycles()
-            sys.stdout.write("H12\n"); sys.stdout.flush()
+        self._seed_superadmin()
+        sys.stdout.write("H3\n"); sys.stdout.flush()
+        self._seed_cooperatives()
+        sys.stdout.write("H4\n"); sys.stdout.flush()
+        self._seed_staff_users()
+        sys.stdout.write("H5\n"); sys.stdout.flush()
+        self._seed_farmers()
+        sys.stdout.write("H6\n"); sys.stdout.flush()
+        self._seed_grade_prices()
+        sys.stdout.write("H7\n"); sys.stdout.flush()
+        self._seed_deliveries()
+        sys.stdout.write("H8\n"); sys.stdout.flush()
+        self._seed_grades_and_inventory()
+        sys.stdout.write("H9\n"); sys.stdout.flush()
+        self._seed_buyers()
+        sys.stdout.write("H10\n"); sys.stdout.flush()
+        self._seed_sales_and_inventory()
+        sys.stdout.write("H11\n"); sys.stdout.flush()
+        self._seed_payment_cycles()
+        sys.stdout.write("H12\n"); sys.stdout.flush()
 
-            if not options["skip_payments"]:
-                self._seed_farmer_payments()
-                sys.stdout.write("H13\n"); sys.stdout.flush()
-                self._seed_deductions()
-                self._seed_loans()
-                self._seed_disbursements()
+        if not options["skip_payments"]:
+            self._seed_farmer_payments()
+            sys.stdout.write("H13\n"); sys.stdout.flush()
+            self._seed_deductions()
+            self._seed_loans()
+            self._seed_disbursements()
 
-            self._seed_routes()
-            sys.stdout.write("H14\n"); sys.stdout.flush()
-            self._seed_notifications()
-            sys.stdout.write("H15\n"); sys.stdout.flush()
-            self._seed_audit_logs()
-            sys.stdout.write("H16\n"); sys.stdout.flush()
-            self._seed_analytics_snapshots()
-            sys.stdout.write("H17\n"); sys.stdout.flush()
+        self._seed_routes()
+        sys.stdout.write("H14\n"); sys.stdout.flush()
+        self._seed_notifications()
+        sys.stdout.write("H15\n"); sys.stdout.flush()
+        self._seed_audit_logs()
+        sys.stdout.write("H16\n"); sys.stdout.flush()
+        self._seed_analytics_snapshots()
+        sys.stdout.write("H17\n"); sys.stdout.flush()
 
         self._print_summary()
 
@@ -1048,7 +1047,7 @@ class Command(BaseCommand):
         self.stdout.write(f"  Accountant:    isaacn2101@gmail.com / Account@2026")
         self.stdout.write(f"  Grader:       davision.2024@gmail.com / Grader@2026")
         self.stdout.write(f"Farmers:            40  (20 GDC + 20 NCC)")
-        self.stdout.write(f"  Demo farmer:   {self.gdc_demo_farmer} @ 0716227503 (OTP via SMS)")
+        self.stdout.write(f"  Demo farmer:   {self.gdc_demo_farmer} @ {self.gdc_demo_farmer.phone_number} (OTP via SMS)")
         self.stdout.write(f"Deliveries:         475  (467 GDC + 8 NCC)")
         self.stdout.write(f"Grades:             ~467 GDC + NCC")
         self.stdout.write(f"Sales:              6  (5 COMPLETED + 1 PENDING)")

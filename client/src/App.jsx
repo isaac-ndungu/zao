@@ -1,4 +1,5 @@
-import { lazy, Suspense, createPortal } from 'react'
+import { lazy, Suspense } from 'react'
+import { createPortal } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AdminAuthProvider } from './admin/contexts/AdminAuthContext'
 import AdminGuard from './admin/components/common/AdminGuard'

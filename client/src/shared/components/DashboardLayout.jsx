@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { createPortal } from 'react-dom'
+import { createPortal } from 'react-dom/client'
 import { ToastProvider } from './ToastProvider'
 import OfflineBanner from './OfflineBanner'
 import ChatWidget from './ChatWidget'

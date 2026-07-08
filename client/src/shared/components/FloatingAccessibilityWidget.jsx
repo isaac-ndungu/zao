@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal } from 'react-dom/client'
 
 const STORAGE_KEY = 'zao_a11y_prefs'
 
