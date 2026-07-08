@@ -30,21 +30,21 @@ const FEATURES = [
     iconBg: 'bg-tertiary-container',
     iconColor: 'text-on-tertiary-container',
     title: 'Farmer Loans',
-    desc: 'Integrated credit scoring based on delivery history. Provide input financing and emergency loans directly through the Zao ecosystem.',
+    desc: 'Access input financing and emergency loans directly through the Zao ecosystem, with repayment deducted from your future payments.',
   },
   {
     icon: HiOutlineDevicePhoneMobile,
     iconBg: 'bg-secondary-container',
     iconColor: 'text-secondary',
     title: 'USSD Self-Service',
-    desc: 'Farmers check balances, delivery history, and payment status on any phone via *384*ZAO#. No smartphone or data plan required.',
+    desc: 'Farmers check balances, delivery history, and payment status on any phone via USSD. No smartphone or data plan required.',
   },
   {
     icon: HiOutlineWifi,
     iconBg: 'bg-tertiary-container',
     iconColor: 'text-on-tertiary-container',
-    title: 'Offline-First Grading',
-    desc: 'Graders record produce at rural collection points with zero connectivity. Data syncs automatically when back online. Built for low-connectivity environments.',
+    title: 'Offline-First Deliveries',
+    desc: 'Record deliveries at rural collection points with zero connectivity. Data syncs automatically when back online. Built for low-connectivity environments.',
   },
 ]
 
@@ -74,12 +74,12 @@ export default function Home() {
               Modernize your agricultural supply chain with real-time data, instant payments, and precise digital grading. Built for the future of Kenya's cooperatives.
             </p>
             <div className="flex flex-col md:flex-row gap-stack-md justify-center items-center">
-              <button className="w-full md:w-auto px-10 py-4 bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold rounded-xl text-body-lg active:scale-95 transition-all shadow-xl hover:shadow-2xl">
+              <Link to="/contact" className="w-full md:w-auto px-10 py-4 bg-tertiary-fixed-dim text-on-tertiary-fixed font-bold rounded-xl text-body-lg active:scale-95 transition-all shadow-xl hover:shadow-2xl text-center">
                 Request Demo
-              </button>
-              <button className="w-full md:w-auto px-10 py-4 border-2 border-white/30 text-white font-bold rounded-xl text-body-lg hover:bg-white/10 active:scale-95 transition-all">
+              </Link>
+              <Link to="/about" className="w-full md:w-auto px-10 py-4 border-2 border-white/30 text-white font-bold rounded-xl text-body-lg hover:bg-white/10 active:scale-95 transition-all text-center">
                 Learn More
-              </button>
+              </Link>
             </div>
           </div>
         </section>
@@ -144,12 +144,12 @@ export default function Home() {
               Join hundreds of cooperatives across East Africa leveraging Zao to increase efficiency and farmer loyalty.
             </p>
             <div className="flex flex-col sm:flex-row gap-stack-md justify-center">
-              <button className="px-12 py-5 bg-primary text-on-primary font-bold rounded-xl text-body-lg active:scale-95 transition-all shadow-lg hover:shadow-xl">
+              <Link to="/contact" className="px-12 py-5 bg-primary text-on-primary font-bold rounded-xl text-body-lg active:scale-95 transition-all shadow-lg hover:shadow-xl text-center">
                 Schedule a Demo
-              </button>
+              </Link>
               <Link
-                to="/about"
-                className="px-12 py-5 border-2 border-primary text-primary font-bold rounded-xl text-body-lg active:scale-95 transition-all hover:bg-primary/5 inline-block"
+                to="/contact"
+                className="px-12 py-5 border-2 border-primary text-primary font-bold rounded-xl text-body-lg active:scale-95 transition-all hover:bg-primary/5 inline-block text-center"
               >
                 Contact Sales
               </Link>

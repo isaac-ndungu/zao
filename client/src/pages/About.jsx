@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   HiOutlineShieldCheck,
   HiOutlineCpuChip,
@@ -32,8 +33,8 @@ export default function About() {
                 Born in the fertile soils of the Central Rift, Zao was founded to bridge the gap between traditional agricultural cooperatives and the digital age. We provide the analytical precision required to turn smallholder farming into a high-performance business.
               </p>
               <div className="flex gap-stack-md">
-                <button className="bg-primary text-on-primary px-6 py-3 rounded text-body-md font-medium">Join our mission</button>
-                <button className="border border-primary text-primary px-6 py-3 rounded text-body-md font-medium">View Impact Report</button>
+                <Link to="/solutions" className="bg-primary text-on-primary px-6 py-3 rounded text-body-md font-medium text-center">Join our mission</Link>
+                <Link to="/about" className="border border-primary text-primary px-6 py-3 rounded text-body-md font-medium text-center">View Impact Report</Link>
               </div>
             </div>
           </div>
@@ -87,18 +88,18 @@ export default function About() {
                       <div className="bg-primary h-full w-full" />
                     </div>
                     <div>
-                      <p className="font-data-mono text-data-mono text-primary font-bold">ROLE-BASED ACCESS (6 ROLES)</p>
+                      <p className="font-data-mono text-data-mono text-primary font-bold">ROLE-BASED ACCESS (7 ROLES)</p>
                       <p className="font-body-md text-on-surface-variant mt-2 leading-relaxed">
-                        Granular permissions for Farmer, Grader, Accountant, Manager, Admin, and Auditor.
+                        Granular permissions for Farmer, Grader, Accountant, Manager, Admin, Auditor, and External Auditor.
                       </p>
                     </div>
                   </div>
                   <div className="bg-gradient-to-br from-primary to-secondary text-white rounded-2xl p-6 flex flex-col justify-between h-64 shadow-lg hover:-translate-y-1 hover:shadow-xl transition-all duration-300 border border-primary-container/10 -mt-8 group">
                     <HiOutlineCommandLine className="w-8 h-8 mb-4 transition-transform duration-350 group-hover:scale-110" />
                     <div>
-                      <h5 className="font-headline-sm mb-1">Open API</h5>
+                      <h5 className="font-headline-sm mb-1">API Access</h5>
                       <p className="font-body-md opacity-80 leading-relaxed">
-                        Seamlessly integrate with national agricultural registries and financial institutions.
+                        Connect with national agricultural registries and financial institutions through our API.
                       </p>
                     </div>
                   </div>
@@ -164,10 +165,10 @@ export default function About() {
               Join the hundreds of cooperatives already using Zao to increase efficiency and farmer satisfaction.
             </p>
             <div className="flex justify-center gap-4">
-              <button className="bg-primary text-on-primary px-10 py-4 rounded font-bold text-body-lg">Get Started</button>
-              <button className="border-2 border-primary text-primary px-10 py-4 rounded font-bold text-body-lg">
+              <Link to="/contact" className="bg-primary text-on-primary px-10 py-4 rounded font-bold text-body-lg text-center">Get Started</Link>
+              <Link to="/contact" className="border-2 border-primary text-primary px-10 py-4 rounded font-bold text-body-lg text-center">
                 Speak to an Expert
-              </button>
+              </Link>
             </div>
           </div>
         </section>

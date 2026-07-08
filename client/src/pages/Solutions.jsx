@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   HiOutlineQrCode,
   HiOutlineCheckCircle,
@@ -218,12 +219,12 @@ export default function Solutions() {
         <section className="py-12 border-t border-outline-variant flex flex-col items-center text-center space-y-stack-md">
           <h2 className="font-display-md text-display-md">Ready to modernize your cooperative?</h2>
           <div className="flex gap-4">
-            <button className="bg-primary text-on-primary px-stack-lg py-stack-md rounded-xl font-headline-sm text-headline-sm hover:opacity-90 transition-opacity">
+            <Link to="/contact" className="bg-primary text-on-primary px-stack-lg py-stack-md rounded-xl font-headline-sm text-headline-sm hover:opacity-90 transition-opacity text-center">
               Request Demo
-            </button>
-            <button className="border border-primary text-primary px-stack-lg py-stack-md rounded-xl font-headline-sm text-headline-sm hover:bg-primary-container/20 transition-colors">
+            </Link>
+            <Link to="/contact" className="border border-primary text-primary px-stack-lg py-stack-md rounded-xl font-headline-sm text-headline-sm hover:bg-primary-container/20 transition-colors text-center">
               Contact Sales
-            </button>
+            </Link>
           </div>
         </section>
       </main>

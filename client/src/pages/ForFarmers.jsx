@@ -35,13 +35,13 @@ export default function ForFarmers() {
               Empowering modern Kenyan farmers with the digital tools they need to track deliveries, secure fair payments, and grow their agricultural business with confidence.
             </p>
             <div className="flex flex-col sm:flex-row gap-stack-md">
-              <button className="bg-primary text-on-primary px-8 py-4 rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-primary-container transition-colors shadow-lg active:scale-[0.98]">
+              <Link to="/contact" className="bg-primary text-on-primary px-8 py-4 rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-primary-container transition-colors shadow-lg active:scale-[0.98]">
                 Check via USSD
                 <HiOutlineArrowRight className="w-5 h-5" />
-              </button>
-              <button className="border-2 border-primary text-primary px-8 py-4 rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-surface-container transition-colors active:scale-[0.98]">
+              </Link>
+              <Link to="/farmer/login" className="border-2 border-primary text-primary px-8 py-4 rounded-lg font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-surface-container transition-colors active:scale-[0.98]">
                 Explore Portal
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -182,9 +182,9 @@ export default function ForFarmers() {
               Contact your cooperative manager today to get your Zao Farmer Portal login credentials.
             </p>
             <div className="flex flex-col gap-4">
-              <button className="bg-surface-bright text-primary px-8 py-4 rounded-lg font-bold hover:bg-white transition-all shadow-lg active:scale-95">
+              <Link to="/contact" className="bg-surface-bright text-primary px-8 py-4 rounded-lg font-bold hover:bg-white transition-all shadow-lg active:scale-95 text-center">
                 Contact Your Cooperative Manager
-              </button>
+              </Link>
               <Link to="/about" className="text-white hover:underline font-body-md text-body-md">
                 Learn more about Zao security
               </Link>

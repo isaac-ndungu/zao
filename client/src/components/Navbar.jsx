@@ -49,9 +49,9 @@ export default function Navbar({ activeLink }) {
           >
             Staff Login
           </Link>
-          <button className="bg-primary text-on-primary font-body-md text-body-md px-stack-md py-stack-sm rounded-lg active:scale-95 duration-150 transition-all hover:shadow-lg">
+          <Link to="/contact" className="bg-primary text-on-primary font-body-md text-body-md px-stack-md py-stack-sm rounded-lg active:scale-95 duration-150 transition-all hover:shadow-lg">
             Request Demo
-          </button>
+          </Link>
         </div>
 
         {/* Mobile hamburger */}
@@ -98,9 +98,9 @@ export default function Navbar({ activeLink }) {
             >
               Staff Login
             </Link>
-            <button className="w-full mt-1 px-4 py-3 rounded-lg bg-primary text-on-primary font-body-md text-body-md font-bold active:scale-95 duration-150 transition-all hover:shadow-lg">
+            <Link to="/contact" onClick={() => setMenuOpen(false)} className="w-full mt-1 px-4 py-3 rounded-lg bg-primary text-on-primary font-body-md text-body-md font-bold active:scale-95 duration-150 transition-all hover:shadow-lg text-center">
               Request Demo
-            </button>
+            </Link>
           </div>
         </div>
       )}

@@ -12,20 +12,20 @@ export default function Footer() {
         </div>
         <div className="flex flex-col gap-stack-sm">
           <h4 className="font-label-md text-label-md uppercase text-primary font-bold">Produce</h4>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Coffee</a>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Dairy</a>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Honey</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/solutions">Coffee</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/solutions">Dairy</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/solutions">Honey</a>
         </div>
         <div className="flex flex-col gap-stack-sm">
           <h4 className="font-label-md text-label-md uppercase text-primary font-bold">Company</h4>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">About Us</a>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Contact Us</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/about">About Us</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/contact">Contact Us</a>
           <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Careers</a>
         </div>
         <div className="flex flex-col gap-stack-sm">
           <h4 className="font-label-md text-label-md uppercase text-primary font-bold">Legal</h4>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Privacy Policy</a>
-          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="#">Terms of Service</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/legal/privacy-policy">Privacy Policy</a>
+          <a className="text-on-surface-variant font-body-md text-body-md hover:underline hover:text-primary transition-colors" href="/legal/terms-of-service">Terms of Service</a>
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-container-margin py-stack-md border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
