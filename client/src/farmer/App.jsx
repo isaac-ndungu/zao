@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom/client'
+import { createPortal } from 'react-dom'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { FarmerAuthProvider } from './context/FarmerAuthContext'
 import { ToastProvider } from './components/Toast'
