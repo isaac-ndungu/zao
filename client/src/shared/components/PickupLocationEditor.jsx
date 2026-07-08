@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { apiFetch } from '../../admin/api/client'
+import { apiFetch as adminApiFetch } from '../../admin/api/client'
+import { apiFetch as farmerApiFetch } from '../../farmer/api/client'
 
 const baseIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -140,7 +141,15 @@ export default function PickupLocationEditor({ farmerId, initial = null, height 
     }
     setSaving(true); setError(null); setSaved(false)
     try {
-      const res = await apiFetch(`/api/farmers/${farmerId}/location/`, {
+      const farmerToken = (() => {
+        try { return localStorage.getItem('zao_farmer_token') } catch { return null }
+      })()
+      const useFarmer = Boolean(farmerToken)
+      const endpoint = useFarmer
+        ? '/api/farmers/me/'
+        : `/api/farmers/${farmerId}/location/`
+      const fetcher = useFarmer ? farmerApiFetch : adminApiFetch
+      const res = await fetcher(endpoint, {
         method: 'PATCH',
         body: JSON.stringify({ latitude: Number(lat).toFixed(6), longitude: Number(lng).toFixed(6) }),
       })
