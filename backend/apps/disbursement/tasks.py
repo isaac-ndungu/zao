@@ -1,4 +1,5 @@
 import logging
+import uuid
 from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
@@ -82,7 +83,7 @@ def send_single_mpesa_disbursement(
         # Phase 2: M-Pesa API call OUTSIDE transaction
         coop_shortcode = batch.cooperative.mpesa_shortcode or None
         client = MpesaDarajaClient(shortcode=coop_shortcode)
-        conversation_id = str(txn.id)
+        conversation_id = txn.conversation_id or str(txn.id)
 
         try:
             response = client.initiate_b2c(
@@ -327,6 +328,95 @@ def update_batch_summary(batch_id: str):
                 )
 
     logger.info("Batch %s summary: %s", batch_id, batch.status)
+
+
+@shared_task(bind=True, soft_time_limit=300, time_limit=360)
+def retry_batch_disbursements(self, batch_id: str):
+    try:
+        batch = DisbursementBatch.objects.select_related('cooperative').get(id=batch_id)
+    except DisbursementBatch.DoesNotExist:
+        logger.error("Batch %s not found", batch_id)
+        return {'error': 'Batch not found'}
+
+    failed_qs = DisbursementTransaction.objects.filter(
+        batch=batch, status='FAILED', payment_method='M_PESA',
+    ).select_related('farmer', 'batch__cooperative')
+
+    if not failed_qs.exists():
+        logger.info("Batch %s: no failed M-PESA transactions to retry", batch_id)
+        return {'batch_id': batch_id, 'checked': 0, 'retried': 0}
+
+    batch.status = 'PROCESSING'
+    batch.celery_task_id = self.request.id or ''
+    batch.save(update_fields=['status', 'celery_task_id'])
+
+    retried = 0
+    already_success = 0
+    checked = failed_qs.count()
+
+    for txn in failed_qs:
+        coop_shortcode = txn.batch.cooperative.mpesa_shortcode or None
+        client = MpesaDarajaClient(shortcode=coop_shortcode)
+
+        if txn.conversation_id:
+            try:
+                response = client.query_transaction_status(txn.conversation_id)
+                result_code = response.get('ResultCode', '-1')
+                result_desc = response.get('ResultDesc', '')
+
+                if result_code == '0':
+                    txn.status = 'SUCCESS'
+                    txn.completed_at = timezone.now()
+                    txn.result_code = result_code
+                    txn.result_desc = result_desc
+                    txn.save(update_fields=['status', 'completed_at', 'result_code', 'result_desc'])
+                    already_success += 1
+
+                    if txn.farmer_payment_id:
+                        FarmerPayment.objects.filter(id=txn.farmer_payment_id).update(
+                            payment_status='PAID',
+                        )
+                    update_batch_summary.delay(str(txn.batch_id))
+                    continue
+            except Exception as exc:
+                logger.warning(
+                    "Status query failed for txn %s conv %s: %s — proceeding with retry",
+                    txn.id, txn.conversation_id, exc,
+                )
+
+        new_conversation_id = str(uuid.uuid4())
+        txn.status = 'PENDING'
+        txn.conversation_id = new_conversation_id
+        txn.failure_reason = ''
+        txn.result_code = ''
+        txn.result_desc = ''
+        txn.retry_count = 0
+        txn.failed_at = None
+        txn.save(update_fields=[
+            'status', 'conversation_id', 'failure_reason',
+            'result_code', 'result_desc', 'retry_count', 'failed_at',
+        ])
+
+        send_single_mpesa_disbursement.delay(
+            transaction_id=str(txn.id),
+            batch_id=str(batch.id),
+            phone_number=txn.recipient_identifier,
+            amount=txn.amount,
+            command_id=batch.command_id,
+            farmer_name=str(txn.farmer),
+        )
+        retried += 1
+
+    logger.info(
+        "Batch %s retry: checked=%d already_success=%d retried=%d",
+        batch_id, checked, already_success, retried,
+    )
+    return {
+        'batch_id': batch_id,
+        'checked': checked,
+        'already_success': already_success,
+        'retried': retried,
+    }
 
 
 @shared_task

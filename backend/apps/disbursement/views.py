@@ -25,7 +25,7 @@ from .serializers import (
     DisbursementBatchListSerializer,
     DisbursementTransactionSerializer,
 )
-from .tasks import process_batch_disbursements, update_batch_summary
+from .tasks import process_batch_disbursements, retry_batch_disbursements, update_batch_summary
 
 logger = logging.getLogger(__name__)
 
@@ -263,7 +263,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         return Response(DisbursementBatchDetailSerializer(batch).data)
 
-    @extend_schema(summary="Retry failed transactions", description="Retry all FAILED transactions in a batch.")
+    @extend_schema(summary="Retry failed transactions", description="Retry all FAILED transactions in a batch. Triggers safe retry: checks M-Pesa status first to avoid double-payment on timeouts.")
     @action(detail=True, methods=['post'])
     @idempotent()
     def retry_failed(self, request, pk=None):
@@ -278,15 +278,6 @@ class DisbursementViewSet(CooperativeScopedViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        failed.update(
-            status='PENDING',
-            failure_reason='',
-            result_code='',
-            result_desc='',
-            retry_count=0,
-            failed_at=None,
-        )
-
         log_audit(
             actor=request.user,
             resource_type='disbursement_batch',
@@ -296,7 +287,9 @@ class DisbursementViewSet(CooperativeScopedViewSet):
             cooperative_id=self.request.cooperative_id,
         )
 
-        return Response({'retried': count, 'status': 'PENDING'})
+        retry_batch_disbursements.delay(str(batch.id))
+
+        return Response({'retried': count, 'status': 'PROCESSING'})
 
     @extend_schema(summary="Export batch as CSV", description="Download disbursement bank transactions as CSV.")
     @action(detail=True, methods=['get'])

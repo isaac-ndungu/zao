@@ -666,7 +666,8 @@ class TestDisbursementAPILive:
 # =============================================================================
 
 class TestDisbursementAPIRetryFailed:
-    def test_retry_failed_success(self, api_client_coop, cooperative, farmer):
+    @patch('apps.disbursement.views.retry_batch_disbursements.delay')
+    def test_retry_failed_success(self, mock_delay, api_client_coop, cooperative, farmer):
         batch = DisbursementBatchFactory(cooperative=cooperative)
         tx = DisbursementTransactionFactory(
             batch=batch, farmer=farmer, cooperative=cooperative,
@@ -682,11 +683,8 @@ class TestDisbursementAPIRetryFailed:
         )
         assert resp.status_code == 200
         assert resp.json()['retried'] == 1
-        assert resp.json()['status'] == 'PENDING'
-        tx.refresh_from_db()
-        assert tx.status == 'PENDING'
-        assert tx.failure_reason == ''
-        assert tx.retry_count == 0
+        assert resp.json()['status'] == 'PROCESSING'
+        mock_delay.assert_called_once_with(str(batch.pk))
 
     def test_retry_failed_no_failed(self, api_client_coop, cooperative):
         batch = DisbursementBatchFactory(cooperative=cooperative)
@@ -696,7 +694,8 @@ class TestDisbursementAPIRetryFailed:
         assert resp.status_code == 400
         assert 'No failed transactions' in resp.json()['detail']
 
-    def test_retry_failed_multiple(self, api_client_coop, cooperative, farmer):
+    @patch('apps.disbursement.views.retry_batch_disbursements.delay')
+    def test_retry_failed_multiple(self, mock_delay, api_client_coop, cooperative, farmer):
         batch = DisbursementBatchFactory(cooperative=cooperative)
         DisbursementTransactionFactory.create_batch(
             3, batch=batch, farmer=farmer, cooperative=cooperative,
@@ -707,8 +706,10 @@ class TestDisbursementAPIRetryFailed:
         )
         assert resp.status_code == 200
         assert resp.json()['retried'] == 3
+        mock_delay.assert_called_once_with(str(batch.pk))
 
-    def test_retry_failed_ignores_non_failed(self, api_client_coop, cooperative, farmer):
+    @patch('apps.disbursement.views.retry_batch_disbursements.delay')
+    def test_retry_failed_ignores_non_failed(self, mock_delay, api_client_coop, cooperative, farmer):
         batch = DisbursementBatchFactory(cooperative=cooperative)
         DisbursementTransactionFactory(
             batch=batch, farmer=farmer, cooperative=cooperative,
@@ -718,6 +719,7 @@ class TestDisbursementAPIRetryFailed:
             f'/api/disbursements/{batch.pk}/retry_failed/',
         )
         assert resp.status_code == 400
+        mock_delay.assert_not_called()
 
 
 # =============================================================================
