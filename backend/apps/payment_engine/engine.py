@@ -277,15 +277,7 @@ def compute_revenue_share(cycle):
     for farmer_id, kg in farmer_total_kg.items():
         farmer = farmer_map[farmer_id]
 
-        # Edge Case 4 — prorate for new members
-        if cooperative.prorate_new_members and farmer and farmer.date_joined.date() > cycle.start_date:
-            total_days = (cycle.end_date - cycle.start_date).days + 1
-            active_days = (cycle.end_date - farmer.date_joined.date()).days + 1
-            proration = active_days / total_days if total_days > 0 else 1.0
-        else:
-            proration = 1.0
-
-        # Edge Case 2 — split revenue by produce_type when enabled
+        # Revenue share: split by produce type when enabled
         if cooperative.revenue_share_by_produce_type:
             gross = 0.0
             for ptype, rev in total_revenue_map.items():
@@ -295,8 +287,6 @@ def compute_revenue_share(cycle):
                     gross += (farmer_type_qty / type_kg_total) * rev
         else:
             gross = (kg / total_kg) * sum(total_revenue_map.values())
-
-        gross *= proration
 
         grade_breakdown = {
             grade: round(qty, 2)
