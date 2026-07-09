@@ -7,7 +7,7 @@ from decimal import Decimal
 from celery import shared_task
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Case, F, When
+from django.db.models import Case, F, Sum, When
 from django.db.models import IntegerField
 from django.db.models.functions import Greatest
 from django.utils import timezone
@@ -197,6 +197,47 @@ def process_batch_disbursements(self, batch_id: str):
     batch.status = 'PROCESSING'
     batch.celery_task_id = self.request.id or ''
     batch.save(update_fields=['status', 'celery_task_id'])
+
+    total_mpesa_amount = pending_qs.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
+
+    coop_shortcode = batch.cooperative.mpesa_shortcode or None
+    client = MpesaDarajaClient(shortcode=coop_shortcode)
+
+    try:
+        sufficient, available = client.check_balance(total_mpesa_amount)
+    except Exception as exc:
+        logger.error('Balance check failed for batch %s: %s — proceeding without check', batch_id, exc)
+        sufficient = True
+        available = None
+
+    if not sufficient:
+        logger.warning(
+            'Batch %s aborted: insufficient float. required=%s available=%s',
+            batch_id, total_mpesa_amount, available,
+        )
+        pending_qs.update(
+            status='FAILED',
+            failure_reason=f'Insufficient float balance. Required: {total_mpesa_amount}, Available: {available}',
+            failed_at=timezone.now(),
+        )
+        for txn in pending_qs.select_related('farmer'):
+            if txn.farmer_payment_id:
+                FarmerPayment.objects.filter(id=txn.farmer_payment_id).update(
+                    payment_status='FAILED',
+                )
+                reverse_deductions_on_failure.delay(
+                    farmer_id=str(txn.farmer_id),
+                    farmer_payment_id=str(txn.farmer_payment_id),
+                )
+        update_batch_summary.delay(str(batch.id))
+        return {
+            'error': 'Insufficient float balance',
+            'required': str(total_mpesa_amount),
+            'available': str(available),
+            'batch_id': batch_id,
+        }
 
     CHUNK_SIZE = 50
     CHUNK_DELAY = 30

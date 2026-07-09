@@ -175,3 +175,27 @@ class MpesaDarajaClient:
             data=payload,
             token=token,
         )
+
+    def get_account_balance(self) -> dict:
+        response = self.query_account_balance()
+        result_code = response.get('ResultCode', '-1')
+        result_desc = response.get('ResultDesc', '')
+        if result_code != '0':
+            raise RuntimeError(f"Account balance query failed: {result_desc}")
+        params = response.get('ResultParameters', {})
+        return {
+            'balance': Decimal(params.get('Balance', 0)),
+            'available_balance': Decimal(params.get('AvailableBalance', 0)),
+            'min_req_time': params.get('MinReqTime', ''),
+        }
+
+    def check_balance(self, required_amount: Decimal) -> tuple[bool, Decimal]:
+        info = self.get_account_balance()
+        available = info['available_balance']
+        sufficient = available >= required_amount
+        if not sufficient:
+            logger.warning(
+                'Insufficient float balance: required=%s available=%s',
+                required_amount, available,
+            )
+        return sufficient, available
