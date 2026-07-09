@@ -5,7 +5,6 @@ import useFarmerApi from '../hooks/useFarmerApi'
 import ErrorState from '../../shared/components/ErrorState'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
-import NotificationBell from '../components/NotificationBell'
 import { CardSkeleton } from '../components/LoadingSkeleton'
 import ConfirmModal from '../components/ConfirmModal'
 import PickupLocationEditor from '../../shared/components/PickupLocationEditor'
@@ -62,7 +61,6 @@ export default function FarmerProfile() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold">{t('profile')}</h2>
         <div className="flex items-center gap-3">
-          <NotificationBell viewAllPath="/farmer/notifications" />
           <button onClick={() => navigate('/farmer/settings')} aria-label={t('settings')} className="p-1">
             <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">settings</span>
           </button>

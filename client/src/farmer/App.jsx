@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { FarmerAuthProvider } from './context/FarmerAuthContext'
 import { ToastProvider } from './components/Toast'
 import BottomNav from './components/BottomNav'
+import FarmerAppBar from './components/FarmerAppBar'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Deliveries from './pages/Deliveries'
@@ -23,7 +24,7 @@ function ProtectedRoute({ children }) {
 
 function FarmerLayout({ children }) {
   return (
-    <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
+    <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20 pt-14">
       <div className="px-4 pt-4">
         {children}
       </div>
@@ -34,6 +35,7 @@ function FarmerLayout({ children }) {
 function TabRoute({ children }) {
   return (
     <ProtectedRoute>
+      <FarmerAppBar />
       {createPortal(<FloatingAccessibilityWidget mode="farmer" />, document.body)}
       <FarmerLayout>
         {children}
@@ -67,9 +69,9 @@ export default function App() {
               <Route path="/farmer/payments" element={<TabRoute><Payments /></TabRoute>} />
               <Route path="/farmer/grades" element={<TabRoute><Grades /></TabRoute>} />
               <Route path="/farmer/profile" element={<TabRoute><Profile /></TabRoute>} />
-              <Route path="/farmer/loans" element={<ProtectedRoute><FarmerLayout><Loans /></FarmerLayout></ProtectedRoute>} />
-              <Route path="/farmer/chat" element={<ProtectedRoute><FarmerLayout><Chat /></FarmerLayout></ProtectedRoute>} />
-              <Route path="/farmer/settings" element={<ProtectedRoute><FarmerLayout><Settings /></FarmerLayout></ProtectedRoute>} />
+              <Route path="/farmer/loans" element={<ProtectedRoute><FarmerAppBar /><FarmerLayout><Loans /></FarmerLayout></ProtectedRoute>} />
+              <Route path="/farmer/chat" element={<ProtectedRoute><FarmerAppBar /><FarmerLayout><Chat /></FarmerLayout></ProtectedRoute>} />
+              <Route path="/farmer/settings" element={<ProtectedRoute><FarmerAppBar /><FarmerLayout><Settings /></FarmerLayout></ProtectedRoute>} />
               <Route path="/farmer/*" element={<Navigate to="/farmer/dashboard" replace />} />
             </Routes>
           </FarmerAuthProvider>

@@ -102,8 +102,8 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
 
   const widgetPosition = mode === 'farmer'
-    ? 'bottom-[72px] right-6'
-    : 'bottom-[72px] right-6'
+    ? 'bottom-[88px] right-6'
+    : 'bottom-[88px] right-6'
 
   const mobileTouchTarget = mode === 'farmer' ? 'min-h-[48px] min-w-[48px]' : ''
 

@@ -4,7 +4,6 @@ import ErrorState from '../../shared/components/ErrorState'
 import { useFarmerAuth } from '../context/FarmerAuthContext'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
-import NotificationBell from '../components/NotificationBell'
 import { CardSkeleton, KpiSkeleton } from '../components/LoadingSkeleton'
 import { t } from '../i18n'
 
@@ -68,7 +67,6 @@ export default function FarmerDashboard() {
       <div>
         <div className="flex justify-between items-center mb-6">
           <div className="animate-pulse bg-gray-200 rounded-lg h-8 w-40" />
-          <NotificationBell viewAllPath="/farmer/notifications" />
         </div>
         <KpiSkeleton />
         <div className="mt-6 space-y-3"><CardSkeleton /><CardSkeleton /></div>
@@ -94,7 +92,6 @@ export default function FarmerDashboard() {
             </p>
           )}
         </div>
-        <NotificationBell viewAllPath="/farmer/notifications" />
       </div>
 
       {/* Today's deliveries summary */}
