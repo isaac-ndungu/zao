@@ -191,11 +191,6 @@ if not DATABASE_URL:
 
 url = urlparse(DATABASE_URL)
 hostname = url.hostname
-if hostname and hostname.endswith('.supabase.co'):
-    try:
-        hostname = socket.getaddrinfo(hostname, None, socket.AF_INET)[0][4][0]
-    except Exception:
-        pass
 db_config = {
     'ENGINE': 'zaoapi.db_pool',
     'NAME': url.path[1:],
