@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import PasswordInput from './PasswordInput'
 
 export default function ForcePasswordChange({ onComplete }) {
   const { changePassword, logout } = useAuth()
@@ -47,53 +48,35 @@ export default function ForcePasswordChange({ onComplete }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="currentPassword" className="block text-label-md text-on-surface-variant mb-1">
-                Current Password
-              </label>
-              <input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                autoFocus
-                autoComplete="current-password"
-                className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
+            <PasswordInput
+              id="currentPassword"
+              label="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoFocus
+              autoComplete="current-password"
+            />
 
-            <div>
-              <label htmlFor="newPassword" className="block text-label-md text-on-surface-variant mb-1">
-                New Password
-              </label>
-              <input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
+            <PasswordInput
+              id="newPassword"
+              label="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-label-md text-on-surface-variant mb-1">
-                Confirm New Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-                className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
+            <PasswordInput
+              id="confirmPassword"
+              label="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
 
             {error && (
               <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">{error}</div>

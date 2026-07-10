@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth, getLoginRedirect } from '../../shared/hooks/useAuth'
 import OTPInput from '../../shared/components/OTPInput'
 import ForcePasswordChange from '../../shared/components/ForcePasswordChange'
+import PasswordInput from '../../shared/components/PasswordInput'
 import { apiFetch } from '../api/client'
 
 function loadGisScript() {
@@ -211,18 +212,14 @@ export default function Login() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-label-md text-on-surface-variant mb-1">
-                  Password
-                </label>
-                <input
+                <PasswordInput
                   id="password"
-                  type="password"
+                  label="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"
-                  className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md text-on-surface bg-surface-container focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-on-surface-variant/60"
                 />
               </div>
 

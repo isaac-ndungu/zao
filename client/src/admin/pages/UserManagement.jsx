@@ -9,6 +9,7 @@ import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
 import { TableSkeleton } from '../components/common/Skeleton'
+import PasswordInput from '../../shared/components/PasswordInput'
 
 const roleOptions = [
   { value: 'admin', label: 'Admin' },
@@ -633,9 +634,14 @@ export default function UserManagement() {
                 {suErrors.phone_number && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.phone_number.join(', ')}</p>}
               </div>
               <div>
-                <label htmlFor="su-password" className="block text-label-md font-bold text-on-surface-variant mb-1">Password</label>
-                <input id="su-password" type="password" required value={suForm.password} onChange={(e) => { setSuForm(f => ({ ...f, password: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.password; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.password ? 'border-error' : 'border-outline-variant'}`} />
-                {suErrors.password && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.password.join(', ')}</p>}
+                <PasswordInput
+                  id="su-password"
+                  label="Password"
+                  value={suForm.password}
+                  onChange={(e) => { setSuForm(f => ({ ...f, password: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.password; return n }) }}
+                  required
+                  error={suErrors.password ? suErrors.password.join(', ') : undefined}
+                />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setSuperuserModal(false); setSuErrors({}) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>

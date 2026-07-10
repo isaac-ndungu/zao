@@ -2,6 +2,7 @@ import { useAdminAuth } from '../hooks/useAdminAuth'
 import { useState } from 'react'
 import { apiFetch } from '../api/client'
 import { useToast } from '../contexts/ToastContext'
+import PasswordInput from '../../shared/components/PasswordInput'
 
 export default function Settings() {
   const { user, refreshUser } = useAdminAuth()
@@ -128,9 +129,27 @@ export default function Settings() {
           </div>
           {pwOpen && (
             <form onSubmit={handlePasswordChange} className="space-y-3 pt-2">
-              <div><label htmlFor="id-current-password" className="block text-label-md font-bold text-on-surface-variant mb-1">Current Password</label><input id="id-current-password" type="password" required value={pwForm.current_password} onChange={(e) => setPwForm(f => ({ ...f, current_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label htmlFor="id-new-password" className="block text-label-md font-bold text-on-surface-variant mb-1">New Password</label><input id="id-new-password" type="password" required value={pwForm.new_password} onChange={(e) => setPwForm(f => ({ ...f, new_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label htmlFor="id-confirm-password" className="block text-label-md font-bold text-on-surface-variant mb-1">Confirm New Password</label><input id="id-confirm-password" type="password" required value={pwForm.confirm_password} onChange={(e) => setPwForm(f => ({ ...f, confirm_password: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <PasswordInput
+                id="id-current-password"
+                label="Current Password"
+                value={pwForm.current_password}
+                onChange={(e) => setPwForm(f => ({ ...f, current_password: e.target.value }))}
+                required
+              />
+              <PasswordInput
+                id="id-new-password"
+                label="New Password"
+                value={pwForm.new_password}
+                onChange={(e) => setPwForm(f => ({ ...f, new_password: e.target.value }))}
+                required
+              />
+              <PasswordInput
+                id="id-confirm-password"
+                label="Confirm New Password"
+                value={pwForm.confirm_password}
+                onChange={(e) => setPwForm(f => ({ ...f, confirm_password: e.target.value }))}
+                required
+              />
               <button type="submit" disabled={pwSaving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 disabled:opacity-50">{pwSaving ? 'Saving...' : 'Update Password'}</button>
             </form>
           )}

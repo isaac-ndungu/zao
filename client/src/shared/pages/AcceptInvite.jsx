@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../admin/api/client'
+import PasswordInput from '../components/PasswordInput'
 
 const getErrMsg = (err) => {
   if (!err || typeof err === 'string') return err || ''
@@ -175,30 +176,26 @@ export default function AcceptInvite() {
           </div>
 
           <div>
-            <label htmlFor="invite-password" className="block text-label-md text-on-surface-variant mb-1">Password *</label>
-            <input
+            <PasswordInput
               id="invite-password"
-              type="password"
+              label="Password *"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min. 8 characters"
               minLength={8}
               required
-              className="w-full px-3 py-3 border border-outline-variant rounded-xl text-body-md bg-surface"
             />
           </div>
 
           <div>
-            <label htmlFor="invite-confirm-password" className="block text-label-md text-on-surface-variant mb-1">Confirm Password *</label>
-            <input
+            <PasswordInput
               id="invite-confirm-password"
-              type="password"
+              label="Confirm Password *"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repeat password"
               minLength={8}
               required
-              className="w-full px-3 py-3 border border-outline-variant rounded-xl text-body-md bg-surface"
             />
           </div>
 

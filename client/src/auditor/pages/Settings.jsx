@@ -2,6 +2,7 @@ import { useAuth } from '../../shared/hooks/useAuth'
 import { apiFetch } from '../../admin/api/client'
 import { useState } from 'react'
 import { useToast } from '../../admin/contexts/ToastContext'
+import PasswordInput from '../../shared/components/PasswordInput'
 
 export default function AuditorSettings() {
   const { user } = useAuth()
@@ -67,18 +68,29 @@ export default function AuditorSettings() {
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
           <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Change Password</h3>
           <form onSubmit={handleChangePassword} className="space-y-4">
-            <div>
-              <label htmlFor="id-current-password" className="block text-label-md text-on-surface-variant mb-1">Current Password</label>
-              <input id="id-current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
-            </div>
-            <div>
-              <label htmlFor="id-new-password" className="block text-label-md text-on-surface-variant mb-1">New Password</label>
-              <input id="id-new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required minLength={8} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
-            </div>
-            <div>
-              <label htmlFor="id-confirm-password" className="block text-label-md text-on-surface-variant mb-1">Confirm New Password</label>
-              <input id="id-confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
-            </div>
+            <PasswordInput
+              id="id-current-password"
+              label="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+            <PasswordInput
+              id="id-new-password"
+              label="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+            <PasswordInput
+              id="id-confirm-password"
+              label="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+            />
             <button type="submit" disabled={saving} className="px-6 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors">
               {saving ? 'Saving...' : 'Change Password'}
             </button>
