@@ -35,11 +35,13 @@ async function refreshAccessToken() {
       const res = await fetch(resolveUrl('/api/auth/refresh/'), { method: 'POST', credentials: 'include' })
       if (!res.ok) {
         accessToken = null
+        setStoredToken(null)
         return null
       }
       const data = await res.json().catch(() => ({}))
       if (!data.access) return null
       accessToken = data.access
+      setStoredToken(data.access)
       return data.access
     } finally {
       refreshPromise = null
@@ -52,6 +54,7 @@ async function refreshAccessToken() {
 export async function apiFetch(url, options = {}) {
   const { requireAuth = true, headers = {}, credentials, ...rest } = options
   const resolvedUrl = resolveUrl(url)
+  const token = getAccessToken()
 
   const config = {
     headers: { 'Content-Type': 'application/json', ...headers },
@@ -59,13 +62,13 @@ export async function apiFetch(url, options = {}) {
     ...rest,
   }
 
-  if (requireAuth && accessToken) {
-    config.headers['Authorization'] = `Bearer ${accessToken}`
+  if (requireAuth && token) {
+    config.headers['Authorization'] = `Bearer ${token}`
   }
 
   let res = await fetch(resolvedUrl, config)
 
-  if (res.status === 401 && requireAuth && accessToken) {
+  if (res.status === 401 && requireAuth && token) {
     const newToken = await refreshAccessToken()
 
     if (newToken) {

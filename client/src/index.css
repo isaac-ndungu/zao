@@ -286,7 +286,7 @@ body.dark-mode .bg-secondary-container { background-color: #005038 !important; }
 body.dark-mode .bg-surface { background-color: #0c2012 !important; }
 body.dark-mode .bg-surface-container { background-color: #152619 !important; }
 body.dark-mode .bg-surface-container-low { background-color: #0c2012 !important; }
-body.dark-mode .bg-surface-container-lowest { background-color: #000000 !important; }
+body.dark-mode .bg-surface-container-lowest { background-color: #0c2012 !important; }
 body.dark-mode .bg-surface-container-high { background-color: #1f3021 !important; }
 body.dark-mode .bg-surface-container-highest { background-color: #2a3a2c !important; }
 body.dark-mode .bg-background { background-color: #0c2012 !important; }
@@ -300,6 +300,22 @@ body.dark-mode .bg-inverse-surface { background-color: #dff7e0 !important; }
 body.dark-mode .bg-primary-fixed { background-color: #b1f0ce !important; }
 body.dark-mode .bg-secondary-fixed { background-color: #86d7ad !important; }
 body.dark-mode .bg-tertiary-fixed { background-color: #ffdeab !important; }
+
+/* CRITICAL: Override white/light backgrounds with opacity - these cause light gray cards */
+body.dark-mode .bg-white\/80 { background-color: rgba(12, 32, 18, 0.85) !important; }
+body.dark-mode .bg-white\/95 { background-color: rgba(12, 32, 18, 0.9) !important; }
+body.dark-mode .bg-white\/70 { background-color: rgba(12, 32, 18, 0.85) !important; }
+body.dark-mode .bg-white\/60 { background-color: rgba(12, 32, 18, 0.85) !important; }
+body.dark-mode .bg-white\/50 { background-color: rgba(12, 32, 18, 0.85) !important; }
+body.dark-mode .bg-white\/40 { background-color: rgba(12, 32, 18, 0.85) !important; }
+body.dark-mode .bg-white\/30 { background-color: rgba(12, 32, 18, 0.85) !important; }
+body.dark-mode .bg-white\/20 { background-color: rgba(12, 32, 18, 0.9) !important; }
+body.dark-mode .bg-white\/10 { background-color: rgba(12, 32, 18, 0.95) !important; }
+body.dark-mode .bg-white\/05 { background-color: rgba(12, 32, 18, 0.98) !important; }
+body.dark-mode .bg-white\/100 { background-color: rgba(12, 32, 18, 1) !important; }
+body.dark-mode .bg-white\/25 { background-color: rgba(12, 32, 18, 0.9) !important; }
+body.dark-mode .bg-white\/75 { background-color: rgba(12, 32, 18, 0.85) !important; }
+
 body.dark-mode .bg-white { background-color: #0c2012 !important; }
 body.dark-mode .bg-black { background-color: #dff7e0 !important; }
 body.dark-mode .bg-transparent { background-color: transparent !important; }
@@ -314,6 +330,30 @@ body.dark-mode .bg-gray-600 { background-color: #6b776d !important; }
 body.dark-mode .bg-gray-700 { background-color: #899389 !important; }
 body.dark-mode .bg-gray-800 { background-color: #a3aea5 !important; }
 body.dark-mode .bg-gray-900 { background-color: #bfc9bf !important; }
+
+/* Gradient overrides for highlighted cards - use dark green colors */
+body.dark-mode [class*="bg-gradient-to-br"] { background-image: linear-gradient(to bottom right, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-b"] { background-image: linear-gradient(to bottom, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-r"] { background-image: linear-gradient(to right, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-l"] { background-image: linear-gradient(to left, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-t"] { background-image: linear-gradient(to top, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-tr"] { background-image: linear-gradient(to top right, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-tl"] { background-image: linear-gradient(to top left, #004d30, #003d28) !important; }
+body.dark-mode [class*="bg-gradient-to-bl"] { background-image: linear-gradient(to bottom left, #004d30, #003d28) !important; }
+
+/* From/to primary/secondary - these are used in KpiCard highlighted variant */
+body.dark-mode .from-primary { --tw-gradient-from: #004d30 !important; }
+body.dark-mode .from-secondary { --tw-gradient-from: #005038 !important; }
+body.dark-mode .to-primary { --tw-gradient-to: #003d28 !important; }
+body.dark-mode .to-secondary { --tw-gradient-to: #003d28 !important; }
+body.dark-mode .from-primary\/20 { --tw-gradient-from: rgba(0, 77, 48, 0.2) !important; }
+body.dark-mode .from-primary\/10 { --tw-gradient-from: rgba(0, 77, 48, 0.1) !important; }
+
+/* Backdrop blur overrides */
+body.dark-mode .backdrop-blur-md { backdrop-filter: blur(12px) saturate(50%) !important; }
+body.dark-mode .backdrop-blur-sm { backdrop-filter: blur(4px) saturate(50%) !important; }
+body.dark-mode .backdrop-blur-lg { backdrop-filter: blur(16px) saturate(50%) !important; }
+body.dark-mode .backdrop-blur-xl { backdrop-filter: blur(24px) saturate(50%) !important; }
 
 /* ALL text color utilities - using very bright colors for visibility */
 body.dark-mode .text-primary { color: #003320 !important; }
@@ -358,7 +398,7 @@ body.dark-mode .text-gray-700 { color: #dff7e0 !important; }
 body.dark-mode .text-gray-800 { color: #dff7e0 !important; }
 body.dark-mode .text-gray-900 { color: #0c2012 !important; }
 body.dark-mode .text-black { color: #dff7e0 !important; }
-body.dark-mode .text-white { color: #0c2012 !important; }
+body.dark-mode .text-white { color: #ffffff !important; }
 body.dark-mode .text-current { color: currentColor !important; }
 body.dark-mode .text-transparent { color: transparent !important; }
 

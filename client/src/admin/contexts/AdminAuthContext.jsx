@@ -64,10 +64,17 @@ export function AdminAuthProvider({ children }) {
           credentials: 'include',
         })
 
-        // If refresh fails with 401/403, don't immediately log out
-        // This allows the app to stay usable if the token expired but user is still valid
-        if (!res.ok && res.status !== 200) {
-          // Try to fetch user anyway - some endpoints may still work
+        let data = {}
+        try {
+          data = await res.json()
+        } catch {}
+
+        // Check if refresh was successful (has access token)
+        const hasAccessToken = data && data.access
+
+        if (!hasAccessToken) {
+          // Refresh failed - try to get user with existing token or fall back
+          // This handles cases where refresh cookie is missing or expired
           const meRes = await apiFetch('/api/users/me/')
           if (meRes.ok) {
             const me = await meRes.json()
@@ -75,24 +82,13 @@ export function AdminAuthProvider({ children }) {
             setLoading(false)
             return
           }
-          // Don't clear - just set loading to false and let user try to refresh manually
+          // No valid refresh and can't get user - just finish loading
+          // Don't log out immediately - the user might still have a valid session
           setLoading(false)
           return
         }
 
-        const _data = await res.json().catch(() => ({}))
-        const { access } = _data || {}
-        if (!access) {
-          // Try to get user with existing token
-          const meRes = await apiFetch('/api/users/me/')
-          if (meRes.ok) {
-            const me = await meRes.json()
-            setUser(me)
-          }
-          setLoading(false)
-          return
-        }
-        setAccessToken(access)
+        setAccessToken(data.access)
 
         const meRes = await apiFetch('/api/users/me/')
 
