@@ -336,6 +336,77 @@ body.dark-mode .text-\[\#8EA896\] {
   color: #bfc9bf !important;
 }
 
+/* Dark mode generic Tailwind color overrides - using !important to override compiled values */
+body.dark-mode .bg-white { background-color: #0c2012 !important; }
+body.dark-mode .bg-black { background-color: #dff7e0 !important; }
+body.dark-mode .bg-gray-50 { background-color: #0c2012 !important; }
+body.dark-mode .bg-gray-100 { background-color: #152619 !important; }
+body.dark-mode .bg-gray-200 { background-color: #1f3021 !important; }
+body.dark-mode .bg-gray-300 { background-color: #2a3a2c !important; }
+body.dark-mode .bg-gray-400 { background-color: #404943 !important; }
+body.dark-mode .bg-gray-500 { background-color: #505a52 !important; }
+body.dark-mode .bg-gray-600 { background-color: #6b776d !important; }
+body.dark-mode .bg-gray-700 { background-color: #899389 !important; }
+body.dark-mode .bg-gray-800 { background-color: #a3aea5 !important; }
+body.dark-mode .bg-gray-900 { background-color: #bfc9bf !important; }
+
+body.dark-mode .text-gray-50 { color: #bfc9bf !important; }
+body.dark-mode .text-gray-100 { color: #a3aea5 !important; }
+body.dark-mode .text-gray-200 { color: #899389 !important; }
+body.dark-mode .text-gray-300 { color: #6b776d !important; }
+body.dark-mode .text-gray-400 { color: #505a52 !important; }
+body.dark-mode .text-gray-500 { color: #404943 !important; }
+body.dark-mode .text-gray-600 { color: #2a3a2c !important; }
+body.dark-mode .text-gray-700 { color: #1f3021 !important; }
+body.dark-mode .text-gray-800 { color: #152619 !important; }
+body.dark-mode .text-gray-900 { color: #0c2012 !important; }
+body.dark-mode .text-black { color: #dff7e0 !important; }
+body.dark-mode .text-white { color: #0c2012 !important; }
+
+body.dark-mode .border-gray-100 { border-color: #152619 !important; }
+body.dark-mode .border-gray-200 { border-color: #1f3021 !important; }
+body.dark-mode .border-gray-300 { border-color: #2a3a2c !important; }
+body.dark-mode .border-gray-400 { border-color: #404943 !important; }
+body.dark-mode .border-gray-500 { border-color: #505a52 !important; }
+body.dark-mode .border-gray-600 { border-color: #6b776d !important; }
+body.dark-mode .border-white { border-color: #0c2012 !important; }
+body.dark-mode .border-black { border-color: #dff7e0 !important; }
+
+/* Cards - ensuring they work with dark mode */
+body.dark-mode .bg-card,
+body.dark-mode [class*="card"] {
+  background-color: #152619 !important;
+}
+
+/* Headings and titles */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6,
+body.dark-mode .heading,
+body.dark-mode .title {
+  color: #dff7e0 !important;
+}
+
+/* Links */
+body.dark-mode a {
+  color: #b1f0ce !important;
+}
+body.dark-mode a:hover {
+  color: #86d7ad !important;
+}
+
+/* Input backgrounds */
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background-color: #0c2012 !important;
+  color: #dff7e0 !important;
+  border-color: #404943 !important;
+}
+
 /* Dark mode specific component overrides */
 body.dark-mode .bg-primary\/5 { background-color: rgba(177, 240, 206, 0.05) !important; }
 body.dark-mode .hover\:bg-primary\/5:hover { background-color: rgba(177, 240, 206, 0.1) !important; }
@@ -347,6 +418,17 @@ body.dark-mode .border-secondary { border-color: #86d7ad !important; }
 body.dark-mode .border-secondary-container { border-color: #005038 !important; }
 body.dark-mode .border-surface { border-color: #dff7e0 !important; }
 body.dark-mode .border-surface-variant { border-color: #404943 !important; }
+body.dark-mode .border-outline { border-color: #899389 !important; }
+body.dark-mode .border-outline-variant { border-color: #404943 !important; }
+body.dark-mode .border-error { border-color: #ffb4ab !important; }
+body.dark-mode .border-tertiary { border-color: #ffdeab !important; }
+
+/* Hover states for buttons */
+body.dark-mode .hover\:bg-gray-100:hover { background-color: #1f3021 !important; }
+body.dark-mode .hover\:bg-gray-200:hover { background-color: #2a3a2c !important; }
+body.dark-mode .hover\:bg-gray-300:hover { background-color: #404943 !important; }
+body.dark-mode .hover\:text-gray-600:hover { color: #505a52 !important; }
+body.dark-mode .hover\:text-gray-700:hover { color: #2a3a2c !important; }
 body.dark-mode .border-outline { border-color: #899389 !important; }
 body.dark-mode .border-outline-variant { border-color: #404943 !important; }
 body.dark-mode .border-error { border-color: #ffb4ab !important; }

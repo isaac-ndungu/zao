@@ -50,11 +50,12 @@ async function refreshAccessToken() {
 }
 
 export async function apiFetch(url, options = {}) {
-  const { requireAuth = true, headers = {}, ...rest } = options
+  const { requireAuth = true, headers = {}, credentials, ...rest } = options
   const resolvedUrl = resolveUrl(url)
 
   const config = {
     headers: { 'Content-Type': 'application/json', ...headers },
+    credentials: credentials || (requireAuth ? 'include' : undefined),
     ...rest,
   }
 

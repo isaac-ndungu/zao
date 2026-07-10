@@ -64,7 +64,18 @@ export function AdminAuthProvider({ children }) {
           credentials: 'include',
         })
 
-        if (!res.ok) {
+        // If refresh fails with 401/403, don't immediately log out
+        // This allows the app to stay usable if the token expired but user is still valid
+        if (!res.ok && res.status !== 200) {
+          // Try to fetch user anyway - some endpoints may still work
+          const meRes = await apiFetch('/api/users/me/')
+          if (meRes.ok) {
+            const me = await meRes.json()
+            setUser(me)
+            setLoading(false)
+            return
+          }
+          // Don't clear - just set loading to false and let user try to refresh manually
           setLoading(false)
           return
         }
@@ -72,6 +83,12 @@ export function AdminAuthProvider({ children }) {
         const _data = await res.json().catch(() => ({}))
         const { access } = _data || {}
         if (!access) {
+          // Try to get user with existing token
+          const meRes = await apiFetch('/api/users/me/')
+          if (meRes.ok) {
+            const me = await meRes.json()
+            setUser(me)
+          }
           setLoading(false)
           return
         }
@@ -84,7 +101,8 @@ export function AdminAuthProvider({ children }) {
           setUser(me)
         }
       } catch {
-        clearAccessToken()
+        // Network error - don't clear user, just finish loading
+        // User might still be logged in with valid session
       } finally {
         setLoading(false)
       }
