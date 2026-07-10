@@ -8,6 +8,7 @@ const defaultPrefs = {
   contrast: 'standard',
   focusIndicators: 'normal',
   reduceMotion: false,
+  darkMode: false,
   language: 'en',
 }
 
@@ -57,6 +58,7 @@ function applyPrefs(prefs) {
   body.classList.toggle('high-contrast', prefs.contrast === 'high')
   body.classList.toggle('enhanced-focus', prefs.focusIndicators === 'enhanced')
   body.classList.toggle('reduce-motion', prefs.reduceMotion)
+  body.classList.toggle('dark-mode', prefs.darkMode)
 
   if (prefs.language && typeof window !== 'undefined') {
     try {
@@ -113,48 +115,6 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
 
   return (
     <>
-      <style>{`
-        :root { --font-scale: 1; }
-        html { font-size: calc(16px * var(--font-scale)); }
-        body.high-contrast {
-          --primary: #004d00;
-          --on-primary: #ffffff;
-          --primary-container: #b8f5b8;
-          --on-primary-container: #002200;
-          --secondary: #8b4500;
-          --on-secondary: #ffffff;
-          --secondary-container: #ffd9a8;
-          --on-secondary-container: #2d1600;
-          --error: #ba1a1a;
-          --on-error: #ffffff;
-          --error-container: #ffdad6;
-          --on-error-container: #410002;
-          --background: #f8faf8;
-          --on-background: #1a1c1a;
-          --surface: #f8faf8;
-          --on-surface: #1a1c1a;
-          --surface-variant: #dde5db;
-          --on-surface-variant: #414941;
-          --outline: #717970;
-          --outline-variant: #c1c9bf;
-        }
-        body.enhanced-focus *:focus {
-          outline: 3px solid #0066cc !important;
-          outline-offset: 2px !important;
-          border-radius: 2px;
-        }
-        body.enhanced-focus *:focus-visible {
-          outline: 3px solid #0066cc !important;
-          outline-offset: 2px !important;
-        }
-        body.reduce-motion, body.reduce-motion * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }
-      `}</style>
-
       <button
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
@@ -268,6 +228,25 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
                   <span
                     className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-on-primary transition-transform ${
                       prefs.reduceMotion ? 'translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span id="dark-mode-label" className="text-label-md font-bold text-on-surface">Dark Mode</span>
+                <button
+                  role="switch"
+                  aria-checked={prefs.darkMode}
+                  aria-labelledby="dark-mode-label"
+                  onClick={() => updatePref('darkMode', !prefs.darkMode)}
+                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                    prefs.darkMode ? 'bg-primary' : 'bg-surface-container-high'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-on-primary transition-transform ${
+                      prefs.darkMode ? 'translate-x-5' : ''
                     }`}
                   />
                 </button>
