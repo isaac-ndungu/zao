@@ -43,7 +43,7 @@ export default function PasswordInput({
           className="absolute right-3 top-0 bottom-0 flex items-center text-[#5a6b5c] hover:text-primary transition-colors"
           aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
-          <span className="material-symbols-outlined text-xl">
+          <span className="material-symbols-outlined text-sm">
             {showPassword ? 'visibility_off' : 'visibility'}
           </span>
         </button>
