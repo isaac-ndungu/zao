@@ -36,6 +36,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           onClick={onMenuClick}
           className="lg:hidden p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           aria-label="Toggle menu"
+          title="Toggle menu"
         >
           <span className="material-symbols-outlined" aria-hidden="true">menu</span>
         </button>
@@ -44,6 +45,7 @@ export default function AppBar({ onMenuClick, minimized, onToggle }) {
           onClick={onToggle}
           className="hidden lg:flex p-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           aria-label={minimized ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={minimized ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <span className="material-symbols-outlined" aria-hidden="true">{minimized ? 'menu' : 'menu_open'}</span>
         </button>

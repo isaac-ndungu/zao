@@ -21,6 +21,7 @@ const systemItems = [
   { to: '/admin/otp-tokens', icon: 'pin', label: 'OTP Tokens' },
   { to: '/admin/trash', icon: 'delete_sweep', label: 'Trash' },
   { to: '/admin/health', icon: 'monitor_heart', label: 'System Health' },
+  { to: '/admin/disputes', icon: 'feedback', label: 'Disputes' },
 ]
 
 const bottomItems = [
@@ -42,6 +43,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
   const navigate = useNavigate()
   const [entryOpen, setEntryOpen] = useState(false)
   const [tooltip, setTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
+  const [dropdownTooltip, setDropdownTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
 
   useEffect(() => { onClose(); setEntryOpen(false) }, [pathname])
 
@@ -53,6 +55,15 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
 
   const hideTooltip = useCallback(() => {
     setTooltip({ show: false, label: '', x: 0, y: 0 })
+  }, [])
+
+  const showDropdownTooltip = useCallback((e, label) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setDropdownTooltip({ show: true, label, x: rect.right + 8, y: rect.top + rect.height / 2 })
+  }, [])
+
+  const hideDropdownTooltip = useCallback(() => {
+    setDropdownTooltip({ show: false, label: '', x: 0, y: 0 })
   }, [])
 
   const sidebarContent = (
@@ -136,6 +147,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
             onBlur={() => setTimeout(() => setEntryOpen(false), 200)}
             onMouseEnter={(e) => showTooltip(e, 'New Entry')}
             onMouseLeave={hideTooltip}
+            title={minimized ? undefined : 'Create new user, farmer, cooperative, loan, or payment cycle'}
             className={`w-full bg-primary-fixed text-on-primary-fixed font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-4 hover:opacity-90 transition-opacity ${minimized ? 'px-0' : ''}`}
             aria-haspopup="menu"
             aria-expanded={entryOpen}
@@ -149,6 +161,8 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
                 <button
                   role="menuitem"
                   key={link.to}
+                  onMouseEnter={(e) => showDropdownTooltip(e, link.label)}
+                  onMouseLeave={hideDropdownTooltip}
                   onMouseDown={() => { navigate(link.to, { state: { openModal: true } }); setEntryOpen(false) }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-body-md text-on-surface hover:bg-surface-container transition-colors"
                 >
@@ -184,6 +198,14 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
           style={{ left: tooltip.x, top: tooltip.y, transform: 'translateY(-50%)' }}
         >
           {tooltip.label}
+        </div>
+      )}
+      {dropdownTooltip.show && (
+        <div
+          className="fixed px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none z-[999] shadow-lg"
+          style={{ left: dropdownTooltip.x, top: dropdownTooltip.y, transform: 'translateY(-50%)' }}
+        >
+          {dropdownTooltip.label}
         </div>
       )}
     </>
