@@ -357,7 +357,7 @@ body.dark-mode .backdrop-blur-xl { backdrop-filter: blur(24px) saturate(50%) !im
 
 /* ALL text color utilities - using very bright colors for visibility */
 body.dark-mode .text-primary { color: #003320 !important; }
-body.dark-mode .text-on-primary { color: #b1f0ce !important; }
+body.dark-mode .text-on-primary { color: #dff7e0 !important; }
 body.dark-mode .text-on-primary-container { color: #b1f0ce !important; }
 body.dark-mode .text-primary-container { color: #004d30 !important; }
 body.dark-mode .text-secondary { color: #003320 !important; }
@@ -454,6 +454,41 @@ body.dark-mode i.material-symbols-outlined {
 body.dark-mode aside,
 body.dark-mode [role="navigation"],
 body.dark-mode nav {
+  color: #dff7e0 !important;
+}
+
+/* Sidebar background — dark instead of bright teal */
+body.dark-mode aside.bg-primary {
+  background-color: #004d30 !important;
+}
+
+/* Sidebar text must be light on dark background */
+body.dark-mode aside.bg-primary .text-on-primary,
+body.dark-mode aside.bg-primary .text-on-primary\/80,
+body.dark-mode aside.bg-primary .text-on-primary\/60,
+body.dark-mode aside.bg-primary .text-on-primary\/40 {
+  color: #dff7e0 !important;
+}
+
+/* Sidebar divider */
+body.dark-mode aside.bg-primary .border-on-primary\/10 {
+  border-color: rgba(223, 247, 224, 0.15) !important;
+}
+
+/* Sidebar hover effect — subtle light overlay on dark background */
+body.dark-mode aside.bg-primary .hover\:bg-primary-fixed-dim\/10:hover {
+  background-color: rgba(134, 215, 173, 0.1) !important;
+}
+
+/* Sidebar "New Entry" button — keep bright for visibility */
+body.dark-mode aside.bg-primary .bg-primary-fixed {
+  background-color: #86d7ad !important;
+  color: #003320 !important;
+}
+
+/* Sidebar tooltips — dark background, light text */
+body.dark-mode .bg-gray-900.text-white {
+  background-color: #1f3021 !important;
   color: #dff7e0 !important;
 }
 
