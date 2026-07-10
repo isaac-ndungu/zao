@@ -5,6 +5,9 @@ from celery import shared_task
 from django.db import transaction
 
 from apps.base.utils import log_audit
+from apps.inventory.models import Inventory, Stock
+
+from .models import Sale, SaleInventoryLineItem
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +17,6 @@ def decrement_inventory_on_sale(sale_id: str):
     """FIFO-allocate a sale's quantity across the cooperative's cycle-pools,
     decrement each pool and the Stock aggregate, and record the allocation as
     SaleInventoryLineItem rows. Phase 3 server-side allocation."""
-    from apps.inventory.models import Inventory, Stock
-    from .models import Sale, SaleInventoryLineItem
 
     try:
         with transaction.atomic():
@@ -88,8 +89,6 @@ def reverse_inventory_on_cancellation(sale_id: str):
     """Reverse the FIFO allocation for a cancelled sale: restore each
     cycle-pool's quantity_out, restore the Stock aggregate, and delete the
     SaleInventoryLineItem rows."""
-    from apps.inventory.models import Inventory, Stock
-    from .models import Sale, SaleInventoryLineItem
 
     try:
         with transaction.atomic():

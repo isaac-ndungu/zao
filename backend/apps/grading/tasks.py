@@ -4,27 +4,27 @@ from decimal import Decimal
 from celery import shared_task
 from django.db import transaction
 
+from apps.deliveries.models import ProductType
+from apps.inventory.models import Inventory, Stock
+from apps.payment_engine.models import ComputationWarning, PaymentCycle
+
+from .models import Grade
+
 logger = logging.getLogger(__name__)
 
 
 def _get_delivery_qty(delivery):
-    from apps.deliveries.models import ProductType
     if delivery.product_type == ProductType.MILK:
         return delivery.volume_litres or Decimal('0')
     return delivery.quantity_kg or Decimal('0')
 
 
 def _get_delivery_unit(delivery):
-    from apps.deliveries.models import ProductType
     return 'litres' if delivery.product_type == ProductType.MILK else 'kg'
 
 
 @shared_task(soft_time_limit=30, time_limit=60)
 def update_inventory_on_grade(grade_id: str):
-    from apps.inventory.models import Inventory, Stock
-    from apps.payment_engine.models import ComputationWarning, PaymentCycle
-
-    from .models import Grade
 
     try:
         with transaction.atomic():

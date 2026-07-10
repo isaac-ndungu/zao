@@ -264,7 +264,7 @@ def refresh_coop_leaderboard(cooperative_id, period='30d'):
     r.delete(volume_key)
     from apps.deliveries.models import Delivery
     from django.db.models import Sum
-    from .common import coalesce_sum
+    from .queries.common import coalesce_sum
     volume_qs = Delivery.objects.filter(
         cooperative_id=cooperative_id,
         date_delivered__gte=start, date_delivered__lt=today,
