@@ -5,6 +5,7 @@ const navItems = [
   { to: '/external-auditor/financial-statements', icon: 'finance', label: 'Financial Statements' },
   { to: '/external-auditor/audit-trail', icon: 'security', label: 'Audit Trail' },
   { to: '/external-auditor/loan-portfolio', icon: 'account_balance_wallet', label: 'Loan Portfolio' },
+  { to: '/external-auditor/disputes', icon: 'feedback', label: 'Disputes' },
 ]
 
 export default function ExternalAuditorSidebar({ mobileOpen, onClose, minimized }) {

@@ -7,6 +7,7 @@ const navItems = [
   { to: '/accountant/disbursements', icon: 'account_balance', label: 'Disbursements' },
   { to: '/accountant/loans', icon: 'account_balance_wallet', label: 'Loans' },
   { to: '/accountant/deductions', icon: 'money_off', label: 'Deductions' },
+  { to: '/accountant/disputes', icon: 'feedback', label: 'Disputes' },
   { to: '/accountant/reports', icon: 'description', label: 'Reports' },
 ]
 

@@ -7,6 +7,7 @@ const navItems = [
   { to: '/auditor/financial', icon: 'payments', label: 'Financial' },
   { to: '/auditor/production', icon: 'inventory_2', label: 'Production' },
   { to: '/auditor/loans', icon: 'account_balance_wallet', label: 'Loans' },
+  { to: '/auditor/disputes', icon: 'feedback', label: 'Disputes' },
   { to: '/auditor/reports', icon: 'description', label: 'Reports' },
 ]
 

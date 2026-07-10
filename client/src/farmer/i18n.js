@@ -92,6 +92,9 @@ const translations = {
     shift: 'Shift',
     records: 'records',
     of: 'of',
+    myDisputes: 'My Disputes',
+    noDisputes: 'No disputes found.',
+    resolutionNotes: 'Resolution',
   },
   sw: {
     dashboard: 'Dashibodi',
@@ -186,6 +189,9 @@ const translations = {
     shift: 'Muda',
     records: 'rekodi',
     of: 'ya',
+    myDisputes: 'Pingamizi Zangu',
+    noDisputes: 'Hakuna pingamizi.',
+    resolutionNotes: 'Ufafanuzi',
   },
 }
 

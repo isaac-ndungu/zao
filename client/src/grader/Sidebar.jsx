@@ -45,6 +45,7 @@ const navItems = [
   { to: '/grader/record-delivery', icon: 'add_circle', label: 'Record Delivery' },
   { to: '/grader/grade', icon: 'grading', label: 'Grade Delivery' },
   { to: '/grader/my-grades', icon: 'fact_check', label: 'My Grades' },
+  { to: '/grader/disputes', icon: 'feedback', label: 'Disputes' },
   { to: '/grader/sync', icon: 'sync', label: 'Sync' },
 ]
 
