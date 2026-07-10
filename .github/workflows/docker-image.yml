@@ -27,7 +27,7 @@ jobs:
 
       - name: Run a quick sanity check
         run: |
-          docker run --rm zao-backend:test python -c "import django; print(f'Django {django.VERSION}')"
+          docker run --rm -e SECRET_KEY=test-secret-key zao-backend:test python -c "import django; print(f'Django {django.VERSION}')"
 
   docker-client:
     name: Build Client Docker Image

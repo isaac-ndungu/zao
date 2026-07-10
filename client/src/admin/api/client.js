@@ -35,13 +35,11 @@ async function refreshAccessToken() {
       const res = await fetch(resolveUrl('/api/auth/refresh/'), { method: 'POST', credentials: 'include' })
       if (!res.ok) {
         accessToken = null
-        setStoredToken(null)
         return null
       }
       const data = await res.json().catch(() => ({}))
       if (!data.access) return null
       accessToken = data.access
-      setStoredToken(data.access)
       return data.access
     } finally {
       refreshPromise = null
