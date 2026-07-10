@@ -225,10 +225,10 @@ body.high-contrast .border-tertiary { border-color: #cc0000 !important; }
 /* Dark Mode - Comprehensive overrides for all UI elements */
 body.dark-mode {
   /* CSS custom properties (used by some components) */
-  --color-primary: #b1f0ce;
+  --color-primary: #86d7ad;
   --color-on-primary: #003320;
   --color-primary-container: #004d30;
-  --color-on-primary-container: #b1f0ce;
+  --color-on-primary-container: #86d7ad;
   --color-secondary: #86d7ad;
   --color-on-secondary: #003320;
   --color-secondary-container: #005038;
@@ -249,10 +249,10 @@ body.dark-mode {
   --color-on-surface-variant: #bfc9bf;
   --color-outline: #899389;
   --color-outline-variant: #404943;
-  --color-primary-fixed: #b1f0ce;
+  --color-primary-fixed: #86d7ad;
   --color-primary-fixed-dim: #86d7ad;
   --color-on-primary-fixed: #003320;
-  --color-on-primary-fixed-variant: #b1f0ce;
+  --color-on-primary-fixed-variant: #86d7ad;
   --color-secondary-fixed: #86d7ad;
   --color-secondary-fixed-dim: #5bb98a;
   --color-on-secondary-fixed: #003320;
@@ -271,7 +271,7 @@ body.dark-mode {
   --color-surface-container-lowest: #000000;
   --color-surface-container-high: #1f3021;
   --color-surface-container-highest: #2a3a2c;
-  --color-surface-tint: #b1f0ce;
+  --color-surface-tint: #86d7ad;
 
   /* Background colors */
   background-color: #0c2012 !important;
@@ -279,7 +279,7 @@ body.dark-mode {
 }
 
 /* ALL background utilities */
-body.dark-mode .bg-primary { background-color: #b1f0ce !important; }
+body.dark-mode .bg-primary { background-color: #86d7ad !important; }
 body.dark-mode .bg-primary-container { background-color: #004d30 !important; }
 body.dark-mode .bg-secondary { background-color: #86d7ad !important; }
 body.dark-mode .bg-secondary-container { background-color: #005038 !important; }
@@ -297,7 +297,7 @@ body.dark-mode .bg-tertiary-container { background-color: #5f4000 !important; }
 body.dark-mode .bg-surface-dim { background-color: #0c2012 !important; }
 body.dark-mode .bg-surface-bright { background-color: #1c2e1f !important; }
 body.dark-mode .bg-inverse-surface { background-color: #dff7e0 !important; }
-body.dark-mode .bg-primary-fixed { background-color: #b1f0ce !important; }
+body.dark-mode .bg-primary-fixed { background-color: #86d7ad !important; }
 body.dark-mode .bg-secondary-fixed { background-color: #86d7ad !important; }
 body.dark-mode .bg-tertiary-fixed { background-color: #ffdeab !important; }
 
@@ -358,7 +358,7 @@ body.dark-mode .backdrop-blur-xl { backdrop-filter: blur(24px) saturate(50%) !im
 /* ALL text color utilities - using very bright colors for visibility */
 body.dark-mode .text-primary { color: #003320 !important; }
 body.dark-mode .text-on-primary { color: #dff7e0 !important; }
-body.dark-mode .text-on-primary-container { color: #b1f0ce !important; }
+body.dark-mode .text-on-primary-container { color: #86d7ad !important; }
 body.dark-mode .text-primary-container { color: #004d30 !important; }
 body.dark-mode .text-secondary { color: #003320 !important; }
 body.dark-mode .text-on-secondary { color: #86d7ad !important; }
@@ -381,12 +381,12 @@ body.dark-mode .text-tertiary-container { color: #ffdeab !important; }
 body.dark-mode .text-inverse-on-surface { color: #213525 !important; }
 body.dark-mode .text-inverse-primary { color: #0f5238 !important; }
 body.dark-mode .text-on-primary-fixed { color: #003320 !important; }
-body.dark-mode .text-on-primary-fixed-variant { color: #b1f0ce !important; }
+body.dark-mode .text-on-primary-fixed-variant { color: #86d7ad !important; }
 body.dark-mode .text-on-secondary-fixed { color: #003320 !important; }
 body.dark-mode .text-on-secondary-fixed-variant { color: #86d7ad !important; }
 body.dark-mode .text-on-tertiary-fixed { color: #322b00 !important; }
 body.dark-mode .text-on-tertiary-fixed-variant { color: #ffdeab !important; }
-body.dark-mode .text-surface-tint { color: #b1f0ce !important; }
+body.dark-mode .text-surface-tint { color: #86d7ad !important; }
 body.dark-mode .text-gray-50 { color: #dff7e0 !important; }
 body.dark-mode .text-gray-100 { color: #dff7e0 !important; }
 body.dark-mode .text-gray-200 { color: #dff7e0 !important; }
@@ -403,7 +403,7 @@ body.dark-mode .text-current { color: currentColor !important; }
 body.dark-mode .text-transparent { color: transparent !important; }
 
 /* ALL border color utilities */
-body.dark-mode .border-primary { border-color: #b1f0ce !important; }
+body.dark-mode .border-primary { border-color: #86d7ad !important; }
 body.dark-mode .border-on-primary { border-color: #003320 !important; }
 body.dark-mode .border-primary-container { border-color: #004d30 !important; }
 body.dark-mode .border-secondary { border-color: #86d7ad !important; }
