@@ -30,14 +30,15 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
       setLoading(true)
       apiFetch(`/api/search/?q=${encodeURIComponent(query)}`)
         .then((res) => {
-          if (!res.ok) throw new Error('Search failed')
+          if (!res.ok) throw new Error(`Search failed: ${res.status} ${res.statusText}`)
           return res.json()
         })
         .then((data) => {
           setResults(data.results || [])
           setShowOverlay(true)
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error('Search error:', err)
           setResults([])
           setShowOverlay(false)
         })

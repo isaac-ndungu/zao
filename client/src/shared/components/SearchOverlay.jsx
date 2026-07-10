@@ -3,7 +3,7 @@ export default function SearchOverlay({ results, loading, onResultClick, onViewA
 
   return (
     <div
-      className="absolute left-0 right-0 top-full mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-[999] overflow-hidden max-h-[70vh] overflow-y-auto"
+      className="absolute left-0 right-0 top-full mt-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-[999] max-h-[70vh] overflow-y-auto"
       role="listbox"
       aria-label="Search results"
     >

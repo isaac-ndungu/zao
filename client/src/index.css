@@ -105,122 +105,122 @@ body {
   font-family: "DM Sans", sans-serif;
 }
 
-/* High Contrast Mode */
+/* High Contrast Mode - Light background with dark text for maximum readability */
 body.high-contrast {
-  --color-primary: #004d00;
+  --color-primary: #000000;
   --color-on-primary: #ffffff;
-  --color-primary-container: #b8f5b8;
-  --color-on-primary-container: #002200;
-  --color-secondary: #8b4500;
+  --color-primary-container: #cccccc;
+  --color-on-primary-container: #000000;
+  --color-secondary: #000000;
   --color-on-secondary: #ffffff;
-  --color-secondary-container: #ffd9a8;
-  --color-on-secondary-container: #2d1600;
-  --color-error: #ba1a1a;
+  --color-secondary-container: #cccccc;
+  --color-on-secondary-container: #000000;
+  --color-error: #cc0000;
   --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #410002;
-  --color-background: #000000;
-  --color-on-background: #ffffff;
-  --color-surface: #000000;
-  --color-on-surface: #ffffff;
-  --color-surface-variant: #444444;
-  --color-on-surface-variant: #ffffff;
-  --color-outline: #ffffff;
-  --color-outline-variant: #888888;
-  --color-primary-fixed: #003300;
-  --color-primary-fixed-dim: #005500;
+  --color-error-container: #ffcccc;
+  --color-on-error-container: #cc0000;
+  --color-background: #ffffff;
+  --color-on-background: #000000;
+  --color-surface: #ffffff;
+  --color-on-surface: #000000;
+  --color-surface-variant: #eeeeee;
+  --color-on-surface-variant: #000000;
+  --color-outline: #000000;
+  --color-outline-variant: #666666;
+  --color-primary-fixed: #000000;
+  --color-primary-fixed-dim: #333333;
   --color-on-primary-fixed: #ffffff;
-  --color-on-primary-fixed-variant: #ccffdd;
-  --color-secondary-fixed: #663300;
-  --color-secondary-fixed-dim: #885500;
+  --color-on-primary-fixed-variant: #000000;
+  --color-secondary-fixed: #000000;
+  --color-secondary-fixed-dim: #333333;
   --color-on-secondary-fixed: #ffffff;
-  --color-on-secondary-fixed-variant: #ffe4bb;
-  --color-tertiary: #ffc107;
-  --color-tertiary-container: #5f4000;
-  --color-on-tertiary: #000000;
-  --color-on-tertiary-container: #ffdf9e;
-  --color-tertiary-fixed: #ffc107;
-  --color-tertiary-fixed-dim: #cc9a00;
-  --color-on-tertiary-fixed: #000000;
-  --color-on-tertiary-fixed-variant: #5f4000;
-  --color-inverse-surface: #ffffff;
-  --color-inverse-on-surface: #003300;
-  --color-inverse-primary: #005500;
-  --color-surface-dim: #333333;
-  --color-surface-bright: #1a1a1a;
-  --color-surface-container: #222222;
-  --color-surface-container-low: #1a1a1a;
-  --color-surface-container-lowest: #000000;
-  --color-surface-container-high: #2a2a2a;
-  --color-surface-container-highest: #333333;
-  --color-surface-tint: #b8f5b8;
+  --color-on-secondary-fixed-variant: #000000;
+  --color-tertiary: #cc0000;
+  --color-tertiary-container: #ffcccc;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #cc0000;
+  --color-tertiary-fixed: #cc0000;
+  --color-tertiary-fixed-dim: #990000;
+  --color-on-tertiary-fixed: #ffffff;
+  --color-on-tertiary-fixed-variant: #cc0000;
+  --color-inverse-surface: #000000;
+  --color-inverse-on-surface: #ffffff;
+  --color-inverse-primary: #cccccc;
+  --color-surface-dim: #dddddd;
+  --color-surface-bright: #ffffff;
+  --color-surface-container: #ffffff;
+  --color-surface-container-low: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #f5f5f5;
+  --color-surface-container-highest: #eeeeee;
+  --color-surface-tint: #000000;
 }
 
-body.high-contrast .bg-primary { background-color: #004d00 !important; }
-body.high-contrast .bg-primary-container { background-color: #b8f5b8 !important; }
-body.high-contrast .bg-secondary { background-color: #8b4500 !important; }
-body.high-contrast .bg-secondary-container { background-color: #ffd9a8 !important; }
-body.high-contrast .bg-surface { background-color: #000000 !important; }
-body.high-contrast .bg-surface-container { background-color: #222222 !important; }
-body.high-contrast .bg-surface-container-low { background-color: #1a1a1a !important; }
-body.high-contrast .bg-surface-container-lowest { background-color: #000000 !important; }
-body.high-contrast .bg-surface-container-high { background-color: #2a2a2a !important; }
-body.high-contrast .bg-surface-container-highest { background-color: #333333 !important; }
-body.high-contrast .bg-background { background-color: #000000 !important; }
-body.high-contrast .bg-error { background-color: #ba1a1a !important; }
-body.high-contrast .bg-error-container { background-color: #ffdad6 !important; }
-body.high-contrast .bg-tertiary { background-color: #ffc107 !important; }
-body.high-contrast .bg-tertiary-container { background-color: #ffdf9e !important; }
-body.high-contrast .bg-surface-dim { background-color: #333333 !important; }
-body.high-contrast .bg-surface-bright { background-color: #1a1a1a !important; }
-body.high-contrast .bg-inverse-surface { background-color: #ffffff !important; }
-body.high-contrast .bg-primary-fixed { background-color: #003300 !important; }
-body.high-contrast .bg-secondary-fixed { background-color: #663300 !important; }
-body.high-contrast .bg-tertiary-fixed { background-color: #ffc107 !important; }
+body.high-contrast .bg-primary { background-color: #000000 !important; }
+body.high-contrast .bg-primary-container { background-color: #cccccc !important; }
+body.high-contrast .bg-secondary { background-color: #000000 !important; }
+body.high-contrast .bg-secondary-container { background-color: #cccccc !important; }
+body.high-contrast .bg-surface { background-color: #ffffff !important; }
+body.high-contrast .bg-surface-container { background-color: #ffffff !important; }
+body.high-contrast .bg-surface-container-low { background-color: #ffffff !important; }
+body.high-contrast .bg-surface-container-lowest { background-color: #ffffff !important; }
+body.high-contrast .bg-surface-container-high { background-color: #f5f5f5 !important; }
+body.high-contrast .bg-surface-container-highest { background-color: #eeeeee !important; }
+body.high-contrast .bg-background { background-color: #ffffff !important; }
+body.high-contrast .bg-error { background-color: #cc0000 !important; }
+body.high-contrast .bg-error-container { background-color: #ffcccc !important; }
+body.high-contrast .bg-tertiary { background-color: #cc0000 !important; }
+body.high-contrast .bg-tertiary-container { background-color: #ffcccc !important; }
+body.high-contrast .bg-surface-dim { background-color: #dddddd !important; }
+body.high-contrast .bg-surface-bright { background-color: #ffffff !important; }
+body.high-contrast .bg-inverse-surface { background-color: #000000 !important; }
+body.high-contrast .bg-primary-fixed { background-color: #000000 !important; }
+body.high-contrast .bg-secondary-fixed { background-color: #000000 !important; }
+body.high-contrast .bg-tertiary-fixed { background-color: #cc0000 !important; }
 
-body.high-contrast .text-primary { color: #ffffff !important; }
-body.high-contrast .text-on-primary { color: #004d00 !important; }
-body.high-contrast .text-on-primary-container { color: #002200 !important; }
-body.high-contrast .text-primary-container { color: #b8f5b8 !important; }
-body.high-contrast .text-secondary { color: #ffffff !important; }
-body.high-contrast .text-on-secondary { color: #8b4500 !important; }
-body.high-contrast .text-on-secondary-container { color: #2d1600 !important; }
-body.high-contrast .text-secondary-container { color: #ffd9a8 !important; }
-body.high-contrast .text-surface { color: #ffffff !important; }
-body.high-contrast .text-on-surface { color: #ffffff !important; }
-body.high-contrast .text-on-surface-variant { color: #ffffff !important; }
-body.high-contrast .text-surface-variant { color: #444444 !important; }
-body.high-contrast .text-background { color: #ffffff !important; }
-body.high-contrast .text-on-background { color: #ffffff !important; }
-body.high-contrast .text-error { color: #ffffff !important; }
-body.high-contrast .text-on-error { color: #ba1a1a !important; }
-body.high-contrast .text-on-error-container { color: #410002 !important; }
-body.high-contrast .text-error-container { color: #ffdad6 !important; }
-body.high-contrast .text-tertiary { color: #000000 !important; }
-body.high-contrast .text-on-tertiary { color: #ffc107 !important; }
-body.high-contrast .text-on-tertiary-container { color: #5f4000 !important; }
-body.high-contrast .text-tertiary-container { color: #ffdf9e !important; }
-body.high-contrast .text-inverse-on-surface { color: #003300 !important; }
-body.high-contrast .text-inverse-primary { color: #005500 !important; }
+body.high-contrast .text-primary { color: #000000 !important; }
+body.high-contrast .text-on-primary { color: #ffffff !important; }
+body.high-contrast .text-on-primary-container { color: #000000 !important; }
+body.high-contrast .text-primary-container { color: #000000 !important; }
+body.high-contrast .text-secondary { color: #000000 !important; }
+body.high-contrast .text-on-secondary { color: #ffffff !important; }
+body.high-contrast .text-on-secondary-container { color: #000000 !important; }
+body.high-contrast .text-secondary-container { color: #000000 !important; }
+body.high-contrast .text-surface { color: #000000 !important; }
+body.high-contrast .text-on-surface { color: #000000 !important; }
+body.high-contrast .text-on-surface-variant { color: #000000 !important; }
+body.high-contrast .text-surface-variant { color: #666666 !important; }
+body.high-contrast .text-background { color: #000000 !important; }
+body.high-contrast .text-on-background { color: #000000 !important; }
+body.high-contrast .text-error { color: #cc0000 !important; }
+body.high-contrast .text-on-error { color: #ffffff !important; }
+body.high-contrast .text-on-error-container { color: #cc0000 !important; }
+body.high-contrast .text-error-container { color: #cc0000 !important; }
+body.high-contrast .text-tertiary { color: #cc0000 !important; }
+body.high-contrast .text-on-tertiary { color: #ffffff !important; }
+body.high-contrast .text-on-tertiary-container { color: #cc0000 !important; }
+body.high-contrast .text-tertiary-container { color: #cc0000 !important; }
+body.high-contrast .text-inverse-on-surface { color: #ffffff !important; }
+body.high-contrast .text-inverse-primary { color: #333333 !important; }
 body.high-contrast .text-on-primary-fixed { color: #ffffff !important; }
-body.high-contrast .text-on-primary-fixed-variant { color: #ccffdd !important; }
+body.high-contrast .text-on-primary-fixed-variant { color: #000000 !important; }
 body.high-contrast .text-on-secondary-fixed { color: #ffffff !important; }
-body.high-contrast .text-on-secondary-fixed-variant { color: #ffe4bb !important; }
-body.high-contrast .text-on-tertiary-fixed { color: #000000 !important; }
-body.high-contrast .text-on-tertiary-fixed-variant { color: #5f4000 !important; }
-body.high-contrast .text-surface-tint { color: #b8f5b8 !important; }
+body.high-contrast .text-on-secondary-fixed-variant { color: #000000 !important; }
+body.high-contrast .text-on-tertiary-fixed { color: #ffffff !important; }
+body.high-contrast .text-on-tertiary-fixed-variant { color: #cc0000 !important; }
+body.high-contrast .text-surface-tint { color: #000000 !important; }
 
-body.high-contrast .border-primary { border-color: #004d00 !important; }
+body.high-contrast .border-primary { border-color: #000000 !important; }
 body.high-contrast .border-on-primary { border-color: #ffffff !important; }
-body.high-contrast .border-primary-container { border-color: #b8f5b8 !important; }
-body.high-contrast .border-secondary { border-color: #8b4500 !important; }
-body.high-contrast .border-secondary-container { border-color: #ffd9a8 !important; }
-body.high-contrast .border-surface { border-color: #ffffff !important; }
-body.high-contrast .border-surface-variant { border-color: #444444 !important; }
-body.high-contrast .border-outline { border-color: #ffffff !important; }
-body.high-contrast .border-outline-variant { border-color: #888888 !important; }
-body.high-contrast .border-error { border-color: #ba1a1a !important; }
-body.high-contrast .border-tertiary { border-color: #ffc107 !important; }
+body.high-contrast .border-primary-container { border-color: #000000 !important; }
+body.high-contrast .border-secondary { border-color: #000000 !important; }
+body.high-contrast .border-secondary-container { border-color: #000000 !important; }
+body.high-contrast .border-surface { border-color: #000000 !important; }
+body.high-contrast .border-surface-variant { border-color: #666666 !important; }
+body.high-contrast .border-outline { border-color: #000000 !important; }
+body.high-contrast .border-outline-variant { border-color: #666666 !important; }
+body.high-contrast .border-error { border-color: #cc0000 !important; }
+body.high-contrast .border-tertiary { border-color: #cc0000 !important; }
 
 /* Dark Mode */
 body.dark-mode {
@@ -327,6 +327,19 @@ body.dark-mode .text-on-tertiary-fixed { color: #322b00 !important; }
 body.dark-mode .text-on-tertiary-fixed-variant { color: #ffdeab !important; }
 body.dark-mode .text-surface-tint { color: #b1f0ce !important; }
 
+/* Dark mode icon colors - Material Symbols use currentColor */
+body.dark-mode .material-symbols-outlined,
+body.dark-mode [class*="material-symbols"] {
+  color: #dff7e0 !important;
+}
+body.dark-mode .text-\[\#8EA896\] {
+  color: #bfc9bf !important;
+}
+
+/* Dark mode specific component overrides */
+body.dark-mode .bg-primary\/5 { background-color: rgba(177, 240, 206, 0.05) !important; }
+body.dark-mode .hover\:bg-primary\/5:hover { background-color: rgba(177, 240, 206, 0.1) !important; }
+
 body.dark-mode .border-primary { border-color: #b1f0ce !important; }
 body.dark-mode .border-on-primary { border-color: #003320 !important; }
 body.dark-mode .border-primary-container { border-color: #004d30 !important; }
@@ -339,15 +352,37 @@ body.dark-mode .border-outline-variant { border-color: #404943 !important; }
 body.dark-mode .border-error { border-color: #ffb4ab !important; }
 body.dark-mode .border-tertiary { border-color: #ffdeab !important; }
 
-/* Enhanced Focus Indicators */
+/* KPI Cards and similar components */
+body.dark-mode .bg-surface-container-lowest {
+  background-color: #0c2012 !important;
+}
+
+/* Focus ring colors for dark mode */
+body.dark-mode *:focus {
+  outline-color: #86d7ad !important;
+}
+body.dark-mode *:focus-visible {
+  outline-color: #86d7ad !important;
+}
+
+/* Enhanced Focus Indicators - using box-shadow for better reliability */
 body.enhanced-focus *:focus {
-  outline: 3px solid #0066cc !important;
-  outline-offset: 2px !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px #0066cc !important;
   border-radius: 2px;
 }
 body.enhanced-focus *:focus-visible {
-  outline: 3px solid #0066cc !important;
-  outline-offset: 2px !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px #0066cc !important;
+  border-radius: 2px;
+}
+
+/* Dark mode enhanced focus */
+body.dark-mode.enhanced-focus *:focus {
+  box-shadow: 0 0 0 3px #86d7ad !important;
+}
+body.dark-mode.enhanced-focus *:focus-visible {
+  box-shadow: 0 0 0 3px #86d7ad !important;
 }
 
 /* Reduce Motion */

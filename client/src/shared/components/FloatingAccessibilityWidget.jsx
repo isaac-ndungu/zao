@@ -121,10 +121,10 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
         aria-label="Accessibility settings"
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        className={`fixed ${widgetPosition} z-50 w-11 h-11 bg-surface border border-outline-variant text-[#8EA896] hover:bg-[#D8F3DC] hover:text-[#2D6A4F] rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${mobileTouchTarget}`}
+        className={`fixed ${widgetPosition} z-50 w-9 h-9 bg-surface border border-outline-variant text-[#8EA896] hover:bg-[#D8F3DC] hover:text-[#2D6A4F] rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${mobileTouchTarget}`}
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0)' }}
       >
-        <span className="material-symbols-outlined text-xl" aria-hidden="true">accessibility_new</span>
+        <span className="material-symbols-outlined text-lg" aria-hidden="true">accessibility_new</span>
       </button>
 
       {isOpen && createPortal(
@@ -133,17 +133,17 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
           onClick={close}
           role="presentation"
         >
-          <div
-            ref={panelRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="a11y-panel-title"
-            className="absolute bottom-6 right-4 sm:right-6 w-72 max-h-[70vh] overflow-y-auto bg-surface border border-outline-variant rounded-2xl shadow-2xl z-[56]"
-            onClick={(e) => e.stopPropagation()}
-            style={{ marginBottom: 'env(safe-area-inset-bottom, 0)' }}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant sticky top-0 bg-surface z-10">
-              <h3 id="a11y-panel-title" className="font-headline-sm text-headline-sm text-on-surface">Accessibility</h3>
+            <div
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="a11y-panel-title"
+              className="absolute bottom-6 right-4 sm:right-6 w-64 max-h-[70vh] overflow-y-auto bg-surface border border-outline-variant rounded-2xl shadow-2xl z-[56]"
+              onClick={(e) => e.stopPropagation()}
+              style={{ marginBottom: 'env(safe-area-inset-bottom, 0)' }}
+            >
+              <div className="flex items-center justify-between px-3 py-2 border-b border-outline-variant sticky top-0 bg-surface z-10">
+                <h3 id="a11y-panel-title" className="text-sm font-semibold text-on-surface">Accessibility</h3>
               <button
                 onClick={close}
                 aria-label="Close accessibility panel"
@@ -153,16 +153,16 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
               </button>
             </div>
 
-            <div className="p-4 space-y-5">
+            <div className="p-3 space-y-4">
               <fieldset>
-                <legend className="text-label-md font-bold text-on-surface mb-2">Font Size</legend>
-                <div className="flex gap-2">
+                <legend className="text-xs font-semibold text-on-surface mb-2 uppercase tracking-wide">Font Size</legend>
+                <div className="flex gap-1">
                   {fontOptions.map(([value, label]) => (
                     <button
                       key={value}
                       onClick={() => updatePref('fontSize', value)}
                       aria-pressed={prefs.fontSize === value}
-                      className={`flex-1 py-2 px-3 rounded-lg text-label-md font-medium border transition-colors ${
+                      className={`flex-1 py-1.5 px-2 rounded text-xs font-medium border transition-colors ${
                         prefs.fontSize === value
                           ? 'bg-primary text-on-primary border-primary'
                           : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
@@ -175,14 +175,14 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
               </fieldset>
 
               <fieldset>
-                <legend className="text-label-md font-bold text-on-surface mb-2">Contrast</legend>
-                <div className="flex gap-2">
+                <legend className="text-xs font-semibold text-on-surface mb-2 uppercase tracking-wide">Contrast</legend>
+                <div className="flex gap-1">
                   {[['standard', 'Standard'], ['high', 'High']].map(([value, label]) => (
                     <button
                       key={value}
                       onClick={() => updatePref('contrast', value)}
                       aria-pressed={prefs.contrast === value}
-                      className={`flex-1 py-2 px-3 rounded-lg text-label-md font-medium border transition-colors ${
+                      className={`flex-1 py-1.5 px-2 rounded text-xs font-medium border transition-colors ${
                         prefs.contrast === value
                           ? 'bg-primary text-on-primary border-primary'
                           : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
@@ -195,14 +195,14 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
               </fieldset>
 
               <fieldset>
-                <legend className="text-label-md font-bold text-on-surface mb-2">Focus Indicators</legend>
-                <div className="flex gap-2">
+                <legend className="text-xs font-semibold text-on-surface mb-2 uppercase tracking-wide">Focus</legend>
+                <div className="flex gap-1">
                   {[['normal', 'Normal'], ['enhanced', 'Enhanced']].map(([value, label]) => (
                     <button
                       key={value}
                       onClick={() => updatePref('focusIndicators', value)}
                       aria-pressed={prefs.focusIndicators === value}
-                      className={`flex-1 py-2 px-3 rounded-lg text-label-md font-medium border transition-colors ${
+                      className={`flex-1 py-1.5 px-2 rounded text-xs font-medium border transition-colors ${
                         prefs.focusIndicators === value
                           ? 'bg-primary text-on-primary border-primary'
                           : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
@@ -214,38 +214,38 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
                 </div>
               </fieldset>
 
-              <div className="flex items-center justify-between">
-                <span id="reduce-motion-label" className="text-label-md font-bold text-on-surface">Reduce Motion</span>
+              <div className="flex items-center justify-between py-1">
+                <span id="reduce-motion-label" className="text-xs font-medium text-on-surface">Reduce Motion</span>
                 <button
                   role="switch"
                   aria-checked={prefs.reduceMotion}
                   aria-labelledby="reduce-motion-label"
                   onClick={() => updatePref('reduceMotion', !prefs.reduceMotion)}
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
                     prefs.reduceMotion ? 'bg-primary' : 'bg-surface-container-high'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-on-primary transition-transform ${
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-on-primary transition-transform ${
                       prefs.reduceMotion ? 'translate-x-5' : ''
                     }`}
                   />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span id="dark-mode-label" className="text-label-md font-bold text-on-surface">Dark Mode</span>
+              <div className="flex items-center justify-between py-1">
+                <span id="dark-mode-label" className="text-xs font-medium text-on-surface">Dark Mode</span>
                 <button
                   role="switch"
                   aria-checked={prefs.darkMode}
                   aria-labelledby="dark-mode-label"
                   onClick={() => updatePref('darkMode', !prefs.darkMode)}
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
                     prefs.darkMode ? 'bg-primary' : 'bg-surface-container-high'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-on-primary transition-transform ${
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-on-primary transition-transform ${
                       prefs.darkMode ? 'translate-x-5' : ''
                     }`}
                   />
@@ -254,14 +254,14 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
 
               {mode === 'farmer' && (
                 <fieldset>
-                  <legend className="text-label-md font-bold text-on-surface mb-2">Language / Lugha</legend>
-                  <div className="flex gap-2">
+                  <legend className="text-xs font-semibold text-on-surface mb-2 uppercase tracking-wide">Language</legend>
+                  <div className="flex gap-1">
                     {[['en', 'English'], ['sw', 'Kiswahili']].map(([value, label]) => (
                       <button
                         key={value}
                         onClick={() => updatePref('language', value)}
                         aria-pressed={prefs.language === value}
-                        className={`flex-1 py-2 px-3 rounded-lg text-label-md font-medium border transition-colors ${
+                        className={`flex-1 py-1.5 px-2 rounded text-xs font-medium border transition-colors ${
                           prefs.language === value
                             ? 'bg-primary text-on-primary border-primary'
                             : 'bg-surface-container border-outline-variant text-on-surface hover:bg-surface-container-high'
