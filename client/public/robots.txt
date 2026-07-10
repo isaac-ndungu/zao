@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zao-f2k.pages.dev/sitemap.xml
