@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const navItems = [
   { to: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -44,8 +44,19 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
   const [entryOpen, setEntryOpen] = useState(false)
   const [tooltip, setTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
   const [dropdownTooltip, setDropdownTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
+  const entryRef = useRef(null)
 
   useEffect(() => { onClose(); setEntryOpen(false) }, [pathname])
+  useEffect(() => { setEntryOpen(false) }, [minimized])
+
+  useEffect(() => {
+    if (!entryOpen) return
+    function handleClickOutside(e) {
+      if (entryRef.current && !entryRef.current.contains(e.target)) setEntryOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [entryOpen])
 
   const showTooltip = useCallback((e, label) => {
     if (!minimized) return
@@ -141,10 +152,9 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
           </Link>
         ))}
 
-        <div className="relative">
+        <div ref={entryRef} className="relative">
           <button
             onClick={() => setEntryOpen(!entryOpen)}
-            onBlur={() => setTimeout(() => setEntryOpen(false), 200)}
             onMouseEnter={(e) => showTooltip(e, 'New Entry')}
             onMouseLeave={hideTooltip}
             title={minimized ? undefined : 'Create new user, farmer, cooperative, loan, or payment cycle'}

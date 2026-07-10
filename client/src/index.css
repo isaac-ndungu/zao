@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Theme Tokens */
 @theme {
   --color-surface-tint: #2c694e;
   --color-error: #ba1a1a;
@@ -105,7 +106,7 @@ body {
   font-family: "DM Sans", sans-serif;
 }
 
-/* High Contrast Mode - Light background with dark text for maximum readability */
+/* High Contrast */
 body.high-contrast {
   --color-primary: #000000;
   --color-on-primary: #ffffff;
@@ -156,6 +157,7 @@ body.high-contrast {
   --color-surface-tint: #000000;
 }
 
+/* High Contrast Utilities */
 body.high-contrast .bg-primary { background-color: #000000 !important; }
 body.high-contrast .bg-primary-container { background-color: #cccccc !important; }
 body.high-contrast .bg-secondary { background-color: #000000 !important; }
@@ -222,9 +224,8 @@ body.high-contrast .border-outline-variant { border-color: #666666 !important; }
 body.high-contrast .border-error { border-color: #cc0000 !important; }
 body.high-contrast .border-tertiary { border-color: #cc0000 !important; }
 
-/* Dark Mode - Comprehensive overrides for all UI elements */
+/* Dark Mode */
 body.dark-mode {
-  /* CSS custom properties (used by some components) */
   --color-primary: #86d7ad;
   --color-on-primary: #003320;
   --color-primary-container: #004d30;
@@ -272,13 +273,11 @@ body.dark-mode {
   --color-surface-container-high: #1f3021;
   --color-surface-container-highest: #2a3a2c;
   --color-surface-tint: #86d7ad;
-
-  /* Background colors */
   background-color: #0c2012 !important;
   color: #dff7e0 !important;
 }
 
-/* ALL background utilities */
+/* Backgrounds */
 body.dark-mode .bg-primary { background-color: #86d7ad !important; }
 body.dark-mode .bg-primary-container { background-color: #004d30 !important; }
 body.dark-mode .bg-secondary { background-color: #86d7ad !important; }
@@ -301,7 +300,6 @@ body.dark-mode .bg-primary-fixed { background-color: #86d7ad !important; }
 body.dark-mode .bg-secondary-fixed { background-color: #86d7ad !important; }
 body.dark-mode .bg-tertiary-fixed { background-color: #ffdeab !important; }
 
-/* CRITICAL: Override white/light backgrounds with opacity - these cause light gray cards */
 body.dark-mode .bg-white\/80 { background-color: rgba(12, 32, 18, 0.85) !important; }
 body.dark-mode .bg-white\/95 { background-color: rgba(12, 32, 18, 0.9) !important; }
 body.dark-mode .bg-white\/70 { background-color: rgba(12, 32, 18, 0.85) !important; }
@@ -331,7 +329,7 @@ body.dark-mode .bg-gray-700 { background-color: #899389 !important; }
 body.dark-mode .bg-gray-800 { background-color: #a3aea5 !important; }
 body.dark-mode .bg-gray-900 { background-color: #bfc9bf !important; }
 
-/* Gradient overrides for highlighted cards - use dark green colors */
+/* Gradients */
 body.dark-mode [class*="bg-gradient-to-br"] { background-image: linear-gradient(to bottom right, #004d30, #003d28) !important; }
 body.dark-mode [class*="bg-gradient-to-b"] { background-image: linear-gradient(to bottom, #004d30, #003d28) !important; }
 body.dark-mode [class*="bg-gradient-to-r"] { background-image: linear-gradient(to right, #004d30, #003d28) !important; }
@@ -341,7 +339,6 @@ body.dark-mode [class*="bg-gradient-to-tr"] { background-image: linear-gradient(
 body.dark-mode [class*="bg-gradient-to-tl"] { background-image: linear-gradient(to top left, #004d30, #003d28) !important; }
 body.dark-mode [class*="bg-gradient-to-bl"] { background-image: linear-gradient(to bottom left, #004d30, #003d28) !important; }
 
-/* From/to primary/secondary - these are used in KpiCard highlighted variant */
 body.dark-mode .from-primary { --tw-gradient-from: #004d30 !important; }
 body.dark-mode .from-secondary { --tw-gradient-from: #005038 !important; }
 body.dark-mode .to-primary { --tw-gradient-to: #003d28 !important; }
@@ -349,19 +346,18 @@ body.dark-mode .to-secondary { --tw-gradient-to: #003d28 !important; }
 body.dark-mode .from-primary\/20 { --tw-gradient-from: rgba(0, 77, 48, 0.2) !important; }
 body.dark-mode .from-primary\/10 { --tw-gradient-from: rgba(0, 77, 48, 0.1) !important; }
 
-/* Backdrop blur overrides */
 body.dark-mode .backdrop-blur-md { backdrop-filter: blur(12px) saturate(50%) !important; }
 body.dark-mode .backdrop-blur-sm { backdrop-filter: blur(4px) saturate(50%) !important; }
 body.dark-mode .backdrop-blur-lg { backdrop-filter: blur(16px) saturate(50%) !important; }
 body.dark-mode .backdrop-blur-xl { backdrop-filter: blur(24px) saturate(50%) !important; }
 
-/* ALL text color utilities - using very bright colors for visibility */
-body.dark-mode .text-primary { color: #003320 !important; }
-body.dark-mode .text-on-primary { color: #dff7e0 !important; }
+/* Text Colors */
+body.dark-mode .text-primary { color: #dff7e0 !important; }
+body.dark-mode .text-on-primary { color: #0c2012 !important; }
 body.dark-mode .text-on-primary-container { color: #86d7ad !important; }
 body.dark-mode .text-primary-container { color: #004d30 !important; }
-body.dark-mode .text-secondary { color: #003320 !important; }
-body.dark-mode .text-on-secondary { color: #86d7ad !important; }
+body.dark-mode .text-secondary { color: #dff7e0 !important; }
+body.dark-mode .text-on-secondary { color: #0c2012 !important; }
 body.dark-mode .text-on-secondary-container { color: #86d7ad !important; }
 body.dark-mode .text-secondary-container { color: #005038 !important; }
 body.dark-mode .text-surface { color: #dff7e0 !important; }
@@ -370,14 +366,14 @@ body.dark-mode .text-on-surface-variant { color: #bfc9bf !important; }
 body.dark-mode .text-surface-variant { color: #bfc9bf !important; }
 body.dark-mode .text-background { color: #dff7e0 !important; }
 body.dark-mode .text-on-background { color: #dff7e0 !important; }
-body.dark-mode .text-error { color: #690005 !important; }
-body.dark-mode .text-on-error { color: #ffb4ab !important; }
+body.dark-mode .text-error { color: #ffdad6 !important; }
+body.dark-mode .text-on-error { color: #690005 !important; }
 body.dark-mode .text-on-error-container { color: #ffdad6 !important; }
 body.dark-mode .text-error-container { color: #ffb4ab !important; }
-body.dark-mode .text-tertiary { color: #322b00 !important; }
-body.dark-mode .text-on-tertiary { color: #ffdeab !important; }
+body.dark-mode .text-tertiary { color: #ffdeab !important; }
+body.dark-mode .text-on-tertiary { color: #322b00 !important; }
 body.dark-mode .text-on-tertiary-container { color: #ffdeab !important; }
-body.dark-mode .text-tertiary-container { color: #ffdeab !important; }
+body.dark-mode .text-tertiary-container { color: #5f4000 !important; }
 body.dark-mode .text-inverse-on-surface { color: #213525 !important; }
 body.dark-mode .text-inverse-primary { color: #0f5238 !important; }
 body.dark-mode .text-on-primary-fixed { color: #003320 !important; }
@@ -402,7 +398,7 @@ body.dark-mode .text-white { color: #ffffff !important; }
 body.dark-mode .text-current { color: currentColor !important; }
 body.dark-mode .text-transparent { color: transparent !important; }
 
-/* ALL border color utilities */
+/* Borders */
 body.dark-mode .border-primary { border-color: #86d7ad !important; }
 body.dark-mode .border-on-primary { border-color: #003320 !important; }
 body.dark-mode .border-primary-container { border-color: #004d30 !important; }
@@ -425,7 +421,7 @@ body.dark-mode .border-current { border-color: currentColor !important; }
 body.dark-mode .border-transparent { border-color: transparent !important; }
 body.dark-mode .border-inherit { border-color: inherit !important; }
 
-/* Hover states for buttons and interactive elements */
+/* Hover States */
 body.dark-mode .hover\:bg-gray-50:hover { background-color: #0c2012 !important; }
 body.dark-mode .hover\:bg-gray-100:hover { background-color: #152619 !important; }
 body.dark-mode .hover\:bg-gray-200:hover { background-color: #1f3021 !important; }
@@ -442,7 +438,7 @@ body.dark-mode .hover\:text-gray-700:hover { color: #dff7e0 !important; }
 body.dark-mode .hover\:text-gray-800:hover { color: #0c2012 !important; }
 body.dark-mode .hover\:text-gray-900:hover { color: #0c2012 !important; }
 
-/* Material Symbols icons - CRITICAL for sidebar visibility */
+/* Sidebar */
 body.dark-mode .material-symbols-outlined,
 body.dark-mode [class*="material-symbols"],
 body.dark-mode span.material-symbols-outlined,
@@ -450,19 +446,16 @@ body.dark-mode i.material-symbols-outlined {
   color: #dff7e0 !important;
 }
 
-/* Sidebar specific overrides */
 body.dark-mode aside,
 body.dark-mode [role="navigation"],
 body.dark-mode nav {
   color: #dff7e0 !important;
 }
 
-/* Sidebar background — dark instead of bright teal */
 body.dark-mode aside.bg-primary {
   background-color: #004d30 !important;
 }
 
-/* Sidebar text must be light on dark background */
 body.dark-mode aside.bg-primary .text-on-primary,
 body.dark-mode aside.bg-primary .text-on-primary\/80,
 body.dark-mode aside.bg-primary .text-on-primary\/60,
@@ -470,29 +463,28 @@ body.dark-mode aside.bg-primary .text-on-primary\/40 {
   color: #dff7e0 !important;
 }
 
-/* Sidebar divider */
+body.dark-mode aside.bg-primary .material-symbols-outlined {
+  color: #dff7e0 !important;
+}
+
 body.dark-mode aside.bg-primary .border-on-primary\/10 {
   border-color: rgba(223, 247, 224, 0.15) !important;
 }
 
-/* Sidebar hover effect — subtle light overlay on dark background */
 body.dark-mode aside.bg-primary .hover\:bg-primary-fixed-dim\/10:hover {
   background-color: rgba(134, 215, 173, 0.1) !important;
 }
 
-/* Sidebar "New Entry" button — keep bright for visibility */
 body.dark-mode aside.bg-primary .bg-primary-fixed {
   background-color: #86d7ad !important;
   color: #003320 !important;
 }
 
-/* Sidebar tooltips — dark background, light text */
 body.dark-mode .bg-gray-900.text-white {
   background-color: #1f3021 !important;
   color: #dff7e0 !important;
 }
 
-/* Headings */
 body.dark-mode h1,
 body.dark-mode h2,
 body.dark-mode h3,
@@ -505,14 +497,12 @@ body.dark-mode .headline {
   color: #dff7e0 !important;
 }
 
-/* Links */
 body.dark-mode a,
 body.dark-mode a *,
 body.dark-mode button:not([disabled]) {
   color: inherit !important;
 }
 
-/* Buttons - ensuring text is visible */
 body.dark-mode button,
 body.dark-mode [role="button"],
 body.dark-mode .btn {
@@ -523,7 +513,17 @@ body.dark-mode [role="button"] * {
   color: inherit !important;
 }
 
-/* Cards - ensuring background and text visibility */
+body.dark-mode button.text-on-primary,
+body.dark-mode [role="button"].text-on-primary,
+body.dark-mode button.text-on-secondary,
+body.dark-mode [role="button"].text-on-secondary,
+body.dark-mode button.text-on-error,
+body.dark-mode [role="button"].text-on-error,
+body.dark-mode button.text-on-tertiary,
+body.dark-mode [role="button"].text-on-tertiary {
+  color: #0c2012 !important;
+}
+
 body.dark-mode .card,
 body.dark-mode [class*="card"],
 body.dark-mode .bg-card {
@@ -531,7 +531,6 @@ body.dark-mode .bg-card {
   color: #dff7e0 !important;
 }
 
-/* Inputs */
 body.dark-mode input,
 body.dark-mode textarea,
 body.dark-mode select {
@@ -540,18 +539,16 @@ body.dark-mode select {
   border-color: #404943 !important;
 }
 
-/* Focus indicators for dark mode */
 body.dark-mode *:focus { outline-color: #86d7ad !important; }
 body.dark-mode *:focus-visible { outline-color: #86d7ad !important; }
 body.dark-mode *:focus { box-shadow: 0 0 0 2px #0c2012, 0 0 0 4px #86d7ad !important; }
 body.dark-mode *:focus-visible { box-shadow: 0 0 0 2px #0c2012, 0 0 0 4px #86d7ad !important; }
 
-/* Utility classes that might override text */
 body.dark-mode .text-inherit { color: inherit !important; }
 body.dark-mode .text-current { color: currentColor !important; }
 body.dark-mode .text-transparent { color: transparent !important; }
 
-/* Reduce Motion */
+/* Accessibility */
 body.reduce-motion,
 body.reduce-motion * {
   animation-duration: 0.01ms !important;
@@ -560,6 +557,7 @@ body.reduce-motion * {
   scroll-behavior: auto !important;
 }
 
+/* Utility Classes */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
