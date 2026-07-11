@@ -42,6 +42,7 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [entryOpen, setEntryOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const [tooltip, setTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
   const [dropdownTooltip, setDropdownTooltip] = useState({ show: false, label: '', x: 0, y: 0 })
   const entryRef = useRef(null)
@@ -154,7 +155,13 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
 
         <div ref={entryRef} className="relative">
           <button
-            onClick={() => setEntryOpen(!entryOpen)}
+            onClick={() => {
+              if (minimized && entryRef.current) {
+                const rect = entryRef.current.getBoundingClientRect()
+                setMenuPos({ top: rect.top, left: rect.right + 8 })
+              }
+              setEntryOpen(!entryOpen)
+            }}
             onMouseEnter={(e) => showTooltip(e, 'New Entry')}
             onMouseLeave={hideTooltip}
             title={minimized ? undefined : 'Create new user, farmer, cooperative, loan, or payment cycle'}
@@ -166,7 +173,15 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
             {!minimized && <span>New Entry</span>}
           </button>
           {entryOpen && (
-            <div role="menu" className={`absolute bottom-full left-0 right-0 mb-2 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden ${minimized ? 'min-w-[200px]' : ''}`}>
+            <div
+              role="menu"
+              className={`bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg overflow-hidden ${
+                minimized
+                  ? 'fixed z-[999]'
+                  : 'absolute bottom-full left-0 right-0 mb-2'
+              }`}
+              style={minimized ? { top: menuPos.top, left: menuPos.left } : undefined}
+            >
               {entryLinks.map((link) => (
                 <button
                   role="menuitem"
@@ -174,10 +189,10 @@ export default function Sidebar({ mobileOpen, onClose, minimized }) {
                   onMouseEnter={(e) => showDropdownTooltip(e, link.label)}
                   onMouseLeave={hideDropdownTooltip}
                   onMouseDown={() => { navigate(link.to, { state: { openModal: true } }); setEntryOpen(false) }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-body-md text-on-surface hover:bg-surface-container transition-colors"
+                  className={`w-full flex items-center gap-3 text-on-surface hover:bg-surface-container transition-colors ${minimized ? 'justify-center px-3 py-3' : 'px-4 py-3 text-body-md'}`}
                 >
                   <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">{link.icon}</span>
-                  {link.label}
+                  {!minimized && link.label}
                 </button>
               ))}
             </div>
