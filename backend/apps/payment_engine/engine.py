@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Optional
 
 from django.db import models
-from django.db.models import DecimalField, Sum, Value
+from django.db.models import DecimalField, Q, Sum, Value
 from django.db.models.functions import Coalesce
 
 from apps.deliveries.models import Delivery
@@ -105,8 +105,12 @@ def compute_fixed_price(cycle):
         )
 
     # Step 1: fetch active GradePrice records — one per grade_letter, newest before cycle end
+    # Prefer cooperative-specific prices, fall back to global defaults (cooperative=None)
+    coop_id = cycle.cooperative_id
     all_prices = GradePrice.objects.filter(
         effective_from__lte=cycle.end_date,
+    ).filter(
+        Q(cooperative_id=coop_id) | Q(cooperative__isnull=True)
     ).order_by('grade_letter', '-effective_from')
     price_map = {}
     for gp in all_prices:

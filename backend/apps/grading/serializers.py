@@ -174,8 +174,8 @@ class GradeOverrideSerializer(serializers.ModelSerializer):
 class GradePriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = GradePrice
-        fields = ['id', 'grade_letter', 'price_per_unit', 'effective_from', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'cooperative', 'grade_letter', 'price_per_unit', 'effective_from', 'created_at']
+        read_only_fields = ['id', 'created_at', 'cooperative']
 
 
 class GradeDisputeSerializer(serializers.ModelSerializer):

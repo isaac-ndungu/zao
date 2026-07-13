@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -319,7 +320,10 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
     @action(detail=False, methods=['get', 'post'])
     def prices(self, request):
         if request.method == 'GET':
-            qs = GradePrice.objects.all().order_by('-effective_from')
+            coop_id = getattr(request, 'cooperative_id', None)
+            qs = GradePrice.objects.filter(
+                Q(cooperative_id=coop_id) | Q(cooperative__isnull=True)
+            ).order_by('-effective_from')
             page = self.paginate_queryset(qs)
             if page is not None:
                 serializer = GradePriceSerializer(page, many=True)
@@ -335,7 +339,7 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
                 )
             serializer = GradePriceSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            serializer.save(cooperative_id=request.cooperative_id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @idempotent()
@@ -499,12 +503,24 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
         return Response(GradeDisputeSerializer(dispute).data)
 
 
-class GradePriceViewSet(viewsets.ModelViewSet):
+class GradePriceViewSet(CooperativeScopedViewSet):
     queryset = GradePrice.objects.all().order_by('-effective_from')
     serializer_class = GradePriceSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+            return self.queryset
+        coop_id = getattr(self.request, 'cooperative_id', None)
+        return self.queryset.filter(
+            Q(cooperative_id=coop_id) | Q(cooperative__isnull=True)
+        ).order_by('-effective_from')
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return [IsAuthenticated(), IsAdminOrManager()]
         return [IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        serializer.save(cooperative_id=self.request.cooperative_id)

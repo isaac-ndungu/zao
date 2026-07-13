@@ -1,6 +1,7 @@
 import uuid
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Q, UniqueConstraint
 
 from apps.base.models import CooperativeScopedModel
 
@@ -83,6 +84,11 @@ class GradePrice(models.Model):
     GRADE_CHOICES = GradeLetter.choices
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cooperative = models.ForeignKey(
+        'cooperatives.Cooperative', on_delete=models.CASCADE,
+        null=True, blank=True, related_name='grade_prices',
+        help_text='Null = global default price. Set for cooperative-specific pricing.',
+    )
     grade_letter = models.CharField(max_length=20, choices=GRADE_CHOICES)
     price_per_unit = models.DecimalField(
         max_digits=10, decimal_places=2,
@@ -95,10 +101,21 @@ class GradePrice(models.Model):
         verbose_name = 'Grade Price'
         verbose_name_plural = 'Grade Prices'
         ordering = ['-effective_from']
-        unique_together = [['grade_letter', 'effective_from']]
+        constraints = [
+            UniqueConstraint(
+                fields=['grade_letter', 'effective_from'],
+                condition=Q(cooperative__isnull=True),
+                name='uniq_global_grade_price',
+            ),
+            UniqueConstraint(
+                fields=['cooperative', 'grade_letter', 'effective_from'],
+                name='uniq_coop_grade_price',
+            ),
+        ]
 
     def __str__(self):
-        return f'{self.grade_letter} @ {self.price_per_unit} (from {self.effective_from})'
+        coop = f' [{self.cooperative}]' if self.cooperative else ' (global)'
+        return f'{self.grade_letter} @ {self.price_per_unit} (from {self.effective_from}){coop}'
 
 
 class FarmerGradeDispute(models.Model):
