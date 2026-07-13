@@ -121,14 +121,20 @@ class StockViewSet(ReadOnlyModelViewSet):
     """The 'proper inventory' — current total sellable stock per (cooperative, product, grade)."""
     queryset = Stock.objects.all()
     serializer_class = StockSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['product_type', 'grade']
     ordering_fields = ['product_type', 'grade', 'quantity_available']
     ordering = ['product_type', 'grade']
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if request.user.is_authenticated:
+            request.cooperative_id = request.user.cooperative_id
 
     def get_queryset(self):
         qs = Stock.objects.all().select_related('cooperative')
         user = self.request.user
         if user.is_authenticated and getattr(user, 'role', None) == 'admin':
             return qs
-        return qs.filter(cooperative_id=getattr(user, 'cooperative_id', None))
+        return qs.filter(cooperative_id=getattr(self.request, 'cooperative_id', None))
