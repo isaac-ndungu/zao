@@ -5,6 +5,12 @@ from django.views.decorators.http import require_http_methods
 
 
 @require_http_methods(['GET', 'HEAD'])
+def health_ping(request):
+    """Lightweight health check — 200 if the process is alive."""
+    return JsonResponse({'status': 'ok'})
+
+
+@require_http_methods(['GET', 'HEAD'])
 def health_check(request):
     database_status = _check_database()
     redis_status = _check_redis()

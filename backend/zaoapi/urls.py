@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.permissions import IsAdminUser
-from apps.base.health import health_check
+from apps.base.health import health_check, health_ping
 from apps.base.views.global_search import GlobalSearchView
 from apps.disbursement.callbacks import mpesa_result_callback, mpesa_timeout_callback
 from apps.notifications.urls import api_urlpatterns, callback_urlpatterns as notification_callback_urlpatterns
@@ -27,6 +27,7 @@ from apps.notifications.urls import api_urlpatterns, callback_urlpatterns as not
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check, name='health-check'),
+    path('api/health/ping/', health_ping, name='health-ping'),
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAdminUser]), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAdminUser]), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAdminUser]), name='redoc'),
