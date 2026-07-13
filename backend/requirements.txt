@@ -76,5 +76,8 @@ gunicorn==23.0.0
 # Error tracking
 sentry-sdk[django]==2.30.0
 
+# Log shipping
+logtail-python==0.4.0
+
 # External APIs
 africastalking==2.0.2

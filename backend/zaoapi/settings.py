@@ -112,6 +112,8 @@ ORS_API_KEY = config("ORS_API_KEY", default="")
 ORS_BASE_URL = config("ORS_BASE_URL", default="https://api.openrouteservice.org")
 ORS_CACHE_TTL = config("ORS_CACHE_TTL", default=86400, cast=int)
 
+LOGTAIL_TOKEN = config('LOGTAIL_TOKEN', default='')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -155,6 +157,16 @@ LOGGING = {
         },
     },
 }
+
+if LOGTAIL_TOKEN:
+    LOGGING['handlers']['logtail'] = {
+        'class': 'logtail.LogtailHandler',
+        'token': LOGTAIL_TOKEN,
+        'formatter': 'json',
+    }
+    for logger_cfg in LOGGING['loggers'].values():
+        logger_cfg['handlers'].append('logtail')
+    LOGGING['root']['handlers'].append('logtail')
 
 ROOT_URLCONF = 'zaoapi.urls'
 
