@@ -40,7 +40,10 @@ def invalidate_analytics_cache(cooperative_id=None, scope='cooperative'):
     """
     key = _gen_key(cooperative_id, scope)
     if key is not None:
-        cache.incr(key)
+        if cache.get(key) is None:
+            cache.set(key, 1, timeout=None)
+        else:
+            cache.incr(key)
 
 
 def _make_cache_key(scope_type, cooperative_id, farmer_id, action, params_hash, generation):
