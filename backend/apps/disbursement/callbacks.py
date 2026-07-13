@@ -24,8 +24,8 @@ def _verify_signature(body: bytes, signature_header: str) -> bool:
         return False
     cert_path = getattr(settings, 'MPESA_PUBLIC_CERT_PATH', None)
     if not cert_path or not Path(cert_path).exists():
-        logger.warning('M-Pesa public cert not available — skipping signature verification')
-        return True
+        logger.error('M-Pesa public cert not available — refusing callback (fail-closed)')
+        return False
     try:
         from cryptography import x509
         from cryptography.hazmat.primitives import hashes, serialization

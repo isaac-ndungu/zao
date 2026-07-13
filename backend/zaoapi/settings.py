@@ -346,6 +346,7 @@ CELERY_BEAT_SCHEDULE = {
 
 NOTIFICATIONS_DRY_RUN = config('NOTIFICATIONS_DRY_RUN', default=True, cast=bool)
 AFRICASTALKING_USSD_CODE = config('AFRICASTALKING_USSD_CODE', default='*384*11411#')
+AFRICASTALKING_CALLBACK_IP_WHITELIST = config('AFRICASTALKING_CALLBACK_IP_WHITELIST', default='')
 
 # Email — Django SMTP backend
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
@@ -414,12 +415,16 @@ REST_FRAMEWORK = {
         'payment_export': '10/hour',
         'global_search': '60/min',
         'route_ors': '30/min',
+        'token_refresh': '30/min',
+        'change_password': '5/min',
+        'two_fa': '3/min',
+        'chat': '30/hour',
     },
 }
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }

@@ -13,6 +13,7 @@ from .utils import ask_gemini
 from .context import build_context_string
 
 from apps.base.idempotency import idempotent
+from .throttles import ChatRateThrottle
 SYSTEM_PROMPT = (
     '# Role\n'
     'You are a helpful assistant for the Zao Agricultural Cooperative Management API. '
@@ -104,6 +105,7 @@ SYSTEM_PROMPT = (
 
 class ChatView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ChatRateThrottle]
 
     def get(self, request):
         session_id = request.query_params.get('session_id')

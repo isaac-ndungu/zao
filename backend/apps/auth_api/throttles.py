@@ -157,3 +157,40 @@ class InviteVerifyRateThrottle(_TokenFromRequestBodyThrottle):
 class GoogleLoginRateThrottle(_RateFallbackMixin, AnonRateThrottle):
     scope = 'google_login'
     rate = '5/min'
+
+
+class TokenRefreshRateThrottle(_RateFallbackMixin, AnonRateThrottle):
+    scope = 'token_refresh'
+    rate = '30/min'
+
+
+class ChangePasswordRateThrottle(_RateFallbackMixin, SimpleRateThrottle):
+    scope = 'change_password'
+    rate = '5/min'
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            return self.cache_format % {
+                'scope': self.scope,
+                'ident': f'user_{request.user.pk}',
+            }
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': self.get_ident(request),
+        }
+
+
+class TwoFARateThrottle(_RateFallbackMixin, SimpleRateThrottle):
+    scope = 'two_fa'
+    rate = '3/min'
+
+    def get_cache_key(self, request, view):
+        if request.user and request.user.is_authenticated:
+            return self.cache_format % {
+                'scope': self.scope,
+                'ident': f'user_{request.user.pk}',
+            }
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': self.get_ident(request),
+        }

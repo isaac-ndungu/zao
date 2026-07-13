@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 
 from django.conf import settings
@@ -15,9 +16,35 @@ from .ussd import handle_ussd
 logger = logging.getLogger(__name__)
 
 
+def _validate_ussd_ip(request) -> bool:
+    whitelist = getattr(settings, 'AFRICASTALKING_CALLBACK_IP_WHITELIST', '')
+    if not whitelist:
+        return True
+    remote_ip = request.META.get('REMOTE_ADDR', '')
+    try:
+        addr = ipaddress.ip_address(remote_ip)
+    except ValueError:
+        logger.warning('Invalid USSD callback remote address: %s', remote_ip)
+        return False
+    for cidr in whitelist.split(','):
+        cidr = cidr.strip()
+        if not cidr:
+            continue
+        try:
+            if addr in ipaddress.ip_network(cidr, strict=False):
+                return True
+        except ValueError:
+            logger.warning('Invalid CIDR in USSD whitelist: %s', cidr)
+    logger.warning('USSD callback from %s rejected — not in whitelist', remote_ip)
+    return False
+
+
 @csrf_exempt
 @require_POST
 def ussd_callback(request):
+    if not _validate_ussd_ip(request):
+        return HttpResponse('END Forbidden.', content_type='text/plain')
+
     session_id = request.POST.get('sessionId', '')
     service_code = request.POST.get('serviceCode', '')
     phone_number = request.POST.get('phoneNumber', '')

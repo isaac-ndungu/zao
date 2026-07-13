@@ -4,10 +4,13 @@ from decimal import Decimal
 from io import StringIO
 
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+
+from decouple import config
 
 from apps.auth_api.models import User
 from apps.base.constants import UserRole, KENYA_COUNTIES
@@ -107,6 +110,13 @@ class Command(BaseCommand):
         parser.add_argument("--clear", action="store_true", help="Clear existing seed data first")
 
     def handle(self, *args, **options):
+        environment = config('ENVIRONMENT', default='development')
+        if not settings.DEBUG or environment == 'production':
+            raise CommandError(
+                "Seed data can only be loaded in local development. "
+                f"Current: DEBUG={settings.DEBUG}, ENVIRONMENT={environment}"
+            )
+
         if options["clear"]:
             self._clear_data()
 

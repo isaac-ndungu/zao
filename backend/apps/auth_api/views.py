@@ -57,6 +57,9 @@ from .throttles import (
     PasswordResetVerifyRateThrottle,
     RequestOTPRateThrottle,
     VerifyOTPRateThrottle,
+    TokenRefreshRateThrottle,
+    ChangePasswordRateThrottle,
+    TwoFARateThrottle,
 )
 
 
@@ -65,7 +68,7 @@ def _set_refresh_cookie(response, refresh_token):
         'refresh_token',
         refresh_token,
         httponly=True,
-        secure=not settings.DEBUG,
+        secure=True,
         samesite='None',
         max_age=int(timedelta(days=7).total_seconds()),
         path='/api/auth/',
@@ -166,7 +169,7 @@ class RequestOTPView(APIView):
 
             data = {'detail': 'OTP sent to your email.'}
             if settings.DEBUG:
-                data['otp_code'] = otp_code
+                logger.debug('Login OTP for %s: %s', user.email, otp_code)
             return Response(data)
 
         except Exception as exc:
@@ -244,7 +247,7 @@ class PasswordResetRequestView(APIView):
             'detail': 'OTP sent to your email.',
         }
         if settings.DEBUG:
-            data['otp_code'] = otp_code
+            logger.debug('Password reset OTP for %s: %s', user.email, otp_code)
         return Response(data)
 
 
@@ -311,7 +314,7 @@ class FarmerRequestOTPView(APIView):
             'detail': 'OTP sent to your phone.',
         }
         if settings.DEBUG:
-            data['otp_code'] = otp_code
+            logger.debug('Farmer OTP for %s: %s', user.phone_number, otp_code)
         return Response(data)
 
 
@@ -387,7 +390,7 @@ class InviteRequestOTPView(APIView):
 
         data = {'detail': 'OTP sent to your email.'}
         if settings.DEBUG:
-            data['otp_code'] = otp_code
+            logger.debug('Invite OTP for %s: %s', user.email, otp_code)
         return Response(data)
 
 
@@ -429,6 +432,7 @@ class GoogleLoginView(APIView):
 class Enable2FAView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PasswordConfirmationSerializer
+    throttle_classes = [TwoFARateThrottle]
 
     @idempotent()
     def post(self, request):
@@ -448,6 +452,7 @@ class Enable2FAView(APIView):
 class Disable2FAView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PasswordConfirmationSerializer
+    throttle_classes = [TwoFARateThrottle]
 
     @idempotent()
     def post(self, request):
@@ -473,6 +478,7 @@ class Disable2FAView(APIView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ChangePasswordSerializer
+    throttle_classes = [ChangePasswordRateThrottle]
 
     @idempotent()
     def post(self, request):
@@ -491,6 +497,7 @@ class TokenRefreshView(APIView):
     authentication_classes = []
     permission_classes = []
     serializer_class = TokenRefreshSerializer
+    throttle_classes = [TokenRefreshRateThrottle]
 
     @idempotent()
     def post(self, request):
