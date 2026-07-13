@@ -1,0 +1,18 @@
+{
+  "name": "Zao Cooperative",
+  "short_name": "Zao",
+  "description": "Mobile portal for farmers to track deliveries, grades, payments, and more.",
+  "theme_color": "#1a6b3c",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/farmer/",
+  "scope": "/farmer/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
