@@ -8,13 +8,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379/0
       SERVICE_TYPE: web
       CELERY_TASK_ALWAYS_EAGER: "False"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_started
 
@@ -46,13 +43,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://zao_user:zao_pass@db:5432/zao_db
       REDIS_URL: redis://redis:6379/0
       SERVICE_TYPE: worker
       CELERY_TASK_ALWAYS_EAGER: "False"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_started
 
@@ -63,13 +57,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://zao_user:zao_pass@db:5432/zao_db
       REDIS_URL: redis://redis:6379/0
       SERVICE_TYPE: beat
       CELERY_TASK_ALWAYS_EAGER: "False"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_started
 
