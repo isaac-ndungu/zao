@@ -503,3 +503,37 @@ CONTENT_SECURITY_POLICY = f"default-src 'self'; script-src 'self' 'unsafe-inline
 
 # Permissions Policy
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), sync-xhr=()"
+
+# ── Sentry error tracking ──────────────────────────────────────────────
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+
+SENTRY_DSN = config('SENTRY_DSN', default='')
+ENVIRONMENT = config('ENVIRONMENT', default='development')
+
+
+def _scrub_pii(event, hint):
+    """Scrub Kenyan PII from error payloads before sending to Sentry."""
+    if 'exception' in event:
+        for exc in event['exception'].get('values', []):
+            for frame in exc.get('stacktrace', {}).get('frames', []):
+                for key, val in frame.get('vars', {}).items():
+                    if isinstance(val, str):
+                        if val.startswith('+254') or val.startswith('254'):
+                            frame['vars'][key] = '[PHONE_SCRUBBED]'
+                        if val.isdigit() and len(val) >= 8:
+                            frame['vars'][key] = '[ID_SCRUBBED]'
+    return event
+
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), CeleryIntegration()],
+        environment=ENVIRONMENT,
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+        enable_logs=True,
+        before_send=_scrub_pii,
+    )
