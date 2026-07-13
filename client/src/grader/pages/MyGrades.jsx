@@ -150,7 +150,7 @@ export default function MyGrades() {
 
       {editing && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!submitting) setEditing(null) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!submitting) setEditing(null) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="edit-grade-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="edit-grade-title" className="font-headline-sm text-headline-sm text-on-surface">Edit Grade</h3>

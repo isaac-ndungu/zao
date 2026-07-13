@@ -129,7 +129,7 @@ export default function AccountantDeductions() {
           )}
 
           {showCreditForm && (
-            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowCreditForm(false)}>
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => setShowCreditForm(false)}>
               <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
                 <h3 className="font-headline-sm text-headline-sm mb-4">New Farm Input Credit</h3>
                 <form onSubmit={handleCreateCredit} className="space-y-4">

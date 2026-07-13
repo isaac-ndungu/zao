@@ -129,7 +129,7 @@ export default function FloatingAccessibilityWidget({ mode = 'staff' }) {
 
       {isOpen && createPortal(
         <div
-          className="fixed inset-0 z-[55]"
+          className="fixed inset-0 z-[55] cursor-pointer"
           onClick={close}
           role="presentation"
         >

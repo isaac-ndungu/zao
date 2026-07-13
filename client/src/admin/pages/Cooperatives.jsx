@@ -294,7 +294,7 @@ export default function Cooperatives() {
 
       {editOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditItem(null) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setEditOpen(false); setEditItem(null) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-cooperative-title">
             <h3 id="edit-cooperative-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Cooperative</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update cooperative details.</p>
@@ -333,7 +333,7 @@ export default function Cooperatives() {
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => setCreateOpen(false)} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-cooperative-title">
             <h3 id="create-cooperative-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Cooperative</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Register a new farmer cooperative.</p>

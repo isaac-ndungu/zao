@@ -356,7 +356,7 @@ export default function AccountantLoans() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowForm(false)} role="presentation">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => setShowForm(false)} role="presentation">
           <div
             role="dialog"
             aria-modal="true"

@@ -436,7 +436,7 @@ export default function Financials() {
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => setCreateOpen(false)} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="create-cycle-title">
             <h3 id="create-cycle-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Payment Cycle</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Define a new payment cycle for farmer payouts.</p>

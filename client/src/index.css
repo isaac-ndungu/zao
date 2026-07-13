@@ -106,6 +106,19 @@ body {
   font-family: "DM Sans", sans-serif;
 }
 
+/* Interactive elements */
+button,
+a,
+[role="button"],
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[disabled] {
+  cursor: not-allowed;
+}
+
 /* High Contrast */
 body.high-contrast {
   --color-primary: #000000;

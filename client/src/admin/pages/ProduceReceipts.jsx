@@ -362,7 +362,7 @@ export default function ProduceReceipts() {
       {/* Force Status Dropdown Modal */}
       {statusDelivery && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { setStatusDelivery(null); setStatusTarget('') }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setStatusDelivery(null); setStatusTarget('') }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="force-status-title">
             <h3 id="force-status-title" className="font-headline-sm text-headline-sm text-on-surface mb-1">Force Status Change</h3>
             <p className="text-label-md text-on-surface-variant mb-4">
@@ -402,7 +402,7 @@ export default function ProduceReceipts() {
       {/* Assign Grade Modal */}
       {gradeDelivery && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!gradeLoading) setGradeDelivery(null) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!gradeLoading) setGradeDelivery(null) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="assign-grade-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="assign-grade-title" className="font-headline-sm text-headline-sm text-on-surface">Assign Grade</h3>
@@ -578,7 +578,7 @@ export default function ProduceReceipts() {
       {/* Create Delivery Modal */}
       {createOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') } }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') } }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-delivery-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="create-delivery-title" className="font-headline-sm text-headline-sm text-on-surface">New Delivery</h3>

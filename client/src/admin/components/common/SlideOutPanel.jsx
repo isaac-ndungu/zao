@@ -19,7 +19,7 @@ export default function SlideOutPanel({ open, onClose, title, subtitle, children
   return (
     <>
       <div
-        className={`fixed inset-0 z-[55] transition-opacity duration-300 ease-out ${
+        className={`fixed inset-0 z-[55] transition-opacity duration-300 ease-out cursor-pointer ${
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         } bg-on-surface/40 backdrop-blur-[2px]`}
         onClick={onClose}

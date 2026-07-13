@@ -573,7 +573,7 @@ export default function UserManagement() {
 
       {inviteModal && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { setInviteModal(false); setInviteErrors({}) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setInviteModal(false); setInviteErrors({}) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="invite-user-title">
             <h3 id="invite-user-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Invite User</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Send an invitation to join the platform.</p>
@@ -606,7 +606,7 @@ export default function UserManagement() {
 
       {superuserModal && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { setSuperuserModal(false); setSuErrors({}) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setSuperuserModal(false); setSuErrors({}) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="create-superuser-title">
             <h3 id="create-superuser-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Superuser</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Create a new admin with full system access.</p>

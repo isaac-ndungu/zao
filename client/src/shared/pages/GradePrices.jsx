@@ -103,7 +103,7 @@ export default function GradePrices() {
 
       {showForm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setShowForm(false); setEditing(null) } }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!formLoading) { setShowForm(false); setEditing(null) } }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="grade-price-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="grade-price-title" className="font-headline-sm text-headline-sm text-on-surface">{editing ? 'Edit Price' : 'New Price'}</h3>

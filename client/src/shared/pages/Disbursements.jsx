@@ -542,7 +542,7 @@ export default function Disbursements() {
       <ConfirmModal open={!!showDelete} title="Delete Batch" message={`Permanently delete batch "${showDelete?.payment_cycle_name || showDelete?.id?.slice(0, 8)}"? This cannot be undone.`} confirmLabel="Delete" destructive onConfirm={() => doDelete(showDelete.id)} loading={actionLoading === `${showDelete?.id}-delete`} onCancel={() => setShowDelete(null)} />
 
       {showCsvFormat && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center" onClick={() => setShowCsvFormat(null)}>
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center cursor-pointer" onClick={() => setShowCsvFormat(null)}>
           <div className="bg-surface rounded-xl p-6 max-w-sm w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Download CSV</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Select bank format for CSV export.</p>
@@ -563,7 +563,7 @@ export default function Disbursements() {
       )}
 
       {showConfirmManual && (
-        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center" onClick={() => { setShowConfirmManual(null); setConfirmTxnIds([]); setConfirmNotes('') }}>
+        <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center cursor-pointer" onClick={() => { setShowConfirmManual(null); setConfirmTxnIds([]); setConfirmNotes('') }}>
           <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[80vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Confirm Manual Payment</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Select BANK/CASH transactions to mark as paid.</p>
@@ -599,7 +599,7 @@ export default function Disbursements() {
       )}
 
       {showInitiate && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => { setShowInitiate(false); setShowPreview(false); setPreviewData(null) }}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => { setShowInitiate(false); setShowPreview(false); setPreviewData(null) }}>
           <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Initiate Disbursements from Cycle</h3>
             <form onSubmit={handleInitiate} className="space-y-4">
@@ -628,7 +628,7 @@ export default function Disbursements() {
       )}
 
       {showPreview && previewData && (
-        <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center" onClick={() => setShowPreview(false)}>
+        <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center cursor-pointer" onClick={() => setShowPreview(false)}>
           <div className="bg-surface rounded-xl p-6 max-w-md w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Pre-flight Summary</h3>
             <div className="space-y-3 mb-6">

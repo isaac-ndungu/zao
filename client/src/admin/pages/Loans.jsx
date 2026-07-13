@@ -357,7 +357,7 @@ export default function Loans() {
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => setCreateOpen(false)} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => setCreateOpen(false)} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-loan-title">
             <h3 id="create-loan-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Loan</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Issue a new loan to a farmer.</p>
@@ -403,7 +403,7 @@ export default function Loans() {
 
       {editOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditLoan(null) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setEditOpen(false); setEditLoan(null) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-loan-title">
             <h3 id="edit-loan-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Loan</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update loan details.</p>

@@ -235,7 +235,7 @@ export default function AccountantCycles() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => setShowForm(false)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => setShowForm(false)}>
           <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Create Payment Cycle</h3>
             <form onSubmit={handleCreate} className="space-y-4">

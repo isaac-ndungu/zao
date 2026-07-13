@@ -147,7 +147,7 @@ export default function FarmerGrades() {
         )}
 
         {disputeFor && (
-          <div className="fixed inset-0 bg-black/40 z-40 flex items-end" style={{ animation: 'fadeIn 0.2s' }} onClick={() => setDisputeFor(null)}>
+          <div className="fixed inset-0 bg-black/40 z-40 flex items-end cursor-pointer" style={{ animation: 'fadeIn 0.2s' }} onClick={() => setDisputeFor(null)}>
             <div className="bg-surface-container rounded-t-2xl p-6 w-full max-h-[85vh] overflow-y-auto" style={{ animation: 'slideUp 0.3s ease-out' }} onClick={(e) => e.stopPropagation()}>
               <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto my-3" />
               <h3 className="font-bold text-lg mb-2">{t('disputeGrade')}</h3>

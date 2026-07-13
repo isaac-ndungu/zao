@@ -406,7 +406,7 @@ export default function FarmerLedger() {
 
       {editOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { setEditOpen(false); setEditFarmer(null) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setEditOpen(false); setEditFarmer(null) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-farmer-title">
             <h3 id="edit-farmer-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Farmer</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update farmer details.</p>
@@ -442,7 +442,7 @@ export default function FarmerLedger() {
 
       {createOpen && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedCoopName(''); setCoopSearch('') } }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedCoopName(''); setCoopSearch('') } }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-farmer-title">
             <h3 id="create-farmer-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Register Farmer</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Create a new farmer record and user account.</p>
