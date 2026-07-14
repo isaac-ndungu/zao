@@ -28,9 +28,15 @@ class PaymentStatus(models.TextChoices):
 
 class ComputationWarning(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cooperative = models.ForeignKey(
+        'cooperatives.Cooperative', on_delete=models.CASCADE,
+        related_name='computation_warnings',
+        null=True, blank=True,
+    )
     cycle = models.ForeignKey(
         'PaymentCycle', on_delete=models.CASCADE,
         related_name='warnings',
+        null=True, blank=True,
     )
     severity = models.CharField(max_length=20, choices=Severity.choices, default=Severity.WARNING)
     message = models.TextField()
