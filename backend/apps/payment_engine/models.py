@@ -128,6 +128,7 @@ class FarmerPayment(CooperativeScopedModel):
         indexes = [
             models.Index(fields=['cooperative', 'cycle', 'farmer'], name='idx_pay_coop_cycle_farmer'),
             models.Index(fields=['cooperative', 'farmer', 'cycle'], name='idx_pay_coop_farmer_cycle'),
+            models.Index(fields=['farmer', 'payment_status', 'carry_forward_reason'], name='idx_fp_farmer_status_carryfwd'),
         ]
 
     def __str__(self):

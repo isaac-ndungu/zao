@@ -130,7 +130,7 @@ class AuditLog(CooperativeScopedModel):
     )
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     actor = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, db_index=True
     )
     resource_type = models.CharField(max_length=100)
     resource_id = models.UUIDField(null=True, blank=True)
@@ -157,6 +157,7 @@ class AuditLog(CooperativeScopedModel):
         indexes = [
             BrinIndex(fields=['created_at']),
             models.Index(fields=['cooperative', 'resource_type', 'resource_id', 'created_at']),
+            models.Index(fields=['cooperative', 'action', 'created_at'], name='idx_auditlog_coop_action_date'),
         ]
 
     def save(self, *args, **kwargs):

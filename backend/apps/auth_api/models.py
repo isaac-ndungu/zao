@@ -20,7 +20,7 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeletableModel):
     phone_number = models.CharField(max_length=20, unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    role = models.CharField(max_length=20, choices=UserRole.choices, null=True, blank=True)
+    role = models.CharField(max_length=20, choices=UserRole.choices, null=True, blank=True, db_index=True)
     cooperative = models.ForeignKey(
         'cooperatives.Cooperative', on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -55,6 +55,11 @@ class User(AbstractBaseUser, PermissionsMixin, SoftDeletableModel):
 
     def __str__(self):
         return self.email
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['cooperative', 'role'], name='idx_user_coop_role'),
+        ]
 
 
 class TwoFactorOTP(models.Model):

@@ -122,6 +122,8 @@ class DisbursementTransaction(CooperativeScopedModel):
         unique_together = [['conversation_id', 'transaction_id']]
         indexes = [
             models.Index(fields=['cooperative', 'batch', 'status'], name='idx_dsb_txn_coop_batch_st'),
+            models.Index(fields=['status', 'sent_at'], name='idx_dsb_txn_status_sent_at'),
+            models.Index(fields=['batch', 'status', 'payment_method'], name='idx_dsb_txn_batch_st_method'),
         ]
 
     def __str__(self):
