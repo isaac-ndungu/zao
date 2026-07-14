@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from celery import shared_task
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Case, F, Sum, When
 from django.db.models import IntegerField
@@ -16,11 +17,35 @@ from apps.base.constants import UserRole
 from apps.notifications.email import send_stuck_payments_alert
 from apps.payment_engine.models import FarmerPayment, PaymentCycle
 
-from .models import DisbursementBatch, DisbursementTransaction
+from .models import BatchStatus, DisbursementBatch, DisbursementTransaction, FailedDisbursement
 from .utils import normalize_mpesa_number, validate_disbursement_window
 from .utils.mpesa import MpesaDarajaClient
 
 logger = logging.getLogger(__name__)
+
+CIRCUIT_BREAKER_KEY = 'mpesa:circuit_breaker:open'
+FAILURE_COUNT_KEY = 'mpesa:circuit_breaker:failures'
+CIRCUIT_BREAKER_THRESHOLD = 5
+CIRCUIT_BREAKER_COOLDOWN = 900  # 15 minutes
+
+
+def is_circuit_open() -> bool:
+    return cache.get(CIRCUIT_BREAKER_KEY, False)
+
+
+def record_failure() -> None:
+    failures = cache.incr(FAILURE_COUNT_KEY, 1)
+    if failures >= CIRCUIT_BREAKER_THRESHOLD:
+        cache.set(CIRCUIT_BREAKER_KEY, True, timeout=CIRCUIT_BREAKER_COOLDOWN)
+        logger.warning(
+            "M-Pesa circuit breaker OPENED — pausing disbursements for %ds",
+            CIRCUIT_BREAKER_COOLDOWN,
+        )
+
+
+def record_success() -> None:
+    cache.delete(FAILURE_COUNT_KEY)
+    cache.delete(CIRCUIT_BREAKER_KEY)
 
 
 @shared_task(
@@ -81,6 +106,13 @@ def send_single_mpesa_disbursement(
             ])
 
         # Phase 2: M-Pesa API call OUTSIDE transaction
+        if is_circuit_open():
+            try:
+                raise self.retry(countdown=300, max_retries=1)
+            except self.MaxRetriesExceededError:
+                logger.error("Circuit breaker open — retry exhausted for txn %s", transaction_id)
+                return {'error': 'Circuit breaker open', 'transaction_id': transaction_id}
+
         coop_shortcode = batch.cooperative.mpesa_shortcode or None
         client = MpesaDarajaClient(shortcode=coop_shortcode)
         conversation_id = txn.conversation_id or str(txn.id)
@@ -114,10 +146,12 @@ def send_single_mpesa_disbursement(
                 txn.failure_reason = str(exc)
                 txn.failed_at = timezone.now()
                 txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
+            record_failure()
             try:
                 self.retry(exc=exc)
             except self.MaxRetriesExceededError:
                 logger.error("Max retries exceeded for transaction %s", transaction_id)
+                _move_to_dead_letter(transaction_id, batch_id, str(exc))
             return {'error': str(exc), 'transaction_id': transaction_id}
 
         # Phase 3: Update status after successful API call
@@ -147,6 +181,7 @@ def send_single_mpesa_disbursement(
         transaction_id, normalized_phone, amount,
         txn.originator_conversation_id, txn.transaction_id,
     )
+    record_success()
 
     return {
         'status': 'SENT',
@@ -168,11 +203,30 @@ def process_batch_disbursements(self, batch_id: str):
         logger.warning("Batch %s is already %s, skipping", batch_id, batch.status)
         return {'status': 'skipped', 'reason': f'Already {batch.status}'}
 
+    if batch.status == 'REVIEW':
+        logger.warning("Batch %s is in REVIEW — awaiting manual action", batch_id)
+        return {'status': 'skipped', 'reason': 'Batch in REVIEW status'}
+
     try:
         validate_disbursement_window()
     except RuntimeError as e:
         logger.warning("Batch %s skipped: %s", batch_id, e)
         return {'error': str(e), 'batch_id': batch_id}
+
+    if batch.status == 'PROCESSING':
+        stuck_threshold = timezone.now() - timedelta(minutes=30)
+        if batch.updated_at < stuck_threshold:
+            logger.warning("Batch %s stuck in PROCESSING for >30 min — recovering", batch_id)
+            pending_txns = batch.transactions.filter(status__in=['PENDING', 'QUEUED'])
+            if not pending_txns.exists():
+                update_batch_summary.delay(batch_id)
+                return {'status': 'recovered', 'action': 'summary_only'}
+            batch.status = BatchStatus.PENDING
+            batch.celery_task_id = ''
+            batch.save(update_fields=['status', 'celery_task_id'])
+        else:
+            logger.warning("Batch %s still processing — skipping duplicate", batch_id)
+            return {'status': 'skipped', 'reason': 'Already PROCESSING'}
 
     pending_qs = DisbursementTransaction.objects.filter(
         batch=batch, status='PENDING', payment_method='M_PESA',
@@ -208,9 +262,12 @@ def process_batch_disbursements(self, batch_id: str):
     try:
         sufficient, available = client.check_balance(total_mpesa_amount)
     except Exception as exc:
-        logger.error('Balance check failed for batch %s: %s — proceeding without check', batch_id, exc)
-        sufficient = True
-        available = None
+        logger.error('Balance check failed for batch %s: %s — holding for review', batch_id, exc)
+        batch.status = BatchStatus.REVIEW
+        batch.notes = f'Balance check failed: {exc}'
+        batch.save(update_fields=['status', 'notes'])
+        _notify_accountant_async(batch_id, f'Balance check failed: {exc} — batch held for review')
+        return {'error': 'Balance check failed', 'batch_id': batch_id, 'status': 'REVIEW'}
 
     if not sufficient:
         logger.warning(
@@ -318,34 +375,37 @@ def update_batch_summary(batch_id: str):
     successful = transactions.filter(status='SUCCESS').count()
     failed = transactions.filter(status='FAILED').count()
     sent = transactions.filter(status='SENT').count()
+    queued = transactions.filter(status='QUEUED').count()
+    pending = transactions.filter(status='PENDING').count()
 
     batch.total_transactions = total
     batch.successful_count = successful
     batch.failed_count = failed
 
-    all_terminal = all(
-        s in ('SUCCESS', 'FAILED', 'CANCELLED')
-        for s in transactions.values_list('status', flat=True)
-    )
+    all_statuses = set(transactions.values_list('status', flat=True))
+    terminal = {'SUCCESS', 'FAILED', 'CANCELLED'}
+    non_active = {'PENDING', 'QUEUED'}
+
+    all_terminal = all(s in terminal for s in all_statuses)
+    all_idle = all(s in terminal | non_active | {'SENT'} for s in all_statuses) and sent == 0
+
     if all_terminal:
         if failed > 0 and successful == 0:
-            batch.status = 'FAILED'
+            batch.status = BatchStatus.FAILED
         elif successful > 0 and failed > 0:
-            batch.status = 'PARTIALLY_COMPLETED'
-        elif successful > 0 and failed == 0:
-            batch.status = 'COMPLETED'
+            batch.status = BatchStatus.PARTIALLY_COMPLETED
         else:
-            batch.status = 'COMPLETED'
-    elif sent == 0 and all(
-        s in ('PENDING', 'CANCELLED') for s in transactions.values_list('status', flat=True)
-    ):
-        batch.status = 'COMPLETED'
+            batch.status = BatchStatus.COMPLETED
+    elif queued > 0 or pending > 0:
+        batch.status = BatchStatus.PROCESSING
+    elif all_idle:
+        batch.status = BatchStatus.COMPLETED
 
     batch.save(update_fields=[
         'status', 'total_transactions', 'successful_count', 'failed_count',
     ])
 
-    if batch.status in ('COMPLETED', 'PARTIALLY_COMPLETED'):
+    if batch.status in (BatchStatus.COMPLETED, BatchStatus.PARTIALLY_COMPLETED):
         from apps.payment_engine.models import PaymentCycle
         cycle = batch.payment_cycle
         if cycle and cycle.status == 'LOCKED':
@@ -360,7 +420,7 @@ def update_batch_summary(batch_id: str):
             id__in=farmer_payment_ids,
         ).update(payment_status='PAID')
 
-    if batch.status in ('FAILED', 'PARTIALLY_COMPLETED'):
+    if batch.status in (BatchStatus.FAILED, BatchStatus.PARTIALLY_COMPLETED):
         failed_txns = transactions.filter(status='FAILED')
         for txn in failed_txns:
             if txn.farmer_payment_id:
@@ -371,7 +431,7 @@ def update_batch_summary(batch_id: str):
     logger.info("Batch %s summary: %s", batch_id, batch.status)
 
 
-@shared_task(bind=True, soft_time_limit=300, time_limit=360)
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3, soft_time_limit=300, time_limit=360)
 def retry_batch_disbursements(self, batch_id: str):
     try:
         batch = DisbursementBatch.objects.select_related('cooperative').get(id=batch_id)
@@ -560,38 +620,103 @@ def _send_stuck_alerts(stuck_by_coop: dict[str, list[DisbursementTransaction]]) 
         )
 
 
-@shared_task
-def reverse_deductions_on_failure(farmer_id: str, farmer_payment_id: str):
+def _move_to_dead_letter(transaction_id: str, batch_id: str, reason: str) -> None:
+    try:
+        txn = DisbursementTransaction.objects.get(id=transaction_id)
+        FailedDisbursement.objects.create(
+            batch=txn.batch,
+            transaction=txn,
+            farmer=txn.farmer,
+            amount=txn.amount,
+            recipient_identifier=txn.recipient_identifier,
+            recipient_name=txn.recipient_name,
+            failure_reason=reason,
+            conversation_id=txn.conversation_id,
+            transaction_id_mpesa=txn.transaction_id,
+        )
+        logger.warning(
+            "Moved txn %s to dead letter queue: %s",
+            transaction_id, reason,
+        )
+    except Exception as exc:
+        logger.error(
+            "Failed to move txn %s to dead letter: %s",
+            transaction_id, exc,
+        )
+
+
+def _notify_accountant_async(context_id: str, message: str) -> None:
+    from apps.auth_api.models import User
+    try:
+        batch = DisbursementBatch.objects.select_related('cooperative').get(id=context_id)
+        coop_id = str(batch.cooperative_id)
+    except (DisbursementBatch.DoesNotExist, ValueError):
+        coop_id = None
+
+    recipients = []
+    if coop_id:
+        recipients = list(User.objects.filter(
+            role__in=[UserRole.ACCOUNTANT, UserRole.MANAGER],
+            cooperative_id=coop_id,
+        ).values_list('email', flat=True))
+
+    if not recipients:
+        recipients = list(User.objects.filter(
+            role=UserRole.ADMIN,
+        ).values_list('email', flat=True))
+
+    if recipients:
+        send_stuck_payments_alert(
+            recipients, [], getattr(settings, 'FRONTEND_URL', None),
+        )
+        logger.info("Notified accountant for %s: %s", context_id, message)
+
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def reverse_deductions_on_failure(self, farmer_id: str, farmer_payment_id: str):
     from apps.deductions.models import Deduction
     from apps.loans.models import Loan, LoanRepayment
 
-    loan_repayment = LoanRepayment.objects.filter(
-        farmer_payment_id=farmer_payment_id,
-    ).first()
+    try:
+        loan_repayment = LoanRepayment.objects.filter(
+            farmer_payment_id=farmer_payment_id,
+        ).first()
 
-    deductions = Deduction.objects.filter(
-        farmer=farmer_id,
-    )
-    for ded in deductions:
-        if ded.deduction_type == 'LOAN_REPAYMENT':
-            LoanRepayment.objects.filter(farmer_payment_id=farmer_payment_id).delete()
-    deductions.delete()
-
-    if loan_repayment:
-        Loan.objects.filter(id=loan_repayment.loan_id).update(
-            installments_paid=Greatest(F('installments_paid') - 1, 0),
-            status='ACTIVE',
+        deductions = Deduction.objects.filter(
+            farmer=farmer_id,
         )
+        for ded in deductions:
+            if ded.deduction_type == 'LOAN_REPAYMENT':
+                LoanRepayment.objects.filter(farmer_payment_id=farmer_payment_id).delete()
+        deductions.delete()
 
-    logger.info(
-        "Reversed deductions for farmer %s on payment %s",
-        farmer_id, farmer_payment_id,
-    )
+        if loan_repayment:
+            Loan.objects.filter(id=loan_repayment.loan_id).update(
+                installments_paid=Greatest(F('installments_paid') - 1, 0),
+                status='ACTIVE',
+            )
+
+        logger.info(
+            "Reversed deductions for farmer %s on payment %s",
+            farmer_id, farmer_payment_id,
+        )
+    except Exception as e:
+        logger.error(
+            "Failed to reverse deductions for payment %s: %s",
+            farmer_payment_id, e,
+        )
+        _notify_accountant_async(
+            farmer_payment_id,
+            f'CRITICAL: Failed to reverse deductions for payment {farmer_payment_id}. '
+            f'Error: {e}. Manual intervention required.',
+        )
+        raise
+
     return {'farmer_id': farmer_id, 'farmer_payment_id': farmer_payment_id}
 
 
-@shared_task
-def send_disbursement_sms(phone_number: str, farmer_name: str, amount: float, farner_payment_id: str = ''):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def send_disbursement_sms(self, phone_number: str, farmer_name: str, amount: float, farner_payment_id: str = ''):
     message = (
         f"Dear {farmer_name}, your payment of KES {amount:,.2f} "
         f"has been sent to your M-Pesa. Thank you for partnering with us."
@@ -603,3 +728,4 @@ def send_disbursement_sms(phone_number: str, farmer_name: str, amount: float, fa
         logger.info('Payment SMS sent to %s', phone_number)
     else:
         logger.error('Failed to send payment SMS to %s: %s', phone_number, result['error'])
+        raise RuntimeError(f'Payment SMS failed: {result["error"]}')

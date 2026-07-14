@@ -9,8 +9,8 @@ from .models import Delivery, ProductType
 logger = logging.getLogger(__name__)
 
 
-@shared_task
-def send_delivery_sms(phone_number: str, farmer_name: str, batch_id: str, product_type: str):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
+def send_delivery_sms(self, phone_number: str, farmer_name: str, batch_id: str, product_type: str):
     product_label = dict(ProductType.choices).get(product_type, product_type)
     message = (
         f"Dear {farmer_name}, your delivery ({product_label}) "
@@ -23,6 +23,7 @@ def send_delivery_sms(phone_number: str, farmer_name: str, batch_id: str, produc
         logger.info('Delivery SMS sent to %s (batch %s)', phone_number, batch_id)
     else:
         logger.error('Failed to send delivery SMS to %s: %s', phone_number, result['error'])
+        raise RuntimeError(f'SMS delivery failed: {result["error"]}')
 
 
 @shared_task

@@ -11,6 +11,7 @@ class BatchStatus(models.TextChoices):
     COMPLETED = 'COMPLETED', 'Completed'
     PARTIALLY_COMPLETED = 'PARTIALLY_COMPLETED', 'Partially Completed'
     FAILED = 'FAILED', 'Failed'
+    REVIEW = 'REVIEW', 'Review'
     REJECTED = 'REJECTED', 'Rejected'
 
 
@@ -128,3 +129,44 @@ class DisbursementTransaction(CooperativeScopedModel):
 
     def __str__(self):
         return f'{self.farmer} — {self.amount} ({self.get_status_display()})'
+
+
+class FailedDisbursement(CooperativeScopedModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    batch = models.ForeignKey(
+        DisbursementBatch, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='failed_disbursements',
+    )
+    transaction = models.ForeignKey(
+        DisbursementTransaction, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='dead_letter_entries',
+    )
+    farmer = models.ForeignKey(
+        'farmers.Farmer', on_delete=models.SET_NULL,
+        null=True, blank=True,
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    recipient_identifier = models.CharField(max_length=100)
+    recipient_name = models.CharField(max_length=200, blank=True)
+    failure_reason = models.TextField()
+    conversation_id = models.CharField(max_length=100, blank=True)
+    transaction_id_mpesa = models.CharField(max_length=100, blank=True)
+    resolved = models.BooleanField(default=False)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        'auth_api.User', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='resolved_failed_disbursements',
+    )
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Failed Disbursement'
+        verbose_name_plural = 'Failed Disbursements'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['resolved', 'created_at'], name='idx_fdb_resolved_date'),
+        ]
+
+    def __str__(self):
+        return f'FAILED: {self.recipient_name} — {self.amount}'

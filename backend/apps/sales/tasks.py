@@ -12,8 +12,8 @@ from .models import Sale, SaleInventoryLineItem
 logger = logging.getLogger(__name__)
 
 
-@shared_task(soft_time_limit=30, time_limit=60)
-def decrement_inventory_on_sale(sale_id: str):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3, soft_time_limit=30, time_limit=60)
+def decrement_inventory_on_sale(self, sale_id: str):
     """FIFO-allocate a sale's quantity across the cooperative's cycle-pools,
     decrement each pool and the Stock aggregate, and record the allocation as
     SaleInventoryLineItem rows. Phase 3 server-side allocation."""
