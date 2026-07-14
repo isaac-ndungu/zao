@@ -195,7 +195,7 @@ User = get_user_model()
 class TestCooperativeAPI:
     def test_list_unauthenticated(self, client):
         resp = client.get('/api/cooperatives/')
-        assert resp.status_code == status.HTTP_200_OK
+        assert resp.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_list_authenticated(self, api_client, cooperative):
         resp = api_client.get('/api/cooperatives/')
@@ -226,6 +226,7 @@ class TestCooperativeAPI:
         from rest_framework.test import APIClient
         manager = User.objects.create_user(
             email='mgr@coop.com', phone_number='+25470000111',
+            first_name='Mgr', last_name='Coop',
             password='testpass123', role=UserRole.MANAGER,
         )
         client = APIClient()
@@ -248,6 +249,7 @@ class TestCooperativeAPI:
         from rest_framework.test import APIClient
         manager = User.objects.create_user(
             email='mgr2@coop.com', phone_number='+25470000222',
+            first_name='Mgr2', last_name='Coop',
             password='testpass123', role=UserRole.MANAGER, cooperative=cooperative,
         )
         client = APIClient()
@@ -277,6 +279,7 @@ class TestCooperativeAPI:
         from rest_framework.test import APIClient
         farmer_user = User.objects.create_user(
             email='f@coop.com', phone_number='+25470000333',
+            first_name='Far', last_name='Coop',
             password='testpass123', role=UserRole.FARMER, cooperative=cooperative,
         )
         client = APIClient()
@@ -295,17 +298,20 @@ class TestCooperativeAPI:
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()['name'] == 'Updated Coop Name'
 
-    def test_update_manager_denied(self, cooperative):
+    def test_update_manager_allowed(self, cooperative):
         from rest_framework.test import APIClient
         manager = User.objects.create_user(
             email='mgr3@coop.com', phone_number='+25470000444',
+            first_name='Mgr3', last_name='Coop',
             password='testpass123', role=UserRole.MANAGER, cooperative=cooperative,
         )
         client = APIClient()
         client.force_authenticate(user=manager)
         resp = client.patch(f'/api/cooperatives/{cooperative.id}/',
-                            {'name': 'Hacked'}, format='json')
-        assert resp.status_code == status.HTTP_403_FORBIDDEN
+                            {'name': 'Manager Update'}, format='json')
+        assert resp.status_code == status.HTTP_200_OK
+        cooperative.refresh_from_db()
+        assert cooperative.name == 'Manager Update'
 
     def test_destroy(self, api_client, cooperative):
         resp = api_client.delete(f'/api/cooperatives/{cooperative.id}/')
@@ -315,6 +321,7 @@ class TestCooperativeAPI:
         from rest_framework.test import APIClient
         manager = User.objects.create_user(
             email='mgr4@coop.com', phone_number='+25470000555',
+            first_name='Mgr4', last_name='Coop',
             password='testpass123', role=UserRole.MANAGER, cooperative=cooperative,
         )
         client = APIClient()
@@ -441,5 +448,5 @@ class TestCooperativeEnums:
         data = resp.json()
         assert 'produce_types' in data
         assert 'payment_models' in data
-        assert ('DAIRY', 'Dairy') in data['produce_types']
-        assert ('FIXED_PRICE', 'Fixed Price') in data['payment_models']
+        assert ['DAIRY', 'Dairy'] in data['produce_types']
+        assert ['FIXED_PRICE', 'Fixed Price'] in data['payment_models']

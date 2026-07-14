@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -574,7 +574,8 @@ class TestAnnualReportView:
         Delivery.objects.create(
             farmer=farmer, cooperative=cooperative,
             product_type='MILK', quantity_kg=Decimal('200'),
-            status='APPROVED', date_delivered=timezone.now(),
+            status='APPROVED',
+            date_delivered=timezone.make_aware(datetime(2025, 8, 15)),
             batch_id='BAT-ANNUAL',
         )
         buyer = Buyer.objects.create(

@@ -177,7 +177,7 @@ class TestRouteAPI:
     def test_retrieve(self, api_client, collection_route):
         resp = api_client.get(f'/api/routes/{collection_route.id}/')
         assert resp.status_code == status.HTTP_200_OK
-        assert resp.json()['id'] == str(collection_route.id)
+        assert resp.json()['id'] == collection_route.id
 
     def test_create(self, manager_api_client):
         resp = manager_api_client.post('/api/routes/', {
@@ -258,7 +258,7 @@ class TestRouteAPI:
     def test_filter_invalid_day(self, api_client):
         resp = api_client.get('/api/routes/?day_of_week=INVALID')
         assert resp.status_code == status.HTTP_200_OK
-        assert len(resp.json()) == 0
+        assert len(resp.json()['results']) == 0
 
 
 class TestRouteAssignStops:

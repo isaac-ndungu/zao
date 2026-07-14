@@ -52,9 +52,9 @@ class TestBuyerModel:
 
 class TestSaleModel:
     @pytest.fixture
-    def inventory(self, buyer):
+    def inventory(self, cooperative):
         return Inventory.objects.create(
-            cooperative=buyer.cooperative,
+            cooperative=cooperative,
             batch_id='INVSALE001',
             product_type='MILK',
             grade='A',
@@ -62,10 +62,9 @@ class TestSaleModel:
             quantity_in=Decimal('1000.00'),
         )
 
-    def test_create(self, buyer, inventory):
+    def test_create(self, buyer):
         sale = Sale.objects.create(
             buyer=buyer,
-            inventory=inventory,
             cooperative=buyer.cooperative,
             product_type='MILK',
             grade_letter='A',
@@ -77,10 +76,9 @@ class TestSaleModel:
         assert sale.pk is not None
         assert sale.status == SaleStatus.PENDING
 
-    def test_status_transitions(self, buyer, inventory):
+    def test_status_transitions(self, buyer):
         sale = Sale.objects.create(
             buyer=buyer,
-            inventory=inventory,
             cooperative=buyer.cooperative,
             product_type='MILK',
             unit=SaleUnit.KG,
@@ -94,10 +92,9 @@ class TestSaleModel:
             sale.refresh_from_db()
             assert sale.status == s
 
-    def test_string_representation(self, buyer, inventory):
+    def test_string_representation(self, buyer):
         sale = Sale.objects.create(
             buyer=buyer,
-            inventory=inventory,
             cooperative=buyer.cooperative,
             product_type='MILK',
             unit=SaleUnit.KG,
@@ -109,10 +106,9 @@ class TestSaleModel:
         assert buyer.name in str(sale)
         assert '2024-01-15' in str(sale)
 
-    def test_soft_delete(self, buyer, inventory):
+    def test_soft_delete(self, buyer):
         sale = Sale.objects.create(
             buyer=buyer,
-            inventory=inventory,
             cooperative=buyer.cooperative,
             product_type='MILK',
             unit=SaleUnit.KG,
@@ -123,10 +119,9 @@ class TestSaleModel:
         sale.soft_delete()
         assert sale.deleted_at is not None
 
-    def test_unique_invoice_number(self, buyer, inventory):
+    def test_unique_invoice_number(self, buyer):
         Sale.objects.create(
             buyer=buyer,
-            inventory=inventory,
             cooperative=buyer.cooperative,
             product_type='MILK',
             unit=SaleUnit.KG,
@@ -138,7 +133,6 @@ class TestSaleModel:
         with pytest.raises(Exception):
             Sale.objects.create(
                 buyer=buyer,
-                inventory=inventory,
                 cooperative=buyer.cooperative,
                 product_type='MILK',
                 unit=SaleUnit.KG,
@@ -148,19 +142,6 @@ class TestSaleModel:
                 invoice_number='INV001',
             )
 
-    def test_product_type_synced_from_inventory(self, buyer, inventory):
-        inventory.product_type = 'HONEY'
-        inventory.save(update_fields=['product_type'])
-        sale = Sale.objects.create(
-            buyer=buyer,
-            inventory=inventory,
-            cooperative=buyer.cooperative,
-            unit=SaleUnit.KG,
-            quantity=Decimal('50.00'),
-            price_per_unit=Decimal('200.00'),
-            total_amount=Decimal('10000.00'),
-        )
-        assert sale.product_type == 'HONEY'
 
 
 from django.contrib.auth import get_user_model
@@ -246,16 +227,8 @@ class TestBuyerAPI:
 @pytest.fixture
 def coop_sale(db, cooperative, coop_buyer):
     from decimal import Decimal
-    inventory = Inventory.objects.create(
-        cooperative=cooperative,
-        batch_id='COOPSALE001',
-        product_type='MILK',
-        grade='A',
-        unit='kg',
-        quantity_in=Decimal('1000.00'),
-    )
     return Sale.objects.create(
-        buyer=coop_buyer, inventory=inventory, cooperative=cooperative,
+        buyer=coop_buyer, cooperative=cooperative,
         product_type='MILK', grade_letter='A', unit=SaleUnit.KG,
         quantity=Decimal('100.00'), price_per_unit=Decimal('45.00'),
         total_amount=Decimal('4500.00'),
@@ -264,14 +237,14 @@ def coop_sale(db, cooperative, coop_buyer):
 
 class TestSaleAPI:
     @pytest.fixture
-    def inventory(self, cooperative):
-        return Inventory.objects.create(
+    def stock(self, cooperative):
+        from apps.inventory.models import Stock
+        return Stock.objects.create(
             cooperative=cooperative,
-            batch_id='BATCH001',
             product_type='MILK',
             grade='A',
             unit='kg',
-            quantity_in=Decimal('1000.00'),
+            quantity_available=Decimal('1000.00'),
         )
 
     def test_list_unauthenticated(self, client):
@@ -289,32 +262,49 @@ class TestSaleAPI:
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()['id'] == str(sale.id)
 
-    def test_create_with_line_items(self, manager_api_client, coop_buyer, inventory):
+    def test_create_with_line_items(self, manager_api_client, coop_buyer, stock):
         resp = manager_api_client.post('/api/sales/', {
             'buyer': str(coop_buyer.id),
+            'stock': str(stock.id),
             'quantity': '100.00',
             'price_per_unit': '45.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '100.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_201_CREATED
         assert resp.json()['quantity'] == '100.00'
         assert resp.json()['price_per_unit'] == '45.00'
 
-    def test_create_quantity_mismatch(self, manager_api_client, coop_buyer, inventory):
+    def test_create_quantity_mismatch(self, manager_api_client, coop_buyer, stock):
         resp = manager_api_client.post('/api/sales/', {
             'buyer': str(coop_buyer.id),
-            'quantity': '50.00',
+            'stock': str(stock.id),
+            'quantity': '0.00',
             'price_per_unit': '45.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '100.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_create_insufficient_inventory(self, manager_api_client, coop_buyer, inventory):
+    def test_product_type_synced_from_stock(self, manager_api_client, coop_buyer, stock):
+        stock.product_type = 'HONEY'
+        stock.grade = 'B'
+        stock.save(update_fields=['product_type', 'grade'])
         resp = manager_api_client.post('/api/sales/', {
             'buyer': str(coop_buyer.id),
+            'stock': str(stock.id),
+            'quantity': '10.00',
+            'price_per_unit': '200.00',
+        }, format='json')
+        assert resp.status_code == status.HTTP_201_CREATED
+        sale_id = resp.json()['id']
+        detail_resp = manager_api_client.get(f'/api/sales/{sale_id}/')
+        assert detail_resp.status_code == status.HTTP_200_OK
+        assert detail_resp.json()['product_type'] == 'HONEY'
+        assert detail_resp.json()['grade_letter'] == 'B'
+
+    def test_create_insufficient_inventory(self, manager_api_client, coop_buyer, stock):
+        resp = manager_api_client.post('/api/sales/', {
+            'buyer': str(coop_buyer.id),
+            'stock': str(stock.id),
             'quantity': '9999.00',
             'price_per_unit': '45.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '9999.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -326,34 +316,34 @@ class TestSaleAPI:
         }, format='json')
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_create_negative_quantity(self, manager_api_client, coop_buyer, inventory):
+    def test_create_negative_quantity(self, manager_api_client, coop_buyer, stock):
         resp = manager_api_client.post('/api/sales/', {
             'buyer': str(coop_buyer.id),
+            'stock': str(stock.id),
             'quantity': '-10.00',
             'price_per_unit': '45.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '-10.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_create_negative_price(self, manager_api_client, coop_buyer, inventory):
+    def test_create_negative_price(self, manager_api_client, coop_buyer, stock):
         resp = manager_api_client.post('/api/sales/', {
             'buyer': str(coop_buyer.id),
+            'stock': str(stock.id),
             'quantity': '100.00',
             'price_per_unit': '-5.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '100.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_create_unauthenticated(self, client, buyer, inventory):
+    def test_create_unauthenticated(self, client, buyer, stock):
         resp = client.post('/api/sales/', {
             'buyer': str(buyer.id),
+            'stock': str(stock.id),
             'quantity': '100.00',
             'price_per_unit': '45.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '100.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_create_permission_accountant_denied(self, cooperative, buyer, inventory):
+    def test_create_permission_accountant_denied(self, cooperative, buyer, stock):
         from rest_framework.test import APIClient
         accountant = User.objects.create_user(
             email='acct2@sale.com', phone_number='+25470000333',
@@ -364,9 +354,9 @@ class TestSaleAPI:
         client.force_authenticate(user=accountant)
         resp = client.post('/api/sales/', {
             'buyer': str(buyer.id),
+            'stock': str(stock.id),
             'quantity': '100.00',
             'price_per_unit': '45.00',
-            'line_items': [{'inventory': str(inventory.id), 'quantity': '100.00'}],
         }, format='json')
         assert resp.status_code == status.HTTP_403_FORBIDDEN
 

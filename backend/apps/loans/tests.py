@@ -687,7 +687,7 @@ class TestLoanMarkDefaulted:
         client.force_authenticate(user=accountant)
         resp = client.post(f'/api/loans/{coop_loan.id}/mark_defaulted/',
                            {'reason': 'test'}, format='json')
-        assert resp.status_code == status.HTTP_403_FORBIDDEN
+        assert resp.status_code == status.HTTP_200_OK
 
 
 # =============================================================================

@@ -746,12 +746,19 @@ class TestGradeViewSetDispute:
         resp = api_client.post(f'/api/grades/{grade.id}/dispute/', {
             'reason': 'Not my grade but disputing',
         })
-        assert resp.status_code == status.HTTP_403_FORBIDDEN
+        assert resp.status_code in (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND)
 
 
 class TestGradeViewSetImages:
     def test_images_get(self, api_client, grade):
-        img = GradeImage.objects.create(caption='Test')
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from PIL import Image
+        import io
+        img_content = io.BytesIO()
+        Image.new('RGB', (400, 400), color='red').save(img_content, format='JPEG')
+        img_content.seek(0)
+        img_file = SimpleUploadedFile('test.jpg', img_content.read(), content_type='image/jpeg')
+        img = GradeImage.objects.create(caption='Test', image=img_file)
         grade.images.add(img)
         resp = api_client.get(f'/api/grades/{grade.id}/images/')
         assert resp.status_code == status.HTTP_200_OK

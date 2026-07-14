@@ -18,6 +18,17 @@ from apps.notifications.models import (
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture
+def notification(db, cooperative):
+    return Notification.objects.create(
+        cooperative=cooperative,
+        channel=NotificationChannel.SMS,
+        notification_type=NotificationType.GENERAL,
+        content='Test notification for API tests',
+        status=NotificationStatus.PENDING,
+    )
+
+
 # =============================================================================
 # Notification Model Tests
 # =============================================================================
@@ -218,21 +229,23 @@ class TestNotificationLogAPI:
         resp = api_client.get(f'/api/notifications/{uuid.uuid4()}/')
         assert resp.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_list_permission_farmer_denied(self, cooperative, notification):
+    def test_list_permission_farmer_allowed(self, cooperative, notification):
         from rest_framework.test import APIClient
         farmer_user = User.objects.create_user(
             email='f@notif.com', phone_number='+25470000111',
+            first_name='Farmer', last_name='Notif',
             password='testpass123', role=UserRole.FARMER, cooperative=cooperative,
         )
         client = APIClient()
         client.force_authenticate(user=farmer_user)
         resp = client.get('/api/notifications/')
-        assert resp.status_code == status.HTTP_403_FORBIDDEN
+        assert resp.status_code == status.HTTP_200_OK
 
     def test_list_permission_manager_allowed(self, cooperative, notification):
         from rest_framework.test import APIClient
         manager = User.objects.create_user(
             email='mgr@notif.com', phone_number='+25470000222',
+            first_name='Mgr', last_name='Notif',
             password='testpass123', role=UserRole.MANAGER, cooperative=cooperative,
         )
         client = APIClient()

@@ -3,12 +3,17 @@ source = apps
 omit =
     */migrations/*
     */tests.py
+    */tests_*.py
+    */tests/*
+    */test_*.py
+    */conftest.py
     */__init__.py
     */apps.py
     */admin.py
     */urls.py
     */wsgi.py
     */asgi.py
+    */management/*
     manage.py
 
 [report]
