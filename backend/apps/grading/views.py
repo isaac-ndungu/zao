@@ -433,7 +433,12 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        serializer.save(raised_by=self.request.user)
+        grade_id = self.request.data.get('grade')
+        grade = None
+        if grade_id:
+            from .models import Grade
+            grade = Grade.objects.filter(id=grade_id).first()
+        serializer.save(raised_by=self.request.user, grade=grade)
 
     def get_serializer_class(self):
         if self.action == 'resolve':

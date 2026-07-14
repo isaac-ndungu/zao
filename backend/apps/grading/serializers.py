@@ -33,7 +33,10 @@ class GradeImageSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'uploaded_by', 'uploaded_at']
 
     def get_image_url(self, obj):
-        return obj.image.url
+        try:
+            return obj.image.url
+        except ValueError:
+            return None
 
     def get_uploaded_by_name(self, obj):
         if obj.uploaded_by:
@@ -182,7 +185,7 @@ class GradeDisputeSerializer(serializers.ModelSerializer):
     class Meta:
         model = FarmerGradeDispute
         fields = ['id', 'grade', 'reason', 'status', 'created_at']
-        read_only_fields = ['id', 'status', 'created_at']
+        read_only_fields = ['id', 'grade', 'status', 'created_at']
 
 
 class GradeDisputeResolveSerializer(serializers.Serializer):
