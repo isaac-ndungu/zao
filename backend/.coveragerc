@@ -25,6 +25,7 @@ exclude_lines =
 show_missing = True
 skip_covered = False
 precision = 2
+fail_under = 70
 
 [html]
 directory = coverage_html
