@@ -188,11 +188,11 @@ class GlobalSearchView(APIView):
         return self._admin_base(query)
 
     def _search_manager(self, query, coop_id):
-        def _search(model, fields, label_fn, subtitle_fn, type_label, icon, url_pattern):
+        def _search(model, fields, label_fn, subtitle_fn, type_label, icon, url_pattern, check_active=True):
             qs = model._base_manager.filter(cooperative_id=coop_id)
             if hasattr(model, 'deleted_at'):
                 qs = qs.filter(deleted_at__isnull=True)
-            if hasattr(model, 'is_active'):
+            if check_active and hasattr(model, 'is_active'):
                 qs = qs.filter(is_active=True)
             qs = _filter_icontains(qs, query, fields)
             if model is Farmer:

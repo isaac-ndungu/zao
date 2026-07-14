@@ -1,7 +1,6 @@
 import csv
 
 from django.db import transaction
-from django.db.models import Exists, OuterRef
 from django.http import HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -200,19 +199,10 @@ class LegalComplianceView(APIView):
     permission_classes = [IsAdminOrSuperUser]
 
     def get(self, request):
-        has_accepted = Exists(
-            LegalAcceptance.objects.filter(
-                user=OuterRef('user'),
-                document=OuterRef('pk'),
-            )
-        )
-        required_docs = (
-            LegalDocument.objects.filter(
-                is_active=True,
-                requires_acceptance=True,
-                published_at__lte=timezone.now(),
-            )
-            .annotate(has_accepted=has_accepted)
+        required_docs = LegalDocument.objects.filter(
+            is_active=True,
+            requires_acceptance=True,
+            published_at__lte=timezone.now(),
         )
         # "Total active users" = distinct users who have at least one acceptance
         # of any required document (a reasonable denominator for compliance).

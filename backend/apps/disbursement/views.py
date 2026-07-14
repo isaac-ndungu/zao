@@ -300,7 +300,7 @@ class DisbursementViewSet(CooperativeScopedViewSet):
 
         bank_txns = batch.transactions.filter(
             payment_method='BANK', status='PENDING',
-        ).select_related('farmer').order_by('farmer__member_number', 'id')
+        ).select_related('farmer').order_by('id')
 
         if not bank_txns.exists():
             return Response(
