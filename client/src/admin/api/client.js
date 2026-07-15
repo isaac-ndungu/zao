@@ -1,120 +1,22 @@
-let accessToken = null
-let refreshPromise = null
-let onSessionExpired = null
+import { createApiClient } from '../../shared/api/client'
 
-function resolveUrl(url) {
-  const base = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
-  return url.startsWith('/') ? `${base}${url}` : url
-}
+const adminClient = createApiClient({ tokenStorage: 'memory', features: ['csv', 'impersonation'] })
 
-export function getAccessToken() {
-  return accessToken
-}
+export const apiFetch = adminClient.apiFetch
+export const getAccessToken = adminClient.getToken
+export const setAccessToken = adminClient.setToken
+export const clearAccessToken = adminClient.clearToken
+export const setOnSessionExpired = adminClient.setOnSessionExpired
+export const exportCsv = adminClient.exportCsv
+export const getImpersonation = adminClient.getImpersonation
+export const clearImpersonation = adminClient.clearImpersonation
 
-export function setAccessToken(token) {
-  accessToken = token
-}
-
-export function clearAccessToken() {
-  accessToken = null
-}
-
-/**
- * Register a callback invoked when session refresh fails permanently.
- * Typically used by AuthContext to redirect to login.
- */
-export function setOnSessionExpired(cb) {
-  onSessionExpired = cb
-}
-
-async function refreshAccessToken() {
-  if (refreshPromise) return refreshPromise
-
-  refreshPromise = (async () => {
-    try {
-      const res = await fetch(resolveUrl('/api/auth/refresh/'), { method: 'POST', credentials: 'include' })
-      if (!res.ok) {
-        accessToken = null
-        return null
-      }
-      const data = await res.json().catch(() => ({}))
-      if (!data.access) return null
-      accessToken = data.access
-      return data.access
-    } finally {
-      refreshPromise = null
-    }
-  })()
-
-  return refreshPromise
-}
-
-export async function apiFetch(url, options = {}) {
-  const { requireAuth = true, headers = {}, credentials, ...rest } = options
-  const resolvedUrl = resolveUrl(url)
-  const token = getAccessToken()
-
-  const config = {
-    headers: { 'Content-Type': 'application/json', ...headers },
-    credentials: credentials || (requireAuth ? 'include' : undefined),
-    ...rest,
-  }
-
-  if (requireAuth && token) {
-    config.headers['Authorization'] = `Bearer ${token}`
-  }
-
-  let res = await fetch(resolvedUrl, config)
-
-  if (res.status === 401 && requireAuth && token) {
-    const newToken = await refreshAccessToken()
-
-    if (newToken) {
-      config.headers['Authorization'] = `Bearer ${newToken}`
-      res = await fetch(resolvedUrl, config)
-    } else {
-      onSessionExpired?.()
-    }
-  }
-
-  return res
-}
-
-export async function exportCsv(url) {
-  const res = await apiFetch(url)
-  if (!res.ok) throw new Error(`Export failed: ${res.status}`)
-  const disposition = res.headers.get('Content-Disposition') || ''
-  const match = disposition.match(/filename="?(.+?)"?$/)
-  const filename = match ? match[1] : 'export.csv'
-  const blob = await res.blob()
-  const blobUrl = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-
-  a.href = blobUrl
-  a.download = filename
-  document.body.appendChild(a)
-  
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(blobUrl)
-}
-
-export function getImpersonation() {
+export function getChatToken() {
+  const adminToken = adminClient.getToken()
   try {
-    const raw = sessionStorage.getItem('impersonation')
-    if (!raw) return null
-    const data = JSON.parse(raw)
-    if (Date.now() >= data.expires_at) {
-      sessionStorage.removeItem('impersonation')
-      return null
-    }
-    return data
+    const farmerToken = localStorage.getItem('zao_farmer_token')
+    return adminToken || farmerToken
   } catch {
-    sessionStorage.removeItem('impersonation')
-    return null
+    return adminToken
   }
-}
-
-export function clearImpersonation() {
-  sessionStorage.removeItem('impersonation')
 }
