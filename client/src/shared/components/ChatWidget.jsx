@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useChatAuth } from '../hooks/useChatAuth'
-import { getAccessToken } from '../../admin/api/client'
+import { getChatToken } from '../../admin/api/client'
 
 const SESSION_KEY = 'zao_widget_chat_session'
 
@@ -10,9 +10,7 @@ function resolveUrl(url) {
 }
 
 async function chatApiFetch(url, options = {}) {
-  const adminToken = getAccessToken()
-  const farmerToken = localStorage.getItem('zao_farmer_token')
-  const token = adminToken || farmerToken
+  const token = getChatToken()
 
   const config = {
     headers: { 'Content-Type': 'application/json' },
@@ -27,9 +25,8 @@ async function chatApiFetch(url, options = {}) {
   return res
 }
 
-export default function ChatWidget() {
+export default function ChatWidget({ onClose }) {
   const { isAuthenticated, loading } = useChatAuth()
-  const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -41,7 +38,7 @@ export default function ChatWidget() {
   }, [messages])
 
   useEffect(() => {
-    if (sessionId && isOpen) {
+    if (sessionId) {
       chatApiFetch(`/api/chat/?session_id=${sessionId}`).then(async (res) => {
         if (res.ok) {
           const data = await res.json()
@@ -49,7 +46,7 @@ export default function ChatWidget() {
         }
       }).catch(() => {})
     }
-  }, [isOpen, sessionId])
+  }, [sessionId])
 
   if (loading || !isAuthenticated) return null
 
@@ -92,56 +89,55 @@ export default function ChatWidget() {
         }
       `}</style>
 
-      {isOpen ? (
-        <div className="fixed bottom-6 right-6 w-80 sm:w-96 h-[500px] max-h-[80vh] bg-surface rounded-2xl shadow-2xl flex flex-col z-50 border border-outline-variant overflow-hidden"
-          style={{ maxWidth: 'calc(100vw - 48px)' }}>
-          <div className="flex items-center gap-3 px-4 py-3 bg-primary text-on-primary rounded-t-2xl">
-            <div className="w-9 h-9 rounded-full bg-on-primary/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-primary text-lg" aria-hidden="true">smart_toy</span>
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Zao AI Assistant</p>
-              <p className="text-xs text-on-primary/80">Ask me anything</p>
-            </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-on-primary/10 rounded-full" aria-label="Close chat">
-              <span className="material-symbols-outlined text-lg" aria-hidden="true">close</span>
-            </button>
+      <div className="fixed bottom-6 right-6 w-80 sm:w-96 h-[500px] max-h-[80vh] bg-surface rounded-2xl shadow-2xl flex flex-col z-50 border border-outline-variant overflow-hidden"
+        style={{ maxWidth: 'calc(100vw - 48px)' }}>
+        <div className="flex items-center gap-3 px-4 py-3 bg-primary text-on-primary rounded-t-2xl">
+          <div className="w-9 h-9 rounded-full bg-on-primary/20 flex items-center justify-center">
+            <span className="material-symbols-outlined text-on-primary text-lg" aria-hidden="true">smart_toy</span>
           </div>
+          <div className="flex-1">
+            <p className="font-semibold text-sm">Zao AI Assistant</p>
+            <p className="text-xs text-on-primary/80">Ask me anything</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-on-primary/10 rounded-full" aria-label="Close chat">
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">close</span>
+          </button>
+        </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.length === 0 && (
-              <div className="text-center py-4">
-                <p className="text-sm text-on-surface-variant mb-4">How can I help you today?</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {suggestions.map((s) => (
-                    <button key={s.label} onClick={() => sendMessage(s.label)}
-                      className="inline-flex items-center px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container text-xs whitespace-nowrap hover:bg-primary-container hover:border-primary gap-1.5 transition-colors">
-                      <span className="material-symbols-outlined text-sm" aria-hidden="true">{s.icon}</span>
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center py-4">
+              <p className="text-sm text-on-surface-variant mb-4">How can I help you today?</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {suggestions.map((s) => (
+                  <button key={s.label} onClick={() => sendMessage(s.label)}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container text-xs whitespace-nowrap hover:bg-primary-container hover:border-primary gap-1.5 transition-colors">
+                    <span className="material-symbols-outlined text-sm" aria-hidden="true">{s.icon}</span>
+                    {s.label}
+                  </button>
+                ))}
               </div>
-            )}
-            {messages.map((m, i) => (
-              <div key={i}
-                className={m.role === 'user'
-                  ? 'bg-primary text-on-primary rounded-[18px_18px_4px_18px] px-4 py-2.5 max-w-[85%] self-end text-sm leading-relaxed'
-                  : 'bg-surface-container border border-outline-variant rounded-[18px_18px_18px_4px] px-4 py-2.5 max-w-[85%] self-start text-sm leading-relaxed'}>
-                {m.content}
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <div key={i}
+              className={m.role === 'user'
+                ? 'bg-primary text-on-primary rounded-[18px_18px_4px_18px] px-4 py-2.5 max-w-[85%] self-end text-sm leading-relaxed'
+                : 'bg-surface-container border border-outline-variant rounded-[18px_18px_18px_4px] px-4 py-2.5 max-w-[85%] self-start text-sm leading-relaxed'}>
+              {m.content}
+            </div>
+          ))}
+          {sending && (
+            <div className="bg-surface-container border border-outline-variant rounded-[18px_18px_18px_4px] px-4 py-2.5 max-w-[85%] self-start text-sm" aria-label="Typing indicator" role="status">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '0ms' }} aria-hidden="true" />
+                <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '150ms' }} aria-hidden="true" />
+                <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '300ms' }} aria-hidden="true" />
               </div>
-            ))}
-            {sending && (
-              <div className="bg-surface-container border border-outline-variant rounded-[18px_18px_18px_4px] px-4 py-2.5 max-w-[85%] self-start text-sm" aria-label="Typing indicator" role="status">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '0ms' }} aria-hidden="true" />
-                  <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '150ms' }} aria-hidden="true" />
-                  <span className="w-2 h-2 rounded-full bg-on-surface-variant animate-bounce" style={{ animationDelay: '300ms' }} aria-hidden="true" />
-                </div>
-              </div>
-            )}
-            <div ref={endRef} />
-          </div>
+            </div>
+          )}
+          <div ref={endRef} />
+        </div>
 
           <form onSubmit={(e) => { e.preventDefault(); sendMessage() }} className="flex gap-2 p-3 border-t border-outline-variant">
             <label htmlFor="chat-input" className="sr-only">Type a message</label>
@@ -160,15 +156,6 @@ export default function ChatWidget() {
             </button>
           </form>
         </div>
-      ) : (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 w-11 h-11 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center z-50 hover:bg-primary-container hover:text-primary transition-colors"
-          aria-label="Open chat"
-        >
-          <span className="material-symbols-outlined text-xl" aria-hidden="true">chat</span>
-        </button>
-      )}
     </>
   )
 }
