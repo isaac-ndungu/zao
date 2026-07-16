@@ -543,16 +543,49 @@ ENVIRONMENT = config('ENVIRONMENT', default='development')
 
 
 def _scrub_pii(event, hint):
-    """Scrub Kenyan PII from error payloads before sending to Sentry."""
+    """Scrub Kenyan PII from error payloads before sending to Sentry.
+
+    Covers:
+    - Exception stack frame local variables
+    - Sentry breadcrumbs (logged before the error)
+    - Exception values and log message strings
+    """
+    import re
+
+    phone_re = re.compile(r'(\+?254)\d{8,10}')
+    id_re = re.compile(r'\b\d{8,10}\b')
+
+    def _scrub_string(s):
+        s = phone_re.sub('[PHONE_SCRUBBED]', s)
+        s = id_re.sub('[ID_SCRUBBED]', s)
+        return s
+
+    def _scrub_val(val):
+        if isinstance(val, str):
+            return _scrub_string(val)
+        return val
+
+    # Scrub exception stack frames
     if 'exception' in event:
         for exc in event['exception'].get('values', []):
             for frame in exc.get('stacktrace', {}).get('frames', []):
                 for key, val in frame.get('vars', {}).items():
-                    if isinstance(val, str):
-                        if val.startswith('+254') or val.startswith('254'):
-                            frame['vars'][key] = '[PHONE_SCRUBBED]'
-                        if val.isdigit() and len(val) >= 8:
-                            frame['vars'][key] = '[ID_SCRUBBED]'
+                    frame['vars'][key] = _scrub_val(val)
+            if 'value' in exc and isinstance(exc['value'], str):
+                exc['value'] = _scrub_string(exc['value'])
+
+    # Scrub breadcrumbs
+    for bc in event.get('breadcrumbs', {}).get('values', []):
+        if 'data' in bc and isinstance(bc['data'], dict):
+            for key, val in bc['data'].items():
+                bc['data'][key] = _scrub_val(val)
+        if 'message' in bc and isinstance(bc['message'], str):
+            bc['message'] = _scrub_string(bc['message'])
+
+    # Scrub top-level message
+    if 'message' in event and isinstance(event['message'], str):
+        event['message'] = _scrub_string(event['message'])
+
     return event
 
 
