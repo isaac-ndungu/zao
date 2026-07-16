@@ -7,11 +7,13 @@ from django.utils import timezone
 from rest_framework import status
 
 from apps.base.constants import UserRole
+from apps.cooperatives.models import Cooperative
 from apps.notifications.models import (
     Notification,
     NotificationChannel,
     NotificationStatus,
     NotificationType,
+    USSDMenuConfig,
     USSDSession,
 )
 
@@ -289,3 +291,119 @@ class TestUSSDRedirect:
     @pytest.mark.skip(reason='Requires configured service code')
     def test_ussd_callback_valid(self, client):
         pass
+
+
+# =============================================================================
+# USSDMenuConfig Tests
+# =============================================================================
+
+
+class TestUSSDMenuConfig:
+    def test_create(self, cooperative):
+        menu = USSDMenuConfig.objects.create(
+            cooperative=cooperative,
+            menu_key='menu',
+            language='en',
+            title='Main Menu',
+            options=[{'key': '1', 'label': 'My Deliveries', 'action': 'deliveries'}],
+            order=1,
+        )
+        assert menu.pk is not None
+        assert str(menu) == f'{cooperative} — menu (en)'
+
+    def test_unique_together(self, cooperative):
+        USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='en',
+            title='Menu', options=[], order=0,
+        )
+        from django.db import IntegrityError
+        with pytest.raises(IntegrityError):
+            USSDMenuConfig.objects.create(
+                cooperative=cooperative, menu_key='menu', language='en',
+                title='Menu Again', options=[], order=0,
+            )
+
+    def test_different_languages_allowed(self, cooperative):
+        USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='en',
+            title='Main Menu', options=[], order=0,
+        )
+        sw = USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='sw',
+            title='Menyu Kuu', options=[], order=0,
+        )
+        assert sw.pk is not None
+
+    def test_different_cooperatives_allowed(self, cooperative, api_client):
+        coop2 = Cooperative.objects.create(
+            name='Other Coop', registration_number='REG_USSD_TEST',
+            county='Mombasa', produce_type='COFFEE', payment_model='FIXED_PRICE',
+            levy_percentage='2.00', monthly_fee='100.00', prefix='OTH',
+        )
+        USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='en',
+            title='Coop1 Menu', options=[], order=0,
+        )
+        m2 = USSDMenuConfig.objects.create(
+            cooperative=coop2, menu_key='menu', language='en',
+            title='Coop2 Menu', options=[], order=0,
+        )
+        assert m2.title == 'Coop2 Menu'
+
+
+class TestUSSDMenuDeliveryLimit:
+    def test_default_delivery_limit(self, cooperative):
+        assert cooperative.ussd_delivery_limit == 3
+
+    def test_custom_delivery_limit(self, cooperative):
+        cooperative.ussd_delivery_limit = 5
+        cooperative.save(update_fields=['ussd_delivery_limit'])
+        cooperative.refresh_from_db()
+        assert cooperative.ussd_delivery_limit == 5
+
+
+class TestUSSDLanguageFallback:
+    def test_fallback_to_english(self, cooperative):
+        from apps.notifications.ussd import _get_menu_config
+        from apps.farmers.models import Farmer
+        USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='en',
+            title='Main Menu', options=[], order=0,
+        )
+        farmer = Farmer.objects.create(
+            first_name='Lang', last_name='Test',
+            id_number='IDLANG001', phone_number='+254700000098',
+            county='Nairobi', cooperative=cooperative,
+        )
+        membership = farmer.memberships.get(cooperative=cooperative)
+        session = USSDSession.objects.create(
+            session_id='FB1', phone_number='+254700000010',
+            farmer=farmer, membership=membership,
+        )
+        menus = _get_menu_config(session, 'menu', 'sw')
+        assert menus.first().language == 'en'
+
+    def test_no_fallback_when_language_exists(self, cooperative):
+        from apps.notifications.ussd import _get_menu_config
+        from apps.farmers.models import Farmer
+        USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='en',
+            title='Main Menu', options=[], order=0,
+        )
+        USSDMenuConfig.objects.create(
+            cooperative=cooperative, menu_key='menu', language='sw',
+            title='Menyu Kuu', options=[], order=0,
+        )
+        farmer = Farmer.objects.create(
+            first_name='Lang2', last_name='Test',
+            id_number='IDLANG002', phone_number='+254700000097',
+            county='Nairobi', cooperative=cooperative,
+        )
+        membership = farmer.memberships.get(cooperative=cooperative)
+        session = USSDSession.objects.create(
+            session_id='FB2', phone_number='+254700000011',
+            farmer=farmer, membership=membership,
+        )
+        menus = _get_menu_config(session, 'menu', 'sw')
+        assert menus.first().language == 'sw'
+        assert menus.first().title == 'Menyu Kuu'

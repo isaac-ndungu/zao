@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Notification, USSDSession
+from .models import Notification, USSDMenuConfig, USSDSession
 
 
 @admin.register(Notification)
@@ -24,6 +24,15 @@ class NotificationAdmin(admin.ModelAdmin):
     @admin.display(description='ID')
     def short_id(self, obj):
         return str(obj.id)[:8]
+
+
+@admin.register(USSDMenuConfig)
+class USSDMenuConfigAdmin(admin.ModelAdmin):
+    list_display = ['cooperative', 'menu_key', 'language', 'title', 'order', 'is_active']
+    list_filter = ['language', 'is_active', 'menu_key']
+    list_select_related = ['cooperative']
+    search_fields = ['cooperative__name', 'menu_key', 'title']
+    ordering = ['cooperative', 'order']
 
 
 @admin.register(USSDSession)

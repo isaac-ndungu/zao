@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.base.utils import normalize_phone_for_sms
 from apps.farmers.models import FarmerCooperativeMembership
 
-from .models import Notification, USSDSession
+from .models import Notification, USSDMenuConfig, USSDSession
 from .utils import format_delivery_for_ussd
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,44 @@ def _con(session, message, next_menu):
     return ('CON', message)
 
 
+def _get_menu_config(session, menu_key, language='en'):
+    menus = USSDMenuConfig.objects.filter(
+        cooperative_id=session.membership.cooperative_id,
+        menu_key=menu_key,
+        language=language,
+        is_active=True,
+    )
+    if not menus.exists() and language != 'en':
+        logger.info(
+            'USSD language fallback: coop=%s menu=%s requested=%s -> en',
+            session.membership.cooperative_id, menu_key, language,
+        )
+        menus = USSDMenuConfig.objects.filter(
+            cooperative_id=session.membership.cooperative_id,
+            menu_key=menu_key,
+            language='en',
+            is_active=True,
+        )
+    return menus.order_by('order')
+
+
+def _render_menu(menus):
+    lines = []
+    for menu in menus:
+        lines.append(menu.title)
+        for opt in menu.options:
+            lines.append(f'{opt["key"]}. {opt["label"]}')
+    return '\n'.join(lines)
+
+
+def _render_options(menus):
+    lines = []
+    for menu in menus:
+        for opt in menu.options:
+            lines.append(f'{opt["key"]}. {opt["label"]}')
+    return '\n'.join(lines)
+
+
 def handle_ussd(session_id: str, phone_number: str, text: str):
     phone = normalize_phone_for_sms(phone_number)
 
@@ -69,7 +107,12 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
 
     # ── HOME ──
     if state == 'HOME' and not current_input:
-        return _con(session, 'Welcome to Zao Cooperative.\nEnter your member number:', 'MEMBER_NUMBER')
+        menus = _get_menu_config(session, 'home', 'en')
+        if menus.exists():
+            msg = menus.first().title
+        else:
+            msg = 'Welcome to Zao Cooperative.\nEnter your member number:'
+        return _con(session, msg, 'MEMBER_NUMBER')
 
     if state == 'HOME' and current_input:
         state = 'MEMBER_NUMBER'
@@ -105,11 +148,12 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
         if len(active_memberships) == 1:
             session.membership = membership
             session.save(update_fields=['farmer', 'membership'])
-            return _con(
-                session,
-                '1. My Deliveries\n2. My Payments\n3. My Profile',
-                'MENU',
-            )
+            menus = _get_menu_config(session, 'menu', 'en')
+            if menus.exists():
+                msg = _render_options(menus)
+            else:
+                msg = '1. My Deliveries\n2. My Payments\n3. My Profile'
+            return _con(session, msg, 'MENU')
 
         # Multiple active memberships → show picker
         session.save(update_fields=['farmer'])
@@ -143,28 +187,32 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
 
         session.membership = membership
         session.save(update_fields=['membership'])
-        return _con(
-            session,
-            '1. My Deliveries\n2. My Payments\n3. My Profile',
-            'MENU',
-        )
+        menus = _get_menu_config(session, 'menu', 'en')
+        if menus.exists():
+            msg = _render_options(menus)
+        else:
+            msg = '1. My Deliveries\n2. My Payments\n3. My Profile'
+        return _con(session, msg, 'MENU')
 
     # ── MENU ──
     if state == 'MENU':
         if current_input == '1':
             from apps.deliveries.models import Delivery
+            coop = session.membership.cooperative
+            limit = coop.ussd_delivery_limit or 3
             deliveries = Delivery.objects.filter(
                 farmer=session.farmer,
-                cooperative_id=session.membership.cooperative_id,
-            ).order_by('-date_delivered')[:3]
+                cooperative_id=coop.pk,
+            ).order_by('-date_delivered')[:limit]
             if not deliveries:
                 return _end(session, 'No deliveries found.')
             lines = [format_delivery_for_ussd(d) for d in deliveries]
-            return _con(
-                session,
-                'Recent deliveries:\n' + '\n'.join(lines) + '\n0. Back',
-                'DELIVERIES',
-            )
+            menus = _get_menu_config(session, 'deliveries', 'en')
+            if menus.exists():
+                back_option = menus.first().title + '\n' + '\n'.join(lines)
+            else:
+                back_option = 'Recent deliveries:\n' + '\n'.join(lines)
+            return _con(session, back_option + '\n0. Back', 'DELIVERIES')
 
         if current_input == '2':
             from apps.payment_engine.models import FarmerPayment
@@ -203,11 +251,12 @@ def handle_ussd(session_id: str, phone_number: str, text: str):
     # ── DELIVERIES (back) ──
     if state == 'DELIVERIES':
         if current_input == '0':
-            return _con(
-                session,
-                '1. My Deliveries\n2. My Payments\n3. My Profile',
-                'MENU',
-            )
+            menus = _get_menu_config(session, 'menu', 'en')
+            if menus.exists():
+                msg = _render_options(menus)
+            else:
+                msg = '1. My Deliveries\n2. My Payments\n3. My Profile'
+            return _con(session, msg, 'MENU')
 
         return _end(session, 'Sorry, we could not process your request. Please dial again.')
 

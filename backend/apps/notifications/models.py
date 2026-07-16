@@ -101,3 +101,34 @@ class USSDSession(models.Model):
 
     def __str__(self):
         return f'{self.session_id} — {self.phone_number} ({self.current_menu})'
+
+
+class USSDMenuLanguage(models.TextChoices):
+    EN = 'en', 'English'
+    SW = 'sw', 'Swahili'
+
+
+class USSDMenuConfig(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cooperative = models.ForeignKey(
+        'cooperatives.Cooperative', on_delete=models.CASCADE, related_name='ussd_menus',
+    )
+    menu_key = models.CharField(max_length=50)
+    language = models.CharField(
+        max_length=10, choices=USSDMenuLanguage.choices, default=USSDMenuLanguage.EN,
+    )
+    title = models.CharField(max_length=200)
+    options = models.JSONField(default=list)
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'USSD Menu Config'
+        verbose_name_plural = 'USSD Menu Configs'
+        unique_together = [['cooperative', 'menu_key', 'language']]
+        ordering = ['cooperative', 'order']
+
+    def __str__(self):
+        return f'{self.cooperative} — {self.menu_key} ({self.language})'
