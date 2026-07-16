@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import ErrorState from '../../shared/components/ErrorState'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
+import { useFormAction, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const resourceTypes = ['', 'Farmer', 'Delivery', 'Grade', 'PaymentCycle', 'FarmerPayment', 'Loan', 'Deduction', 'DisbursementBatch', 'Sale', 'FarmInputCredit', 'Cooperative', 'User']
 
@@ -33,13 +34,13 @@ export default function AuditorAuditLog() {
   const logs = data?.results || data || []
   const totalCount = data?.count || logs.length
 
-  const handleSearch = useCallback((e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const q = fd.get('search')
+  const handleSearchAction = async (prev, formData) => {
+    const q = formData.get('search')
     setSearchParams(q ? { search: q } : {})
     setPage(1)
-  }, [setSearchParams])
+  }
+
+  const { formAction: searchAction } = useFormAction(handleSearchAction, {})
 
   const handleExportCSV = () => {
     const headers = ['Timestamp', 'Actor', 'Action', 'Resource Type', 'Resource ID', 'Details']
@@ -81,10 +82,10 @@ export default function AuditorAuditLog() {
       </header>
 
       <div className="flex flex-wrap gap-3 mb-4 items-end">
-        <form onSubmit={handleSearch} className="flex gap-2">
+        <form action={searchAction} className="flex gap-2">
           <label htmlFor="audit-search" className="sr-only">Search actor, action</label>
           <input id="audit-search" name="search" defaultValue={search} placeholder="Search actor, action..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-48" />
-          <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+          <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</SubmitButton>
         </form>
         <label htmlFor="audit-resource-type" className="sr-only">Filter by resource type</label>
         <select id="audit-resource-type" value={resourceType} onChange={(e) => { setResourceType(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">

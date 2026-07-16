@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import ErrorState from '../../shared/components/ErrorState'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
+import { useFormAction, SubmitButton } from '../../../shared/hooks/useFormAction'
 
 export default function ExternalAuditTrail() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -24,13 +25,13 @@ export default function ExternalAuditTrail() {
   const logs = data?.results || data || []
   const totalCount = data?.count || logs.length
 
-  const handleSearch = useCallback((e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const q = fd.get('search')
+  const handleSearchAction = async (prev, formData) => {
+    const q = formData.get('search')
     setSearchParams(q ? { search: q } : {})
     setPage(1)
-  }, [setSearchParams])
+  }
+
+  const { formAction: searchAction } = useFormAction(handleSearchAction, {})
 
   const handleExportCSV = () => {
     const headers = ['Timestamp', 'Action', 'Resource Type', 'Resource ID', 'Details']
@@ -70,10 +71,10 @@ export default function ExternalAuditTrail() {
       </header>
 
       <div className="flex flex-wrap gap-3 mb-4 items-end">
-        <form onSubmit={handleSearch} className="flex gap-2">
+        <form action={searchAction} className="flex gap-2">
           <label htmlFor="audit-search" className="sr-only">Search audit logs</label>
           <input id="audit-search" name="search" defaultValue={search} placeholder="Search..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-48" />
-          <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+          <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</SubmitButton>
         </form>
         <label htmlFor="audit-action-filter" className="sr-only">Filter by action</label>
         <select id="audit-action-filter" value={actionFilter} onChange={(e) => { setActionFilter(e.target.value); setPage(1) }} className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">

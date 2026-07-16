@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { useOnlineStatus } from '../../shared/hooks/useOnlineStatus'
+import { useFormAction, formDataToObject } from '../../shared/hooks/useFormAction'
 import {
   saveDelivery,
   cacheFarmers,
@@ -24,7 +25,6 @@ export default function RecordDelivery() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const isOnline = useOnlineStatus()
-  const [submitting, setSubmitting] = useState(false)
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerOptions, setFarmerOptions] = useState([])
   const [selectedFarmer, setSelectedFarmer] = useState(null)
@@ -33,6 +33,8 @@ export default function RecordDelivery() {
   const [routeStops, setRouteStops] = useState([])
   const [pickedStop, setPickedStop] = useState('')
   const [geoBusy, setGeoBusy] = useState(false)
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
 
   useEffect(() => {
     getCachedFarmers().then(cached => {
@@ -51,23 +53,37 @@ export default function RecordDelivery() {
     }
   }, [isOnline])
 
-  const [form, setForm] = useState({
-    farmer: '',
-    product_type: 'MILK',
-    quantity_kg: '',
-    volume_litres: '',
-    shift: 'AM',
-    date_delivered: new Date().toISOString().slice(0, 10),
-    latitude: '',
-    longitude: '',
-    route_stop: '',
-  })
+  const { formAction, isPending } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    if (!data.farmer) {
+      showToast({ type: 'error', message: 'Select a farmer.' })
+      return {}
+    }
+    const body = { ...data, farmer_id: data.farmer, farmer_name: farmerSearch }
+    delete body.farmer
+    if (!body.quantity_kg) delete body.quantity_kg
+    if (!body.volume_litres) delete body.volume_litres
+    if (!body.latitude) delete body.latitude
+    if (!body.longitude) delete body.longitude
+    if (!body.route_stop) delete body.route_stop
+    if (isOnline) {
+      const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
+      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create delivery') }
+      showToast({ type: 'success', message: 'Delivery recorded.' })
+    } else {
+      await saveDelivery(body)
+      showToast({ type: 'success', message: 'Delivery saved offline. Will sync when online.' })
+    }
+    navigate('/grader/grade')
+    return {}
+  }, {})
 
   const searchFarmer = async (q) => {
     if (justSelected) { setJustSelected(false); return }
     setFarmerSearch(q)
     setSelectedFarmer(null)
-    setForm(f => ({ ...f, farmer: '', latitude: '', longitude: '', route_stop: '' }))
+    setLatitude('')
+    setLongitude('')
     setRouteStops([])
     setPickedStop('')
     if (q.length < 2) { setFarmerOptions([]); return }
@@ -92,24 +108,24 @@ export default function RecordDelivery() {
 
   const selectFarmer = async (farmer) => {
     setSelectedFarmer(farmer)
-    setForm(f => ({ ...f, farmer: farmer.id, latitude: '', longitude: '', route_stop: '' }))
+    setLatitude('')
+    setLongitude('')
     setFarmerSearch(`${farmer.first_name} ${farmer.last_name} (${farmer.phone_number || farmer.id.slice(0, 8)})`)
     setFarmerOptions([])
     setJustSelected(true)
     setPickedStop('')
     setRouteStops([])
 
-    // Try to fetch farmer location and route stops
     if (isOnline) {
       try {
         const res = await apiFetch(`/api/farmers/${farmer.id}/location/`)
         if (res.ok) {
           const data = await res.json()
           if (data.latitude != null && data.longitude != null) {
-            setForm(f => ({ ...f, latitude: String(data.latitude), longitude: String(data.longitude) }))
+            setLatitude(String(data.latitude))
+            setLongitude(String(data.longitude))
           }
           setRouteStops(data.route_stops || [])
-          // Cache for offline use
           cacheFarmerLocation(farmer.id, {
             latitude: data.latitude,
             longitude: data.longitude,
@@ -118,11 +134,11 @@ export default function RecordDelivery() {
         }
       } catch {}
     } else {
-      // Offline: use cached
       const cached = await getCachedFarmerLocation(farmer.id).catch(() => null)
       if (cached) {
         if (cached.latitude != null && cached.longitude != null) {
-          setForm(f => ({ ...f, latitude: String(cached.latitude), longitude: String(cached.longitude) }))
+          setLatitude(String(cached.latitude))
+          setLongitude(String(cached.longitude))
         }
         setRouteStops(cached.route_stops || [])
       }
@@ -137,7 +153,8 @@ export default function RecordDelivery() {
     setGeoBusy(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setForm(f => ({ ...f, latitude: pos.coords.latitude.toFixed(6), longitude: pos.coords.longitude.toFixed(6) }))
+        setLatitude(pos.coords.latitude.toFixed(6))
+        setLongitude(pos.coords.longitude.toFixed(6))
         setGeoBusy(false)
       },
       (err) => {
@@ -148,36 +165,8 @@ export default function RecordDelivery() {
     )
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.farmer) {
-      showToast({ type: 'error', message: 'Select a farmer.' })
-      return
-    }
-    setSubmitting(true)
-    try {
-      const body = { ...form, farmer_id: form.farmer, farmer_name: farmerSearch }
-      if (!body.quantity_kg) delete body.quantity_kg
-      if (!body.volume_litres) delete body.volume_litres
-      if (!body.latitude) delete body.latitude
-      if (!body.longitude) delete body.longitude
-      if (!body.route_stop) delete body.route_stop
-      if (isOnline) {
-        const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
-        if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create delivery') }
-        showToast({ type: 'success', message: 'Delivery recorded.' })
-        navigate('/grader/grade')
-      } else {
-        await saveDelivery(body)
-        showToast({ type: 'success', message: 'Delivery saved offline. Will sync when online.' })
-        navigate('/grader/grade')
-      }
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSubmitting(false) }
-  }
-
-  const pickup = (form.latitude && form.longitude)
-    ? { lat: Number(form.latitude), lng: Number(form.longitude) }
+  const pickup = (latitude && longitude)
+    ? { lat: Number(latitude), lng: Number(longitude) }
     : null
 
   return (
@@ -187,7 +176,7 @@ export default function RecordDelivery() {
         <p className="text-on-surface-variant font-body-md">Log a new delivery from a farmer</p>
       </header>
 
-      <form onSubmit={handleSubmit} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4">
+      <form action={formAction} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-4">
         <div className="relative">
           <label htmlFor="record-farmer" className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
           <input
@@ -197,7 +186,7 @@ export default function RecordDelivery() {
             onChange={(e) => searchFarmer(e.target.value)}
             placeholder="Search by name or phone..."
             className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-            disabled={submitting}
+            disabled={isPending}
             autoComplete="off"
           />
           {!isOnline && !cachedFarmersList && (
@@ -228,7 +217,7 @@ export default function RecordDelivery() {
               value={pickedStop}
               onChange={(e) => setPickedStop(e.target.value)}
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-              disabled={submitting}
+              disabled={isPending}
             >
               <option value="">— None —</option>
               {routeStops.map((s) => (
@@ -254,10 +243,10 @@ export default function RecordDelivery() {
           <label htmlFor="record-product-type" className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
           <select
             id="record-product-type"
-            value={form.product_type}
-            onChange={(e) => setForm(f => ({ ...f, product_type: e.target.value }))}
+            name="product_type"
+            defaultValue="MILK"
             className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-            disabled={submitting}
+            disabled={isPending}
           >
             {productTypes.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
@@ -268,24 +257,22 @@ export default function RecordDelivery() {
             <label htmlFor="record-quantity" className="block text-label-md font-bold text-on-surface mb-1.5">Quantity (kg)</label>
             <input
               id="record-quantity"
+              name="quantity_kg"
               type="number" step="0.01" min="0"
-              value={form.quantity_kg}
-              onChange={(e) => setForm(f => ({ ...f, quantity_kg: e.target.value }))}
               placeholder="0.00"
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-              disabled={submitting}
+              disabled={isPending}
             />
           </div>
           <div>
             <label htmlFor="record-volume" className="block text-label-md font-bold text-on-surface mb-1.5">Volume (L)</label>
             <input
               id="record-volume"
+              name="volume_litres"
               type="number" step="0.01" min="0"
-              value={form.volume_litres}
-              onChange={(e) => setForm(f => ({ ...f, volume_litres: e.target.value }))}
               placeholder="0.00"
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-              disabled={submitting}
+              disabled={isPending}
             />
           </div>
         </div>
@@ -295,10 +282,10 @@ export default function RecordDelivery() {
             <label htmlFor="record-shift" className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
             <select
               id="record-shift"
-              value={form.shift}
-              onChange={(e) => setForm(f => ({ ...f, shift: e.target.value }))}
+              name="shift"
+              defaultValue="AM"
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-              disabled={submitting}
+              disabled={isPending}
             >
               <option value="AM">AM</option>
               <option value="PM">PM</option>
@@ -308,41 +295,20 @@ export default function RecordDelivery() {
             <label htmlFor="record-date" className="block text-label-md font-bold text-on-surface mb-1.5">Date Delivered</label>
             <input
               id="record-date"
+              name="date_delivered"
               type="date"
-              value={form.date_delivered}
-              onChange={(e) => setForm(f => ({ ...f, date_delivered: e.target.value }))}
+              defaultValue={new Date().toISOString().slice(0, 10)}
               className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-              disabled={submitting}
+              disabled={isPending}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="record-latitude" className="block text-label-md font-bold text-on-surface mb-1.5">Latitude</label>
-            <input
-              id="record-latitude"
-              type="number" step="any"
-              value={form.latitude}
-              onChange={(e) => setForm(f => ({ ...f, latitude: e.target.value }))}
-              placeholder="Optional"
-              className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-              disabled={submitting}
-            />
-          </div>
-          <div>
-            <label htmlFor="record-longitude" className="block text-label-md font-bold text-on-surface mb-1.5">Longitude</label>
-            <input
-              id="record-longitude"
-              type="number" step="any"
-              value={form.longitude}
-              onChange={(e) => setForm(f => ({ ...f, longitude: e.target.value }))}
-              placeholder="Optional"
-              className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-              disabled={submitting}
-            />
-          </div>
-        </div>
+        <input type="hidden" name="farmer" value={selectedFarmer?.id || ''} />
+        <input type="hidden" name="latitude" value={latitude} />
+        <input type="hidden" name="longitude" value={longitude} />
+        <input type="hidden" name="route_stop" value={pickedStop} />
+
         <div className="flex justify-end">
           <button
             type="button"
@@ -355,16 +321,16 @@ export default function RecordDelivery() {
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          <button type="button" onClick={() => navigate(-1)} className="px-6 py-2.5 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors" disabled={submitting}>
+          <button type="button" onClick={() => navigate(-1)} className="px-6 py-2.5 border border-outline-variant rounded-lg text-label-md font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors" disabled={isPending}>
             Cancel
           </button>
           <button
             type="submit"
-            disabled={submitting || !form.farmer}
+            disabled={isPending || !selectedFarmer}
             className="flex-1 px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {submitting && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-            {submitting ? 'Recording...' : 'Record Delivery'}
+            {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            {isPending ? 'Recording...' : 'Record Delivery'}
           </button>
         </div>
       </form>

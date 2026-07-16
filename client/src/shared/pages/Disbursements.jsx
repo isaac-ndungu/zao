@@ -11,6 +11,7 @@ import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../components/ErrorState'
+import { useFormAction, SubmitButton } from '../hooks/useFormAction'
 
 const DARAJA_ERROR_CODES = {
   '0': 'Success',
@@ -70,9 +71,8 @@ export default function Disbursements() {
   const [showInitiate, setShowInitiate] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [previewData, setPreviewData] = useState(null)
-  const [initCycleId, setInitCycleId] = useState('')
-  const [initSaving, setInitSaving] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const cycleSelectRef = useRef(null)
 
   const [showConfirmManual, setShowConfirmManual] = useState(null)
   const [confirmTxns, setConfirmTxns] = useState([])
@@ -213,32 +213,29 @@ export default function Disbursements() {
     finally { setCsvSaving(false) }
   }
 
-  const handleInitiate = async (e) => {
-    e.preventDefault()
-    setInitSaving(true)
-    try {
-      const res = await apiFetch('/api/disbursements/initiate/', {
-        method: 'POST',
-        body: JSON.stringify({ payment_cycle: initCycleId }),
-      })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Initiation failed') }
-      showToast({ type: 'success', message: 'Disbursement batch created.' })
-      setShowInitiate(false)
-      setInitCycleId('')
-      setShowPreview(false)
-      setPreviewData(null)
-      refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setInitSaving(false) }
-  }
+  const [, initiateAction] = useFormAction(async (prev, formData) => {
+    const cycleId = formData.get('payment_cycle')
+    const res = await apiFetch('/api/disbursements/initiate/', {
+      method: 'POST',
+      body: JSON.stringify({ payment_cycle: cycleId }),
+    })
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Initiation failed') }
+    showToast({ type: 'success', message: 'Disbursement batch created.' })
+    setShowInitiate(false)
+    setShowPreview(false)
+    setPreviewData(null)
+    refetch()
+    return { success: true }
+  }, {})
 
   const handlePreview = async () => {
-    if (!initCycleId) return
+    const cycleId = cycleSelectRef.current?.value
+    if (!cycleId) return
     setPreviewLoading(true)
     try {
       const res = await apiFetch('/api/disbursements/preview/', {
         method: 'POST',
-        body: JSON.stringify({ payment_cycle: initCycleId }),
+        body: JSON.stringify({ payment_cycle: cycleId }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Preview failed') }
       const result = await res.json()
@@ -602,10 +599,10 @@ export default function Disbursements() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => { setShowInitiate(false); setShowPreview(false); setPreviewData(null) }}>
           <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Initiate Disbursements from Cycle</h3>
-            <form onSubmit={handleInitiate} className="space-y-4">
+            <form action={initiateAction} className="space-y-4">
               <div>
                 <label htmlFor="payment-cycle" className="block text-label-md text-on-surface-variant mb-1">Payment Cycle</label>
-                <select id="payment-cycle" value={initCycleId} onChange={(e) => setInitCycleId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+                <select id="payment-cycle" name="payment_cycle" ref={cycleSelectRef} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
                   <option value="">Select cycle...</option>
                   {cycles.map((c) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.status})</option>
@@ -614,12 +611,12 @@ export default function Disbursements() {
               </div>
 
               <div className="flex gap-3">
-                <button type="button" onClick={handlePreview} disabled={!initCycleId || previewLoading} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold disabled:opacity-50">
+                <button type="button" onClick={handlePreview} disabled={previewLoading} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold disabled:opacity-50">
                   {previewLoading ? 'Loading...' : 'Preview'}
                 </button>
-                <button type="submit" disabled={initSaving || !initCycleId} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">
-                  {initSaving ? 'Initiating...' : 'Initiate'}
-                </button>
+                <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">
+                  Initiate
+                </SubmitButton>
                 <button type="button" onClick={() => { setShowInitiate(false); setShowPreview(false); setPreviewData(null) }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
               </div>
             </form>

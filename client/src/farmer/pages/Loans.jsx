@@ -4,6 +4,7 @@ import ErrorState from '../../shared/components/ErrorState'
 import { apiFetch } from '../api/client'
 import { useToast } from '../components/Toast'
 import { ListSkeleton } from '../components/LoadingSkeleton'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 import { t } from '../i18n'
 import { useFarmerAuth } from '../context/FarmerAuthContext'
 
@@ -23,39 +24,36 @@ export default function FarmerLoans() {
   const { user: farmerUser } = useFarmerAuth()
   const [selected, setSelected] = useState(null)
   const [showApply, setShowApply] = useState(false)
-  const [form, setForm] = useState({ amount_principal: '', interest_rate: '10', number_of_installments: '12', notes: '' })
-  const [saving, setSaving] = useState(false)
   const { data, loading, error, refetch } = useFarmerApi('/api/loans/?ordering=-created_at')
 
   const loans = data?.results || data || []
   const activeLoan = loans.find(l => l.status === 'ACTIVE' || l.status === 'DISBURSED')
 
-  const handleApply = async (e) => {
-    e.preventDefault()
+  const [, applyAction] = useFormAction(async (prev, formData) => {
     if (!farmerUser?.id) {
-      showToast({ type: 'error', message: 'Could not determine farmer profile. Please try logging in again.' })
-      return
+      throw new Error('Could not determine farmer profile. Please try logging in again.')
     }
-    setSaving(true)
-    try {
-      const res = await apiFetch('/api/loans/', {
-        method: 'POST',
-        body: JSON.stringify({
-          farmer: farmerUser.id,
-          amount_principal: parseFloat(form.amount_principal),
-          interest_rate: parseFloat(form.interest_rate),
-          number_of_installments: parseInt(form.number_of_installments),
-          notes: form.notes,
-        }),
-      })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || t('applyFailed')) }
-      showToast({ type: 'success', message: t('applicationSubmitted') })
-      setShowApply(false)
-      setForm({ amount_principal: '', interest_rate: '10', number_of_installments: '12', notes: '' })
-      refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSaving(false) }
-  }
+    const data = formDataToObject(formData)
+    const res = await apiFetch('/api/loans/', {
+      method: 'POST',
+      body: JSON.stringify({
+        farmer: farmerUser.id,
+        amount_principal: parseFloat(data.amount_principal),
+        interest_rate: parseFloat(data.interest_rate),
+        number_of_installments: parseInt(data.number_of_installments),
+        notes: data.notes,
+      }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(Object.values(err).flat().join(', ') || t('applyFailed'))
+    }
+    showToast({ type: 'success', message: t('applicationSubmitted') })
+    setShowApply(false)
+    document.getElementById('loan-apply-form')?.reset()
+    refetch()
+    return { success: true }
+  }, {})
 
   if (error) return <ErrorState message={error} action={{ label: t('retry'), onClick: refetch }} />
   if (loading) return <div><h2 className="text-lg font-bold mb-4">{t('loans')}</h2><ListSkeleton count={3} /></div>
@@ -152,27 +150,27 @@ export default function FarmerLoans() {
           <div className="bg-surface-container rounded-t-2xl p-6 w-full max-h-[85vh] overflow-y-auto" style={{ animation: 'slideUp 0.3s ease-out' }} onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto my-3" />
             <h3 className="font-bold text-lg mb-4">{t('applyLoan')}</h3>
-            <form onSubmit={handleApply} className="space-y-4">
+            <form id="loan-apply-form" action={applyAction} className="space-y-4">
               <div>
                 <label htmlFor="loan_amount" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('loanAmount')} (KES)</label>
-                <input id="loan_amount" type="number" min="1" value={form.amount_principal} onChange={(e) => setForm(p => ({ ...p, amount_principal: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <input id="loan_amount" name="amount_principal" type="number" min="1" required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div>
                 <label htmlFor="interest_rate" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('interestRate')} (%)</label>
-                <input id="interest_rate" type="number" step="0.1" min="0" value={form.interest_rate} onChange={(e) => setForm(p => ({ ...p, interest_rate: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <input id="interest_rate" name="interest_rate" type="number" step="0.1" min="0" defaultValue="10" required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div>
                 <label htmlFor="number_of_installments" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('installments')}</label>
-                <input id="number_of_installments" type="number" min="1" max="60" value={form.number_of_installments} onChange={(e) => setForm(p => ({ ...p, number_of_installments: e.target.value }))} required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <input id="number_of_installments" name="number_of_installments" type="number" min="1" max="60" defaultValue="12" required className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div>
                 <label htmlFor="notes" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('description')}</label>
-                <textarea id="notes" value={form.notes} onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
+                <textarea id="notes" name="notes" rows={3} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">
-                  {saving ? <span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('applyLoan')}
-                </button>
+                <SubmitButton className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 flex-1">
+                  {t('applyLoan')}
+                </SubmitButton>
                 <button type="button" onClick={() => setShowApply(false)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">
                   {t('cancel')}
                 </button>

@@ -10,6 +10,7 @@ import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function SalesBuyers() {
   const [tab, setTab] = useState('sales')
@@ -169,11 +170,6 @@ function CreateSaleForm({ onClose, onSuccess }) {
   const [stockId, setStockId] = useState('')
   const [quantity, setQuantity] = useState(0)
   const [pricePerUnit, setPricePerUnit] = useState(0)
-  const [saleDate, setSaleDate] = useState(new Date().toISOString().split('T')[0])
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [notes, setNotes] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [validationError, setValidationError] = useState('')
   const { showToast } = useToast()
 
   const { data: stockData } = useApi('/api/stock/')
@@ -194,41 +190,36 @@ function CreateSaleForm({ onClose, onSuccess }) {
 
   const totalAmount = Number(quantity || 0) * Number(pricePerUnit || 0)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setValidationError('')
+  const { state, formAction: createSaleAction, isPending } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
 
-    if (!selectedBuyer) { setValidationError('Select a buyer.'); return }
-    if (!stockId) { setValidationError('Select a product / grade (stock).'); return }
-    if (Number(quantity) <= 0) { setValidationError('Quantity must be greater than 0.'); return }
-    if (Number(pricePerUnit) <= 0) { setValidationError('Price per unit must be greater than 0.'); return }
-    if (selectedStock && Number(quantity) > Number(selectedStock.quantity_available)) {
-      setValidationError(`Insufficient stock: ${selectedStock.quantity_available} ${selectedStock.unit} available, ${quantity} ${selectedStock.unit} requested.`)
-      return
+    if (!selectedBuyer) throw new Error('Select a buyer.')
+    if (!data.stock) throw new Error('Select a product / grade (stock).')
+    if (Number(data.quantity) <= 0) throw new Error('Quantity must be greater than 0.')
+    if (Number(data.price_per_unit) <= 0) throw new Error('Price per unit must be greater than 0.')
+    if (selectedStock && Number(data.quantity) > Number(selectedStock.quantity_available)) {
+      throw new Error(`Insufficient stock: ${selectedStock.quantity_available} ${selectedStock.unit} available, ${data.quantity} ${selectedStock.unit} requested.`)
     }
 
-    setCreating(true)
-    try {
-      const body = {
-        buyer: selectedBuyer.id,
-        stock: stockId,
-        quantity: Number(quantity),
-        price_per_unit: Number(pricePerUnit),
-        sale_date: saleDate,
-        invoice_number: invoiceNumber,
-        notes,
-      }
-      const res = await apiFetch('/api/sales/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create sale') }
-      showToast({ type: 'success', message: 'Sale recorded. The server allocated FIFO across cycle-pools.' })
-      onSuccess(); onClose()
-    } catch (err) { setValidationError(err.message) }
-    finally { setCreating(false) }
-  }
+    const body = {
+      buyer: selectedBuyer.id,
+      stock: data.stock,
+      quantity: Number(data.quantity),
+      price_per_unit: Number(data.price_per_unit),
+      sale_date: data.sale_date,
+      invoice_number: data.invoice_number,
+      notes: data.notes,
+    }
+    const res = await apiFetch('/api/sales/', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create sale') }
+    showToast({ type: 'success', message: 'Sale recorded. The server allocated FIFO across cycle-pools.' })
+    onSuccess(); onClose()
+    return { success: true }
+  }, {})
 
   return (
     <SlideOutPanel open onClose={onClose} title="Record Sale" width="max-w-lg">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form action={createSaleAction} className="space-y-4">
         <div>
           <label htmlFor="create-buyer" className="block text-label-md text-on-surface-variant mb-1">Buyer</label>
           {!selectedBuyer ? (
@@ -252,7 +243,7 @@ function CreateSaleForm({ onClose, onSuccess }) {
 
         <div>
           <label htmlFor="create-stock" className="block text-label-md text-on-surface-variant mb-1">Product / Grade (Stock)</label>
-          <select id="create-stock" value={stockId} onChange={(e) => setStockId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+          <select id="create-stock" name="stock" value={stockId} onChange={(e) => setStockId(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
             <option value="">Select stock...</option>
             {stockItems.map(s => (
               <option key={s.id} value={s.id}>
@@ -268,11 +259,11 @@ function CreateSaleForm({ onClose, onSuccess }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="create-quantity" className="block text-label-md text-on-surface-variant mb-1">Quantity ({selectedStock?.unit || 'unit'})</label>
-            <input id="create-quantity" type="number" step="0.001" min="0" value={quantity || ''} onChange={(e) => setQuantity(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-quantity" name="quantity" type="number" step="0.001" min="0" value={quantity || ''} onChange={(e) => setQuantity(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label htmlFor="create-price_per_unit" className="block text-label-md text-on-surface-variant mb-1">Price per Unit (KES)</label>
-            <input id="create-price_per_unit" type="number" step="0.01" min="0" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-price_per_unit" name="price_per_unit" type="number" step="0.01" min="0" value={pricePerUnit} onChange={(e) => setPricePerUnit(e.target.value)} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
         </div>
 
@@ -284,26 +275,24 @@ function CreateSaleForm({ onClose, onSuccess }) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="create-sale_date" className="block text-label-md text-on-surface-variant mb-1">Sale Date</label>
-            <input id="create-sale_date" type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-sale_date" name="sale_date" type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label htmlFor="create-invoice_number" className="block text-label-md text-on-surface-variant mb-1">Invoice #</label>
-            <input id="create-invoice_number" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-invoice_number" name="invoice_number" defaultValue="" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
         </div>
 
         <div>
           <label htmlFor="create-notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label>
-          <textarea id="create-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+          <textarea id="create-notes" name="notes" defaultValue="" rows={2} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
         </div>
 
-        {validationError && (
-          <div className="px-3 py-2 bg-error-container text-on-error-container rounded-lg text-body-md">{validationError}</div>
+        {state.error && (
+          <div className="px-3 py-2 bg-error-container text-on-error-container rounded-lg text-body-md">{state.error}</div>
         )}
 
-        <button type="submit" disabled={creating} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">
-          {creating ? 'Recording...' : 'Record Sale'}
-        </button>
+        <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Record Sale</SubmitButton>
       </form>
     </SlideOutPanel>
   )
@@ -345,29 +334,29 @@ function BuyersSection() {
     else { setSortField(key); setSortOrder('asc') }
   }
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const body = Object.fromEntries(fd.entries())
-    try {
-      const res = await apiFetch('/api/buyers/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
-      showToast({ type: 'success', message: 'Buyer created.' })
-      setShowCreate(false); refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-  }
+  const [, buyerSearchAction] = useFormAction(async (prev, formData) => {
+    setSearch(formData.get('search') || '')
+    setPage(1)
+    return {}
+  }, {})
 
-  const handleEdit = async (e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const body = Object.fromEntries(fd.entries())
-    try {
-      const res = await apiFetch(`/api/buyers/${showEdit.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to update') }
-      showToast({ type: 'success', message: 'Buyer updated.' })
-      setShowEdit(null); refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-  }
+  const [, createBuyerAction] = useFormAction(async (prev, formData) => {
+    const body = formDataToObject(formData)
+    const res = await apiFetch('/api/buyers/', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
+    showToast({ type: 'success', message: 'Buyer created.' })
+    setShowCreate(false); refetch()
+    return { success: true }
+  }, {})
+
+  const [, editBuyerAction] = useFormAction(async (prev, formData) => {
+    const body = formDataToObject(formData)
+    const res = await apiFetch(`/api/buyers/${showEdit.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to update') }
+    showToast({ type: 'success', message: 'Buyer updated.' })
+    setShowEdit(null); refetch()
+    return { success: true }
+  }, {})
 
   const handleDelete = async () => {
     try {
@@ -404,8 +393,8 @@ function BuyersSection() {
     { key: 'physical_address', label: 'Physical Address', textarea: true },
   ]
 
-  const buyerForm = (defaults = {}, onSubmit, submitLabel) => (
-    <form onSubmit={onSubmit} className="space-y-4">
+  const buyerForm = (defaults = {}, formAction, submitLabel) => (
+    <form action={formAction} className="space-y-4">
       {buyerFormFields.map(({ key, label, required, textarea }) => (
         <div key={key}>
           <label htmlFor={`create-${key}`} className="block text-label-md text-on-surface-variant mb-1 capitalize">{label}</label>
@@ -416,17 +405,17 @@ function BuyersSection() {
           )}
         </div>
       ))}
-      <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">{submitLabel}</button>
+      <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">{submitLabel}</SubmitButton>
     </form>
   )
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between flex-wrap gap-4">
-        <form onSubmit={(e) => { e.preventDefault(); setSearch(new FormData(e.target).get('search') || ''); setPage(1) }} className="flex gap-2">
+        <form action={buyerSearchAction} className="flex gap-2">
           <label htmlFor="buyers-search" className="sr-only">Search buyers</label>
           <input id="buyers-search" name="search" defaultValue={search} placeholder="Search buyers..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"/>
-          <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+          <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</SubmitButton>
         </form>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Add Buyer
@@ -463,11 +452,11 @@ function BuyersSection() {
       </SlideOutPanel>
 
       <SlideOutPanel open={showCreate} onClose={() => setShowCreate(false)} title="New Buyer" width="max-w-md">
-        {buyerForm({}, handleCreate, 'Create Buyer')}
+        {buyerForm({}, createBuyerAction, 'Create Buyer')}
       </SlideOutPanel>
 
       <SlideOutPanel open={!!showEdit} onClose={() => setShowEdit(null)} title="Edit Buyer" width="max-w-md">
-        {showEdit && buyerForm(showEdit, handleEdit, 'Update Buyer')}
+        {showEdit && buyerForm(showEdit, editBuyerAction, 'Update Buyer')}
       </SlideOutPanel>
 
       <ConfirmModal open={!!showDelete} title="Delete Buyer" message={`Delete buyer "${showDelete?.name}"?`} confirmLabel="Delete" destructive onConfirm={handleDelete} onCancel={() => setShowDelete(null)} />

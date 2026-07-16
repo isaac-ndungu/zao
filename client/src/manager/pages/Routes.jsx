@@ -8,6 +8,7 @@ import SlideOutPanel from '../../admin/components/common/SlideOutPanel'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const RouteMapView = lazy(() => import('../../shared/components/RouteMapView'))
 
@@ -43,14 +44,11 @@ export default function Routes() {
   const items = data?.results || []
   const total = data?.count || 0
 
-  // Lazy-load the map data for the detail panel
   const { data: mapData, refetch: refetchMap } = useApi(
     detailRoute ? `/api/routes/${detailRoute.id}/map/` : null,
   )
 
   useEffect(() => {
-    // Syncing an external fetch result into local state. The fetch hook's
-    // data is "external" so this setState-in-effect is the canonical pattern.
     /* eslint-disable react-hooks/set-state-in-effect */
     if (!mapData) {
       setStops([])
@@ -60,7 +58,6 @@ export default function Routes() {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [mapData])
 
-  // Unassigned farmers in the cooperative (those with lat/lng)
   const { data: farmersData } = useApi('/api/farmers/?page_size=200')
   const assignedFarmerIds = useMemo(() => {
     const s = new Set()
@@ -74,25 +71,25 @@ export default function Routes() {
     )
   }, [farmersData, assignedFarmerIds])
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const body = Object.fromEntries(fd.entries())
+  const [, searchAction] = useFormAction(async (_prev, formData) => {
+    setSearch(formData.get('search') || '')
+    setPage(1)
+  }, {})
+
+  const [, createAction] = useFormAction(async (_prev, formData) => {
+    const body = formDataToObject(formData)
     if (!body.name) return
-    try {
-      const res = await apiFetch('/api/routes/', {
-        method: 'POST',
-        body: JSON.stringify({ name: body.name, description: body.description, day_of_week: body.day_of_week || null }),
-      })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
-      const created = await res.json()
-      showToast({ type: 'success', message: 'Route created.' })
-      setShowCreate(false)
-      refetch()
-      // Open the detail panel for the new route so the user can drop stops
-      setDetailRoute({ id: created.id, name: created.name })
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-  }
+    const res = await apiFetch('/api/routes/', {
+      method: 'POST',
+      body: JSON.stringify({ name: body.name, description: body.description, day_of_week: body.day_of_week || null }),
+    })
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
+    const created = await res.json()
+    showToast({ type: 'success', message: 'Route created.' })
+    setShowCreate(false)
+    refetch()
+    setDetailRoute({ id: created.id, name: created.name })
+  }, {})
 
   const handleDelete = async () => {
     try {
@@ -104,7 +101,6 @@ export default function Routes() {
   }
 
   const handleStopsChange = (newStops) => {
-    // Re-normalise `order` after add/remove
     const renumbered = newStops
       .sort((a, b) => a.order - b.order)
       .map((s, i) => ({ ...s, order: i + 1 }))
@@ -115,11 +111,8 @@ export default function Routes() {
     if (!detailRoute) return
     setSavingStops(true)
     try {
-      // Build payload: only existing stops (with real ids); skip `_new` flags
       const payload = {
         stops: stops.map((s) => ({
-          // If a stop is _new, omit id so backend creates a new one
-          // Actually the existing assign_stops always rebuilds, so use it:
           stop_order: s.order,
           latitude: String(s.lat),
           longitude: String(s.lng),
@@ -196,10 +189,10 @@ export default function Routes() {
       </header>
 
       <div className="mb-4">
-        <form onSubmit={(e) => { e.preventDefault(); setSearch(new FormData(e.target).get('search') || ''); setPage(1) }} className="flex gap-2">
+        <form action={searchAction} className="flex gap-2">
           <label htmlFor="routes-search" className="sr-only">Search routes</label>
           <input id="routes-search" name="search" defaultValue={search} placeholder="Search routes..." className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64" />
-          <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</button>
+          <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</SubmitButton>
         </form>
       </div>
 
@@ -217,7 +210,6 @@ export default function Routes() {
         </>
       )}
 
-      {/* Detail / map editor */}
       <SlideOutPanel open={!!detailRoute} onClose={() => { setDetailRoute(null); setStops([]) }} title={`Route · ${detailRoute?.name || ''}`} width="max-w-3xl">
         {detailRoute && (
           <div className="space-y-4">
@@ -306,7 +298,7 @@ export default function Routes() {
       </SlideOutPanel>
 
       <SlideOutPanel open={showCreate} onClose={() => setShowCreate(false)} title="New Route" width="max-w-md">
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form action={createAction} className="space-y-4">
           <div>
             <label htmlFor="create-name" className="block text-label-md text-on-surface-variant mb-1">Name *</label>
             <input id="create-name" name="name" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
@@ -322,7 +314,7 @@ export default function Routes() {
               {DAYS.filter(Boolean).map((d) => <option key={d} value={d.toUpperCase()}>{d}</option>)}
             </select>
           </div>
-          <button type="submit" className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Create Route</button>
+          <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">Create Route</SubmitButton>
         </form>
       </SlideOutPanel>
 

@@ -1,45 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
-import CooperativeForm, { defaultCoopForm } from '../components/CooperativeForm'
+import { useFormAction, formDataToObject } from '../../shared/hooks/useFormAction'
+import CooperativeForm from '../components/CooperativeForm'
 
 export default function SetupCooperative() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const { data: coop, loading: coopLoading } = useApi('/api/cooperatives/me/')
-  const [form, setForm] = useState({ ...defaultCoopForm })
-  const [saving, setSaving] = useState(false)
+
+  const [, coopAction] = useFormAction(async (_prev, formData) => {
+    const body = {
+      ...formDataToObject(formData),
+      levy_percentage: parseFloat(formData.get('levy_percentage')),
+      monthly_fee: parseFloat(formData.get('monthly_fee')),
+    }
+    const res = await apiFetch('/api/cooperatives/', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || Object.values(err).flat().join(', ') || 'Failed to create cooperative')
+    }
+    showToast({ type: 'success', message: 'Cooperative created successfully!' })
+    navigate('/manager/dashboard', { replace: true })
+  }, {})
 
   useEffect(() => {
     if (!coopLoading && coop) {
       navigate('/manager/dashboard', { replace: true })
     }
   }, [coop, coopLoading, navigate])
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      const body = {
-        ...form,
-        levy_percentage: parseFloat(form.levy_percentage),
-        monthly_fee: parseFloat(form.monthly_fee),
-      }
-      const res = await apiFetch('/api/cooperatives/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.detail || Object.values(err).flat().join(', ') || 'Failed to create cooperative')
-      }
-      showToast({ type: 'success', message: 'Cooperative created successfully!' })
-      navigate('/manager/dashboard', { replace: true })
-    } catch (err) {
-      showToast({ type: 'error', message: err.message })
-    } finally {
-      setSaving(false)
-    }
-  }
 
   if (coopLoading) {
     return (
@@ -66,10 +57,7 @@ export default function SetupCooperative() {
           </p>
         </div>
         <CooperativeForm
-          form={form}
-          onChange={setForm}
-          onSubmit={handleSubmit}
-          loading={saving}
+          formAction={coopAction}
           submitLabel="Create Cooperative"
         />
       </div>

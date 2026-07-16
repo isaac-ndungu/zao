@@ -8,13 +8,12 @@ import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function ManagerUsers() {
   const { showToast } = useToast()
   const [tab, setTab] = useState('all')
   const [showCreate, setShowCreate] = useState(false)
-  const [createForm, setCreateForm] = useState({ email: '', phone_number: '', first_name: '', last_name: '', role: 'grader' })
-  const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(null)
   const [usersData, setUsersData] = useState(null)
   const [usersLoading, setUsersLoading] = useState(false)
@@ -46,25 +45,17 @@ export default function ManagerUsers() {
   const staffUsers = allUsers.filter(u => u.role === 'grader' || u.role === 'accountant' || u.role === 'auditor')
   const filteredUsers = tab === 'all' ? staffUsers : staffUsers.filter(u => u.role === tab)
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      const res = await apiFetch('/api/users/', { method: 'POST', body: JSON.stringify(createForm) })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(Object.values(err).flat().join(', ') || err.detail || 'Failed to create user')
-      }
-      showToast({ type: 'success', message: `${createForm.first_name} ${createForm.last_name} added as ${createForm.role}. An email with login credentials has been sent.` })
-      setShowCreate(false)
-      setCreateForm({ email: '', phone_number: '', first_name: '', last_name: '', role: 'grader' })
-      fetchUsers()
-    } catch (err) {
-      showToast({ type: 'error', message: err.message })
-    } finally {
-      setSaving(false)
+  const [, createAction] = useFormAction(async (_prev, formData) => {
+    const body = formDataToObject(formData)
+    const res = await apiFetch('/api/users/', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(Object.values(err).flat().join(', ') || err.detail || 'Failed to create user')
     }
-  }
+    showToast({ type: 'success', message: `${body.first_name} ${body.last_name} added as ${body.role}. An email with login credentials has been sent.` })
+    setShowCreate(false)
+    fetchUsers()
+  }, {})
 
   const handleToggleActive = async (user) => {
     try {
@@ -160,33 +151,33 @@ export default function ManagerUsers() {
       )}
 
       <SlideOutPanel open={showCreate} onClose={() => setShowCreate(false)} title="Add Staff Member" width="max-w-md">
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form action={createAction} className="space-y-4">
           <div>
             <label htmlFor="create-first_name" className="block text-label-md text-on-surface-variant mb-1">First Name *</label>
-            <input id="create-first_name" required value={createForm.first_name} onChange={(e) => setCreateForm(p => ({ ...p, first_name: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-first_name" name="first_name" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label htmlFor="create-last_name" className="block text-label-md text-on-surface-variant mb-1">Last Name *</label>
-            <input id="create-last_name" required value={createForm.last_name} onChange={(e) => setCreateForm(p => ({ ...p, last_name: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-last_name" name="last_name" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label htmlFor="create-email" className="block text-label-md text-on-surface-variant mb-1">Email *</label>
-            <input id="create-email" required type="email" value={createForm.email} onChange={(e) => setCreateForm(p => ({ ...p, email: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-email" name="email" required type="email" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label htmlFor="create-phone_number" className="block text-label-md text-on-surface-variant mb-1">Phone *</label>
-            <input id="create-phone_number" required value={createForm.phone_number} onChange={(e) => setCreateForm(p => ({ ...p, phone_number: e.target.value }))} placeholder="0712345678" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+            <input id="create-phone_number" name="phone_number" required placeholder="0712345678" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
           </div>
           <div>
             <label htmlFor="create-role" className="block text-label-md text-on-surface-variant mb-1">Role *</label>
-            <select id="create-role" required value={createForm.role} onChange={(e) => setCreateForm(p => ({ ...p, role: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+            <select id="create-role" name="role" required defaultValue="grader" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
               {roleOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <p className="text-xs text-on-surface-variant">An email with login credentials will be sent to the staff member.</p>
-          <button type="submit" disabled={saving} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">
-            {saving ? 'Adding...' : 'Add Staff Member'}
-          </button>
+          <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">
+            Add Staff Member
+          </SubmitButton>
         </form>
       </SlideOutPanel>
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../../admin/api/client'
 import SearchOverlay from './SearchOverlay'
 import { getResourceLinks } from '../config/searchLinks'
+import { useFormAction } from '../hooks/useFormAction'
 
 const DEBOUNCE_MS = 300
 
@@ -13,6 +14,7 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
   const [showOverlay, setShowOverlay] = useState(false)
   const navigate = useNavigate()
   const timerRef = useRef(null)
+  const formRef = useRef(null)
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
@@ -46,13 +48,14 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
     }, DEBOUNCE_MS)
   }, [query])
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (query.trim().length >= 2) {
+  const [, searchAction] = useFormAction(async (prev, formData) => {
+    const q = formData.get('q')?.trim()
+    if (q && q.length >= 2) {
       setShowOverlay(false)
-      navigate(`/${role}/search?q=${encodeURIComponent(query.trim())}`)
+      navigate(`/${role}/search?q=${encodeURIComponent(q)}`)
     }
-  }
+    return { success: true }
+  }, {})
 
   const resourceLinks = getResourceLinks(role)
 
@@ -75,13 +78,15 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
 
   return (
     <form
-      onSubmit={handleSubmit}
+      ref={formRef}
+      action={searchAction}
       className="relative hidden sm:block sm:w-60 lg:w-72 flex-shrink-0"
     >
       <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" aria-hidden="true">
         search
       </span>
       <input
+        name="q"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => { if (results.length > 0 && query.length >= 2) setShowOverlay(true) }}

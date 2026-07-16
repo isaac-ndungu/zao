@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
@@ -7,6 +7,7 @@ import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
 
@@ -53,14 +54,13 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
     finally { setActionLoading(null) }
   }
 
-  const handleAddGuarantor = async (e) => {
-    e.preventDefault()
-    if (!selectedGuarantor) return
-    setActionLoading('guarantor')
+  const handleAddGuarantor = async (prev, formData) => {
+    const guarantorId = formData.get('guarantor_id')
+    if (!guarantorId) return
     try {
       const res = await apiFetch(`/api/loans/${loan.id}/add_guarantor/`, {
         method: 'POST',
-        body: JSON.stringify({ guarantor_id: selectedGuarantor.id }),
+        body: JSON.stringify({ guarantor_id: Number(guarantorId) }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to add guarantor') }
       showToast({ type: 'success', message: 'Guarantor added.' })
@@ -70,8 +70,9 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
       setGuarantorResults([])
       onAction()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setActionLoading(null) }
   }
+
+  const { formAction: addGuarantorAction, isPending: guarantorPending } = useFormAction(handleAddGuarantor, {})
 
   const canDisburse = loan.status === 'APPROVED' && (loan.guarantors?.length || 0) >= 1
 
@@ -127,7 +128,8 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
       </div>
 
       {addingGuarantor && (
-        <form onSubmit={handleAddGuarantor} className="bg-surface-container rounded-xl p-4 space-y-3" ref={guarantorRef}>
+        <form action={addGuarantorAction} className="bg-surface-container rounded-xl p-4 space-y-3" ref={guarantorRef}>
+          <input type="hidden" name="guarantor_id" value={selectedGuarantor?.id || ''} />
           <div>
             <label htmlFor="guarantor-search" className="block text-label-md text-on-surface-variant mb-1">Search for Guarantor</label>
             <div
@@ -179,11 +181,11 @@ function LoanDetailPanel({ loan, onClose, onAction }) {
           <div className="flex gap-2">
             <button
               type="submit"
-              disabled={!selectedGuarantor || actionLoading === 'guarantor'}
+              disabled={!selectedGuarantor || guarantorPending}
               className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50"
-              aria-label={actionLoading === 'guarantor' ? 'Adding guarantor...' : 'Add selected guarantor to this loan'}
+              aria-label={guarantorPending ? 'Adding guarantor...' : 'Add selected guarantor to this loan'}
             >
-              {actionLoading === 'guarantor' ? 'Adding...' : 'Add'}
+              {guarantorPending ? 'Adding...' : 'Add'}
             </button>
             <button
               type="button"
@@ -242,8 +244,6 @@ export default function AccountantLoans() {
   const [pageSize, setPageSize] = useState(20)
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ farmer: '', amount_principal: '', interest_rate: '10', number_of_installments: '1', notes: '' })
-  const [saving, setSaving] = useState(false)
 
   const queryParams = new URLSearchParams({ page, page_size: pageSize })
   if (search) queryParams.set('search', search)
@@ -257,27 +257,25 @@ export default function AccountantLoans() {
 
   const selectedLoan = selectedId ? loans.find((l) => String(l.id) === selectedId) || data?.results?.find((l) => String(l.id) === selectedId) : null
 
-  const handleSearch = useCallback((e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const q = fd.get('search')
+  const handleSearchAction = async (prev, formData) => {
+    const q = formData.get('search')
     setSearchParams(q ? { search: q } : {})
     setPage(1)
-  }, [setSearchParams])
+  }
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+  const handleCreateLoan = async (prev, formData) => {
+    const data = formDataToObject(formData)
     try {
-      const res = await apiFetch('/api/loans/', { method: 'POST', body: JSON.stringify(formData) })
+      const res = await apiFetch('/api/loans/', { method: 'POST', body: JSON.stringify(data) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create loan') }
       showToast({ type: 'success', message: 'Loan created.' })
       setShowForm(false)
-      setFormData({ farmer: '', amount_principal: '', interest_rate: '10', number_of_installments: '1', notes: '' })
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSaving(false) }
   }
+
+  const { formAction: searchAction } = useFormAction(handleSearchAction, {})
+  const { formAction: createLoanAction } = useFormAction(handleCreateLoan, {})
 
   const statuses = ['', 'PENDING', 'APPROVED', 'DISBURSED', 'COMPLETED', 'DEFAULTED', 'WRITTEN_OFF']
 
@@ -310,7 +308,7 @@ export default function AccountantLoans() {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+            <form action={searchAction} className="flex-1 flex gap-2">
               <label htmlFor="loan-search" className="sr-only">Search loans by farmer name</label>
               <input
                 id="loan-search"
@@ -319,7 +317,7 @@ export default function AccountantLoans() {
                 placeholder="Search farmers..."
                 className="flex-1 px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
               />
-              <button type="submit" className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold" aria-label="Submit search">Search</button>
+              <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Search</SubmitButton>
             </form>
             <label htmlFor="loan-status-filter" className="sr-only">Filter loans by status</label>
             <select
@@ -365,13 +363,12 @@ export default function AccountantLoans() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 id="create-loan-title" className="font-headline-sm text-headline-sm mb-4">Create Loan</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form action={createLoanAction} className="space-y-4">
               <div>
                 <label htmlFor="loan-farmer" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
                 <select
                   id="loan-farmer"
-                  value={formData.farmer}
-                  onChange={(e) => setFormData(p => ({ ...p, farmer: e.target.value }))}
+                  name="farmer"
                   required
                   className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
                 >
@@ -383,9 +380,8 @@ export default function AccountantLoans() {
                 <label htmlFor="loan-amount" className="block text-label-md text-on-surface-variant mb-1">Amount Principal (KES)</label>
                 <input
                   id="loan-amount"
+                  name="amount_principal"
                   type="number" min="1"
-                  value={formData.amount_principal}
-                  onChange={(e) => setFormData(p => ({ ...p, amount_principal: e.target.value }))}
                   required
                   className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
                 />
@@ -394,9 +390,9 @@ export default function AccountantLoans() {
                 <label htmlFor="loan-interest" className="block text-label-md text-on-surface-variant mb-1">Interest Rate (%)</label>
                 <input
                   id="loan-interest"
+                  name="interest_rate"
                   type="number" step="0.1" min="0"
-                  value={formData.interest_rate}
-                  onChange={(e) => setFormData(p => ({ ...p, interest_rate: e.target.value }))}
+                  defaultValue="10"
                   required
                   className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
                 />
@@ -405,9 +401,9 @@ export default function AccountantLoans() {
                 <label htmlFor="loan-installments" className="block text-label-md text-on-surface-variant mb-1">Number of Installments</label>
                 <input
                   id="loan-installments"
+                  name="number_of_installments"
                   type="number" min="1"
-                  value={formData.number_of_installments}
-                  onChange={(e) => setFormData(p => ({ ...p, number_of_installments: e.target.value }))}
+                  defaultValue="1"
                   required
                   className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
                 />
@@ -416,21 +412,15 @@ export default function AccountantLoans() {
                 <label htmlFor="loan-notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label>
                 <textarea
                   id="loan-notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+                  name="notes"
                   rows={3}
                   className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
                 />
               </div>
               <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50"
-                  aria-label={saving ? 'Creating loan...' : 'Create this loan'}
-                >
-                  {saving ? '...' : 'Create'}
-                </button>
+                <SubmitButton
+                  className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold"
+                >Create</SubmitButton>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}

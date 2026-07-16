@@ -7,6 +7,7 @@ import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const gradeOptions = ['A', 'B', 'C', 'PREMIUM', 'STANDARD']
 
@@ -16,44 +17,32 @@ export default function GradePrices() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
-  const [formLoading, setFormLoading] = useState(false)
   const { data, loading, error, refetch } = useApi(`/api/grade-prices/?page=${page}&page_size=20&ordering=-effective_from`)
-  const [form, setForm] = useState({ grade_letter: '', price_per_unit: '', effective_from: '' })
 
   const prices = data?.results || []
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ grade_letter: '', price_per_unit: '', effective_from: '' })
     setShowForm(true)
   }
 
   const openEdit = (price) => {
     setEditing(price)
-    setForm({
-      grade_letter: price.grade_letter,
-      price_per_unit: price.price_per_unit,
-      effective_from: price.effective_from,
-    })
     setShowForm(true)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setFormLoading(true)
-    try {
-      const body = { ...form }
-      const url = editing ? `/api/grade-prices/${editing.id}/` : '/api/grade-prices/'
-      const method = editing ? 'PATCH' : 'POST'
-      const res = await apiFetch(url, { method, body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ')) }
-      showToast({ type: 'success', message: editing ? 'Price updated.' : 'Price created.' })
-      setShowForm(false)
-      setEditing(null)
-      refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setFormLoading(false) }
-  }
+  const [, priceAction] = useFormAction(async (prev, formData) => {
+    const body = formDataToObject(formData)
+    const url = editing ? `/api/grade-prices/${editing.id}/` : '/api/grade-prices/'
+    const method = editing ? 'PATCH' : 'POST'
+    const res = await apiFetch(url, { method, body: JSON.stringify(body) })
+    if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ')) }
+    showToast({ type: 'success', message: editing ? 'Price updated.' : 'Price created.' })
+    setShowForm(false)
+    setEditing(null)
+    refetch()
+    return { success: true }
+  }, {})
 
   const handleDelete = async () => {
     try {
@@ -103,22 +92,21 @@ export default function GradePrices() {
 
       {showForm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!formLoading) { setShowForm(false); setEditing(null) } }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setShowForm(false); setEditing(null) }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="grade-price-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="grade-price-title" className="font-headline-sm text-headline-sm text-on-surface">{editing ? 'Edit Price' : 'New Price'}</h3>
-              <button onClick={() => { setShowForm(false); setEditing(null) }} aria-label="Close" className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading}>
+              <button onClick={() => { setShowForm(false); setEditing(null) }} aria-label="Close" className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant">
                 <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form action={priceAction} className="space-y-4">
               <div>
                 <label className="block text-label-md font-bold text-on-surface mb-1.5">Grade Letter *</label>
                 <select
-                  value={form.grade_letter}
-                  onChange={(e) => setForm(f => ({ ...f, grade_letter: e.target.value }))}
+                  name="grade_letter"
+                  defaultValue={editing?.grade_letter || ''}
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                  disabled={formLoading}
                   required
                 >
                   <option value="">Select grade</option>
@@ -128,21 +116,19 @@ export default function GradePrices() {
               <div>
                 <label className="block text-label-md font-bold text-on-surface mb-1.5">Price per Unit (KES) *</label>
                 <input
+                  name="price_per_unit"
                   type="number" step="0.01" min="0" required
-                  value={form.price_per_unit}
-                  onChange={(e) => setForm(f => ({ ...f, price_per_unit: e.target.value }))}
+                  defaultValue={editing?.price_per_unit || ''}
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                  disabled={formLoading}
                 />
               </div>
               <div>
                 <label className="block text-label-md font-bold text-on-surface mb-1.5">Effective From *</label>
                 <input
+                  name="effective_from"
                   type="date" required
-                  value={form.effective_from}
-                  onChange={(e) => setForm(f => ({ ...f, effective_from: e.target.value }))}
+                  defaultValue={editing?.effective_from || ''}
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                  disabled={formLoading}
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">
@@ -150,18 +136,12 @@ export default function GradePrices() {
                   type="button"
                   onClick={() => { setShowForm(false); setEditing(null) }}
                   className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-higher transition-colors"
-                  disabled={formLoading}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={formLoading}
-                  className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {formLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                  {formLoading ? 'Saving...' : editing ? 'Update Price' : 'Create Price'}
-                </button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors">
+                  {editing ? 'Update Price' : 'Create Price'}
+                </SubmitButton>
               </div>
             </form>
           </div>

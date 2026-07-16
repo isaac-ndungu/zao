@@ -1,39 +1,32 @@
 import { useAuth } from '../../shared/hooks/useAuth'
 import { apiFetch } from '../../admin/api/client'
-import { useState } from 'react'
 import { useToast } from '../../admin/contexts/ToastContext'
 import PasswordInput from '../../shared/components/PasswordInput'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function AuditorSettings() {
   const { user } = useAuth()
   const { showToast } = useToast()
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [saving, setSaving] = useState(false)
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault()
-    if (newPassword !== confirmPassword) {
+  const handleChangePassword = async (prev, formData) => {
+    const data = formDataToObject(formData)
+    if (data.new_password !== data.confirm_password) {
       showToast({ type: 'error', message: 'Passwords do not match.' })
       return
     }
-    setSaving(true)
     try {
       const res = await apiFetch('/api/auth/change-password/', {
         method: 'POST',
-        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+        body: JSON.stringify({ current_password: data.current_password, new_password: data.new_password }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || Object.values(err).flat().join(', ')) }
       showToast({ type: 'success', message: 'Password changed successfully.' })
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
     } catch (err) {
       showToast({ type: 'error', message: err.message })
     }
-    finally { setSaving(false) }
   }
+
+  const { formAction: passwordAction } = useFormAction(handleChangePassword, {})
 
   return (
     <div>
@@ -67,33 +60,28 @@ export default function AuditorSettings() {
 
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
           <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Change Password</h3>
-          <form onSubmit={handleChangePassword} className="space-y-4">
+          <form action={passwordAction} className="space-y-4">
             <PasswordInput
               id="id-current-password"
               label="Current Password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              name="current_password"
               required
             />
             <PasswordInput
               id="id-new-password"
               label="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              name="new_password"
               required
               minLength={8}
             />
             <PasswordInput
               id="id-confirm-password"
               label="Confirm New Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              name="confirm_password"
               required
               minLength={8}
             />
-            <button type="submit" disabled={saving} className="px-6 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors">
-              {saving ? 'Saving...' : 'Change Password'}
-            </button>
+            <SubmitButton className="px-6 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">Change Password</SubmitButton>
           </form>
         </div>
       </div>

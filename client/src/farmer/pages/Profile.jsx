@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast'
 import { CardSkeleton } from '../components/LoadingSkeleton'
 import ConfirmModal from '../components/ConfirmModal'
 import PickupLocationEditor from '../../shared/components/PickupLocationEditor'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 import { t } from '../i18n'
 
 export default function FarmerProfile() {
@@ -17,33 +18,26 @@ export default function FarmerProfile() {
   const { data: profile, loading, error, refetch } = useFarmerApi('/api/farmers/me/')
 
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({})
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
-  const [saving, setSaving] = useState(false)
+
+  const [, saveAction] = useFormAction(async (prev, formData) => {
+    const res = await apiFetch('/api/farmers/me/', {
+      method: 'PATCH',
+      body: JSON.stringify(formDataToObject(formData)),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(Object.values(err).flat().join(', ') || t('updateFailed'))
+    }
+    showToast({ type: 'success', message: t('profileUpdated') })
+    setEditing(false)
+    refetch()
+    return { success: true }
+  }, {})
 
   const startEdit = () => {
-    setForm({
-      phone_number: profile?.phone_number || '',
-      email: profile?.email || '',
-      village: profile?.village || '',
-      ward: profile?.ward || '',
-      sub_county: profile?.sub_county || '',
-    })
     setEditing(true)
-  }
-
-  const handleSave = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    try {
-      const res = await apiFetch('/api/farmers/me/', { method: 'PATCH', body: JSON.stringify(form) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || t('updateFailed')) }
-      showToast({ type: 'success', message: t('profileUpdated') })
-      setEditing(false)
-      refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSaving(false) }
   }
 
   const handleLogout = async () => {
@@ -98,16 +92,16 @@ export default function FarmerProfile() {
         </div>
       ) : (
         <div className="bg-surface-container rounded-xl border border-outline-variant p-4">
-          <form onSubmit={handleSave} className="space-y-4">
-            <div><label htmlFor="phone_number" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('phoneNumber')}</label><input id="phone_number" value={form.phone_number} onChange={(e) => setForm(p => ({ ...p, phone_number: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label htmlFor="email" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('email')}</label><input id="email" value={form.email} onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))} type="email" className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label htmlFor="village" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('village')}</label><input id="village" value={form.village} onChange={(e) => setForm(p => ({ ...p, village: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label htmlFor="ward" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('ward')}</label><input id="ward" value={form.ward} onChange={(e) => setForm(p => ({ ...p, ward: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
-            <div><label htmlFor="sub_county" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('subCounty')}</label><input id="sub_county" value={form.sub_county} onChange={(e) => setForm(p => ({ ...p, sub_county: e.target.value }))} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+          <form action={saveAction} className="space-y-4">
+            <div><label htmlFor="phone_number" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('phoneNumber')}</label><input id="phone_number" name="phone_number" defaultValue={profile?.phone_number || ''} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="email" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('email')}</label><input id="email" name="email" type="email" defaultValue={profile?.email || ''} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="village" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('village')}</label><input id="village" name="village" defaultValue={profile?.village || ''} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="ward" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('ward')}</label><input id="ward" name="ward" defaultValue={profile?.ward || ''} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
+            <div><label htmlFor="sub_county" className="block text-xs font-semibold text-on-surface-variant mb-1.5">{t('subCounty')}</label><input id="sub_county" name="sub_county" defaultValue={profile?.sub_county || ''} className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px]" /></div>
             <div className="flex gap-3">
-              <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed flex-1">
-                {saving ? <span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('save')}
-              </button>
+              <SubmitButton className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 flex-1">
+                {t('save')}
+              </SubmitButton>
               <button type="button" onClick={() => setEditing(false)} className="bg-transparent border border-outline-variant px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:bg-gray-50 flex-1">
                 {t('cancel')}
               </button>

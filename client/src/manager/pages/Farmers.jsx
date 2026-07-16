@@ -11,6 +11,7 @@ import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
 import PickupLocationEditor from '../../shared/components/PickupLocationEditor'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function Farmers() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,17 +28,6 @@ export default function Farmers() {
   const [showImport, setShowImport] = useState(false)
   const [importPreview, setImportPreview] = useState(null)
   const [importFile, setImportFile] = useState(null)
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    phone_number: '',
-    id_number: '',
-    county: '',
-    email: '',
-    sub_county: '',
-    ward: '',
-    village: '',
-  })
   const { showToast } = useToast()
 
   const sortParam = sortOrder === 'desc' ? `-${sortField}` : sortField
@@ -60,17 +50,12 @@ export default function Farmers() {
     }
   }, [selectedId, items])
 
-  const handleSearch = useCallback(
-    (e) => {
-      e.preventDefault()
-      const fd = new FormData(e.target)
-      const q = fd.get('search') || ''
-      setSearch(q)
-      setPage(1)
-      setSearchParams(q ? { search: q } : {})
-    },
-    [setSearchParams]
-  )
+  const [, searchAction] = useFormAction(async (_prev, formData) => {
+    const q = formData.get('search') || ''
+    setSearch(q)
+    setPage(1)
+    setSearchParams(q ? { search: q } : {})
+  }, {})
 
   const handleSort = useCallback(
     (key) => {
@@ -83,52 +68,32 @@ export default function Farmers() {
     [sortField]
   )
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const body = Object.fromEntries(fd.entries())
-    try {
-      const res = await apiFetch('/api/farmers/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to create')
-      }
-      showToast({ type: 'success', message: 'Farmer created.' })
-      setShowCreate(false)
-      setFormData({
-        first_name: '',
-        last_name: '',
-        phone_number: '',
-        id_number: '',
-        county: '',
-        payment_method: 'MPESA',
-      })
-      refetch()
-    } catch (err) {
-      showToast({ type: 'error', message: err.message })
+  const [, createAction] = useFormAction(async (_prev, formData) => {
+    const body = formDataToObject(formData)
+    const res = await apiFetch('/api/farmers/', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.detail || 'Failed to create')
     }
-  }
+    showToast({ type: 'success', message: 'Farmer created.' })
+    setShowCreate(false)
+    refetch()
+  }, {})
 
-  const handleEdit = async (e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const body = Object.fromEntries(fd.entries())
-    try {
-      const res = await apiFetch(`/api/farmers/${showEdit.id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || 'Failed to update')
-      }
-      showToast({ type: 'success', message: 'Farmer updated.' })
-      setShowEdit(null)
-      refetch()
-    } catch (err) {
-      showToast({ type: 'error', message: err.message })
+  const [, editAction] = useFormAction(async (_prev, formData) => {
+    const body = formDataToObject(formData)
+    const res = await apiFetch(`/api/farmers/${showEdit.id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.detail || 'Failed to update')
     }
-  }
+    showToast({ type: 'success', message: 'Farmer updated.' })
+    setShowEdit(null)
+    refetch()
+  }, {})
 
   const handleDelete = async () => {
     try {
@@ -247,7 +212,7 @@ export default function Farmers() {
   ]
 
   const createForm = (
-    <form onSubmit={handleCreate} className="space-y-4">
+    <form action={createAction} className="space-y-4">
       {[
         { name: 'first_name', label: 'First Name', required: true },
         { name: 'last_name', label: 'Last Name', required: true },
@@ -271,12 +236,9 @@ export default function Farmers() {
           />
         </div>
       ))}
-      <button
-        type="submit"
-        className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold"
-      >
+      <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">
         Create Farmer
-      </button>
+      </SubmitButton>
     </form>
   )
 
@@ -294,7 +256,7 @@ export default function Farmers() {
   ]
 
   const editForm = showEdit && (
-    <form onSubmit={handleEdit} className="space-y-4">
+    <form action={editAction} className="space-y-4">
       {editFields.map(({ name, label, type }) => (
         <div key={name}>
           <label htmlFor={`edit-${name}`} className="block text-label-md text-on-surface-variant mb-1 capitalize">
@@ -309,12 +271,9 @@ export default function Farmers() {
           />
         </div>
       ))}
-      <button
-        type="submit"
-        className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold"
-      >
+      <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">
         Update Farmer
-      </button>
+      </SubmitButton>
     </form>
   )
 
@@ -361,7 +320,7 @@ export default function Farmers() {
       </header>
 
       <div className="mb-4">
-        <form onSubmit={handleSearch} className="flex gap-2">
+        <form action={searchAction} className="flex gap-2">
           <label htmlFor="farmer-search" className="sr-only">Search farmers</label>
           <input
             id="farmer-search"
@@ -370,12 +329,9 @@ export default function Farmers() {
             placeholder="Search farmers..."
             className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container w-64"
           />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold"
-          >
+          <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">
             Search
-          </button>
+          </SubmitButton>
         </form>
       </div>
 

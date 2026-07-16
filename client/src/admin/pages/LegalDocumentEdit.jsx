@@ -6,38 +6,23 @@ import { useToast } from '../contexts/ToastContext'
 import { emitLegalInvalidate } from '../../shared/utils/legalEvents'
 import ErrorState from '../../shared/components/ErrorState'
 import ConfirmModal from '../components/common/ConfirmModal'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function LegalDocumentEdit() {
   const navigate = useNavigate()
-  const { id } = useParams() // 'new' or a UUID
+  const { id } = useParams()
   const isNew = !id || id === 'new'
   const { showToast } = useToast()
 
   const { data: existing, loading } = useApi(isNew ? null : `/api/admin/legal/documents/${id}/`)
-  const [title, setTitle] = useState('')
-  const [slug, setSlug] = useState('')
-  const [content, setContent] = useState('')
-  const [requiresAcceptance, setRequiresAcceptance] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [showPublishConfirm, setShowPublishConfirm] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (!isNew && existing) {
-      setTitle(existing.title || '')
-      setSlug(existing.slug || '')
-      setContent(existing.content || '')
-      setRequiresAcceptance(!!existing.requires_acceptance)
-    }
-  }, [isNew, existing])
-
-  const handleSave = async (e) => {
-    e?.preventDefault?.()
-    setError('')
-    setSaving(true)
+  const { formAction: saveAction } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    const body = { title: data.title, slug: data.slug, content: data.content, requires_acceptance: formData.has('requires_acceptance') }
     try {
-      const body = { title, slug, content, requires_acceptance: requiresAcceptance }
       const res = isNew
         ? await apiFetch('/api/admin/legal/documents/', { method: 'POST', body: JSON.stringify(body) })
         : await apiFetch(`/api/admin/legal/documents/${id}/`, { method: 'PATCH', body: JSON.stringify(body) })
@@ -50,10 +35,9 @@ export default function LegalDocumentEdit() {
       navigate('/admin/legal')
     } catch (err) {
       setError(err.message)
-    } finally {
-      setSaving(false)
     }
-  }
+    return {}
+  }, {})
 
   const openPublishConfirm = () => {
     if (isNew) {
@@ -101,13 +85,13 @@ export default function LegalDocumentEdit() {
         )}
       </header>
 
-      <form onSubmit={handleSave} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-5">
+      <form action={saveAction} className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 space-y-5">
         <div>
           <label htmlFor="legal-title" className="block text-label-md text-on-surface-variant mb-1">Title</label>
           <input
             id="legal-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            name="title"
+            defaultValue={existing?.title || ''}
             required
             className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
           />
@@ -116,8 +100,8 @@ export default function LegalDocumentEdit() {
           <label htmlFor="legal-slug" className="block text-label-md text-on-surface-variant mb-1">Slug</label>
           <input
             id="legal-slug"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            name="slug"
+            defaultValue={existing?.slug || ''}
             required
             placeholder="e.g. privacy-policy, terms-of-service"
             className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
@@ -127,8 +111,8 @@ export default function LegalDocumentEdit() {
           <label htmlFor="legal-content" className="block text-label-md text-on-surface-variant mb-1">Content (Markdown)</label>
           <textarea
             id="legal-content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            name="content"
+            defaultValue={existing?.content || ''}
             required
             rows={16}
             className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container font-mono text-body-sm"
@@ -138,8 +122,8 @@ export default function LegalDocumentEdit() {
           <input
             id="req-acc"
             type="checkbox"
-            checked={requiresAcceptance}
-            onChange={(e) => setRequiresAcceptance(e.target.checked)}
+            name="requires_acceptance"
+            defaultChecked={existing?.requires_acceptance ?? true}
             className="w-4 h-4 accent-primary"
           />
           <label htmlFor="req-acc" className="text-body-md text-on-surface">Requires user acceptance (gates the app until accepted)</label>
@@ -150,13 +134,9 @@ export default function LegalDocumentEdit() {
         )}
 
         <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : (isNew ? 'Create draft' : 'Save changes')}
-          </button>
+          <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors">
+            {isNew ? 'Create draft' : 'Save changes'}
+          </SubmitButton>
           {!isNew && (
             <button
               type="button"

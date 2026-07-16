@@ -11,6 +11,7 @@ import SlideOutPanel from '../components/common/SlideOutPanel'
 import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
 import { useLocation, useSearchParams } from 'react-router-dom'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const statusOptions = [
   { value: 'PENDING', label: 'Pending' },
@@ -80,15 +81,13 @@ export default function ProduceReceipts() {
   const [statusDelivery, setStatusDelivery] = useState(null)
   const [statusTarget, setStatusTarget] = useState('')
   const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
-  const [createForm, setCreateForm] = useState({ farmer: '', product_type: 'MILK', quantity_kg: '', volume_litres: '', shift: 'AM', date_delivered: '' })
-  const [formLoading, setFormLoading] = useState(false)
   const [gradeDelivery, setGradeDelivery] = useState(null)
-  const [gradeForm, setGradeForm] = useState({ grade_letter: 'A', price_per_unit: '', rejection_reason: '', override_reason: '' })
-  const [gradeLoading, setGradeLoading] = useState(false)
+  const [gradeMode, setGradeMode] = useState('grade')
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerOptions, setFarmerOptions] = useState([])
   const [farmerSearchOpen, setFarmerSearchOpen] = useState(false)
   const [selectedFarmerName, setSelectedFarmerName] = useState('')
+  const [selectedFarmerId, setSelectedFarmerId] = useState('')
   const farmerRef = useRef(null)
 
   useEffect(() => {
@@ -146,18 +145,17 @@ export default function ProduceReceipts() {
     setPanelOpen(true)
   }
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setFormLoading(true)
+  const { formAction: createFormAction } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    const body = {
+      farmer: data.farmer,
+      product_type: data.product_type,
+      quantity_kg: data.quantity_kg ? parseFloat(data.quantity_kg) : null,
+      volume_litres: data.volume_litres ? parseFloat(data.volume_litres) : null,
+      shift: data.shift,
+      date_delivered: data.date_delivered || undefined,
+    }
     try {
-      const body = {
-        farmer: createForm.farmer,
-        product_type: createForm.product_type,
-        quantity_kg: createForm.quantity_kg ? parseFloat(createForm.quantity_kg) : null,
-        volume_litres: createForm.volume_litres ? parseFloat(createForm.volume_litres) : null,
-        shift: createForm.shift,
-        date_delivered: createForm.date_delivered || undefined,
-      }
       const res = await apiFetch('/api/admin/deliveries/', {
         method: 'POST',
         body: JSON.stringify(body),
@@ -168,16 +166,15 @@ export default function ProduceReceipts() {
       }
       showToast({ type: 'success', message: 'Delivery created successfully.' })
       setCreateOpen(false)
-      setCreateForm({ farmer: '', product_type: 'MILK', quantity_kg: '', volume_litres: '', shift: 'AM', date_delivered: '' })
       setSelectedFarmerName('')
+      setSelectedFarmerId('')
       setFarmerSearch('')
       refetch()
     } catch (e) {
       showToast({ type: 'error', message: e.message })
-    } finally {
-      setFormLoading(false)
     }
-  }
+    return {}
+  }, {})
 
   const openForceStatus = (delivery) => {
     setStatusDelivery(delivery)
@@ -229,28 +226,23 @@ export default function ProduceReceipts() {
 
   const openAssignGrade = (delivery) => {
     setGradeDelivery(delivery)
-    setGradeForm({
-      grade_letter: delivery.grade || 'A',
-      price_per_unit: '',
-      rejection_reason: '',
-      override_reason: '',
-    })
+    setGradeMode('grade')
   }
 
-  const handleAssignGrade = async (e) => {
-    e.preventDefault()
-    if (!gradeDelivery) return
-    setGradeLoading(true)
+  const { formAction: gradeFormAction } = useFormAction(async (prev, formData) => {
+    if (!gradeDelivery) return {}
+    const data = formDataToObject(formData)
+    const mode = data._grade_mode
+    delete data._grade_mode
+    const body = {}
+    if (mode === 'reject') {
+      body.rejection_reason = data.rejection_reason || ''
+    } else {
+      body.grade_letter = data.grade_letter
+      body.price_per_unit = data.price_per_unit ? parseFloat(data.price_per_unit) : null
+    }
+    if (data.override_reason) body.override_reason = data.override_reason
     try {
-      const body = {}
-      if (gradeForm.rejection_reason) {
-        body.rejection_reason = gradeForm.rejection_reason
-      } else {
-        body.grade_letter = gradeForm.grade_letter
-        body.price_per_unit = gradeForm.price_per_unit ? parseFloat(gradeForm.price_per_unit) : null
-      }
-      if (gradeForm.override_reason) body.override_reason = gradeForm.override_reason
-
       const res = await apiFetch(`/api/admin/deliveries/${gradeDelivery.id}/assign-grade/`, {
         method: 'POST',
         body: JSON.stringify(body),
@@ -264,10 +256,9 @@ export default function ProduceReceipts() {
       refetch()
     } catch (e) {
       showToast({ type: 'error', message: e.message })
-    } finally {
-      setGradeLoading(false)
     }
-  }
+    return {}
+  }, {})
 
   const statusCounts = useMemo(() => {
     if (!data?.results) return { total: 0 }
@@ -359,7 +350,6 @@ export default function ProduceReceipts() {
         <Pagination page={page} pageSize={pageSize} total={data?.count || 0} onPageChange={setPage} onPageSizeChange={setPageSize} />
       </div>
 
-      {/* Force Status Dropdown Modal */}
       {statusDelivery && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
           <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setStatusDelivery(null); setStatusTarget('') }} />
@@ -399,51 +389,50 @@ export default function ProduceReceipts() {
         </div>
       )}
 
-      {/* Assign Grade Modal */}
       {gradeDelivery && (
         <div className="fixed inset-0 z-[65] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!gradeLoading) setGradeDelivery(null) }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => setGradeDelivery(null)} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-md w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="assign-grade-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="assign-grade-title" className="font-headline-sm text-headline-sm text-on-surface">Assign Grade</h3>
-              <button onClick={() => setGradeDelivery(null)} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={gradeLoading} aria-label="Close">
+              <button onClick={() => setGradeDelivery(null)} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" aria-label="Close">
                 <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
             <p className="text-label-md text-on-surface-variant mb-4">
               Delivery: <span className="font-data-mono">{gradeDelivery.batch_id}</span>
             </p>
-            <form onSubmit={handleAssignGrade} className="space-y-4">
+            <form action={gradeFormAction} className="space-y-4">
+              <input type="hidden" name="_grade_mode" value={gradeMode} />
               <div>
                 <div className="flex items-center gap-3 mb-3" role="radiogroup" aria-label="Grade or reject">
                   <button
                     type="button"
-                    onClick={() => setGradeForm(f => ({ ...f, grade_letter: f.grade_letter || 'A', rejection_reason: '' }))}
-                    className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${!gradeForm.rejection_reason ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}
-                    aria-pressed={!gradeForm.rejection_reason}
+                    onClick={() => setGradeMode('grade')}
+                    className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${gradeMode === 'grade' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}
+                    aria-pressed={gradeMode === 'grade'}
                   >
                     Grade
                   </button>
                   <button
                     type="button"
-                    onClick={() => setGradeForm(f => ({ ...f, rejection_reason: ' ', grade_letter: '' }))}
-                    className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${gradeForm.rejection_reason ? 'bg-error text-white' : 'bg-surface-container text-on-surface-variant'}`}
-                    aria-pressed={!!gradeForm.rejection_reason}
+                    onClick={() => setGradeMode('reject')}
+                    className={`px-3 py-1.5 rounded-lg text-label-md font-bold transition-colors ${gradeMode === 'reject' ? 'bg-error text-white' : 'bg-surface-container text-on-surface-variant'}`}
+                    aria-pressed={gradeMode === 'reject'}
                   >
                     Reject
                   </button>
                 </div>
               </div>
-              {!gradeForm.rejection_reason ? (
+              {gradeMode === 'grade' && (
                 <>
                   <div>
                     <label htmlFor="grade-letter" className="block text-label-md font-bold text-on-surface mb-1.5">Grade Letter</label>
                     <select
                       id="grade-letter"
-                      value={gradeForm.grade_letter}
-                      onChange={(e) => setGradeForm(f => ({ ...f, grade_letter: e.target.value }))}
+                      name="grade_letter"
+                      defaultValue={gradeDelivery.grade || 'A'}
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                      disabled={gradeLoading}
                     >
                       {gradeLetterOptions.map(o => (
                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -457,25 +446,22 @@ export default function ProduceReceipts() {
                       type="number"
                       step="0.01"
                       min="0"
-                      value={gradeForm.price_per_unit}
-                      onChange={(e) => setGradeForm(f => ({ ...f, price_per_unit: e.target.value }))}
+                      name="price_per_unit"
                       placeholder="0.00"
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-                      disabled={gradeLoading}
                     />
                   </div>
                 </>
-              ) : (
+              )}
+              {gradeMode === 'reject' && (
                 <div>
                   <label htmlFor="rejection-reason" className="block text-label-md font-bold text-on-surface mb-1.5">Rejection Reason</label>
                   <textarea
                     id="rejection-reason"
-                    value={gradeForm.rejection_reason === ' ' ? '' : gradeForm.rejection_reason}
-                    onChange={(e) => setGradeForm(f => ({ ...f, rejection_reason: e.target.value }))}
+                    name="rejection_reason"
                     placeholder="Reason for rejection..."
                     rows={3}
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant resize-none"
-                    disabled={gradeLoading}
                   />
                 </div>
               )}
@@ -483,12 +469,10 @@ export default function ProduceReceipts() {
                 <label htmlFor="override-reason" className="block text-label-md font-bold text-on-surface mb-1.5">Override Reason</label>
                 <textarea
                   id="override-reason"
-                  value={gradeForm.override_reason}
-                  onChange={(e) => setGradeForm(f => ({ ...f, override_reason: e.target.value }))}
+                  name="override_reason"
                   placeholder="Why is this being overridden?"
                   rows={2}
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant resize-none"
-                  disabled={gradeLoading}
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">
@@ -496,18 +480,12 @@ export default function ProduceReceipts() {
                   type="button"
                   onClick={() => setGradeDelivery(null)}
                   className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-higher transition-colors"
-                  disabled={gradeLoading}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={gradeLoading || (!gradeForm.grade_letter && !gradeForm.rejection_reason.trim())}
-                  className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {gradeLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />}
-                  {gradeLoading ? 'Assigning...' : 'Assign Grade'}
-                </button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors flex items-center gap-2">
+                  Assign Grade
+                </SubmitButton>
               </div>
             </form>
           </div>
@@ -575,18 +553,17 @@ export default function ProduceReceipts() {
         )}
       </SlideOutPanel>
 
-      {/* Create Delivery Modal */}
       {createOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center" role="presentation">
-          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { if (!formLoading) { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') } }} />
+          <div className="fixed inset-0 bg-black/30 cursor-pointer" onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }} />
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-delivery-title">
             <div className="flex items-center justify-between mb-6">
               <h3 id="create-delivery-title" className="font-headline-sm text-headline-sm text-on-surface">New Delivery</h3>
-              <button onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" disabled={formLoading} aria-label="Close">
+              <button onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }} className="p-1 rounded-lg hover:bg-surface-container text-on-surface-variant" aria-label="Close">
                 <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
               </button>
             </div>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form action={createFormAction} className="space-y-4">
               <div ref={farmerRef} className="relative">
                 <label htmlFor="delivery-create-farmer" className="block text-label-md font-bold text-on-surface mb-1.5">Farmer *</label>
                 <div className="relative">
@@ -594,11 +571,10 @@ export default function ProduceReceipts() {
                     id="delivery-create-farmer"
                     type="text"
                     value={selectedFarmerName || farmerSearch}
-                    onChange={(e) => { setFarmerSearch(e.target.value); setSelectedFarmerName(''); setCreateForm(f => ({ ...f, farmer: '' })); setFarmerSearchOpen(true) }}
+                    onChange={(e) => { setFarmerSearch(e.target.value); setSelectedFarmerName(''); setSelectedFarmerId(''); setFarmerSearchOpen(true) }}
                     onFocus={() => { if (farmerSearch.length >= 2) setFarmerSearchOpen(true) }}
                     placeholder="Search farmer by name or phone..."
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 pr-10 text-body-md text-on-surface placeholder:text-on-surface-variant"
-                    disabled={formLoading}
                     autoComplete="off"
                     aria-autocomplete="list"
                     aria-controls="farmer-search-list"
@@ -611,7 +587,7 @@ export default function ProduceReceipts() {
                           type="button"
                           role="option"
                           aria-selected="false"
-                          onClick={() => { setSelectedFarmerName(`${f.first_name} ${f.last_name} (${f.phone_number || f.id.slice(0, 8)})`); setCreateForm(ff => ({ ...ff, farmer: f.id })); setFarmerSearchOpen(false); setFarmerSearch('') }}
+                          onClick={() => { setSelectedFarmerName(`${f.first_name} ${f.last_name} (${f.phone_number || f.id.slice(0, 8)})`); setSelectedFarmerId(f.id); setFarmerSearchOpen(false); setFarmerSearch('') }}
                           className="w-full text-left px-3 py-2 text-body-md text-on-surface hover:bg-surface-container transition-colors"
                         >
                           {f.first_name} {f.last_name}
@@ -627,14 +603,14 @@ export default function ProduceReceipts() {
                   )}
                 </div>
               </div>
+              <input type="hidden" name="farmer" value={selectedFarmerId} />
               <div>
                 <label htmlFor="delivery-create-product" className="block text-label-md font-bold text-on-surface mb-1.5">Product Type *</label>
                 <select
                   id="delivery-create-product"
-                  value={createForm.product_type}
-                  onChange={(e) => setCreateForm(f => ({ ...f, product_type: e.target.value }))}
+                  name="product_type"
+                  defaultValue="MILK"
                   className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                  disabled={formLoading}
                 >
                   {createProductTypeOptions.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -649,11 +625,9 @@ export default function ProduceReceipts() {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={createForm.quantity_kg}
-                    onChange={(e) => setCreateForm(f => ({ ...f, quantity_kg: e.target.value }))}
+                    name="quantity_kg"
                     placeholder="0.00"
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-                    disabled={formLoading}
                   />
                 </div>
                 <div>
@@ -663,11 +637,9 @@ export default function ProduceReceipts() {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={createForm.volume_litres}
-                    onChange={(e) => setCreateForm(f => ({ ...f, volume_litres: e.target.value }))}
+                    name="volume_litres"
                     placeholder="0.00"
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-                    disabled={formLoading}
                   />
                 </div>
               </div>
@@ -676,10 +648,9 @@ export default function ProduceReceipts() {
                   <label htmlFor="delivery-create-shift" className="block text-label-md font-bold text-on-surface mb-1.5">Shift *</label>
                   <select
                     id="delivery-create-shift"
-                    value={createForm.shift}
-                    onChange={(e) => setCreateForm(f => ({ ...f, shift: e.target.value }))}
+                    name="shift"
+                    defaultValue="AM"
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                    disabled={formLoading}
                   >
                     {createShiftOptions.map(o => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -691,10 +662,8 @@ export default function ProduceReceipts() {
                   <input
                     id="delivery-create-date"
                     type="date"
-                    value={createForm.date_delivered}
-                    onChange={(e) => setCreateForm(f => ({ ...f, date_delivered: e.target.value }))}
+                    name="date_delivered"
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface"
-                    disabled={formLoading}
                   />
                 </div>
               </div>
@@ -703,18 +672,12 @@ export default function ProduceReceipts() {
                   type="button"
                   onClick={() => { setCreateOpen(false); setSelectedFarmerName(''); setFarmerSearch('') }}
                   className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-higher transition-colors"
-                  disabled={formLoading}
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={formLoading || !createForm.farmer}
-                  className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {formLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />}
-                  {formLoading ? 'Creating...' : 'Create Delivery'}
-                </button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors flex items-center gap-2">
+                  Create Delivery
+                </SubmitButton>
               </div>
             </form>
           </div>

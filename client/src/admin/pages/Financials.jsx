@@ -14,6 +14,7 @@ import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 import LineChartCard from '../components/charts/LineChartCard'
 import PieChartCard from '../components/charts/PieChartCard'
 import BarChartCard from '../components/charts/BarChartCard'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const tabOptions = [
   { key: 'cycles', label: 'Payment Cycles' },
@@ -57,8 +58,6 @@ export default function Financials() {
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
   const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
-  const [cycleForm, setCycleForm] = useState({ name: '', start_date: '', end_date: '' })
-  const [formLoading, setFormLoading] = useState(false)
   const [detailPanel, setDetailPanel] = useState({ open: false, item: null, type: '' })
   const { data: effData, loading: effLoading } = useApi(`/api/admin/analytics/payment-efficiency/?period=${period}`)
 
@@ -168,22 +167,19 @@ export default function Financials() {
     else { setBatchSortField(field); setBatchSortOrder('asc') }
   }, [batchSortField])
 
-  const handleCreateCycle = async (e) => {
-    e.preventDefault()
-    setFormLoading(true)
+  const { formAction: createCycleAction } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
     try {
-      const res = await apiFetch('/api/admin/payment-cycles/', { method: 'POST', body: JSON.stringify(cycleForm) })
+      const res = await apiFetch('/api/admin/payment-cycles/', { method: 'POST', body: JSON.stringify(data) })
       if (!res.ok) throw new Error(await res.text())
-      showToast({ type: 'success', message: `Cycle "${cycleForm.name}" created.` })
+      showToast({ type: 'success', message: `Cycle "${data.name}" created.` })
       setCreateOpen(false)
-      setCycleForm({ name: '', start_date: '', end_date: '' })
       refetchCycles()
     } catch (e) {
       showToast({ type: 'error', message: `Creation failed: ${e.message}` })
-    } finally {
-      setFormLoading(false)
     }
-  }
+    return {}
+  }, {})
 
   const cycleColumns = useMemo(() => [
     { key: 'name', label: 'Name', sortable: true, render: (_, r) => <span className="font-medium">{r.name}</span> },
@@ -440,15 +436,15 @@ export default function Financials() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="create-cycle-title">
             <h3 id="create-cycle-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Payment Cycle</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Define a new payment cycle for farmer payouts.</p>
-            <form onSubmit={handleCreateCycle} className="space-y-3">
-              <div><label htmlFor="cycle-create-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="cycle-create-name" required value={cycleForm.name} onChange={(e) => setCycleForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. June 2026 Payout" /></div>
+            <form action={createCycleAction} className="space-y-3">
+              <div><label htmlFor="cycle-create-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="cycle-create-name" required name="name" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. June 2026 Payout" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="cycle-create-start" className="block text-label-md font-bold text-on-surface-variant mb-1">Start Date *</label><input id="cycle-create-start" type="date" required value={cycleForm.start_date} onChange={(e) => setCycleForm(f => ({ ...f, start_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label htmlFor="cycle-create-end" className="block text-label-md font-bold text-on-surface-variant mb-1">End Date *</label><input id="cycle-create-end" type="date" required value={cycleForm.end_date} onChange={(e) => setCycleForm(f => ({ ...f, end_date: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="cycle-create-start" className="block text-label-md font-bold text-on-surface-variant mb-1">Start Date *</label><input id="cycle-create-start" type="date" required name="start_date" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="cycle-create-end" className="block text-label-md font-bold text-on-surface-variant mb-1">End Date *</label><input id="cycle-create-end" type="date" required name="end_date" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
-                <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90">Create</SubmitButton>
               </div>
             </form>
           </div>

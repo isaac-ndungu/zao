@@ -11,6 +11,7 @@ import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
 import { KpiSkeleton, TableSkeleton } from '../components/common/Skeleton'
 import { useLocation, useSearchParams } from 'react-router-dom'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const KENYA_COUNTIES = [
   'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo Marakwet',
@@ -57,13 +58,31 @@ export default function Cooperatives() {
   const [panelItem, setPanelItem] = useState(null)
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [createOpen, setCreateOpen] = useState(location.state?.openModal === true)
-  const [form, setForm] = useState({ name: '', prefix: '', email: '', phone_number: '', physical_address: '', registration_number: '', county: 'Nairobi', produce_type: 'DAIRY', payment_model: 'FIXED_PRICE', levy_percentage: '', monthly_fee: '', sub_county: '', ward: '' })
-  const [formLoading, setFormLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', prefix: '', email: '', phone_number: '', physical_address: '', registration_number: '', county: 'Nairobi', produce_type: 'DAIRY', payment_model: 'FIXED_PRICE', levy_percentage: '', monthly_fee: '', sub_county: '', ward: '' })
-  const [editLoading, setEditLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
+
+  const { formAction: createAction } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    const res = await apiFetch('/api/admin/cooperatives/', { method: 'POST', body: JSON.stringify(data) })
+    if (!res.ok) throw new Error(await res.text())
+    showToast({ type: 'success', message: `Cooperative ${data.name} created.` })
+    setCreateOpen(false)
+    refetch()
+    return { success: true }
+  }, {})
+
+  const { formAction: editAction } = useFormAction(async (prev, formData) => {
+    if (!editItem) return prev
+    const data = formDataToObject(formData)
+    const res = await apiFetch(`/api/admin/cooperatives/${editItem.id}/`, { method: 'PATCH', body: JSON.stringify(data) })
+    if (!res.ok) throw new Error(await res.text())
+    showToast({ type: 'success', message: `Cooperative ${data.name} updated.` })
+    setEditOpen(false)
+    setEditItem(null)
+    refetch()
+    return { success: true }
+  }, {})
 
   const query = useMemo(() => {
     const params = new URLSearchParams()
@@ -143,45 +162,9 @@ export default function Cooperatives() {
     }
   }
 
-  const handleEdit = async (e) => {
-    e.preventDefault()
-    if (!editItem) return
-    setEditLoading(true)
-    try {
-      const res = await apiFetch(`/api/admin/cooperatives/${editItem.id}/`, { method: 'PATCH', body: JSON.stringify(editForm) })
-      if (!res.ok) throw new Error(await res.text())
-      showToast({ type: 'success', message: `Cooperative ${editForm.name} updated.` })
-      setEditOpen(false)
-      setEditItem(null)
-      refetch()
-    } catch (e) {
-      showToast({ type: 'error', message: `Update failed: ${e.message}` })
-    } finally {
-      setEditLoading(false)
-    }
-  }
-
   const openEdit = (item) => {
     setEditItem(item)
-    setEditForm({ name: item.name || '', prefix: item.prefix || '', email: item.email || '', phone_number: item.phone_number || '', physical_address: item.physical_address || '', registration_number: item.registration_number || '', county: item.county || 'Nairobi', produce_type: item.produce_type || 'DAIRY', payment_model: item.payment_model || 'FIXED_PRICE', levy_percentage: item.levy_percentage || '', monthly_fee: item.monthly_fee || '', sub_county: item.sub_county || '', ward: item.ward || '' })
     setEditOpen(true)
-  }
-
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setFormLoading(true)
-    try {
-      const res = await apiFetch('/api/admin/cooperatives/', { method: 'POST', body: JSON.stringify(form) })
-      if (!res.ok) throw new Error(await res.text())
-      showToast({ type: 'success', message: `Cooperative ${form.name} created.` })
-      setCreateOpen(false)
-      setForm({ name: '', prefix: '', email: '', phone_number: '', physical_address: '', registration_number: '', county: 'Nairobi', produce_type: 'DAIRY', payment_model: 'FIXED_PRICE', levy_percentage: '', monthly_fee: '', sub_county: '', ward: '' })
-      refetch()
-    } catch (e) {
-      showToast({ type: 'error', message: `Creation failed: ${e.message}` })
-    } finally {
-      setFormLoading(false)
-    }
   }
 
   const columns = useMemo(() => [
@@ -298,33 +281,33 @@ export default function Cooperatives() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="edit-cooperative-title">
             <h3 id="edit-cooperative-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Edit Cooperative</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Update cooperative details.</p>
-            <form onSubmit={handleEdit} className="space-y-3">
-              <div><label htmlFor="coop-edit-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="coop-edit-name" required value={editForm.name} onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+            <form action={editAction} className="space-y-3">
+              <div><label htmlFor="coop-edit-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="coop-edit-name" name="name" required defaultValue={editItem?.name || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-edit-prefix" className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label><input id="coop-edit-prefix" value={editForm.prefix} onChange={(e) => setEditForm(f => ({ ...f, prefix: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" /></div>
-                <div><label htmlFor="coop-edit-reg" className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label><input id="coop-edit-reg" required value={editForm.registration_number} onChange={(e) => setEditForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-edit-prefix" className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label><input id="coop-edit-prefix" name="prefix" defaultValue={editItem?.prefix || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" /></div>
+                <div><label htmlFor="coop-edit-reg" className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label><input id="coop-edit-reg" name="registration_number" required defaultValue={editItem?.registration_number || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-edit-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><select id="coop-edit-county" required value={editForm.county} onChange={(e) => setEditForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                <div><label htmlFor="coop-edit-subcounty" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input id="coop-edit-subcounty" value={editForm.sub_county} onChange={(e) => setEditForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-edit-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><select id="coop-edit-county" name="county" required defaultValue={editItem?.county || 'Nairobi'} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label htmlFor="coop-edit-subcounty" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input id="coop-edit-subcounty" name="sub_county" defaultValue={editItem?.sub_county || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-edit-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input id="coop-edit-ward" value={editForm.ward} onChange={(e) => setEditForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label htmlFor="coop-edit-produce" className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label><select id="coop-edit-produce" required value={editForm.produce_type} onChange={(e) => setEditForm(f => ({ ...f, produce_type: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+                <div><label htmlFor="coop-edit-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input id="coop-edit-ward" name="ward" defaultValue={editItem?.ward || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-edit-produce" className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label><select id="coop-edit-produce" name="produce_type" required defaultValue={editItem?.produce_type || 'DAIRY'} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-edit-payment" className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label><select id="coop-edit-payment" required value={editForm.payment_model} onChange={(e) => setEditForm(f => ({ ...f, payment_model: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
-                <div><label htmlFor="coop-edit-levy" className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label><input id="coop-edit-levy" required type="number" step="0.01" min="0" max="100" value={editForm.levy_percentage} onChange={(e) => setEditForm(f => ({ ...f, levy_percentage: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-edit-payment" className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label><select id="coop-edit-payment" name="payment_model" required defaultValue={editItem?.payment_model || 'FIXED_PRICE'} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+                <div><label htmlFor="coop-edit-levy" className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label><input id="coop-edit-levy" name="levy_percentage" required type="number" step="0.01" min="0" max="100" defaultValue={editItem?.levy_percentage || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-edit-fee" className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label><input id="coop-edit-fee" required type="number" step="0.01" min="0" value={editForm.monthly_fee} onChange={(e) => setEditForm(f => ({ ...f, monthly_fee: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label htmlFor="coop-edit-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input id="coop-edit-email" type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-edit-fee" className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label><input id="coop-edit-fee" name="monthly_fee" required type="number" step="0.01" min="0" defaultValue={editItem?.monthly_fee || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-edit-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input id="coop-edit-email" name="email" type="email" defaultValue={editItem?.email || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div><label htmlFor="coop-edit-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input id="coop-edit-phone" type="tel" value={editForm.phone_number} onChange={(e) => setEditForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label htmlFor="coop-edit-address" className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label><textarea id="coop-edit-address" rows={2} value={editForm.physical_address} onChange={(e) => setEditForm(f => ({ ...f, physical_address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="coop-edit-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input id="coop-edit-phone" name="phone_number" type="tel" defaultValue={editItem?.phone_number || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="coop-edit-address" className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label><textarea id="coop-edit-address" name="physical_address" rows={2} defaultValue={editItem?.physical_address || ''} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setEditOpen(false); setEditItem(null) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
-                <button type="submit" disabled={editLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{editLoading ? 'Saving...' : 'Save'}</button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90">Save</SubmitButton>
               </div>
             </form>
           </div>
@@ -337,33 +320,33 @@ export default function Cooperatives() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-lg w-full mx-4 shadow-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="create-cooperative-title">
             <h3 id="create-cooperative-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Cooperative</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Register a new farmer cooperative.</p>
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div><label htmlFor="coop-create-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="coop-create-name" required value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+            <form action={createAction} className="space-y-3">
+              <div><label htmlFor="coop-create-name" className="block text-label-md font-bold text-on-surface-variant mb-1">Name *</label><input id="coop-create-name" name="name" required defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-create-prefix" className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label><input id="coop-create-prefix" value={form.prefix} onChange={(e) => setForm(f => ({ ...f, prefix: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" /></div>
-                <div><label htmlFor="coop-create-reg" className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label><input id="coop-create-reg" required value={form.registration_number} onChange={(e) => setForm(f => ({ ...f, registration_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-create-prefix" className="block text-label-md font-bold text-on-surface-variant mb-1">Prefix</label><input id="coop-create-prefix" name="prefix" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" placeholder="e.g. KCC" /></div>
+                <div><label htmlFor="coop-create-reg" className="block text-label-md font-bold text-on-surface-variant mb-1">Reg Number *</label><input id="coop-create-reg" name="registration_number" required defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-create-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><select id="coop-create-county" required value={form.county} onChange={(e) => setForm(f => ({ ...f, county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                <div><label htmlFor="coop-create-subcounty" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input id="coop-create-subcounty" value={form.sub_county} onChange={(e) => setForm(f => ({ ...f, sub_county: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-create-county" className="block text-label-md font-bold text-on-surface-variant mb-1">County *</label><select id="coop-create-county" name="county" required defaultValue="Nairobi" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{KENYA_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                <div><label htmlFor="coop-create-subcounty" className="block text-label-md font-bold text-on-surface-variant mb-1">Sub-County</label><input id="coop-create-subcounty" name="sub_county" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-create-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input id="coop-create-ward" value={form.ward} onChange={(e) => setForm(f => ({ ...f, ward: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label htmlFor="coop-create-produce" className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label><select id="coop-create-produce" required value={form.produce_type} onChange={(e) => setForm(f => ({ ...f, produce_type: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+                <div><label htmlFor="coop-create-ward" className="block text-label-md font-bold text-on-surface-variant mb-1">Ward</label><input id="coop-create-ward" name="ward" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-create-produce" className="block text-label-md font-bold text-on-surface-variant mb-1">Produce Type *</label><select id="coop-create-produce" name="produce_type" required defaultValue="DAIRY" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{produceTypeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-create-payment" className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label><select id="coop-create-payment" required value={form.payment_model} onChange={(e) => setForm(f => ({ ...f, payment_model: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
-                <div><label htmlFor="coop-create-levy" className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label><input id="coop-create-levy" required type="number" step="0.01" min="0" max="100" value={form.levy_percentage} onChange={(e) => setForm(f => ({ ...f, levy_percentage: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-create-payment" className="block text-label-md font-bold text-on-surface-variant mb-1">Payment Model *</label><select id="coop-create-payment" name="payment_model" required defaultValue="FIXED_PRICE" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface">{paymentModelOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></div>
+                <div><label htmlFor="coop-create-levy" className="block text-label-md font-bold text-on-surface-variant mb-1">Levy % *</label><input id="coop-create-levy" name="levy_percentage" required type="number" step="0.01" min="0" max="100" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label htmlFor="coop-create-fee" className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label><input id="coop-create-fee" required type="number" step="0.01" min="0" value={form.monthly_fee} onChange={(e) => setForm(f => ({ ...f, monthly_fee: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-                <div><label htmlFor="coop-create-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input id="coop-create-email" type="email" value={form.email} onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-create-fee" className="block text-label-md font-bold text-on-surface-variant mb-1">Monthly Fee *</label><input id="coop-create-fee" name="monthly_fee" required type="number" step="0.01" min="0" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+                <div><label htmlFor="coop-create-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label><input id="coop-create-email" name="email" type="email" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               </div>
-              <div><label htmlFor="coop-create-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input id="coop-create-phone" type="tel" value={form.phone_number} onChange={(e) => setForm(f => ({ ...f, phone_number: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
-              <div><label htmlFor="coop-create-address" className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label><textarea id="coop-create-address" rows={2} value={form.physical_address} onChange={(e) => setForm(f => ({ ...f, physical_address: e.target.value }))} className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="coop-create-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label><input id="coop-create-phone" name="phone_number" type="tel" defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
+              <div><label htmlFor="coop-create-address" className="block text-label-md font-bold text-on-surface-variant mb-1">Physical Address</label><textarea id="coop-create-address" name="physical_address" rows={2} defaultValue="" className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-body-md text-on-surface" /></div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setCreateOpen(false)} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
-                <button type="submit" disabled={formLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 disabled:opacity-50">{formLoading ? 'Creating...' : 'Create'}</button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90">Create</SubmitButton>
               </div>
             </form>
           </div>

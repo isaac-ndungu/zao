@@ -7,6 +7,7 @@ import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const statusColors = {
   DRAFT: 'badge-default', ACTIVE: 'badge-info', LOCKED: 'badge-warning',
@@ -160,8 +161,6 @@ export default function AccountantCycles() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ name: '', start_date: '', end_date: '', notes: '', status: 'DRAFT' })
-  const [saving, setSaving] = useState(false)
 
   const qp = new URLSearchParams({ page, page_size: pageSize })
   const { data, loading, error, refetch } = useApi(`/api/payment-engine/?${qp}`)
@@ -173,22 +172,21 @@ export default function AccountantCycles() {
     ? cycles.find((c) => String(c.id) === selectedId) || data?.results?.find((c) => String(c.id) === selectedId)
     : null
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+  const handleCreateCycle = async (prev, formData) => {
+    const data = formDataToObject(formData)
     try {
       const res = await apiFetch('/api/payment-engine/', {
         method: 'POST',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(data),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create cycle') }
       showToast({ type: 'success', message: 'Payment cycle created.' })
       setShowForm(false)
-      setFormData({ name: '', start_date: '', end_date: '', notes: '', status: 'DRAFT' })
       refetch()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSaving(false) }
   }
+
+  const { formAction: createCycleAction } = useFormAction(handleCreateCycle, {})
 
   const columns = [
     { key: 'id', label: 'ID', render: (v, row) => row.id },
@@ -238,21 +236,22 @@ export default function AccountantCycles() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => setShowForm(false)}>
           <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-headline-sm text-headline-sm mb-4">Create Payment Cycle</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form action={createCycleAction} className="space-y-4">
+              <input type="hidden" name="status" value="DRAFT" />
               <div><label htmlFor="cycle-name" className="block text-label-md text-on-surface-variant mb-1">Name</label>
-                <input id="cycle-name" value={formData.name} onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. June 2026 Payout" />
+                <input id="cycle-name" name="name" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. June 2026 Payout" />
               </div>
               <div><label htmlFor="cycle-start-date" className="block text-label-md text-on-surface-variant mb-1">Period Start</label>
-                <input id="cycle-start-date" type="date" value={formData.start_date} onChange={(e) => setFormData(p => ({ ...p, start_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+                <input id="cycle-start-date" name="start_date" type="date" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div><label htmlFor="cycle-end-date" className="block text-label-md text-on-surface-variant mb-1">End Date</label>
-                <input id="cycle-end-date" type="date" value={formData.end_date} onChange={(e) => setFormData(p => ({ ...p, end_date: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+                <input id="cycle-end-date" name="end_date" type="date" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div><label htmlFor="cycle-notes" className="block text-label-md text-on-surface-variant mb-1">Notes</label>
-                <textarea id="cycle-notes" value={formData.notes} onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+                <textarea id="cycle-notes" name="notes" rows={3} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>
+                <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Create</SubmitButton>
                 <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
               </div>
             </form>

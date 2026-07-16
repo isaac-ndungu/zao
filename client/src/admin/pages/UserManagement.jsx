@@ -10,6 +10,7 @@ import ConfirmModal from '../components/common/ConfirmModal'
 import { useToast } from '../contexts/ToastContext'
 import { TableSkeleton } from '../components/common/Skeleton'
 import PasswordInput from '../../shared/components/PasswordInput'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 const roleOptions = [
   { value: 'admin', label: 'Admin' },
@@ -47,14 +48,8 @@ export default function UserManagement() {
   const [modalConfig, setModalConfig] = useState({ open: false })
   const [actionLoading, setActionLoading] = useState(false)
   const [inviteModal, setInviteModal] = useState(location.state?.openModal === true)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteFirstName, setInviteFirstName] = useState('')
-  const [inviteLastName, setInviteLastName] = useState('')
-  const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteErrors, setInviteErrors] = useState({})
   const [superuserModal, setSuperuserModal] = useState(false)
-  const [suForm, setSuForm] = useState({ email: '', first_name: '', last_name: '', phone_number: '', password: '' })
-  const [suLoading, setSuLoading] = useState(false)
   const [suErrors, setSuErrors] = useState({})
   const [openDropdownId, setOpenDropdownId] = useState(null)
   const dropdownRef = useRef(null)
@@ -212,63 +207,51 @@ export default function UserManagement() {
     }
   }
 
-  const handleInvite = async (e) => {
-    e.preventDefault()
-    setInviteLoading(true)
+  const { formAction: inviteAction, isPending: invitePending } = useFormAction(async (prev, formData) => {
     setInviteErrors({})
-    try {
-      const res = await apiFetch('/api/admin/auth/invite/', {
-        method: 'POST',
-        body: JSON.stringify({ email: inviteEmail, first_name: inviteFirstName, last_name: inviteLastName }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          setInviteErrors(data)
-        }
-        throw new Error(Object.values(data).flat().join(', ') || 'Invite failed')
+    const fields = formDataToObject(formData)
+    const res = await apiFetch('/api/admin/auth/invite/', {
+      method: 'POST',
+      body: JSON.stringify(fields),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        setInviteErrors(data)
       }
-      showToast({ type: 'success', message: `Invite sent to ${inviteEmail}.` })
-      setInviteEmail('')
-      setInviteFirstName('')
-      setInviteLastName('')
-      setInviteErrors({})
-      setInviteModal(false)
-      refetch()
-    } catch (e) {
-      showToast({ type: 'error', message: `Invite failed: ${e.message}` })
-    } finally {
-      setInviteLoading(false)
+      const msg = Object.values(data).flat().join(', ') || 'Invite failed'
+      showToast({ type: 'error', message: `Invite failed: ${msg}` })
+      throw new Error(msg)
     }
-  }
+    showToast({ type: 'success', message: `Invite sent to ${fields.email}.` })
+    setInviteErrors({})
+    setInviteModal(false)
+    refetch()
+    return {}
+  }, {})
 
-  const handleCreateSuperuser = async (e) => {
-    e.preventDefault()
-    setSuLoading(true)
+  const { formAction: suAction, isPending: suPending } = useFormAction(async (prev, formData) => {
     setSuErrors({})
-    try {
-      const res = await apiFetch('/api/admin/users/create-superuser/', {
-        method: 'POST',
-        body: JSON.stringify(suForm),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          setSuErrors(data)
-        }
-        throw new Error(Object.values(data).flat().join(', ') || 'Creation failed')
+    const fields = formDataToObject(formData)
+    const res = await apiFetch('/api/admin/users/create-superuser/', {
+      method: 'POST',
+      body: JSON.stringify(fields),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        setSuErrors(data)
       }
-      showToast({ type: 'success', message: `Superuser ${suForm.email} created.` })
-      setSuForm({ email: '', first_name: '', last_name: '', phone_number: '', password: '' })
-      setSuErrors({})
-      setSuperuserModal(false)
-      refetch()
-    } catch (e) {
-      showToast({ type: 'error', message: `Creation failed: ${e.message}` })
-    } finally {
-      setSuLoading(false)
+      const msg = Object.values(data).flat().join(', ') || 'Creation failed'
+      showToast({ type: 'error', message: `Creation failed: ${msg}` })
+      throw new Error(msg)
     }
-  }
+    showToast({ type: 'success', message: `Superuser ${fields.email} created.` })
+    setSuErrors({})
+    setSuperuserModal(false)
+    refetch()
+    return {}
+  }, {})
 
   const toggleDropdown = (id) => {
     setOpenDropdownId(openDropdownId === id ? null : id)
@@ -577,27 +560,27 @@ export default function UserManagement() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="invite-user-title">
             <h3 id="invite-user-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Invite User</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Send an invitation to join the platform.</p>
-            <form onSubmit={handleInvite}>
+            <form action={inviteAction}>
               <div className="mb-4">
                 <label htmlFor="invite-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email Address</label>
-                <input id="invite-email" type="email" required value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.email; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.email ? 'border-error' : 'border-outline-variant'}`} placeholder="user@example.com" />
+                <input id="invite-email" type="email" name="email" required defaultValue="" onInput={() => setInviteErrors(p => { const n = { ...p }; delete n.email; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.email ? 'border-error' : 'border-outline-variant'}`} placeholder="user@example.com" />
                 {inviteErrors.email && <p className="text-label-sm text-error mt-1" role="alert">{inviteErrors.email.join(', ')}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
                   <label htmlFor="invite-firstname" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
-                  <input id="invite-firstname" type="text" required value={inviteFirstName} onChange={(e) => { setInviteFirstName(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.first_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.first_name ? 'border-error' : 'border-outline-variant'}`} placeholder="First" />
+                  <input id="invite-firstname" type="text" name="first_name" required defaultValue="" onInput={() => setInviteErrors(p => { const n = { ...p }; delete n.first_name; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.first_name ? 'border-error' : 'border-outline-variant'}`} placeholder="First" />
                   {inviteErrors.first_name && <p className="text-label-sm text-error mt-1" role="alert">{inviteErrors.first_name.join(', ')}</p>}
                 </div>
                 <div>
                   <label htmlFor="invite-lastname" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
-                  <input id="invite-lastname" type="text" required value={inviteLastName} onChange={(e) => { setInviteLastName(e.target.value); setInviteErrors(p => { const n = { ...p }; delete n.last_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.last_name ? 'border-error' : 'border-outline-variant'}`} placeholder="Last" />
+                  <input id="invite-lastname" type="text" name="last_name" required defaultValue="" onInput={() => setInviteErrors(p => { const n = { ...p }; delete n.last_name; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${inviteErrors.last_name ? 'border-error' : 'border-outline-variant'}`} placeholder="Last" />
                   {inviteErrors.last_name && <p className="text-label-sm text-error mt-1" role="alert">{inviteErrors.last_name.join(', ')}</p>}
                 </div>
               </div>
               <div className="flex justify-end gap-3">
                 <button type="button" onClick={() => { setInviteModal(false); setInviteErrors({}) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
-                <button type="submit" disabled={inviteLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50">{inviteLoading ? 'Sending...' : 'Send Invite'}</button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors">Send Invite</SubmitButton>
               </div>
             </form>
           </div>
@@ -610,42 +593,43 @@ export default function UserManagement() {
           <div className="relative bg-surface-container-lowest border border-outline-variant rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="create-superuser-title">
             <h3 id="create-superuser-title" className="font-headline-sm text-headline-sm text-on-surface mb-2">Create Superuser</h3>
             <p className="text-body-md text-on-surface-variant mb-4">Create a new admin with full system access.</p>
-            <form onSubmit={handleCreateSuperuser} className="space-y-3">
+            <form action={suAction} className="space-y-3">
               <div>
                 <label htmlFor="su-email" className="block text-label-md font-bold text-on-surface-variant mb-1">Email</label>
-                <input id="su-email" type="email" required value={suForm.email} onChange={(e) => { setSuForm(f => ({ ...f, email: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.email; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.email ? 'border-error' : 'border-outline-variant'}`} />
+                <input id="su-email" type="email" name="email" required defaultValue="" onInput={() => setSuErrors(p => { const n = { ...p }; delete n.email; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.email ? 'border-error' : 'border-outline-variant'}`} />
                 {suErrors.email && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.email.join(', ')}</p>}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="su-firstname" className="block text-label-md font-bold text-on-surface-variant mb-1">First Name</label>
-                  <input id="su-firstname" type="text" required value={suForm.first_name} onChange={(e) => { setSuForm(f => ({ ...f, first_name: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.first_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.first_name ? 'border-error' : 'border-outline-variant'}`} />
+                  <input id="su-firstname" type="text" name="first_name" required defaultValue="" onInput={() => setSuErrors(p => { const n = { ...p }; delete n.first_name; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.first_name ? 'border-error' : 'border-outline-variant'}`} />
                   {suErrors.first_name && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.first_name.join(', ')}</p>}
                 </div>
                 <div>
                   <label htmlFor="su-lastname" className="block text-label-md font-bold text-on-surface-variant mb-1">Last Name</label>
-                  <input id="su-lastname" type="text" required value={suForm.last_name} onChange={(e) => { setSuForm(f => ({ ...f, last_name: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.last_name; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.last_name ? 'border-error' : 'border-outline-variant'}`} />
+                  <input id="su-lastname" type="text" name="last_name" required defaultValue="" onInput={() => setSuErrors(p => { const n = { ...p }; delete n.last_name; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.last_name ? 'border-error' : 'border-outline-variant'}`} />
                   {suErrors.last_name && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.last_name.join(', ')}</p>}
                 </div>
               </div>
               <div>
                 <label htmlFor="su-phone" className="block text-label-md font-bold text-on-surface-variant mb-1">Phone</label>
-                <input id="su-phone" type="tel" value={suForm.phone_number} onChange={(e) => { setSuForm(f => ({ ...f, phone_number: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.phone_number; return n }) }} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.phone_number ? 'border-error' : 'border-outline-variant'}`} />
+                <input id="su-phone" type="tel" name="phone_number" defaultValue="" onInput={() => setSuErrors(p => { const n = { ...p }; delete n.phone_number; return n })} className={`w-full bg-surface-container border rounded-lg px-3 py-2 text-body-md text-on-surface ${suErrors.phone_number ? 'border-error' : 'border-outline-variant'}`} />
                 {suErrors.phone_number && <p className="text-label-sm text-error mt-1" role="alert">{suErrors.phone_number.join(', ')}</p>}
               </div>
               <div>
                 <PasswordInput
                   id="su-password"
+                  name="password"
                   label="Password"
-                  value={suForm.password}
-                  onChange={(e) => { setSuForm(f => ({ ...f, password: e.target.value })); setSuErrors(p => { const n = { ...p }; delete n.password; return n }) }}
+                  defaultValue=""
                   required
+                  onInput={() => setSuErrors(p => { const n = { ...p }; delete n.password; return n })}
                   error={suErrors.password ? suErrors.password.join(', ') : undefined}
                 />
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => { setSuperuserModal(false); setSuErrors({}) }} className="px-4 py-2 rounded-lg text-label-md font-bold text-on-surface-variant bg-surface-container-high hover:bg-surface-container-highest transition-colors">Cancel</button>
-                <button type="submit" disabled={suLoading} className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50">{suLoading ? 'Creating...' : 'Create'}</button>
+                <SubmitButton className="px-4 py-2 rounded-lg text-label-md font-bold text-white bg-primary hover:bg-primary/90 transition-colors">Create</SubmitButton>
               </div>
             </form>
           </div>

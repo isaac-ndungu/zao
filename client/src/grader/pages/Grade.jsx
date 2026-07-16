@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useActionState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useApi } from '../../admin/hooks/useApi'
 import { apiFetch } from '../../admin/api/client'
@@ -8,6 +8,7 @@ import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction } from '../../shared/hooks/useFormAction'
 import { saveGrade, cachePendingDeliveries, getCachedPendingDeliveries } from '../services/offlineQueue'
 
 const gradeOptions = ['PREMIUM', 'STANDARD', 'A', 'B', 'C']
@@ -27,14 +28,12 @@ export default function Grade() {
   const searchParam = queueSearch ? `&search=${encodeURIComponent(queueSearch)}` : ''
   const { data: pendingData, loading, error, refetch } = useApi(`/api/deliveries/?status=PENDING&page=${page}&page_size=10&ordering=-date_delivered${searchParam}`)
 
-  // Cache successful delivery fetches for offline use
   useEffect(() => {
     if (pendingData?.results) {
       cachePendingDeliveries(pendingData.results)
     }
   }, [pendingData])
 
-  // On error (offline), try loading cached deliveries
   useEffect(() => {
     if (error) {
       getCachedPendingDeliveries().then(cached => {
@@ -64,6 +63,12 @@ export default function Grade() {
     setSelectedDelivery(delivery)
   }
 
+  const [, searchAction] = useFormAction(async (prev, formData) => {
+    setQueueSearch(formData.get('search') || '')
+    setPage(1)
+    return {}
+  }, {})
+
   return (
     <div>
       <header className="mb-6">
@@ -78,7 +83,7 @@ export default function Grade() {
       {!selectedDelivery ? (
         <>
           <div className="mb-4 flex items-center gap-4">
-            <form onSubmit={(e) => { e.preventDefault(); setQueueSearch(new FormData(e.target).get('search') || ''); setPage(1) }} className="flex gap-2">
+            <form action={searchAction} className="flex gap-2">
               <input
                 name="search"
                 defaultValue={queueSearch}
@@ -135,7 +140,6 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
   const [qualityMetrics, setQualityMetrics] = useState('{}')
   const [photos, setPhotos] = useState([])
   const [photoPreviews, setPhotoPreviews] = useState([])
-  const [submitting, setSubmitting] = useState(false)
   const [jsonError, setJsonError] = useState('')
 
   useEffect(() => {
@@ -167,37 +171,6 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
     }
   }
 
-  const handleReject = async () => {
-    if (!rejectReason.trim()) {
-      showToast({ type: 'error', message: 'Provide a reason for rejection.' })
-      return
-    }
-    setSubmitting(true)
-    try {
-      if (!isOnline) {
-        await saveGrade({
-          delivery_id: delivery.id,
-          delivery_batch_id: delivery.batch_id,
-          farmer_name: delivery.farmer_name,
-          rejection_reason: rejectReason.trim(),
-          quality_metrics: qualityMetrics !== '{}' ? qualityMetrics : null,
-        })
-        showToast({ type: 'success', message: 'Rejection saved offline. Will sync when online.' })
-        onComplete()
-        return
-      }
-      const body = {
-        delivery: delivery.id,
-        rejection_reason: rejectReason.trim(),
-      }
-      const res = await apiFetch('/api/grades/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Rejection failed') }
-      showToast({ type: 'success', message: 'Delivery rejected.' })
-      onComplete()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSubmitting(false) }
-  }
-
   const uploadPhotos = async (gradeId) => {
     if (photos.length === 0) return
     for (const photo of photos) {
@@ -206,37 +179,66 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         fd.append('image', photo)
         await apiFetch(`/api/grades/${gradeId}/images/`, { method: 'POST', headers: {}, body: fd })
       } catch {
-        showToast({ type: 'warning', message: `Photo upload failed — grade was saved.` })
+        showToast({ type: 'warning', message: 'Photo upload failed — grade was saved.' })
       }
     }
   }
 
-  const handleGrade = async () => {
-    if (!grade) {
-      showToast({ type: 'error', message: 'Select a grade.' })
-      return
-    }
-
-    setSubmitting(true)
+  const [, dispatchReject, rejectPending] = useActionState(async (prev, payload) => {
     try {
+      if (!payload.reason?.trim()) {
+        showToast({ type: 'error', message: 'Provide a reason for rejection.' })
+        return { ...prev }
+      }
       if (!isOnline) {
         await saveGrade({
           delivery_id: delivery.id,
           delivery_batch_id: delivery.batch_id,
           farmer_name: delivery.farmer_name,
-          grade_letter: grade,
-          price_per_unit: priceMap[grade] || null,
+          rejection_reason: payload.reason.trim(),
           quality_metrics: qualityMetrics !== '{}' ? qualityMetrics : null,
         })
-        showToast({ type: 'success', message: `Grade ${grade} saved offline. Will sync when online.` })
+        showToast({ type: 'success', message: 'Rejection saved offline. Will sync when online.' })
         onComplete()
-        return
+        return {}
+      }
+      const body = {
+        delivery: delivery.id,
+        rejection_reason: payload.reason.trim(),
+      }
+      const res = await apiFetch('/api/grades/', { method: 'POST', body: JSON.stringify(body) })
+      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Rejection failed') }
+      showToast({ type: 'success', message: 'Delivery rejected.' })
+      onComplete()
+      return {}
+    } catch (err) { showToast({ type: 'error', message: err.message }); return { error: err.message } }
+  }, {})
+
+  const [, dispatchGrade, gradePending] = useActionState(async (prev, payload) => {
+    try {
+      if (!payload.grade) {
+        showToast({ type: 'error', message: 'Select a grade.' })
+        return { ...prev }
+      }
+
+      if (!isOnline) {
+        await saveGrade({
+          delivery_id: delivery.id,
+          delivery_batch_id: delivery.batch_id,
+          farmer_name: delivery.farmer_name,
+          grade_letter: payload.grade,
+          price_per_unit: priceMap[payload.grade] || null,
+          quality_metrics: qualityMetrics !== '{}' ? qualityMetrics : null,
+        })
+        showToast({ type: 'success', message: `Grade ${payload.grade} saved offline. Will sync when online.` })
+        onComplete()
+        return {}
       }
 
       const body = {
         delivery: delivery.id,
-        grade_letter: grade,
-        price_per_unit: priceMap[grade] || null,
+        grade_letter: payload.grade,
+        price_per_unit: priceMap[payload.grade] || null,
       }
       if (qualityMetrics !== '{}') {
         try { body.quality_metrics = JSON.parse(qualityMetrics) } catch {}
@@ -248,11 +250,11 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
 
       await uploadPhotos(gradeId)
 
-      showToast({ type: 'success', message: `Graded as ${grade}.` })
+      showToast({ type: 'success', message: `Graded as ${payload.grade}.` })
       onComplete()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSubmitting(false) }
-  }
+      return {}
+    } catch (err) { showToast({ type: 'error', message: err.message }); return { error: err.message } }
+  }, {})
 
   return (
     <div>
@@ -408,22 +410,22 @@ function GradeForm({ delivery, priceMap, onBack, onComplete }) {
         <div className="flex-1" />
         {rejectReason.trim() && !grade && (
           <button
-            onClick={handleReject}
-            disabled={submitting}
+            onClick={() => dispatchReject({ reason: rejectReason })}
+            disabled={rejectPending}
             className="px-6 py-2.5 bg-error text-on-error rounded-lg text-label-md font-bold hover:bg-error/90 transition-colors disabled:opacity-50"
-            aria-label={submitting ? 'Saving rejection...' : 'Reject this delivery'}
+            aria-label={rejectPending ? 'Saving rejection...' : 'Reject this delivery'}
           >
-            {submitting ? <><span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-error/30 border-t-error rounded-full mr-2" /> Saving...</> : isOnline ? 'Reject Delivery' : 'Save Rejection Offline'}
+            {rejectPending ? <><span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-error/30 border-t-error rounded-full mr-2" /> Saving...</> : isOnline ? 'Reject Delivery' : 'Save Rejection Offline'}
           </button>
         )}
         {grade && !rejectReason.trim() && (
           <button
-            onClick={handleGrade}
-            disabled={submitting}
+            onClick={() => dispatchGrade({ grade })}
+            disabled={gradePending}
             className="px-6 py-2.5 bg-primary text-on-primary rounded-lg text-label-md font-bold hover:bg-primary/90 transition-colors disabled:opacity-50"
-            aria-label={submitting ? 'Saving grade...' : `Submit grade ${grade} for this delivery`}
+            aria-label={gradePending ? 'Saving grade...' : `Submit grade ${grade} for this delivery`}
           >
-            {submitting ? <><span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full mr-2" /> Saving...</> : isOnline ? `Submit Grade ${grade}` : `Save Grade ${grade} Offline`}
+            {gradePending ? <><span aria-hidden="true" className="inline-block animate-spin h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full mr-2" /> Saving...</> : isOnline ? `Submit Grade ${grade}` : `Save Grade ${grade} Offline`}
           </button>
         )}
       </div>

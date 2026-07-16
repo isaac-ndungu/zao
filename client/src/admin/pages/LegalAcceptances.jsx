@@ -1,7 +1,8 @@
-import { useState } from 'react'
 import { useApi } from '../hooks/useApi'
 import { useToast } from '../contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject } from '../../shared/hooks/useFormAction'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 function fmtDate(s) {
   if (!s) return '-'
@@ -10,16 +11,18 @@ function fmtDate(s) {
 
 export default function LegalAcceptances() {
   const { showToast } = useToast()
-  const [slug, setSlug] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [query, setQuery] = useState({ slug: '', date_from: '', date_to: '' })
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  const slug = searchParams.get('slug') || ''
+  const dateFrom = searchParams.get('date_from') || ''
+  const dateTo = searchParams.get('date_to') || ''
 
   const buildUrl = () => {
     const p = new URLSearchParams()
-    if (query.slug) p.set('slug', query.slug)
-    if (query.date_from) p.set('date_from', query.date_from)
-    if (query.date_to) p.set('date_to', query.date_to)
+    if (slug) p.set('slug', slug)
+    if (dateFrom) p.set('date_from', dateFrom)
+    if (dateTo) p.set('date_to', dateTo)
     const qs = p.toString()
     return `/api/admin/legal/acceptances/${qs ? `?${qs}` : ''}`
   }
@@ -30,27 +33,27 @@ export default function LegalAcceptances() {
 
   const handleExport = () => {
     const p = new URLSearchParams()
-    if (query.slug) p.set('slug', query.slug)
-    if (query.date_from) p.set('date_from', query.date_from)
-    if (query.date_to) p.set('date_to', query.date_to)
+    if (slug) p.set('slug', slug)
+    if (dateFrom) p.set('date_from', dateFrom)
+    if (dateTo) p.set('date_to', dateTo)
     p.set('format', 'csv')
-    // Use the admin api client's baseURL; open in a new tab.
-    // apiFetch normalizes to an absolute URL; we just need a stable href.
     const path = `/api/admin/legal/acceptances/?${p.toString()}`
-    // For download, hit the path directly (browser handles the auth via cookies
-    // for session auth; if the admin uses bearer tokens in localStorage, the
-    // browser won't send them — this is fine for the current admin app which
-    // uses cookie/session auth). Use the same origin.
     window.open(path, '_blank')
   }
 
-  const apply = (e) => {
-    e.preventDefault()
-    setQuery({ slug, date_from: dateFrom, date_to: dateTo })
-  }
+  const { formAction: searchAction } = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    const params = new URLSearchParams()
+    if (data.slug) params.set('slug', data.slug)
+    if (data.date_from) params.set('date_from', data.date_from)
+    if (data.date_to) params.set('date_to', data.date_to)
+    const qs = params.toString()
+    navigate(`/admin/legal-acceptances${qs ? `?${qs}` : ''}`)
+    return { success: true }
+  }, {})
+
   const clear = () => {
-    setSlug(''); setDateFrom(''); setDateTo('')
-    setQuery({ slug: '', date_from: '', date_to: '' })
+    navigate('/admin/legal-acceptances')
   }
 
   return (
@@ -69,13 +72,13 @@ export default function LegalAcceptances() {
         </button>
       </header>
 
-      <form onSubmit={apply} className="mb-4 flex flex-wrap gap-2 items-end">
+      <form action={searchAction} className="mb-4 flex flex-wrap gap-2 items-end">
         <div>
           <label htmlFor="slug" className="block text-label-md text-on-surface-variant mb-1">Document slug</label>
           <input
             id="slug"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
+            name="slug"
+            defaultValue={slug}
             placeholder="e.g. privacy-policy"
             className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
           />
@@ -84,9 +87,9 @@ export default function LegalAcceptances() {
           <label htmlFor="dateFrom" className="block text-label-md text-on-surface-variant mb-1">From</label>
           <input
             id="dateFrom"
+            name="date_from"
             type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            defaultValue={dateFrom}
             className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
           />
         </div>
@@ -94,9 +97,9 @@ export default function LegalAcceptances() {
           <label htmlFor="dateTo" className="block text-label-md text-on-surface-variant mb-1">To</label>
           <input
             id="dateTo"
+            name="date_to"
             type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            defaultValue={dateTo}
             className="px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
           />
         </div>

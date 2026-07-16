@@ -3,63 +3,54 @@ import { useAuth } from '../../shared/hooks/useAuth'
 import { apiFetch } from '../../admin/api/client'
 import { useToast } from '../../admin/contexts/ToastContext'
 import PasswordInput from '../../shared/components/PasswordInput'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function AccountantSettings() {
   const { user, refreshUser } = useAuth()
   const { showToast } = useToast()
   const [editing, setEditing] = useState(false)
-  const [formData, setFormData] = useState({ first_name: user?.first_name || '', last_name: user?.last_name || '', email: user?.email || '' })
-  const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' })
-  const [savingProfile, setSavingProfile] = useState(false)
-  const [savingPassword, setSavingPassword] = useState(false)
   const [showEnable2fa, setShowEnable2fa] = useState(false)
-  const [enable2faPassword, setEnable2faPassword] = useState('')
-  const [enabling2fa, setEnabling2fa] = useState(false)
 
-  const handleProfileSave = async (e) => {
-    e.preventDefault()
-    setSavingProfile(true)
+  const handleProfileSave = async (prev, formData) => {
+    const data = formDataToObject(formData)
     try {
-      const res = await apiFetch('/api/users/me/', { method: 'PATCH', body: JSON.stringify(formData) })
+      const res = await apiFetch('/api/users/me/', { method: 'PATCH', body: JSON.stringify(data) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to update') }
       showToast({ type: 'success', message: 'Profile updated.' })
       setEditing(false)
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSavingProfile(false) }
   }
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault()
-    if (pwForm.new_password !== pwForm.confirm_password) {
+  const handlePasswordChange = async (prev, formData) => {
+    const data = formDataToObject(formData)
+    if (data.new_password !== data.confirm_password) {
       showToast({ type: 'error', message: 'Passwords do not match.' })
       return
     }
-    setSavingPassword(true)
     try {
-      const res = await apiFetch('/api/auth/change-password/', { method: 'POST', body: JSON.stringify({ old_password: pwForm.old_password, new_password: pwForm.new_password }) })
+      const res = await apiFetch('/api/auth/change-password/', { method: 'POST', body: JSON.stringify({ old_password: data.old_password, new_password: data.new_password }) })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to change password') }
       showToast({ type: 'success', message: 'Password changed.' })
-      setPwForm({ old_password: '', new_password: '', confirm_password: '' })
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSavingPassword(false) }
   }
 
-  const handleEnable2fa = async (e) => {
-    e.preventDefault()
-    setEnabling2fa(true)
+  const handleEnable2fa = async (prev, formData) => {
+    const data = formDataToObject(formData)
     try {
       const res = await apiFetch('/api/auth/2fa/enable/', {
         method: 'POST',
-        body: JSON.stringify({ password: enable2faPassword }),
+        body: JSON.stringify({ password: data.password }),
       })
       if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to enable 2FA') }
       showToast({ type: 'success', message: 'Two-factor authentication enabled.' })
       setShowEnable2fa(false)
-      setEnable2faPassword('')
       refreshUser()
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setEnabling2fa(false) }
   }
+
+  const { formAction: profileAction } = useFormAction(handleProfileSave, {})
+  const { formAction: enable2faAction } = useFormAction(handleEnable2fa, {})
+  const { formAction: passwordAction } = useFormAction(handlePasswordChange, {})
 
   return (
     <div className="max-w-xl mx-auto">
@@ -82,14 +73,14 @@ export default function AccountantSettings() {
               <button onClick={() => setEditing(true)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold text-primary hover:bg-surface-container-high transition-colors">Edit</button>
             </div>
           ) : (
-            <form onSubmit={handleProfileSave} className="space-y-4">
+            <form action={profileAction} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div><label htmlFor="id-first-name" className="block text-label-md text-on-surface-variant mb-1">First Name</label><input id="id-first-name" value={formData.first_name} onChange={(e) => setFormData(p => ({ ...p, first_name: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
-                <div><label htmlFor="id-last-name" className="block text-label-md text-on-surface-variant mb-1">Last Name</label><input id="id-last-name" value={formData.last_name} onChange={(e) => setFormData(p => ({ ...p, last_name: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
+                <div><label htmlFor="id-first-name" className="block text-label-md text-on-surface-variant mb-1">First Name</label><input id="id-first-name" name="first_name" defaultValue={user?.first_name || ''} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
+                <div><label htmlFor="id-last-name" className="block text-label-md text-on-surface-variant mb-1">Last Name</label><input id="id-last-name" name="last_name" defaultValue={user?.last_name || ''} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
               </div>
-              <div><label htmlFor="id-email" className="block text-label-md text-on-surface-variant mb-1">Email</label><input id="id-email" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} type="email" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
+              <div><label htmlFor="id-email" className="block text-label-md text-on-surface-variant mb-1">Email</label><input id="id-email" name="email" defaultValue={user?.email || ''} type="email" className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" /></div>
               <div className="flex gap-3">
-                <button type="submit" disabled={savingProfile} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{savingProfile ? 'Saving...' : 'Save'}</button>
+                <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Save</SubmitButton>
                 <button type="button" onClick={() => setEditing(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
               </div>
             </form>
@@ -116,14 +107,14 @@ export default function AccountantSettings() {
               </div>
               <p className="text-body-md text-on-surface-variant mb-4">Enable 2FA to add an extra layer of security to your account.</p>
               {showEnable2fa ? (
-                <form onSubmit={handleEnable2fa} className="space-y-3">
+                <form action={enable2faAction} className="space-y-3">
                   <div>
                     <label htmlFor="id-2fa-password" className="block text-label-md text-on-surface-variant mb-1">Confirm your password</label>
-                    <input id="id-2fa-password" value={enable2faPassword} onChange={(e) => setEnable2faPassword(e.target.value)} type="password" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="Enter your password..." />
+                    <input id="id-2fa-password" name="password" type="password" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="Enter your password..." />
                   </div>
                   <div className="flex gap-3">
-                    <button type="submit" disabled={enabling2fa} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{enabling2fa ? 'Enabling...' : 'Enable 2FA'}</button>
-                    <button type="button" onClick={() => { setShowEnable2fa(false); setEnable2faPassword('') }} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
+                    <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Enable 2FA</SubmitButton>
+                    <button type="button" onClick={() => setShowEnable2fa(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
                   </div>
                 </form>
               ) : (
@@ -137,30 +128,27 @@ export default function AccountantSettings() {
       <section>
         <h3 className="font-headline-sm text-headline-sm text-on-surface mb-4">Change Password</h3>
         <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
-          <form onSubmit={handlePasswordChange} className="space-y-4">
+          <form action={passwordAction} className="space-y-4">
             <PasswordInput
               id="id-current-password"
               label="Current Password"
-              value={pwForm.old_password}
-              onChange={(e) => setPwForm(p => ({ ...p, old_password: e.target.value }))}
+              name="old_password"
               required
             />
             <PasswordInput
               id="id-new-password"
               label="New Password"
-              value={pwForm.new_password}
-              onChange={(e) => setPwForm(p => ({ ...p, new_password: e.target.value }))}
+              name="new_password"
               required
               minLength={8}
             />
             <PasswordInput
               id="id-confirm-password"
               label="Confirm New Password"
-              value={pwForm.confirm_password}
-              onChange={(e) => setPwForm(p => ({ ...p, confirm_password: e.target.value }))}
+              name="confirm_password"
               required
             />
-            <button type="submit" disabled={savingPassword} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{savingPassword ? 'Changing...' : 'Change Password'}</button>
+            <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Change Password</SubmitButton>
           </form>
         </div>
       </section>

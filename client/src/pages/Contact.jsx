@@ -9,6 +9,7 @@ import {
 } from 'react-icons/hi2'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { useFormAction } from '../hooks/useFormAction'
 
 const CONTACT_INFO = [
   {
@@ -57,16 +58,18 @@ const FAQS = [
 ]
 
 export default function Contact() {
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const { name, email, subject, message } = form
+  const [, contactAction] = useFormAction(async (prev, formData) => {
+    const name = formData.get('name')
+    const email = formData.get('email')
+    const subject = formData.get('subject')
+    const message = formData.get('message')
     const mailtoLink = `mailto:support@zao.ag?subject=${encodeURIComponent(`[Zao Contact] ${subject}`)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`
     window.location.href = mailtoLink
     setSubmitted(true)
-  }
+    return { success: true }
+  }, {})
 
   return (
     <div className="bg-background min-h-screen">
@@ -76,7 +79,7 @@ export default function Contact() {
         <div className="absolute inset-0 hero-gradient"
           style={{
             backgroundImage:
-              'linear-gradient(to bottom, rgba(15, 82, 56, 0.4), rgba(12, 32, 18, 0.9)), url(https://lh3.googleusercontent.com/aida-public/AB6AXuDwijp4O2J_We2JK0LnqjhG7-C5ZkZNaM3Uaaxr92XEVbwlwm_PJqcUFfIQ8vzUU1RIcyFBvpCnGaLrGf7PRCAseBfAZ4N_SyN1rJeu8kq3XxuJCKNf36YSeYKQpxzIxcYUgqEOAaTJ0H5FZZdb-ZWuJutN2KiRDmels0l_U-7gikvl3oYxRDpXKBrSiKYd0qwbhYtg3JucPVH3cq_CkM5T_fRSXswMXXBfkccUghE46XtXAlBjSvaiqWxISuexqBdg_HioRAVg7Vg)',
+              'linear-gradient(to bottom, rgba(15, 82, 56, 0.4), rgba(12, 32, 18, 0.9)), url(https://lh3.googleusercontent.com/aida-public/AB6AXuDwijp4O2J_We2JK0LnqjhG7-C5ZkZNaM3Uaaxr92XEVbwlwm_PJqcUFfIQ8vzUU1RIcyFBvpCnGaLrGf7PRCAseBfAZ4N_SyN1rJeu8kq3XxuJCKNf36YSeYKQpxzIxcYUgqEOAaTJ0H5FZZdb-ZWuJutN2KiRDmels0l_U-7gikvl3oYxRDpXKBrSiKYd0qwbhYtg3JucPVH3cq_CkM5T_fRSXswMXXBfkccUghE46XtXAlBjSvaiqWxISuexqBdg_HioRAVg7Vg',
           }}
         />
         <div className="relative z-10 max-w-3xl">
@@ -126,23 +129,22 @@ export default function Contact() {
                   Your default email client will open with the message pre-filled. Just click send.
                 </p>
                 <button
-                  onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }) }}
+                  onClick={() => setSubmitted(false)}
                   className="px-6 py-3 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary/90 transition-colors"
                 >
                   Send Another Message
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form action={contactAction} className="space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="contact-name" className="block text-label-md font-bold text-on-surface mb-1.5">Your Name *</label>
                     <input
                       id="contact-name"
+                      name="name"
                       type="text"
                       required
-                      value={form.name}
-                      onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                       placeholder="John Kamau"
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2.5 text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
@@ -151,10 +153,9 @@ export default function Contact() {
                     <label htmlFor="contact-email" className="block text-label-md font-bold text-on-surface mb-1.5">Your Email *</label>
                     <input
                       id="contact-email"
+                      name="email"
                       type="email"
                       required
-                      value={form.email}
-                      onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
                       placeholder="john@cooperative.co.ke"
                       className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2.5 text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                     />
@@ -164,10 +165,9 @@ export default function Contact() {
                   <label htmlFor="contact-subject" className="block text-label-md font-bold text-on-surface mb-1.5">Subject *</label>
                   <input
                     id="contact-subject"
+                    name="subject"
                     type="text"
                     required
-                    value={form.subject}
-                    onChange={(e) => setForm(f => ({ ...f, subject: e.target.value }))}
                     placeholder="Demo Request, Support Question, Partnership..."
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2.5 text-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                   />
@@ -176,10 +176,9 @@ export default function Contact() {
                   <label htmlFor="contact-message" className="block text-label-md font-bold text-on-surface mb-1.5">Message *</label>
                   <textarea
                     id="contact-message"
+                    name="message"
                     required
                     rows={5}
-                    value={form.message}
-                    onChange={(e) => setForm(f => ({ ...f, message: e.target.value }))}
                     placeholder="Tell us how we can help..."
                     className="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2.5 text-body-md text-on-surface placeholder:text-on-surface-variant resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                   />

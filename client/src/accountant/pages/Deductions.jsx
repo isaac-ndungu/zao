@@ -7,6 +7,7 @@ import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
 import Pagination from '../../admin/components/common/Pagination'
 import ErrorState from '../../shared/components/ErrorState'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 function formatKes(n) { return n ? `KES ${Number(n).toLocaleString()}` : 'KES 0' }
 
@@ -20,8 +21,6 @@ export default function AccountantDeductions() {
   const [pageSize, setPageSize] = useState(20)
   const [typeFilter, setTypeFilter] = useState('')
   const [showCreditForm, setShowCreditForm] = useState(false)
-  const [creditForm, setCreditForm] = useState({ farmer: '', item_description: '', amount: '' })
-  const [saving, setSaving] = useState(false)
 
   const qp = new URLSearchParams({ page, page_size: pageSize })
   if (typeFilter) qp.set('type', typeFilter)
@@ -38,19 +37,18 @@ export default function AccountantDeductions() {
   const financial = stats?.data || stats || {}
   const deductionStats = financial.deductions_breakdown || {}
 
-  const handleCreateCredit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
+  const handleCreateCredit = async (prev, formData) => {
+    const data = formDataToObject(formData)
     try {
-      const res = await apiFetch('/api/deductions/farm-input-credits/', { method: 'POST', body: JSON.stringify(creditForm) })
+      const res = await apiFetch('/api/deductions/farm-input-credits/', { method: 'POST', body: JSON.stringify(data) })
       if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to create credit') }
       showToast({ type: 'success', message: 'Farm input credit created.' })
       creditsRefetch()
       setShowCreditForm(false)
-      setCreditForm({ farmer: '', item_description: '', amount: '' })
     } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSaving(false) }
   }
+
+  const { formAction: createCreditAction } = useFormAction(handleCreateCredit, {})
 
   const dedColumns = [
     { key: 'id', label: 'ID', render: (v, row) => row.id },
@@ -132,21 +130,21 @@ export default function AccountantDeductions() {
             <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center cursor-pointer" onClick={() => setShowCreditForm(false)}>
               <div className="bg-surface rounded-xl p-6 max-w-lg w-[90vw] relative" onClick={(e) => e.stopPropagation()}>
                 <h3 className="font-headline-sm text-headline-sm mb-4">New Farm Input Credit</h3>
-                <form onSubmit={handleCreateCredit} className="space-y-4">
+                <form action={createCreditAction} className="space-y-4">
                   <div><label htmlFor="credit-farmer" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
-                    <select id="credit-farmer" value={creditForm.farmer} onChange={(e) => setCreditForm(p => ({ ...p, farmer: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
+                    <select id="credit-farmer" name="farmer" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container">
                       <option value="">Select farmer...</option>
                       {farmers?.results?.map((f) => <option key={f.id} value={f.id}>{f.full_name} ({f.phone_number})</option>)}
                     </select>
                   </div>
                   <div><label htmlFor="credit-amount" className="block text-label-md text-on-surface-variant mb-1">Amount (KES)</label>
-                    <input id="credit-amount" type="number" min="1" value={creditForm.amount} onChange={(e) => setCreditForm(p => ({ ...p, amount: e.target.value }))} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
+                    <input id="credit-amount" name="amount" type="number" min="1" required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
                   </div>
                   <div><label htmlFor="credit-description" className="block text-label-md text-on-surface-variant mb-1">Description</label>
-                    <textarea id="credit-description" value={creditForm.item_description} onChange={(e) => setCreditForm(p => ({ ...p, item_description: e.target.value }))} rows={3} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. Fertilizer, Seeds..." />
+                    <textarea id="credit-description" name="item_description" rows={3} required className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" placeholder="e.g. Fertilizer, Seeds..." />
                   </div>
                   <div className="flex gap-3">
-                    <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold disabled:opacity-50">{saving ? '...' : 'Create'}</button>
+                    <SubmitButton className="px-4 py-2 bg-primary text-on-primary rounded-lg text-label-md font-bold">Create</SubmitButton>
                     <button type="button" onClick={() => setShowCreditForm(false)} className="px-4 py-2 border border-outline-variant rounded-lg text-label-md font-bold">Cancel</button>
                   </div>
                 </form>

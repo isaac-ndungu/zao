@@ -12,6 +12,7 @@ import ConfirmModal from '../../admin/components/common/ConfirmModal'
 import { useToast } from '../../admin/contexts/ToastContext'
 import ErrorState from '../../shared/components/ErrorState'
 import MapView from '../../shared/components/MapView'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function Deliveries() {
   const [page, setPage] = useState(1)
@@ -27,8 +28,6 @@ export default function Deliveries() {
   const [detailDelivery, setDetailDelivery] = useState(null)
   const [farmerSearch, setFarmerSearch] = useState('')
   const [farmerResults, setFarmerResults] = useState([])
-  const [editForm, setEditForm] = useState({})
-  const [editLoading, setEditLoading] = useState(false)
   const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedId = searchParams.get('selected')
@@ -95,24 +94,17 @@ export default function Deliveries() {
     setPickedRouteStop(stopId)
     if (stopId) {
       const s = pickedRouteStops.find((x) => String(x.id) === String(stopId))
-      // The stop has order; we need its lat/lng to prefill coords. The lookup
-      // endpoint only returns stop metadata. Pull the full route stops lazily.
-      // Fallback: keep existing createLat/createLng if user already typed them.
     }
   }
 
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    const fd = new FormData(e.target)
-    const body = Object.fromEntries(fd.entries())
+  const [, createAction] = useFormAction(async (_prev, formData) => {
+    const body = formDataToObject(formData)
     if (body.farmer_id) body.farmer = body.farmer_id
-    try {
-      const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
-      showToast({ type: 'success', message: 'Delivery recorded.' })
-      setShowCreate(false); refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-  }
+    const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
+    if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
+    showToast({ type: 'success', message: 'Delivery recorded.' })
+    setShowCreate(false); refetch()
+  }, {})
 
   const handleDelete = async () => {
     try {
@@ -125,33 +117,19 @@ export default function Deliveries() {
 
   const openEdit = (delivery) => {
     setShowEdit(delivery)
-    setEditForm({
-      product_type: delivery.product_type || 'MILK',
-      quantity_kg: delivery.quantity_kg || '',
-      volume_litres: delivery.volume_litres || '',
-      shift: delivery.shift || 'AM',
-      date_delivered: delivery.date_delivered ? delivery.date_delivered.slice(0, 10) : new Date().toISOString().slice(0, 10),
-      latitude: delivery.latitude || '',
-      longitude: delivery.longitude || '',
-    })
   }
 
-  const handleEdit = async (e) => {
-    e.preventDefault()
-    setEditLoading(true)
-    try {
-      const body = { ...editForm }
-      if (!body.quantity_kg) delete body.quantity_kg
-      if (!body.volume_litres) delete body.volume_litres
-      if (!body.latitude) delete body.latitude
-      if (!body.longitude) delete body.longitude
-      const res = await apiFetch(`/api/deliveries/${showEdit.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
-      if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to update') }
-      showToast({ type: 'success', message: 'Delivery updated.' })
-      setShowEdit(null); refetch()
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setEditLoading(false) }
-  }
+  const [, editAction] = useFormAction(async (_prev, formData) => {
+    const body = formDataToObject(formData)
+    if (!body.quantity_kg) delete body.quantity_kg
+    if (!body.volume_litres) delete body.volume_litres
+    if (!body.latitude) delete body.latitude
+    if (!body.longitude) delete body.longitude
+    const res = await apiFetch(`/api/deliveries/${showEdit.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
+    if (!res.ok) { const err = await res.json(); throw new Error(Object.values(err).flat().join(', ') || 'Failed to update') }
+    showToast({ type: 'success', message: 'Delivery updated.' })
+    setShowEdit(null); refetch()
+  }, {})
 
   const withLocationCount = mapData?.filter((m) => m.latitude && m.longitude)?.length || 0
   const totalMapItems = mapData?.length || 0
@@ -289,7 +267,7 @@ export default function Deliveries() {
       </SlideOutPanel>
 
       <SlideOutPanel open={showCreate} onClose={() => { setShowCreate(false); setPickedFarmer(null); setPickedFarmerLocation(null); setPickedRouteStops([]); setPickedRouteStop(''); setCreateLat(''); setCreateLng('') }} title="Record Delivery" width="max-w-md">
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form action={createAction} className="space-y-4">
           <div>
             <label htmlFor="create-farmer-search" className="block text-label-md text-on-surface-variant mb-1">Farmer</label>
             <input id="create-farmer-search" value={farmerSearch} onChange={(e) => searchFarmer(e.target.value)} placeholder="Search by name or phone..." className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/>
@@ -354,13 +332,13 @@ export default function Deliveries() {
               <input id="create-longitude" name="longitude" type="number" step="any" value={createLng} onChange={(e) => setCreateLng(e.target.value)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" />
             </div>
           </div>
-          <button type="submit" disabled={!pickedFarmer} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">Record Delivery</button>
+          <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold disabled:opacity-50">Record Delivery</SubmitButton>
         </form>
       </SlideOutPanel>
 
       <SlideOutPanel open={!!showEdit} onClose={() => setShowEdit(null)} title="Edit Delivery" width="max-w-md">
         {showEdit && (
-          <form onSubmit={handleEdit} className="space-y-4">
+          <form action={editAction} className="space-y-4">
             <div>
               <p className="text-label-md text-on-surface-variant">Batch ID</p>
               <p className="text-body-md text-on-surface font-medium">{showEdit.batch_id}</p>
@@ -369,23 +347,22 @@ export default function Deliveries() {
               <p className="text-label-md text-on-surface-variant">Farmer</p>
               <p className="text-body-md text-on-surface font-medium">{showEdit.farmer_name}</p>
             </div>
-            <div><label htmlFor="edit-product-type" className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select id="edit-product-type" value={editForm.product_type} onChange={(e) => setEditForm(f => ({ ...f, product_type: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
+            <div><label htmlFor="edit-product-type" className="block text-label-md text-on-surface-variant mb-1">Product Type</label><select id="edit-product-type" name="product_type" defaultValue={showEdit.product_type || 'MILK'} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="MILK">Milk</option><option value="COFFEE_CHERRIES">Coffee Cherries</option><option value="HONEY">Honey</option><option value="OTHER">Other</option></select></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label htmlFor="edit-quantity-kg" className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input id="edit-quantity-kg" type="number" step="0.01" value={editForm.quantity_kg} onChange={(e) => setEditForm(f => ({ ...f, quantity_kg: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
-              <div><label htmlFor="edit-volume-litres" className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input id="edit-volume-litres" type="number" step="0.01" value={editForm.volume_litres} onChange={(e) => setEditForm(f => ({ ...f, volume_litres: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-quantity-kg" className="block text-label-md text-on-surface-variant mb-1">Quantity (kg)</label><input id="edit-quantity-kg" name="quantity_kg" type="number" step="0.01" defaultValue={showEdit.quantity_kg || ''} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+              <div><label htmlFor="edit-volume-litres" className="block text-label-md text-on-surface-variant mb-1">Volume (L)</label><input id="edit-volume-litres" name="volume_litres" type="number" step="0.01" defaultValue={showEdit.volume_litres || ''} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label htmlFor="edit-shift" className="block text-label-md text-on-surface-variant mb-1">Shift</label><select id="edit-shift" value={editForm.shift} onChange={(e) => setEditForm(f => ({ ...f, shift: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}><option value="AM">AM</option><option value="PM">PM</option></select></div>
-              <div><label htmlFor="edit-date-delivered" className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input id="edit-date-delivered" type="date" value={editForm.date_delivered} onChange={(e) => setEditForm(f => ({ ...f, date_delivered: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-shift" className="block text-label-md text-on-surface-variant mb-1">Shift</label><select id="edit-shift" name="shift" defaultValue={showEdit.shift || 'AM'} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"><option value="AM">AM</option><option value="PM">PM</option></select></div>
+              <div><label htmlFor="edit-date-delivered" className="block text-label-md text-on-surface-variant mb-1">Date Delivered</label><input id="edit-date-delivered" name="date_delivered" type="date" defaultValue={showEdit.date_delivered ? showEdit.date_delivered.slice(0, 10) : new Date().toISOString().slice(0, 10)} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label htmlFor="edit-latitude" className="block text-label-md text-on-surface-variant mb-1">Latitude</label><input id="edit-latitude" type="number" step="any" value={editForm.latitude} onChange={(e) => setEditForm(f => ({ ...f, latitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
-              <div><label htmlFor="edit-longitude" className="block text-label-md text-on-surface-variant mb-1">Longitude</label><input id="edit-longitude" type="number" step="any" value={editForm.longitude} onChange={(e) => setEditForm(f => ({ ...f, longitude: e.target.value }))} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container" disabled={editLoading}/></div>
+              <div><label htmlFor="edit-latitude" className="block text-label-md text-on-surface-variant mb-1">Latitude</label><input id="edit-latitude" name="latitude" type="number" step="any" defaultValue={showEdit.latitude || ''} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
+              <div><label htmlFor="edit-longitude" className="block text-label-md text-on-surface-variant mb-1">Longitude</label><input id="edit-longitude" name="longitude" type="number" step="any" defaultValue={showEdit.longitude || ''} className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"/></div>
             </div>
-            <button type="submit" disabled={editLoading} className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold flex items-center justify-center gap-2">
-              {editLoading && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {editLoading ? 'Saving...' : 'Save Changes'}
-            </button>
+            <SubmitButton className="w-full bg-primary text-on-primary py-2 rounded-lg font-bold">
+              Save Changes
+            </SubmitButton>
           </form>
         )}
       </SlideOutPanel>

@@ -6,14 +6,13 @@ import { useToast } from '../components/Toast'
 import { setLanguage, getLanguage, t } from '../i18n'
 import ConfirmModal from '../components/ConfirmModal'
 import PasswordInput from '../../shared/components/PasswordInput'
+import { useFormAction, formDataToObject, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function FarmerSettings() {
   const navigate = useNavigate()
   const { logout } = useFarmerAuth()
   const { showToast } = useToast()
   const [lang, setLangState] = useState(getLanguage())
-  const [pwForm, setPwForm] = useState({ old_password: '', new_password: '', confirm_password: '' })
-  const [saving, setSaving] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
 
@@ -23,24 +22,23 @@ export default function FarmerSettings() {
     showToast({ type: 'success', message: l === 'sw' ? 'Lugha imebadilishwa' : t('languageChanged') })
   }
 
-  const handlePasswordChange = async (e) => {
-    e.preventDefault()
-    if (pwForm.new_password !== pwForm.confirm_password) {
-      showToast({ type: 'error', message: t('passwordsMismatch') })
-      return
+  const [, changePasswordAction] = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    if (data.new_password !== data.confirm_password) {
+      throw new Error(t('passwordsMismatch'))
     }
-    setSaving(true)
-    try {
-      const res = await apiFetch('/api/auth/change-password/', {
-        method: 'POST',
-        body: JSON.stringify({ current_password: pwForm.old_password, new_password: pwForm.new_password }),
-      })
-      if (!res.ok) { const err = await res.json(); throw new Error(err.detail || t('passwordChangeFailed')) }
-      showToast({ type: 'success', message: t('passwordChanged') })
-      setPwForm({ old_password: '', new_password: '', confirm_password: '' })
-    } catch (err) { showToast({ type: 'error', message: err.message }) }
-    finally { setSaving(false) }
-  }
+    const res = await apiFetch('/api/auth/change-password/', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: data.current_password, new_password: data.new_password }),
+    })
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.detail || t('passwordChangeFailed'))
+    }
+    showToast({ type: 'success', message: t('passwordChanged') })
+    document.getElementById('password-change-form')?.reset()
+    return { success: true }
+  }, {})
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -72,32 +70,29 @@ export default function FarmerSettings() {
 
       <div className="bg-surface-container rounded-xl border border-outline-variant p-4 mb-4">
         <h3 className="font-semibold text-sm mb-4">{t('changePassword')}</h3>
-        <form onSubmit={handlePasswordChange} className="space-y-3">
+        <form id="password-change-form" action={changePasswordAction} className="space-y-3">
           <PasswordInput
             id="id-current-password"
+            name="current_password"
             label={t('currentPassword')}
-            value={pwForm.old_password}
-            onChange={(e) => setPwForm(p => ({ ...p, old_password: e.target.value }))}
             required
           />
           <PasswordInput
             id="id-new-password"
+            name="new_password"
             label={t('newPassword')}
-            value={pwForm.new_password}
-            onChange={(e) => setPwForm(p => ({ ...p, new_password: e.target.value }))}
             required
             minLength={8}
           />
           <PasswordInput
             id="id-confirm-password"
+            name="confirm_password"
             label={t('confirmPassword')}
-            value={pwForm.confirm_password}
-            onChange={(e) => setPwForm(p => ({ ...p, confirm_password: e.target.value }))}
             required
           />
-          <button type="submit" disabled={saving} className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full">
-            {saving ? <span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full" /> : t('changePassword')}
-          </button>
+          <SubmitButton className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 w-full">
+            {t('changePassword')}
+          </SubmitButton>
         </form>
       </div>
 

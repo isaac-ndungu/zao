@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useTransition, useActionState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, getLoginRedirect } from '../../shared/hooks/useAuth'
 import OTPInput from '../../shared/components/OTPInput'
@@ -25,13 +25,11 @@ export default function Login() {
   const googleBtnRef = useRef(null)
   const [gisReady, setGisReady] = useState(false)
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [step, setStep] = useState('credentials')
   const [loginToken, setLoginToken] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [googleLoading, setGoogleLoading] = useState(false)
   const [mustChangePassword, setMustChangePassword] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
@@ -98,65 +96,67 @@ export default function Login() {
     })
   }, [gisReady, handleGoogleCredential])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const [, loginAction] = useActionState(async (_prev, formData) => {
+    const email = formData.get('email')
+    const password = formData.get('password')
+    if (!email || !password) return
     setError('')
-    setLoading(true)
-    try {
-      const result = await login(email, password)
-      if (result.requires_2fa) {
-        setLoginToken(result.loginToken)
-        setStep('otp')
-        setOtpCode('')
-        setOtpSent(false)
-        try {
-          await requestOtp(result.loginToken)
-          setOtpSent(true)
-        } catch (otpErr) {
-          setError(otpErr.detail || 'Failed to send verification code. Click "Resend code" to try again.')
+
+    startTransition(async () => {
+      try {
+        const result = await login(email, password)
+        if (result.requires_2fa) {
+          setLoginToken(result.loginToken)
+          setStep('otp')
+          setOtpCode('')
+          setOtpSent(false)
+          try {
+            await requestOtp(result.loginToken)
+            setOtpSent(true)
+          } catch (otpErr) {
+            setError(otpErr.detail || 'Failed to send verification code. Click "Resend code" to try again.')
+          }
+        } else {
+          navigate(getLoginRedirect(result.user.role), { replace: true })
         }
-      } else {
-        navigate(getLoginRedirect(result.user.role), { replace: true })
+      } catch (err) {
+        if (err.must_change_password) {
+          setMustChangePassword(true)
+        } else {
+          setError(err.detail || err.message || 'Invalid credentials.')
+        }
       }
-    } catch (err) {
-      if (err.must_change_password) {
-        setMustChangePassword(true)
-      } else {
-        setError(err.detail || err.message || 'Invalid credentials.')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+    })
+  }, null)
 
   const handleSendOtp = async () => {
     setError('')
-    setLoading(true)
-    try {
-      await requestOtp(loginToken)
-      setOtpSent(true)
-      setOtpCode('')
-    } catch (err) {
-      setError(err.detail || 'Failed to resend OTP.')
-    } finally {
-      setLoading(false)
-    }
+    startTransition(async () => {
+      try {
+        await requestOtp(loginToken)
+        setOtpSent(true)
+        setOtpCode('')
+      } catch (err) {
+        setError(err.detail || 'Failed to resend OTP.')
+      }
+    })
   }
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault()
+    if (otpCode.length !== 6) return
     setError('')
-    setLoading(true)
-    try {
-      const result = await verifyOtp(loginToken, otpCode)
-      if (result?.user) {
-        navigate(getLoginRedirect(result.user.role), { replace: true })
+
+    startTransition(async () => {
+      try {
+        const result = await verifyOtp(loginToken, otpCode)
+        if (result?.user) {
+          navigate(getLoginRedirect(result.user.role), { replace: true })
+        }
+      } catch (err) {
+        setError(err.detail || err.message || 'Invalid or expired OTP.')
       }
-    } catch (err) {
-      setError(err.detail || err.message || 'Invalid or expired OTP.')
-    } finally {
-      setLoading(false)
-    }
+    })
   }
 
   if (mustChangePassword) {
@@ -193,16 +193,15 @@ export default function Login() {
 
         <div className="bg-surface-container-lowest rounded-xl shadow-lg p-8 border border-outline-variant">
           {step === 'credentials' ? (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form action={loginAction} className="space-y-5">
               <div>
                 <label htmlFor="email" className="block text-label-md text-on-surface-variant mb-1">
                   Email
                 </label>
                 <input
                   id="email"
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
                   autoFocus
@@ -214,9 +213,8 @@ export default function Login() {
               <div>
                 <PasswordInput
                   id="password"
+                  name="password"
                   label="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"
@@ -229,11 +227,11 @@ export default function Login() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isPending}
                 className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-                {loading ? 'Signing in...' : 'Sign In'}
+                {isPending && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                {isPending ? 'Signing in...' : 'Sign In'}
               </button>
             </form>
           ) : (
@@ -262,17 +260,17 @@ export default function Login() {
 
               <button
                 type="submit"
-                disabled={loading || otpCode.length !== 6}
+                disabled={isPending || otpCode.length !== 6}
                 className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-                {loading ? 'Verifying...' : 'Verify'}
+                {isPending && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                {isPending ? 'Verifying...' : 'Verify'}
               </button>
 
               <button
                 type="button"
                 onClick={handleSendOtp}
-                disabled={loading}
+                disabled={isPending}
                 className="w-full text-center text-body-md text-primary hover:underline mt-1"
               >
                 Resend code

@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiFetch } from '../api/client'
+import { useFormAction } from '../../shared/hooks/useFormAction'
 import { t } from '../i18n'
 
 export default function FarmerChat() {
   const navigate = useNavigate()
   const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [sessionId, setSessionId] = useState(() => localStorage.getItem('zao_chat_session'))
   const endRef = useRef(null)
+  const formRef = useRef(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -26,16 +27,14 @@ export default function FarmerChat() {
     }
   }, [sessionId])
 
-  const sendMessage = async (text) => {
-    const msg = text || input
-    if (!msg.trim()) return
-    setMessages(prev => [...prev, { role: 'user', content: msg }])
-    setInput('')
+  const handleSend = async (text) => {
+    if (!text.trim()) return
+    setMessages(prev => [...prev, { role: 'user', content: text }])
     setSending(true)
     try {
       const res = await apiFetch('/api/chat/', {
         method: 'POST',
-        body: JSON.stringify({ message: msg, session_id: sessionId }),
+        body: JSON.stringify({ message: text, session_id: sessionId }),
       })
       if (!res.ok) throw new Error('Chat failed')
       const data = await res.json()
@@ -47,6 +46,17 @@ export default function FarmerChat() {
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I had trouble responding. Please try again.' }])
     } finally { setSending(false) }
+  }
+
+  const [, chatAction] = useFormAction(async (prev, formData) => {
+    const msg = formData.get('message')
+    await handleSend(msg)
+    formRef.current?.reset()
+    return { success: true }
+  }, {})
+
+  const handleSuggestion = (label) => {
+    handleSend(label)
   }
 
   const suggestions = [
@@ -77,7 +87,7 @@ export default function FarmerChat() {
             <p className="text-sm text-on-surface-variant mb-4">How can I help you today?</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {suggestions.map((s) => (
-                <button key={s.label} onClick={() => sendMessage(s.label)} className="inline-flex items-center px-4 py-2 rounded-full border-2 border-outline-variant bg-surface-container text-sm whitespace-nowrap min-h-[36px] active:bg-primary-container active:border-primary gap-1.5">
+                <button key={s.label} onClick={() => handleSuggestion(s.label)} className="inline-flex items-center px-4 py-2 rounded-full border-2 border-outline-variant bg-surface-container text-sm whitespace-nowrap min-h-[36px] active:bg-primary-container active:border-primary gap-1.5">
                   <span className="material-symbols-outlined text-sm" aria-hidden="true">{s.icon}</span>
                   {s.label}
                 </button>
@@ -102,15 +112,14 @@ export default function FarmerChat() {
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); sendMessage() }} className="flex gap-2 pt-3 border-t border-outline-variant">
+      <form ref={formRef} action={chatAction} className="flex gap-2 pt-3 border-t border-outline-variant">
         <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+          name="message"
           placeholder={t('typeMessage')}
           className="w-full px-3.5 py-3 rounded-xl border-2 border-outline-variant bg-surface text-sm outline-none focus:border-primary min-h-[44px] flex-1"
           disabled={sending}
         />
-        <button type="submit" disabled={sending || !input.trim()} aria-label="Send message" className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed !px-4">
+        <button type="submit" disabled={sending} aria-label="Send message" className="bg-primary text-on-primary px-4 py-2 rounded-xl text-xs font-semibold min-h-[36px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed !px-4">
           <span className="material-symbols-outlined" aria-hidden="true">send</span>
         </button>
       </form>

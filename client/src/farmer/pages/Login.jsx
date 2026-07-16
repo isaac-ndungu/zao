@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useTransition, useActionState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFarmerAuth } from '../context/FarmerAuthContext'
 import { getToken } from '../api/client'
@@ -98,12 +98,11 @@ export default function FarmerLogin() {
   const { farmerLogin, farmerVerify, isAuthenticated } = useFarmerAuth()
   const navigate = useNavigate()
 
-  const [phoneNumber, setPhoneNumber] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [loginToken, setLoginToken] = useState('')
   const [step, setStep] = useState('phone')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const ignoreRef = useRef(false)
 
   const sessionExpired = new URLSearchParams(window.location.search).get('expired') === '1'
@@ -112,53 +111,53 @@ export default function FarmerLogin() {
     if (isAuthenticated || getToken()) navigate('/farmer/dashboard', { replace: true })
   }, [isAuthenticated, navigate])
 
-  const handleSendOtp = async (e) => {
-    e.preventDefault()
+  const [, phoneAction] = useActionState(async (_prev, formData) => {
+    const phone = formData.get('phone')?.trim()
+    if (!phone) return
     setError('')
-    setLoading(true)
-    ignoreRef.current = false
 
-    const safetyTimer = setTimeout(() => {
-      if (!ignoreRef.current) {
-        setLoading(false)
-        setError('Request timed out. Please try again.')
+    startTransition(async () => {
+      ignoreRef.current = false
+      const safetyTimer = setTimeout(() => {
+        if (!ignoreRef.current) {
+          setError('Request timed out. Please try again.')
+        }
+      }, 30000)
+
+      try {
+        const result = await farmerLogin(phone)
+        clearTimeout(safetyTimer)
+        if (ignoreRef.current) return
+        setLoginToken(result.loginToken)
+        setStep('otp')
+      } catch (err) {
+        clearTimeout(safetyTimer)
+        if (ignoreRef.current) return
+        setError(err.detail || err.message || 'Failed to send OTP.')
       }
-    }, 30000)
-
-    try {
-      const result = await farmerLogin(phoneNumber)
-      clearTimeout(safetyTimer)
-      if (ignoreRef.current) return
-      setLoginToken(result.loginToken)
-      setStep('otp')
-    } catch (err) {
-      clearTimeout(safetyTimer)
-      if (ignoreRef.current) return
-      setError(err.detail || err.message || 'Failed to send OTP.')
-    } finally {
-      if (!ignoreRef.current) setLoading(false)
-    }
-  }
+    })
+  }, null)
 
   const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) return
     setError('')
-    setLoading(true)
 
-    const safetyTimer = setTimeout(() => {
-      if (!ignoreRef.current) {
-        setLoading(false)
-        setError('Verification timed out. Please try again.')
+    startTransition(async () => {
+      const safetyTimer = setTimeout(() => {
+        if (!ignoreRef.current) {
+          setError('Verification timed out. Please try again.')
+        }
+      }, 30000)
+
+      try {
+        await farmerVerify(loginToken, otpCode)
+        clearTimeout(safetyTimer)
+        navigate('/farmer/dashboard', { replace: true })
+      } catch (err) {
+        clearTimeout(safetyTimer)
+        setError(err.detail || err.message || 'Invalid or expired OTP.')
       }
-    }, 30000)
-
-    try {
-      await farmerVerify(loginToken, otpCode)
-      clearTimeout(safetyTimer)
-      navigate('/farmer/dashboard', { replace: true })
-    } catch (err) {
-      clearTimeout(safetyTimer)
-      setError(err.detail || err.message || 'Invalid or expired OTP.')
-    } finally { setLoading(false) }
+    })
   }
 
   return (
@@ -180,14 +179,13 @@ export default function FarmerLogin() {
 
         <div className="bg-surface-container rounded-xl shadow-lg p-6 border border-outline-variant">
           {step === 'phone' ? (
-            <form onSubmit={handleSendOtp} className="space-y-5">
+            <form action={phoneAction} className="space-y-5">
               <div>
                 <label htmlFor="phone-input" className="block text-xs font-semibold text-on-surface-variant mb-1.5">Phone Number</label>
                 <input
                   id="phone-input"
+                  name="phone"
                   type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="0712 345 678"
                   required
                   autoFocus
@@ -197,11 +195,11 @@ export default function FarmerLogin() {
               {error && <div role="alert" className="bg-error-container text-error text-sm px-3 py-2 rounded-lg">{error}</div>}
               <button
                 type="submit"
-                disabled={loading || !phoneNumber.trim()}
+                disabled={isPending}
                 className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full"
-                aria-label={loading ? 'Sending one-time password' : 'Send one-time password'}
+                aria-label={isPending ? 'Sending one-time password' : 'Send one-time password'}
               >
-                {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" aria-hidden="true" /> Sending...</> : 'Send OTP'}
+                {isPending ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" aria-hidden="true" /> Sending...</> : 'Send OTP'}
               </button>
             </form>
           ) : (
@@ -213,11 +211,11 @@ export default function FarmerLogin() {
               </div>
               <button
                 type="submit"
-                disabled={loading || otpCode.length !== 6}
+                disabled={isPending || otpCode.length !== 6}
                 className="bg-primary text-on-primary px-6 py-3 rounded-xl text-sm font-semibold min-h-[44px] hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed w-full"
-                aria-label={loading ? 'Verifying one-time password' : 'Verify and sign in'}
+                aria-label={isPending ? 'Verifying one-time password' : 'Verify and sign in'}
               >
-                {loading ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" aria-hidden="true" /> Verifying...</> : 'Verify'}
+                {isPending ? <><span className="inline-block animate-spin h-5 w-5 border-2 border-outline-variant border-t-primary rounded-full mr-2" aria-hidden="true" /> Verifying...</> : 'Verify'}
               </button>
               <button
                 type="button"
@@ -225,7 +223,6 @@ export default function FarmerLogin() {
                   setStep('phone')
                   setError('')
                   setOtpCode('')
-                  setLoading(false)
                   ignoreRef.current = true
                 }}
                 className="w-full text-center text-sm text-primary font-medium hover:underline mt-2"

@@ -3,8 +3,10 @@ import { useState } from 'react'
 export default function PasswordInput({
   id,
   label,
+  name,
   value,
   onChange,
+  defaultValue,
   placeholder,
   required,
   autoComplete,
@@ -15,6 +17,7 @@ export default function PasswordInput({
   ...props
 }) {
   const [showPassword, setShowPassword] = useState(false)
+  const isControlled = value !== undefined
 
   return (
     <div>
@@ -26,9 +29,9 @@ export default function PasswordInput({
       <div className="relative">
         <input
           id={id}
+          name={name}
           type={showPassword ? 'text' : 'password'}
-          value={value}
-          onChange={onChange}
+          {...isControlled ? { value, onChange } : { defaultValue }}
           placeholder={placeholder}
           required={required}
           autoComplete={autoComplete}

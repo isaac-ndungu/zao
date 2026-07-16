@@ -1,38 +1,23 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import PasswordInput from './PasswordInput'
+import { useFormAction, formDataToObject, SubmitButton } from '../hooks/useFormAction'
 
 export default function ForcePasswordChange({ onComplete }) {
   const { changePassword, logout } = useAuth()
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match.')
-      return
+  const [, changeAction] = useFormAction(async (prev, formData) => {
+    const data = formDataToObject(formData)
+    if (data.new_password !== data.confirm_password) {
+      throw new Error('Passwords do not match.')
     }
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters.')
-      return
+    if (data.new_password.length < 8) {
+      throw new Error('Password must be at least 8 characters.')
     }
-
-    setLoading(true)
-    try {
-      await changePassword(currentPassword, newPassword)
-      onComplete?.()
-    } catch (err) {
-      setError(err.detail || err.message || 'Failed to change password.')
-    } finally {
-      setLoading(false)
-    }
-  }
+    await changePassword(data.current_password, data.new_password)
+    onComplete?.()
+    return { success: true }
+  }, {})
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface px-4">
@@ -47,12 +32,11 @@ export default function ForcePasswordChange({ onComplete }) {
             You must change your password before continuing.
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form action={changeAction} className="space-y-5">
             <PasswordInput
               id="currentPassword"
+              name="current_password"
               label="Current Password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
               required
               autoFocus
               autoComplete="current-password"
@@ -60,9 +44,8 @@ export default function ForcePasswordChange({ onComplete }) {
 
             <PasswordInput
               id="newPassword"
+              name="new_password"
               label="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={8}
               autoComplete="new-password"
@@ -70,26 +53,16 @@ export default function ForcePasswordChange({ onComplete }) {
 
             <PasswordInput
               id="confirmPassword"
+              name="confirm_password"
               label="Confirm New Password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={8}
               autoComplete="new-password"
             />
 
-            {error && (
-              <div className="bg-error-container text-error text-body-md px-3 py-2 rounded-lg">{error}</div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-              {loading ? 'Changing...' : 'Change Password'}
-            </button>
+            <SubmitButton className="w-full bg-primary text-on-primary font-body-md text-body-md py-2.5 rounded-lg hover:bg-primary/90 transition-colors">
+              Change Password
+            </SubmitButton>
           </form>
 
           <button

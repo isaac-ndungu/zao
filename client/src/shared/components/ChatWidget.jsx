@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useChatAuth } from '../hooks/useChatAuth'
 import { getChatToken } from '../../admin/api/client'
+import { useFormAction } from '../hooks/useFormAction'
 
 const SESSION_KEY = 'zao_widget_chat_session'
 
@@ -28,10 +29,10 @@ async function chatApiFetch(url, options = {}) {
 export default function ChatWidget({ onClose }) {
   const { isAuthenticated, loading } = useChatAuth()
   const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [sessionId, setSessionId] = useState(() => localStorage.getItem(SESSION_KEY))
   const endRef = useRef(null)
+  const formRef = useRef(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -50,16 +51,14 @@ export default function ChatWidget({ onClose }) {
 
   if (loading || !isAuthenticated) return null
 
-  const sendMessage = async (text) => {
-    const msg = text || input
-    if (!msg.trim()) return
-    setMessages(prev => [...prev, { role: 'user', content: msg }])
-    setInput('')
+  const handleSend = async (text) => {
+    if (!text.trim()) return
+    setMessages(prev => [...prev, { role: 'user', content: text }])
     setSending(true)
     try {
       const res = await chatApiFetch('/api/chat/', {
         method: 'POST',
-        body: JSON.stringify({ message: msg, session_id: sessionId }),
+        body: JSON.stringify({ message: text, session_id: sessionId }),
       })
       if (!res.ok) throw new Error('Chat failed')
       const data = await res.json()
@@ -72,6 +71,13 @@ export default function ChatWidget({ onClose }) {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I had trouble responding. Please try again.' }])
     } finally { setSending(false) }
   }
+
+  const [, chatAction] = useFormAction(async (prev, formData) => {
+    const msg = formData.get('message')
+    await handleSend(msg)
+    formRef.current?.reset()
+    return { success: true }
+  }, {})
 
   const suggestions = [
     { label: 'Check my balance', icon: 'account_balance' },
@@ -110,7 +116,7 @@ export default function ChatWidget({ onClose }) {
               <p className="text-sm text-on-surface-variant mb-4">How can I help you today?</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 {suggestions.map((s) => (
-                  <button key={s.label} onClick={() => sendMessage(s.label)}
+                  <button key={s.label} onClick={() => handleSend(s.label)}
                     className="inline-flex items-center px-3 py-1.5 rounded-full border border-outline-variant bg-surface-container text-xs whitespace-nowrap hover:bg-primary-container hover:border-primary gap-1.5 transition-colors">
                     <span className="material-symbols-outlined text-sm" aria-hidden="true">{s.icon}</span>
                     {s.label}
@@ -139,17 +145,16 @@ export default function ChatWidget({ onClose }) {
           <div ref={endRef} />
         </div>
 
-          <form onSubmit={(e) => { e.preventDefault(); sendMessage() }} className="flex gap-2 p-3 border-t border-outline-variant">
+          <form ref={formRef} action={chatAction} className="flex gap-2 p-3 border-t border-outline-variant">
             <label htmlFor="chat-input" className="sr-only">Type a message</label>
             <input
               id="chat-input"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+              name="message"
               placeholder="Type a message..."
               className="flex-1 px-3 py-2.5 rounded-xl border-2 border-outline-variant bg-background text-sm outline-none focus:border-primary min-h-[44px]"
               disabled={sending}
             />
-            <button type="submit" disabled={sending || !input.trim()}
+            <button type="submit" disabled={sending}
               className="bg-primary text-on-primary px-3 py-2 rounded-xl min-h-[44px] min-w-[44px] flex items-center justify-center hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Send message">
               <span className="material-symbols-outlined text-sm" aria-hidden="true">send</span>

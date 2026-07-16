@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { StrictMode } from 'react'
+import { QueryProvider } from './shared/api/queryProvider'
 import './index.css'
 import App from './App.jsx'
 
@@ -12,6 +13,8 @@ if (import.meta.env.DEV) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <QueryProvider>
+      <App />
+    </QueryProvider>
   </StrictMode>,
 )
