@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 
@@ -16,6 +17,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    summary="Buyer management",
+    description="CRUD operations for external buyers. Managers manage buyers in their cooperative.",
+    tags=["Sales"],
+)
 class BuyerViewSet(CooperativeScopedViewSet):
     queryset = Buyer.objects.all().select_related('cooperative')
     serializer_class = BuyerSerializer
@@ -65,6 +71,11 @@ class BuyerViewSet(CooperativeScopedViewSet):
         instance.delete()
 
 
+@extend_schema(
+    summary="Sale records",
+    description="CRUD operations for sales to external buyers. Validates stock availability before recording. Supports filtering by status, buyer, date range, and product type.",
+    tags=["Sales"],
+)
 class SaleViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'sales.csv'
     queryset = Sale.objects.all().select_related('buyer', 'stock', 'cooperative')

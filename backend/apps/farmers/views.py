@@ -9,6 +9,7 @@ from django.contrib.postgres.search import (
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -53,6 +54,11 @@ def _create_farmer_user(farmer, cooperative_id):
     return user
 
 
+@extend_schema(
+    summary="Farmer management",
+    description="CRUD operations for farmers. Supports full-text search, CSV import, and location tracking. Managers manage farmers in their cooperative.",
+    tags=["Farmers"],
+)
 class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'farmers.csv'
     queryset = Farmer.objects.all().select_related('cooperative', 'user')
@@ -505,6 +511,11 @@ def normalize_phone_for_csv(value):
     return value
 
 
+@extend_schema(
+    summary="Farmer cooperative memberships",
+    description="Manage farmer-cooperative memberships. Supports deactivation and reactivation of memberships.",
+    tags=["Farmers"],
+)
 class MembershipViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'memberships.csv'
     queryset = FarmerCooperativeMembership.objects.all().select_related(

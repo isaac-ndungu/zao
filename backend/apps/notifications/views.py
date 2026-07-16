@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from drf_spectacular.utils import extend_schema
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -59,6 +60,11 @@ def ussd_callback(request):
     return HttpResponse(f'{prefix} {message}', content_type='text/plain')
 
 
+@extend_schema(
+    summary="Notification log",
+    description="Read-only view of all notifications (SMS, USSD, in-app). Farmers see only their own; managers see cooperative-wide; admins see all.",
+    tags=["Notifications"],
+)
 class NotificationLogViewSet(ReadOnlyModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationListSerializer

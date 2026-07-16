@@ -12,6 +12,7 @@ from django.conf import settings
 from django.core.cache import cache
 import redis as redis_module
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -68,6 +69,11 @@ from .throttles import (
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    summary="Role-scoped analytics",
+    description="Dashboard analytics with three tiers: farmer (own stats), staff (cooperative-level), admin (cross-cooperative via /api/admin/analytics/). Supports caching, comparison periods, and CSV export.",
+    tags=["Analytics"],
+)
 class AnalyticsViewSet(ViewSet):
     """Role-scoped analytics endpoints.
 

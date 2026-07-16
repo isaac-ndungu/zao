@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -25,6 +26,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    summary="Loan management",
+    description="Full loan lifecycle: create, approve, disburse, add/remove guarantors, mark completed/defaulted. Farmers can create loans; accountants/managers approve and disburse.",
+    tags=["Loans"],
+)
 class LoanViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'loans.csv'
     queryset = Loan.objects.all().select_related(

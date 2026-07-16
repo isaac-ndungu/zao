@@ -2,6 +2,7 @@ from datetime import date
 
 from django.db.models import Count, Sum
 from django.http import HttpResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
@@ -397,6 +398,11 @@ class AnnualReportView(APIView):
         })
 
 
+@extend_schema(
+    summary="Audit log",
+    description="Read-only audit trail of all write operations. Filters by resource type, action, date range. Internal auditors and managers have access.",
+    tags=["Statements"],
+)
 class AuditLogViewSet(CsvExportMixin, ReadOnlyModelViewSet):
     queryset = AuditLog.objects.select_related('actor', 'cooperative')
     serializer_class = AuditLogSerializer
@@ -455,6 +461,11 @@ _FINANCIAL_RESOURCE_TYPES = {
 }
 
 
+@extend_schema(
+    summary="External audit log",
+    description="Read-only audit log restricted to financial actions (payment cycles, disbursements, deductions, loans). For external auditor access.",
+    tags=["Statements"],
+)
 class ExternalAuditLogViewSet(AuditLogViewSet):
     """Read-only audit log restricted to financial actions only.
 

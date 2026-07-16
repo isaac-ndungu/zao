@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db import models
 from django.db.models import Sum
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +19,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    summary="Inventory management",
+    description="Read-only inventory records by batch, grade, and product type. Supports summary aggregation and low-stock alerts.",
+    tags=["Inventory"],
+)
 class InventoryViewSet(CsvExportMixin, ReadOnlyModelViewSet):
     queryset = Inventory.objects.all().select_related('cooperative')
     filter_backends = [SearchFilter, OrderingFilter]
@@ -117,6 +123,11 @@ class InventoryViewSet(CsvExportMixin, ReadOnlyModelViewSet):
         })
 
 
+@extend_schema(
+    summary="Current stock levels",
+    description="Read-only view of current sellable stock per cooperative, product type, and grade.",
+    tags=["Inventory"],
+)
 class StockViewSet(ReadOnlyModelViewSet):
     """The 'proper inventory' — current total sellable stock per (cooperative, product, grade)."""
     queryset = Stock.objects.all()

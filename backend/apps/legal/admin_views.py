@@ -3,6 +3,7 @@ import csv
 from django.db import transaction
 from django.http import HttpResponse, StreamingHttpResponse
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -20,6 +21,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    summary="Legal document management",
+    description="Platform-admin CRUD for legal documents (privacy policy, ToS). Publish creates a new version row (preserves version history). Deactivation requires ?confirm=true.",
+    tags=["Legal"],
+)
 class LegalDocumentAdminViewSet(viewsets.ModelViewSet):
     """Platform-admin CRUD for legal documents (privacy policy, ToS, etc.).
 

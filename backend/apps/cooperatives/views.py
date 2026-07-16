@@ -1,5 +1,6 @@
 from django.db.models import Count
 from django.forms.models import model_to_dict
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -19,6 +20,11 @@ from apps.cooperatives.serializers import (
 )
 
 
+@extend_schema(
+    summary="Cooperative management",
+    description="CRUD operations for cooperatives. Admin can manage all cooperatives; managers can update their own cooperative.",
+    tags=["Cooperatives"],
+)
 class CooperativeViewSet(viewsets.ModelViewSet):
     queryset = Cooperative.objects.all()
     filter_backends = [SearchFilter, OrderingFilter]

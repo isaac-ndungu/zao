@@ -13,6 +13,7 @@ from django.core.signing import TimestampSigner
 from django.db import connections, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -183,6 +184,11 @@ class CreateSuperUserView(APIView):
         )
 
 
+@extend_schema(
+    summary="Superadmin user management",
+    description="Cross-cooperative user CRUD for superusers. Supports soft-delete, restore, purge, impersonation, and bulk actions.",
+    tags=["Admin"],
+)
 class AdminUserViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = User.objects.all().select_related('cooperative').order_by('-date_joined')
     serializer_class = AdminUserSerializer
@@ -495,6 +501,11 @@ class ImpersonateView(APIView):
         })
 
 
+@extend_schema(
+    summary="Superadmin cooperative management",
+    description="Cross-cooperative CRUD for superusers. Supports soft-delete, restore, purge, activation/deactivation, and bulk actions.",
+    tags=["Admin"],
+)
 class AdminCooperativeViewSet(ModelAdminMixin, CreateModelMixin, ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Cooperative.objects.all().order_by('name')
     serializer_class = AdminCooperativeSerializer
@@ -1260,6 +1271,11 @@ class RevokeAllSessionsView(APIView):
         })
 
 
+@extend_schema(
+    summary="Superadmin farmer management",
+    description="Cross-cooperative farmer CRUD for superusers. Supports soft-delete, restore, and bulk activation/deactivation.",
+    tags=["Admin"],
+)
 class AdminFarmerViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, UpdateModelMixin, GenericViewSet):
     queryset = Farmer.objects.all().select_related('cooperative').order_by('-date_joined')
     serializer_class = AdminFarmerSerializer
@@ -1281,6 +1297,11 @@ class AdminFarmerViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, Cr
         return qs
 
 
+@extend_schema(
+    summary="Superadmin delivery management",
+    description="Cross-cooperative delivery CRUD for superusers. Supports soft-delete, restore, purge, force status changes, and grade assignment.",
+    tags=["Admin"],
+)
 class AdminDeliveryViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericViewSet):
     queryset = Delivery.objects.all().select_related('farmer', 'grader', 'cooperative').order_by('-date_delivered')
     search_fields = ['batch_id', 'farmer__first_name', 'farmer__last_name', 'farmer__phone_number']
@@ -1394,6 +1415,11 @@ class AdminDeliveryAssignGradeView(APIView):
         return Response({'detail': 'Grade assigned.', 'grade_id': str(grade.id), 'created': created})
 
 
+@extend_schema(
+    summary="Superadmin payment cycle management",
+    description="Cross-cooperative payment cycle CRUD for superusers. Supports soft-delete, restore, purge, and lock/unlock.",
+    tags=["Admin"],
+)
 class AdminPaymentCycleViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, CreateModelMixin, GenericViewSet):
     queryset = PaymentCycle.objects.all().select_related('cooperative', 'locked_by').order_by('-end_date')
     serializer_class = AdminPaymentCycleSerializer
@@ -1473,6 +1499,11 @@ class AdminPaymentCycleUnlockView(APIView):
         return Response({'detail': 'Payment cycle unlocked.'})
 
 
+@extend_schema(
+    summary="Superadmin disbursement batch management",
+    description="Cross-cooperative disbursement batch read-only view for superusers. Supports approve and reject actions.",
+    tags=["Admin"],
+)
 class AdminDisbursementBatchViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset = DisbursementBatch.objects.all().select_related('cooperative', 'payment_cycle').order_by('-created_at')
     serializer_class = AdminDisbursementBatchSerializer
@@ -1538,6 +1569,11 @@ class AdminDisbursementBatchRejectView(APIView):
         return Response({'detail': 'Batch rejected.'})
 
 
+@extend_schema(
+    summary="Superadmin farmer payment management",
+    description="Cross-cooperative farmer payment read-only view for superusers. Supports hold/unhold actions.",
+    tags=["Admin"],
+)
 class AdminFarmerPaymentViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset = FarmerPayment.objects.all().select_related('farmer', 'cycle').order_by('-created_at')
     serializer_class = AdminFarmerPaymentSerializer
@@ -1613,6 +1649,11 @@ class AdminFarmerPaymentUnholdView(APIView):
         return Response({'detail': 'Payment hold released.', 'is_on_hold': False})
 
 
+@extend_schema(
+    summary="Superadmin loan management",
+    description="Cross-cooperative loan read-only view for superusers. Supports approve, reject, mark defaulted, and mark completed actions.",
+    tags=["Admin"],
+)
 class AdminLoanViewSet(ModelAdminMixin, ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset = Loan.objects.all().select_related('farmer', 'approved_by', 'cooperative').order_by('-created_at')
     serializer_class = AdminLoanSerializer
@@ -2100,6 +2141,11 @@ class AdminFarmerBulkActionView(APIView):
         return Response({'detail': f'{count} farmers {action}d.', 'count': count})
 
 
+@extend_schema(
+    summary="Superadmin analytics",
+    description="Cross-cooperative analytics for superusers. Provides dashboard, production, financial, farmers, sales, loans, operations, disbursements, seasonal, payment efficiency, farmer retention, and leaderboard endpoints. Supports CSV export.",
+    tags=["Admin"],
+)
 class AdminAnalyticsViewSet(ViewSet):
     """Cross-cooperative analytics for superusers."""
 

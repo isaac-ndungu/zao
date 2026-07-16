@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -19,6 +20,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    summary="User management",
+    description="CRUD operations for cooperative staff users. Admin can manage all users; managers can view/update users in their cooperative.",
+    tags=["Users"],
+)
 class UserViewSet(CooperativeScopedViewSet):
     queryset = User.objects.all().select_related('cooperative')
     filter_backends = [SearchFilter, OrderingFilter]

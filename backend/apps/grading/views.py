@@ -415,6 +415,11 @@ class GradeViewSet(CsvExportMixin, CooperativeScopedViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(
+    summary="Grade disputes",
+    description="Manage farmer grade disputes. Farmers can raise disputes; managers can resolve them with optional grade override.",
+    tags=["Grading"],
+)
 class GradeDisputeViewSet(CooperativeScopedViewSet):
     queryset = FarmerGradeDispute.objects.all().select_related(
         'grade', 'raised_by', 'resolved_by',
@@ -508,6 +513,11 @@ class GradeDisputeViewSet(CooperativeScopedViewSet):
         return Response(GradeDisputeSerializer(dispute).data)
 
 
+@extend_schema(
+    summary="Grade prices",
+    description="CRUD operations for grade price tiers. Prices can be cooperative-specific or global (null cooperative). Effective from a given date.",
+    tags=["Grading"],
+)
 class GradePriceViewSet(CooperativeScopedViewSet):
     queryset = GradePrice.objects.all().order_by('-effective_from')
     serializer_class = GradePriceSerializer

@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -19,6 +20,11 @@ from .serializers import (
 )
 
 
+@extend_schema(
+    summary="Deduction management",
+    description="CRUD operations for loan repayments and other deductions. Deductions can only be deleted in DRAFT cycles.",
+    tags=["Deductions"],
+)
 class DeductionViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'deductions.csv'
     queryset = Deduction.objects.all().select_related(
@@ -106,6 +112,11 @@ class DeductionViewSet(CsvExportMixin, CooperativeScopedViewSet):
         instance.delete()
 
 
+@extend_schema(
+    summary="Farm input credits",
+    description="CRUD operations for farm input credits (advances deducted from future payments). Cannot delete completed credits.",
+    tags=["Deductions"],
+)
 class FarmInputCreditViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'farm_input_credits.csv'
     queryset = FarmInputCredit.objects.all().select_related(
