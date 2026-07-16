@@ -543,13 +543,7 @@ ENVIRONMENT = config('ENVIRONMENT', default='development')
 
 
 def _scrub_pii(event, hint):
-    """Scrub Kenyan PII from error payloads before sending to Sentry.
-
-    Covers:
-    - Exception stack frame local variables
-    - Sentry breadcrumbs (logged before the error)
-    - Exception values and log message strings
-    """
+    """Scrub Kenyan PII (phone numbers, national IDs) from Sentry payloads."""
     import re
 
     phone_re = re.compile(r'(\+?254)\d{8,10}')
@@ -565,7 +559,6 @@ def _scrub_pii(event, hint):
             return _scrub_string(val)
         return val
 
-    # Scrub exception stack frames
     if 'exception' in event:
         for exc in event['exception'].get('values', []):
             for frame in exc.get('stacktrace', {}).get('frames', []):
@@ -574,7 +567,6 @@ def _scrub_pii(event, hint):
             if 'value' in exc and isinstance(exc['value'], str):
                 exc['value'] = _scrub_string(exc['value'])
 
-    # Scrub breadcrumbs
     for bc in event.get('breadcrumbs', {}).get('values', []):
         if 'data' in bc and isinstance(bc['data'], dict):
             for key, val in bc['data'].items():
@@ -582,7 +574,6 @@ def _scrub_pii(event, hint):
         if 'message' in bc and isinstance(bc['message'], str):
             bc['message'] = _scrub_string(bc['message'])
 
-    # Scrub top-level message
     if 'message' in event and isinstance(event['message'], str):
         event['message'] = _scrub_string(event['message'])
 

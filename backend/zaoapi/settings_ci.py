@@ -1,11 +1,13 @@
-"""CI test settings — uses DATABASE_URL and REDIS_URL from environment.
-
-GitHub Actions provides PostgreSQL and Redis as service containers.
-Set DATABASE_URL and REDIS_URL in the workflow env vars.
-"""
+"""CI-specific settings override."""
 from .settings import *  # noqa: F401,F403
 
-# CI uses service containers — DATABASE_URL and REDIS_URL are set via workflow env.
-# Override any test-specific settings here if needed:
+# Eager execution for synchronous test runs
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
+
+# Disable SSL redirect — no .env loaded, default is True
+SECURE_SSL_REDIRECT = False
+
+# No Cloudinary credentials in CI — use local filesystem
+STORAGES["default"]["BACKEND"] = "django.core.files.storage.FileSystemStorage"
+STORAGES["dbbackup"]["BACKEND"] = "django.core.files.storage.FileSystemStorage"

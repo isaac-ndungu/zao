@@ -1,4 +1,3 @@
-# ---- Stage 1: Base ----
 FROM python:3.14-slim AS base
 
 ENV PYTHONUNBUFFERED=1
@@ -9,8 +8,7 @@ WORKDIR /app
 # ---- Stage 2: Dependencies ----
 FROM base AS dependencies
 
-# System packages: build-essential + libffi-dev for cryptography,
-# libpango/libcairo for WeasyPrint PDF generation
+# System deps: crypto, PDF (WeasyPrint), pg_dump
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libffi-dev \

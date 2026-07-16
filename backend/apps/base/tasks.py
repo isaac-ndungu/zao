@@ -37,13 +37,7 @@ def purge_deleted_records():
 
 @shared_task(bind=True, soft_time_limit=600, time_limit=900)
 def backup_database(self):
-    """Create a database backup using django-db-backup.
-
-    Backups are stored in the configured DBBACKUP_STORAGE (default: filesystem).
-    On Render, enable daily database backups in the dashboard as the primary
-    strategy. This Celery task provides additional backup frequency (every 6h)
-    and serves as a secondary safety net.
-    """
+    """Run dbbackup management command with compression."""
     try:
         timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
         logger.info('Starting database backup: %s', timestamp)
@@ -59,12 +53,7 @@ def backup_database(self):
 
 @shared_task(bind=True, soft_time_limit=300, time_limit=600)
 def verify_backup_integrity(self):
-    """Verify the most recent backup by checking file existence and size.
-
-    Full restoration testing should be done quarterly against a scratch database.
-    This task provides a lightweight check that the backup file exists and is
-    non-empty, catching obvious failures like empty dumps or upload errors.
-    """
+    """Check the most recent backup exists and is non-empty."""
     try:
         storage = _get_backup_storage()
         files = sorted(storage.list_directory(''))
