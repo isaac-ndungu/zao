@@ -27,7 +27,11 @@ jobs:
 
       - name: Run a quick sanity check
         run: |
-          docker run --rm -e SECRET_KEY=test-secret-key zao-backend:test python -c "import django; print(f'Django {django.VERSION}')"
+          docker run --rm \
+            -e SECRET_KEY=test-secret-key \
+            -e FIELD_ENCRYPTION_KEY=test-encryption-key \
+            -e DATABASE_URL=sqlite:///tmp/test.db \
+            zao-backend:test python -c "import django; print(f'Django {django.VERSION}')"
 
   docker-client:
     name: Build Client Docker Image
@@ -57,6 +61,22 @@ jobs:
     needs: [docker-backend, docker-client]
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create CI .env file
+        run: |
+          cat > backend/.env <<'EOF'
+          SECRET_KEY=ci-test-secret-key
+          FIELD_ENCRYPTION_KEY=ci-test-encryption-key
+          DATABASE_URL=postgres://zao_user:zao_pass@db:5432/zao_db
+          REDIS_URL=redis://redis:6379/0
+          DEBUG=True
+          ALLOWED_HOSTS=localhost,127.0.0.1
+          CORS_ALLOWED_ORIGINS=http://localhost:5173
+          NOTIFICATIONS_DRY_RUN=True
+          MPESA_ENVIRONMENT=sandbox
+          EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+          CELERY_TASK_ALWAYS_EAGER=False
+          EOF
 
       - name: Build all images with docker compose
         run: docker compose build

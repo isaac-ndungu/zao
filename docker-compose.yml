@@ -12,6 +12,8 @@ services:
       SERVICE_TYPE: web
       CELERY_TASK_ALWAYS_EAGER: "False"
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_started
 
