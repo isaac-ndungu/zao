@@ -168,8 +168,6 @@ class RequestOTPView(APIView):
                 )
 
             data = {'detail': 'OTP sent to your email.'}
-            if settings.DEBUG:
-                logger.debug('Login OTP for %s: %s', user.email, otp_code)
             return Response(data)
 
         except Exception as exc:
@@ -246,8 +244,6 @@ class PasswordResetRequestView(APIView):
             'reset_token': reset_token,
             'detail': 'OTP sent to your email.',
         }
-        if settings.DEBUG:
-            logger.debug('Password reset OTP for %s: %s', user.email, otp_code)
         return Response(data)
 
 
@@ -313,8 +309,6 @@ class FarmerRequestOTPView(APIView):
             'login_token': login_token,
             'detail': 'OTP sent to your phone.',
         }
-        if settings.DEBUG:
-            logger.debug('Farmer OTP for %s: %s', user.phone_number, otp_code)
         return Response(data)
 
 
@@ -389,8 +383,6 @@ class InviteRequestOTPView(APIView):
             )
 
         data = {'detail': 'OTP sent to your email.'}
-        if settings.DEBUG:
-            logger.debug('Invite OTP for %s: %s', user.email, otp_code)
         return Response(data)
 
 
