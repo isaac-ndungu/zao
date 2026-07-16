@@ -91,8 +91,7 @@ class NotificationLogViewSet(ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = self.queryset.select_related('recipient', 'cooperative')
-        role = getattr(user, 'role', None)
-        if role == 'admin':
+        if user.is_superuser:
             return qs
         farmer = getattr(user, 'farmer_profile', None)
         if farmer:

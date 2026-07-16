@@ -53,7 +53,7 @@ class CooperativeViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset().select_related('parent_union')
         user = self.request.user
 
-        if user.is_authenticated and getattr(user, 'role', None) != UserRole.ADMIN:
+        if user.is_authenticated and not user.is_superuser:
             qs = qs.filter(id=user.cooperative_id)
 
         for param in ('county', 'produce_type', 'payment_model', 'sub_county'):

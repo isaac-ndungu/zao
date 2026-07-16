@@ -44,7 +44,7 @@ class InventoryViewSet(CsvExportMixin, ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+        if user.is_authenticated and user.is_superuser:
             qs = self.queryset
         else:
             qs = self.queryset.filter(
@@ -146,6 +146,6 @@ class StockViewSet(ReadOnlyModelViewSet):
     def get_queryset(self):
         qs = Stock.objects.all().select_related('cooperative')
         user = self.request.user
-        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+        if user.is_authenticated and user.is_superuser:
             return qs
         return qs.filter(cooperative_id=getattr(self.request, 'cooperative_id', None))

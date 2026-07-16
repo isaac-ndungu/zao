@@ -525,7 +525,7 @@ class GradePriceViewSet(CooperativeScopedViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_authenticated and getattr(user, 'role', None) == 'admin':
+        if user.is_authenticated and user.is_superuser:
             return self.queryset
         coop_id = getattr(self.request, 'cooperative_id', None)
         return self.queryset.filter(
