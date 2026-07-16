@@ -4,7 +4,7 @@ import { useApi } from '../../admin/hooks/useApi'
 import ErrorState from '../../shared/components/ErrorState'
 import { TableSkeleton } from '../../admin/components/common/Skeleton'
 import DataTable from '../../admin/components/common/DataTable'
-import { useFormAction, SubmitButton } from '../../../shared/hooks/useFormAction'
+import { useFormAction, SubmitButton } from '../../shared/hooks/useFormAction'
 
 export default function ExternalAuditTrail() {
   const [searchParams, setSearchParams] = useSearchParams()

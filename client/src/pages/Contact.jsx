@@ -9,7 +9,7 @@ import {
 } from 'react-icons/hi2'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { useFormAction } from '../hooks/useFormAction'
+import { useFormAction } from '../shared/hooks/useFormAction'
 
 const CONTACT_INFO = [
   {
