@@ -13,9 +13,11 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+import re
 import socket
 from urllib.parse import urlparse
 from decouple import config
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -314,7 +316,6 @@ CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=False, cas
 CELERY_TASK_EAGER_PROPAGATES = config('CELERY_TASK_EAGER_PROPAGATES', default=True, cast=bool)
 CELERY_RESULT_EXPIRES = 3600
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
     'reconcile-stuck-disbursements': {
@@ -533,18 +534,12 @@ CONTENT_SECURITY_POLICY = f"default-src 'self'; script-src 'self' 'unsafe-inline
 # Permissions Policy
 PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), sync-xhr=()"
 
-# ── Sentry error tracking ──────────────────────────────────────────────
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.celery import CeleryIntegration
-
 SENTRY_DSN = config('SENTRY_DSN', default='')
 ENVIRONMENT = config('ENVIRONMENT', default='development')
 
 
 def _scrub_pii(event, hint):
     """Scrub Kenyan PII (phone numbers, national IDs) from Sentry payloads."""
-    import re
 
     phone_re = re.compile(r'(\+?254)\d{8,10}')
     id_re = re.compile(r'\b\d{8,10}\b')
@@ -581,6 +576,10 @@ def _scrub_pii(event, hint):
 
 
 if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(), CeleryIntegration()],
