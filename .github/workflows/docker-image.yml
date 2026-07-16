@@ -17,7 +17,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build backend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           file: ./backend/Dockerfile
@@ -27,11 +27,7 @@ jobs:
 
       - name: Run a quick sanity check
         run: |
-          docker run --rm \
-            -e SECRET_KEY=test-secret-key \
-            -e FIELD_ENCRYPTION_KEY=test-encryption-key \
-            -e DATABASE_URL=sqlite:///tmp/test.db \
-            zao-backend:test python -c "import django; print(f'Django {django.VERSION}')"
+          docker run --rm --entrypoint python zao-backend:test -c "import django; print(f'Django {django.VERSION}')"
 
   docker-client:
     name: Build Client Docker Image
@@ -43,7 +39,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build client image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./client
           file: ./client/Dockerfile
@@ -64,19 +60,19 @@ jobs:
 
       - name: Create CI .env file
         run: |
-          cat > backend/.env <<'EOF'
-          SECRET_KEY=ci-test-secret-key
-          FIELD_ENCRYPTION_KEY=ci-test-encryption-key
-          DATABASE_URL=postgres://zao_user:zao_pass@db:5432/zao_db
-          REDIS_URL=redis://redis:6379/0
-          DEBUG=True
-          ALLOWED_HOSTS=localhost,127.0.0.1
-          CORS_ALLOWED_ORIGINS=http://localhost:5173
-          NOTIFICATIONS_DRY_RUN=True
-          MPESA_ENVIRONMENT=sandbox
-          EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
-          CELERY_TASK_ALWAYS_EAGER=False
-          EOF
+          printf '%s\n' \
+            'SECRET_KEY=ci-test-secret-key' \
+            'FIELD_ENCRYPTION_KEY=ci-test-encryption-key' \
+            'DATABASE_URL=postgres://zao_user:zao_pass@db:5432/zao_db' \
+            'REDIS_URL=redis://redis:6379/0' \
+            'DEBUG=True' \
+            'ALLOWED_HOSTS=localhost,127.0.0.1' \
+            'CORS_ALLOWED_ORIGINS=http://localhost:5173' \
+            'NOTIFICATIONS_DRY_RUN=True' \
+            'MPESA_ENVIRONMENT=sandbox' \
+            'EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend' \
+            'CELERY_TASK_ALWAYS_EAGER=False' \
+            > backend/.env
 
       - name: Build all images with docker compose
         run: docker compose build
