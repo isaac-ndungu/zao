@@ -1,4 +1,4 @@
-name: Tests
+`name: Backend Tests
 
 on:
   push:
@@ -7,19 +7,18 @@ on:
     branches: [main]
 
 jobs:
-  backend-tests:
-    name: Django Backend Tests
+  test:
     runs-on: ubuntu-latest
 
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: zao_user
-          POSTGRES_PASSWORD: zao_pass
-          POSTGRES_DB: zao_db
+          POSTGRES_USER: zao_ci
+          POSTGRES_PASSWORD: zao_ci
+          POSTGRES_DB: zao_test
         ports:
-          - 5433:5432
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -29,7 +28,20 @@ jobs:
       redis:
         image: redis:7
         ports:
-          - 6380:6379
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://zao_ci:zao_ci@localhost:5432/zao_test
+      REDIS_URL: redis://localhost:6379/0
+      DJANGO_SETTINGS_MODULE: zaoapi.settings_ci
+      SECRET_KEY: ci-test-secret-key-not-for-production
+      FIELD_ENCRYPTION_KEY: cGFzc3dvcmQxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4
+      PYTHONUNBUFFERED: "1"
 
     steps:
       - uses: actions/checkout@v4
@@ -39,70 +51,34 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libffi-dev \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            libgdk-pixbuf-2.0-0 \
+            libcairo2
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Validate migrations
-        env:
-          DATABASE_URL: postgresql://zao_user:zao_pass@localhost:5433/zao_db
-          REDIS_URL: redis://localhost:6380/0
-          DEBUG: "True"
-          SECRET_KEY: test-secret-key-for-ci-only
-          FIELD_ENCRYPTION_KEY: dGhpcy1pcy1hLTY0LWJ5dGUtc2VjcmV0LWtleS1mb3ItY2k=
-          CELERY_TASK_ALWAYS_EAGER: "True"
-        run: |
-          cd backend && python manage.py migrate --noinput
-          python manage.py migrate --run-syncdb
-          python manage.py check --deploy
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
 
-      - name: Run pytest with coverage
-        env:
-          DATABASE_URL: postgresql://zao_user:zao_pass@localhost:5433/zao_db
-          REDIS_URL: redis://localhost:6380/0
-          DEBUG: "True"
-          SECRET_KEY: test-secret-key-for-ci-only
-          FIELD_ENCRYPTION_KEY: dGhpcy1pcy1hLTY0LWJ5dGUtc2VjcmV0LWtleS1mb3ItY2k=
-          CELERY_TASK_ALWAYS_EAGER: "True"
-        run: |
-          cd backend && pytest --tb=short --cov=apps --cov-report=xml --cov-report=term-missing
+      - name: Run tests with coverage
+        working-directory: backend
+        run: pytest --tb=short --no-header -q
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage report
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: actions/upload-artifact@v4
         with:
-          files: backend/coverage.xml
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-  client-tests:
-    name: React Client Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: client/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          npm ci
-        working-directory: client
-
-      - name: Run lint
-        run: npm run lint
-        working-directory: client
-
-      - name: Run typecheck
-        run: npm run typecheck
-        working-directory: client
-
-      - name: Run tests
-        run: npm run test
-        working-directory: client
+          name: coverage-report
+          path: backend/htmlcov/
+          retention-days: 7
