@@ -1,8 +1,32 @@
+import logging
+import uuid
+
 from django.conf import settings
 from django.contrib.postgres.indexes import BrinIndex
 from django.db import models
 from django.utils import timezone
-import uuid
+
+logger = logging.getLogger(__name__)
+
+
+def _find_cooperative_fk(cls):
+    for field in cls._meta.fields:
+        if not isinstance(field, models.ForeignKey):
+            continue
+        remote = getattr(field.remote_field, 'model', None)
+        if isinstance(remote, str) and remote == 'cooperatives.Cooperative':
+            return field
+        if remote is not None and hasattr(remote, '_meta'):
+            if remote._meta.label == 'cooperatives.Cooperative':
+                return field
+        try:
+            related = field.related_model
+            if related is not None and hasattr(related, '_meta'):
+                if related._meta.label == 'cooperatives.Cooperative':
+                    return field
+        except Exception:
+            pass
+    return None
 
 
 class SoftDeletableModel(models.Model):
@@ -93,6 +117,8 @@ class TenantManager(models.Manager):
 
 
 class CooperativeScopedModel(models.Model):
+    _registry = []
+
     cooperative = models.ForeignKey(
         'cooperatives.Cooperative',
         on_delete=models.CASCADE,
@@ -122,6 +148,8 @@ class CooperativeScopedModel(models.Model):
 
 
 class AuditLog(CooperativeScopedModel):
+    _cascade_exclude = True
+
     cooperative = models.ForeignKey(
         'cooperatives.Cooperative',
         on_delete=models.CASCADE,

@@ -175,6 +175,88 @@ class TestCooperativeCascadeSoftDelete:
         assert True
 
 
+# =============================================================================
+# Cascade Registry Tests
+# =============================================================================
+
+
+class TestCooperativeCascadeRegistry:
+    def test_all_cooperative_scoped_models_registered(self):
+        from django.apps import apps as django_apps
+        from apps.base.models import CooperativeScopedModel
+        expected_models = {
+            model
+            for model in django_apps.get_models()
+            if issubclass(model, CooperativeScopedModel)
+            and not getattr(model, '_cascade_exclude', False)
+            and not model._meta.abstract
+        }
+        registered_models = {cls for cls, _ in CooperativeScopedModel._registry}
+        missing = expected_models - registered_models
+        assert not missing, (
+            f'CooperativeScopedModel subclasses not in cascade registry: '
+            f'{[m.__name__ for m in missing]}'
+        )
+
+    def test_outliers_registered(self):
+        from apps.base.models import CooperativeScopedModel
+        from django.contrib.auth import get_user_model
+        from apps.farmers.models import FarmerCooperativeMembership
+        User = get_user_model()
+        registered = {cls for cls, _ in CooperativeScopedModel._registry}
+        assert User in registered
+        assert FarmerCooperativeMembership in registered
+
+    def test_audit_log_excluded(self):
+        from apps.base.models import CooperativeScopedModel, AuditLog
+        registered = {cls for cls, _ in CooperativeScopedModel._registry}
+        assert AuditLog not in registered
+
+    def test_cascade_soft_deletes_stock(self, cooperative):
+        from apps.inventory.models import Stock
+        stock = Stock.objects.create(
+            cooperative=cooperative,
+            product_type='MILK',
+            grade='A',
+            unit='KG',
+            quantity_available='100.00',
+        )
+        cooperative.delete()
+        stock.refresh_from_db()
+        assert stock.deleted_at is not None
+        assert stock.deleted_via_cascade_from == cooperative.pk
+
+    def test_cascade_soft_deletes_failed_disbursement(self, cooperative):
+        from apps.disbursement.models import FailedDisbursement
+        fd = FailedDisbursement.objects.create(
+            cooperative=cooperative,
+            amount='500.00',
+            recipient_identifier='+254700000999',
+            recipient_name='Test Farmer',
+            failure_reason='Timeout',
+        )
+        cooperative.delete()
+        fd.refresh_from_db()
+        assert fd.deleted_at is not None
+        assert fd.deleted_via_cascade_from == cooperative.pk
+
+    def test_cascade_restore_restores_stock(self, cooperative):
+        from apps.inventory.models import Stock
+        stock = Stock.objects.create(
+            cooperative=cooperative,
+            product_type='MILK',
+            grade='A',
+            unit='KG',
+            quantity_available='100.00',
+        )
+        cooperative.delete()
+        cooperative.restore()
+        stock.refresh_from_db()
+        assert stock.deleted_at is None
+        assert stock.restored_at is not None
+        assert stock.deleted_via_cascade_from is None
+
+
 class TestCooperativeModelDefaults:
     def test_default_member_count(self):
         coop = Cooperative(registration_number='DEF001')
