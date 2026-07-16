@@ -547,6 +547,20 @@ The API follows REST conventions with Django DRF patterns:
 
 **Pagination:** `PageNumberPagination` with `PAGE_SIZE=20`. All list endpoints support `?page=` and `?page_size=`.
 
+### 5.1a API Versioning Strategy
+
+**Convention:** URL prefix versioning (`/api/v1/`, `/api/v2/`). Both the unversioned `/api/` prefix and the versioned `/api/v1/` prefix mount the same view functions — no HTTP redirects. The unversioned prefix is kept for backward compatibility with existing clients.
+
+**Version bumping rules:**
+- **Major version bump** (`/api/v2/`) = breaking change (removing fields, changing auth, altering response shapes)
+- **Minor version bump** = new features, backward-compatible additions (new endpoints, new optional fields)
+
+**Deprecation policy:** Old versions are supported for 6 months after a new major version is released. During the deprecation window, both versions are served simultaneously.
+
+**Why URL aliasing, not HTTP redirects:** A 301/302 redirect changes the URL the client sees, which breaks any client that doesn't follow redirects on POST/PUT/PATCH requests. Many HTTP clients intentionally don't follow redirects on POST for security reasons — this is standard behavior, not a bug. URL aliasing avoids this entirely while still establishing the versioned path as the canonical URL for new integrations.
+
+**External webhooks are permanently unversioned:** M-Pesa callback URLs (`/api/callback/mpesa/...`), Africa's Talking USSD callback (`/api/callback/ussd/`), and any future SMS delivery webhooks are configured once in third-party developer portals outside the codebase's control. These URLs cannot be changed without re-registering in the external portal, so they remain unversioned as a stable contract. This is a permanent architectural rule, not a one-off decision.
+
 ### 5.2 Authentication Architecture
 
 **Staff login (email + password + 2FA):**

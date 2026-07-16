@@ -1,0 +1,155 @@
+services:
+  # --- Django API ---
+  - type: web
+    name: zao-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn zaoapi.wsgi:application --bind 0.0.0.0:8000 --workers 4
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.14"
+      - key: DJANGO_SETTINGS_MODULE
+        value: zaoapi.settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zao-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: zao-redis
+          property: connectionString
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: FIELD_ENCRYPTION_KEY
+        generateValue: true
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp.sendgrid.net
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_HOST_USER
+        value: apikey
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      - key: MPESA_INITIATOR_NAME
+        value: testapi
+      - key: MPESA_INITIATOR_PASSWORD
+        sync: false
+      - key: MPESA_ENVIRONMENT
+        value: sandbox
+      - key: MPESA_B2C_RESULT_URL
+        sync: false
+      - key: MPESA_B2C_TIMEOUT_URL
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_URL
+        value: https://api.sandbox.africastalking.com/version1/messaging
+      - key: NOTIFICATIONS_DRY_RUN
+        value: "True"
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_AI_MODEL
+        value: gemini-2.5-flash
+      - key: SENTRY_DSN
+        sync: false
+    healthCheckPath: /api/health/
+    autoDeploy: true
+
+  # --- Celery Worker ---
+  - type: worker
+    name: zao-celery-worker
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A zaoapi worker --loglevel=info --concurrency=4
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.14"
+      - key: DJANGO_SETTINGS_MODULE
+        value: zaoapi.settings
+      - key: SECRET_KEY
+        fromService:
+          name: zao-api
+          property: SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zao-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: zao-redis
+          property: connectionString
+      - key: CELERY_TASK_ALWAYS_EAGER
+        value: "False"
+    autoDeploy: true
+
+  # --- Celery Beat ---
+  - type: worker
+    name: zao-celery-beat
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A zaoapi beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.14"
+      - key: DJANGO_SETTINGS_MODULE
+        value: zaoapi.settings
+      - key: SECRET_KEY
+        fromService:
+          name: zao-api
+          property: SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zao-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: zao-redis
+          property: connectionString
+    autoDeploy: true
+
+  # --- PostgreSQL ---
+  - type: pgsql
+    name: zao-db
+    plan: starter
+    databaseName: zao_db
+
+  # --- Redis ---
+  - type: redis
+    name: zao-redis
+    plan: starter
+    ipAllowList: []
