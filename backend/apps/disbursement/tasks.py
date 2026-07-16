@@ -11,6 +11,7 @@ from django.db import transaction
 from django.db.models import Case, F, Sum, When
 from django.db.models import IntegerField
 from django.db.models.functions import Greatest
+from django.forms.models import model_to_dict
 from django.utils import timezone
 
 from apps.base.constants import UserRole
@@ -674,20 +675,35 @@ def _notify_accountant_async(context_id: str, message: str) -> None:
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=3)
 def reverse_deductions_on_failure(self, farmer_id: str, farmer_payment_id: str):
-    from apps.deductions.models import Deduction
-    from apps.loans.models import Loan, LoanRepayment
-
     try:
+        from apps.base.utils import log_audit
+        from apps.deductions.models import Deduction
+        from apps.loans.models import Loan, LoanRepayment
+        from apps.payment_engine.models import FarmerPayment
+
+        farmer_payment = FarmerPayment.objects.filter(
+            id=farmer_payment_id,
+        ).first()
+
         loan_repayment = LoanRepayment.objects.filter(
             farmer_payment_id=farmer_payment_id,
         ).first()
 
         deductions = Deduction.objects.filter(
-            farmer=farmer_id,
+            farmer_id=farmer_id,
+            cycle_id=farmer_payment.cycle_id,
         )
         for ded in deductions:
             if ded.deduction_type == 'LOAN_REPAYMENT':
                 LoanRepayment.objects.filter(farmer_payment_id=farmer_payment_id).delete()
+            log_audit(
+                actor=None,
+                resource_type='deduction',
+                resource_id=str(ded.id),
+                action='DELETE',
+                previous_value=model_to_dict(ded),
+                cooperative_id=str(ded.cooperative_id) if ded.cooperative_id else None,
+            )
         deductions.delete()
 
         if loan_repayment:

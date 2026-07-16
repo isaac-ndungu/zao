@@ -391,6 +391,78 @@ class TestReverseDeductionsOnFailure:
         assert loan.installments_paid == 0
         assert loan.status == 'ACTIVE'
 
+    def test_only_deletes_deductions_for_target_cycle(self, farmer, cooperative):
+        from apps.base.models import AuditLog
+        from apps.payment_engine.models import PaymentCycle
+
+        cycle_a = PaymentCycle.objects.create(
+            cooperative=cooperative, start_date='2026-01-01', end_date='2026-01-31',
+        )
+        cycle_b = PaymentCycle.objects.create(
+            cooperative=cooperative, start_date='2026-02-01', end_date='2026-02-28',
+        )
+        farmer_payment_a = FarmerPayment.objects.create(
+            cooperative=cooperative, farmer=farmer, cycle=cycle_a,
+            payment_status='PENDING', gross_amount=Decimal('5000'),
+            net_amount=Decimal('5000'), total_quantity=Decimal('100'),
+        )
+        FarmerPayment.objects.create(
+            cooperative=cooperative, farmer=farmer, cycle=cycle_b,
+            payment_status='PENDING', gross_amount=Decimal('3000'),
+            net_amount=Decimal('3000'), total_quantity=Decimal('60'),
+        )
+        Deduction.objects.create(
+            farmer=farmer, cycle=cycle_a, cooperative=cooperative,
+            deduction_type='LEVY', amount=Decimal('100.00'),
+        )
+        ded_in_cycle_a = Deduction.objects.filter(farmer=farmer, cycle=cycle_a).first()
+        Deduction.objects.create(
+            farmer=farmer, cycle=cycle_b, cooperative=cooperative,
+            deduction_type='LEVY', amount=Decimal('200.00'),
+        )
+
+        assert Deduction.objects.filter(farmer=farmer, cycle=cycle_a).count() == 1
+        assert Deduction.objects.filter(farmer=farmer, cycle=cycle_b).count() == 1
+
+        reverse_deductions_on_failure(
+            farmer_id=str(farmer.id),
+            farmer_payment_id=str(farmer_payment_a.id),
+        )
+
+        assert Deduction.objects.filter(farmer=farmer, cycle=cycle_a).count() == 0
+        assert Deduction.objects.filter(farmer=farmer, cycle=cycle_b).count() == 1
+
+    def test_creates_audit_log_for_each_deletion(self, farmer, cooperative, payment_cycle,
+                                                   farmer_payment):
+        from apps.base.models import AuditLog
+
+        Deduction.objects.create(
+            farmer=farmer, cycle=payment_cycle, cooperative=cooperative,
+            deduction_type='LEVY', amount=Decimal('100.00'),
+        )
+        Deduction.objects.create(
+            farmer=farmer, cycle=payment_cycle, cooperative=cooperative,
+            deduction_type='INPUT_CREDIT', amount=Decimal('200.00'),
+        )
+        ded_ids = list(
+            Deduction.objects.filter(farmer=farmer, cycle=payment_cycle).values_list('id', flat=True)
+        )
+
+        reverse_deductions_on_failure(
+            farmer_id=str(farmer.id),
+            farmer_payment_id=str(farmer_payment.id),
+        )
+
+        audit_logs = AuditLog.objects.filter(
+            resource_type='deduction', action='DELETE',
+            resource_id__in=[str(i) for i in ded_ids],
+        )
+        assert audit_logs.count() == 2
+        for log in audit_logs:
+            assert log.previous_value is not None
+            assert 'deduction_type' in log.previous_value
+            assert 'amount' in log.previous_value
+
 
 # =============================================================================
 # retry_batch_disbursements
