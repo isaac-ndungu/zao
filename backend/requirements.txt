@@ -79,5 +79,8 @@ sentry-sdk[django]==2.30.0
 # Log shipping
 logtail-python==0.4.0
 
+# Database backups
+django-dbbackup>=5.3.0
+
 # External APIs
 africastalking==2.0.2

@@ -9,6 +9,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.14"
+      - key: ENVIRONMENT
+        value: production
       - key: DJANGO_SETTINGS_MODULE
         value: zaoapi.settings
       - key: SECRET_KEY
@@ -29,6 +31,8 @@ services:
         sync: false
       - key: FIELD_ENCRYPTION_KEY
         generateValue: true
+      - key: DBBACKUP_BACKUP_DIRECTORY
+        value: backups
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET

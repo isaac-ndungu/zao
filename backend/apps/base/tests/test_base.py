@@ -1,5 +1,6 @@
 import uuid
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 from django.db import models
@@ -205,3 +206,67 @@ class TestPhoneNormalization:
     def test_normalize_sms_bare_01(self):
         from apps.base.utils import normalize_phone_for_sms
         assert normalize_phone_for_sms('112345678') == '+254112345678'
+
+
+class TestBackupTasks:
+    @patch('apps.base.tasks.call_command')
+    def test_backup_database_success(self, mock_call_command):
+        from apps.base.tasks import backup_database
+
+        result = backup_database()
+
+        assert result['status'] == 'success'
+        assert 'timestamp' in result
+        mock_call_command.assert_called_once_with(
+            'dbbackup', compression=True, clean=True, verbosity=0,
+        )
+
+    @patch('apps.base.tasks.call_command')
+    def test_backup_database_retries_on_failure(self, mock_call_command):
+        from apps.base.tasks import backup_database
+
+        mock_call_command.side_effect = Exception('pg_dump not found')
+
+        with pytest.raises(Exception):
+            backup_database()
+
+        assert mock_call_command.call_count == 1
+
+    @patch('apps.base.tasks._get_backup_storage')
+    def test_verify_backup_integrity_ok(self, mock_get_storage):
+        from apps.base.tasks import verify_backup_integrity
+
+        mock_storage = mock_get_storage.return_value
+        mock_storage.list_directory.return_value = ['backup_20260101.sql.gz', 'backup_20260102.sql.gz']
+        mock_storage.storage.size.return_value = 1024
+
+        result = verify_backup_integrity()
+
+        assert result['status'] == 'ok'
+        assert result['file'] == 'backup_20260102.sql.gz'
+        assert result['size'] == 1024
+
+    @patch('apps.base.tasks._get_backup_storage')
+    def test_verify_backup_integrity_empty_backup(self, mock_get_storage):
+        from apps.base.tasks import verify_backup_integrity
+
+        mock_storage = mock_get_storage.return_value
+        mock_storage.list_directory.return_value = ['backup_20260101.sql.gz']
+        mock_storage.storage.size.return_value = 0
+
+        result = verify_backup_integrity()
+
+        assert result['status'] == 'error'
+        assert result['size'] == 0
+
+    @patch('apps.base.tasks._get_backup_storage')
+    def test_verify_backup_integrity_no_backups(self, mock_get_storage):
+        from apps.base.tasks import verify_backup_integrity
+
+        mock_storage = mock_get_storage.return_value
+        mock_storage.list_directory.return_value = []
+
+        result = verify_backup_integrity()
+
+        assert result['status'] == 'warning'
+        assert 'No backup files' in result['message']

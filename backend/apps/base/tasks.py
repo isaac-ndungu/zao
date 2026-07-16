@@ -1,10 +1,15 @@
+import logging
 from datetime import timedelta
+from subprocess import run as subprocess_run, PIPE
 
 from celery import shared_task
 from django.conf import settings
+from django.core.management import call_command
 from django.utils import timezone
 
 from apps.base.constants import get_soft_deletable_models
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task(soft_time_limit=300, time_limit=600)
@@ -28,3 +33,59 @@ def purge_deleted_records():
             total += count
 
     return f'Purged {total} record(s) older than {days} days'
+
+
+@shared_task(bind=True, soft_time_limit=600, time_limit=900)
+def backup_database(self):
+    """Create a database backup using django-db-backup.
+
+    Backups are stored in the configured DBBACKUP_STORAGE (default: filesystem).
+    On Render, enable daily database backups in the dashboard as the primary
+    strategy. This Celery task provides additional backup frequency (every 6h)
+    and serves as a secondary safety net.
+    """
+    try:
+        timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+        logger.info('Starting database backup: %s', timestamp)
+
+        call_command('dbbackup', compression=True, clean=True, verbosity=0)
+
+        logger.info('Database backup completed: %s', timestamp)
+        return {'status': 'success', 'timestamp': timestamp}
+    except Exception as exc:
+        logger.error('Database backup failed: %s', exc)
+        raise self.retry(exc=exc, countdown=300, max_retries=2)
+
+
+@shared_task(bind=True, soft_time_limit=300, time_limit=600)
+def verify_backup_integrity(self):
+    """Verify the most recent backup by checking file existence and size.
+
+    Full restoration testing should be done quarterly against a scratch database.
+    This task provides a lightweight check that the backup file exists and is
+    non-empty, catching obvious failures like empty dumps or upload errors.
+    """
+    try:
+        storage = _get_backup_storage()
+        files = sorted(storage.list_directory(''))
+        if not files:
+            logger.warning('No backup files found')
+            return {'status': 'warning', 'message': 'No backup files found'}
+
+        latest = files[-1]
+        size = storage.storage.size(latest)
+
+        if size == 0:
+            logger.error('Latest backup is empty: %s', latest)
+            return {'status': 'error', 'file': latest, 'size': size}
+
+        logger.info('Latest backup verified: %s (%d bytes)', latest, size)
+        return {'status': 'ok', 'file': latest, 'size': size}
+    except Exception as exc:
+        logger.error('Backup verification failed: %s', exc)
+        return {'status': 'error', 'message': str(exc)}
+
+
+def _get_backup_storage():
+    from dbbackup.storage import get_storage
+    return get_storage()

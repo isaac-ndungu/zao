@@ -219,6 +219,10 @@ if url.query:
 DATABASES = {'default': db_config}
 
 
+# Database backups
+DBBACKUP_CLEANUP = True
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -354,6 +358,16 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.analytics.tasks.refresh_leaderboards',
         'schedule': crontab(minute='0'),
     },
+    'database-backup': {
+        'task': 'apps.base.tasks.backup_database',
+        'schedule': crontab(minute=0, hour='*/6'),
+        'options': {'expires': 3600},
+    },
+    'verify-backup-integrity': {
+        'task': 'apps.base.tasks.verify_backup_integrity',
+        'schedule': crontab(minute=30, hour='*/6'),
+        'options': {'expires': 1800},
+    },
 }
 
 NOTIFICATIONS_DRY_RUN = config('NOTIFICATIONS_DRY_RUN', default=True, cast=bool)
@@ -389,6 +403,9 @@ STORAGES = {
     },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+    'dbbackup': {
+        'BACKEND': config('DBBACKUP_STORAGE', default='cloudinary_storage.storage.CloudinaryMediaStorage'),
     },
 }
 

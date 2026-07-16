@@ -1571,4 +1571,31 @@ pytest -m hypothesis
 5. Add environment variable: `VITE_API_PROXY=https://your-render-app.onrender.com`
 6. Deploy
 
+### Backup and Recovery
+
+**RPO (Recovery Point Objective):** 6 hours — Celery beat runs `backup_database()` every 6 hours, plus Render's daily automated PostgreSQL backups.
+
+**RTO (Recovery Time Objective):** 4 hours — Includes time to provision a new database, restore from backup, and run migrations.
+
+**Backup strategy:**
+1. **Primary:** Render Dashboard → Database → Backups (daily automated snapshots, retained for 7 days)
+2. **Secondary:** Celery beat task `backup_database` using `django-db-backup` with `pg_dump` + gzip compression, stored in `backups/` directory on the service filesystem
+3. **Integrity:** `verify_backup_integrity` runs every 6 hours (offset by 30 minutes) to check latest backup file exists and is non-empty
+
+**Recovery procedure:**
+1. Provision a new PostgreSQL database on Render
+2. Set `DATABASE_URL` to the new database connection string
+3. Run `python manage.py dbrestore` to restore from the most recent backup
+4. Run `python manage.py migrate` to apply any pending migrations
+5. Verify with `python manage.py health_check` (or manually check API health endpoint)
+6. Restart Celery worker and beat services
+
+**Critical environment variables for backups:**
+| Variable | Default | Purpose |
+|---|---|---|
+| `DBBACKUP_BACKUP_DIRECTORY` | `backups` | Local directory for backup files |
+| `DBBACKUP_STORAGE` | `django.core.files.storage.FileSystemStorage` | Storage backend for backups |
+
+**Quarterly restoration test:** Manually restore a backup against a scratch database to verify backup integrity end-to-end. Document results in the ops log.
+
 ---
