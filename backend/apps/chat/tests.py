@@ -2,11 +2,69 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from django.core.cache import cache
 from rest_framework import status
 
-from apps.chat.models import ChatMessage
+from apps.chat.models import ChatMessage, ChatbotConfig, CHATBOT_PROMPT_CACHE_KEY
 
 pytestmark = pytest.mark.django_db
+
+
+# =============================================================================
+# ChatbotConfig Model Tests
+# =============================================================================
+
+class TestChatbotConfig:
+    def test_publish_new(self, api_client):
+        config = ChatbotConfig.objects.publish_new('Test prompt v1', api_client.user)
+        assert config.pk is not None
+        assert config.version == 1
+        assert config.is_active is True
+        assert config.system_prompt == 'Test prompt v1'
+        assert config.created_by == api_client.user
+
+    def test_publish_new_deactivates_old(self, api_client):
+        ChatbotConfig.objects.publish_new('Prompt v1', api_client.user)
+        config2 = ChatbotConfig.objects.publish_new('Prompt v2', api_client.user)
+        assert config2.is_active is True
+        assert ChatbotConfig.objects.filter(is_active=True).count() == 1
+        old = ChatbotConfig.objects.get(system_prompt='Prompt v1')
+        assert old.is_active is False
+
+    def test_publish_new_increments_version(self, api_client):
+        c1 = ChatbotConfig.objects.publish_new('V1', api_client.user)
+        c2 = ChatbotConfig.objects.publish_new('V2', api_client.user)
+        assert c2.version == c1.version + 1
+
+    def test_publish_new_clears_cache(self, api_client):
+        cache.clear()
+        cache.set(CHATBOT_PROMPT_CACHE_KEY, 'stale')
+        ChatbotConfig.objects.publish_new('New prompt', api_client.user)
+        assert cache.get(CHATBOT_PROMPT_CACHE_KEY) is None
+
+    def test_str(self, api_client):
+        config = ChatbotConfig.objects.publish_new('Prompt', api_client.user)
+        assert 'v1' in str(config)
+        assert 'active' in str(config)
+
+
+class TestGetActiveSystemPrompt:
+    def test_returns_active_config(self, api_client):
+        ChatbotConfig.objects.publish_new('My prompt', api_client.user)
+        from apps.chat.models import get_active_system_prompt
+        assert get_active_system_prompt() == 'My prompt'
+
+    def test_fallback_when_no_config(self, api_client):
+        cache.clear()
+        from apps.chat.models import get_active_system_prompt
+        prompt = get_active_system_prompt()
+        assert 'limited configuration' in prompt
+
+    def test_uses_cache(self, api_client):
+        cache.clear()
+        cache.set(CHATBOT_PROMPT_CACHE_KEY, 'cached prompt')
+        from apps.chat.models import get_active_system_prompt
+        assert get_active_system_prompt() == 'cached prompt'
 
 
 # =============================================================================
