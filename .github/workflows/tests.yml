@@ -40,7 +40,7 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
       DJANGO_SETTINGS_MODULE: zaoapi.settings_ci
       SECRET_KEY: ci-test-secret-key-not-for-production
-      FIELD_ENCRYPTION_KEY: cGFzc3dvcmQxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4
+      FIELD_ENCRYPTION_KEY: FjMEaoRozwtTdR5m5gFqawuYO8JpAXx7pSI3RwQIPts=
       PYTHONUNBUFFERED: "1"
 
     steps:

@@ -35,6 +35,8 @@ def is_circuit_open() -> bool:
 
 
 def record_failure() -> None:
+    if cache.get(FAILURE_COUNT_KEY) is None:
+        cache.set(FAILURE_COUNT_KEY, 0, timeout=CIRCUIT_BREAKER_COOLDOWN)
     failures = cache.incr(FAILURE_COUNT_KEY, 1)
     if failures >= CIRCUIT_BREAKER_THRESHOLD:
         cache.set(CIRCUIT_BREAKER_KEY, True, timeout=CIRCUIT_BREAKER_COOLDOWN)
