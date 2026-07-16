@@ -627,6 +627,7 @@ def _move_to_dead_letter(transaction_id: str, batch_id: str, reason: str) -> Non
     try:
         txn = DisbursementTransaction.objects.get(id=transaction_id)
         FailedDisbursement.objects.create(
+            cooperative=txn.batch.cooperative if txn.batch else None,
             batch=txn.batch,
             transaction=txn,
             farmer=txn.farmer,

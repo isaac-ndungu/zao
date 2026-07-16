@@ -393,7 +393,7 @@ class TestNotificationLogViewSetQueryset:
 
     def test_manager_sees_cooperative_notifications(self):
         coop = CooperativeFactory()
-        user = UserFactory(role=UserRole.MANAGER, cooperative=coop)
+        user = UserFactory(role=UserRole.MANAGER, cooperative=coop, is_superuser=False, is_staff=False)
         notif = NotificationFactory(cooperative=coop)
         other_coop = CooperativeFactory()
         NotificationFactory(cooperative=other_coop)
