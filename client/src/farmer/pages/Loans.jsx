@@ -29,7 +29,7 @@ export default function FarmerLoans() {
   const loans = data?.results || data || []
   const activeLoan = loans.find(l => l.status === 'ACTIVE' || l.status === 'DISBURSED')
 
-  const [, applyAction] = useFormAction(async (prev, formData) => {
+  const { formAction: applyAction } = useFormAction(async (prev, formData) => {
     if (!farmerUser?.id) {
       throw new Error('Could not determine farmer profile. Please try logging in again.')
     }

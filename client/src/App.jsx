@@ -161,7 +161,6 @@ function FarmerLayoutWithNav() {
 
   return (
     <>
-      {createPortal(<FloatingAccessibilityWidget mode="farmer" />, document.body)}
       <div className="min-h-screen max-w-lg mx-auto bg-surface relative pb-20">
         <div className="px-4 pt-4">
           <Outlet />
@@ -206,9 +205,10 @@ function SuspenseWrapper({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <A11yProvider>
-        <AdminAuthProvider>
-          <Routes>
+    <A11yProvider>
+      <AdminAuthProvider>
+        {createPortal(<FloatingAccessibilityWidget />, document.body)}
+        <Routes>
           {/* Public marketing routes */}
           <Route path="/" element={<SuspenseWrapper><Home /></SuspenseWrapper>} />
           <Route path="/solutions" element={<SuspenseWrapper><Solutions /></SuspenseWrapper>} />

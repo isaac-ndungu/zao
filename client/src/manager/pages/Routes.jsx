@@ -71,12 +71,12 @@ export default function Routes() {
     )
   }, [farmersData, assignedFarmerIds])
 
-  const [, searchAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: searchAction } = useFormAction(async (_prev, formData) => {
     setSearch(formData.get('search') || '')
     setPage(1)
   }, {})
 
-  const [, createAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: createAction } = useFormAction(async (_prev, formData) => {
     const body = formDataToObject(formData)
     if (!body.name) return
     const res = await apiFetch('/api/routes/', {

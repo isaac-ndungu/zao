@@ -11,7 +11,7 @@ export default function SetupCooperative() {
   const { showToast } = useToast()
   const { data: coop, loading: coopLoading } = useApi('/api/cooperatives/me/')
 
-  const [, coopAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: coopAction } = useFormAction(async (_prev, formData) => {
     const body = {
       ...formDataToObject(formData),
       levy_percentage: parseFloat(formData.get('levy_percentage')),

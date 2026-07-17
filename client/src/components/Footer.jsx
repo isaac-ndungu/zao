@@ -30,7 +30,7 @@ export default function Footer() {
       </div>
       <div className="max-w-7xl mx-auto px-container-margin py-stack-md border-t border-outline-variant flex flex-col md:flex-row justify-between items-center gap-4">
         <p className="text-on-surface-variant font-body-md text-body-md opacity-70">
-          &copy; 2024 Zao Agricultural Management. All rights reserved.
+          &copy; 2026 Zao Agricultural Management. All rights reserved.
         </p>
         <div className="flex gap-4">
           <a className="text-on-surface-variant hover:text-primary transition-colors" href="#" aria-label="Visit our website">

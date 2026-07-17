@@ -48,7 +48,7 @@ export default function SearchBar({ role, placeholder = 'Search...' }) {
     }, DEBOUNCE_MS)
   }, [query])
 
-  const [, searchAction] = useFormAction(async (prev, formData) => {
+  const { formAction: searchAction } = useFormAction(async (prev, formData) => {
     const q = formData.get('q')?.trim()
     if (q && q.length >= 2) {
       setShowOverlay(false)

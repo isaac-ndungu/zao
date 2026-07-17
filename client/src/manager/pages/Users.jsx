@@ -45,7 +45,7 @@ export default function ManagerUsers() {
   const staffUsers = allUsers.filter(u => u.role === 'grader' || u.role === 'accountant' || u.role === 'auditor')
   const filteredUsers = tab === 'all' ? staffUsers : staffUsers.filter(u => u.role === tab)
 
-  const [, createAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: createAction } = useFormAction(async (_prev, formData) => {
     const body = formDataToObject(formData)
     const res = await apiFetch('/api/users/', { method: 'POST', body: JSON.stringify(body) })
     if (!res.ok) {

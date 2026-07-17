@@ -55,7 +55,7 @@ export default function AcceptInvite() {
     }
   }
 
-  const [, inviteAction] = useFormAction(async (prev, formData) => {
+  const { formAction: inviteAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     if (!token) {
       throw new Error('Invalid invite link.')

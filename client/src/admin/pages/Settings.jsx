@@ -13,7 +13,7 @@ export default function Settings() {
 
   const twoFAEnabled = user?.two_fa_enabled || false
 
-  const [, profileAction] = useFormAction(async (prev, formData) => {
+  const { formAction: profileAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     const res = await apiFetch(`/api/admin/users/${user.id}/`, {
       method: 'PATCH',
@@ -23,7 +23,7 @@ export default function Settings() {
     showToast({ type: 'success', message: 'Profile updated successfully.' })
   }, {})
 
-  const [, passwordAction] = useFormAction(async (prev, formData) => {
+  const { formAction: passwordAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     if (data.new_password !== data.confirm_password) {
       throw new Error('Passwords do not match.')
@@ -37,7 +37,7 @@ export default function Settings() {
     setPwOpen(false)
   }, {})
 
-  const [, twoFAAction] = useFormAction(async (prev, formData) => {
+  const { formAction: twoFAAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     const endpoint = twoFAEnabled ? '/api/auth/2fa/disable/' : '/api/auth/2fa/enable/'
     const res = await apiFetch(endpoint, {

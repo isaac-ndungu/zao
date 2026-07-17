@@ -63,7 +63,7 @@ export default function Grade() {
     setSelectedDelivery(delivery)
   }
 
-  const [, searchAction] = useFormAction(async (prev, formData) => {
+  const { formAction: searchAction } = useFormAction(async (prev, formData) => {
     setQueueSearch(formData.get('search') || '')
     setPage(1)
     return {}

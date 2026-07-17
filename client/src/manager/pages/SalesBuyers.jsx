@@ -334,13 +334,13 @@ function BuyersSection() {
     else { setSortField(key); setSortOrder('asc') }
   }
 
-  const [, buyerSearchAction] = useFormAction(async (prev, formData) => {
+  const { formAction: buyerSearchAction } = useFormAction(async (prev, formData) => {
     setSearch(formData.get('search') || '')
     setPage(1)
     return {}
   }, {})
 
-  const [, createBuyerAction] = useFormAction(async (prev, formData) => {
+  const { formAction: createBuyerAction } = useFormAction(async (prev, formData) => {
     const body = formDataToObject(formData)
     const res = await apiFetch('/api/buyers/', { method: 'POST', body: JSON.stringify(body) })
     if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to create') }
@@ -349,7 +349,7 @@ function BuyersSection() {
     return { success: true }
   }, {})
 
-  const [, editBuyerAction] = useFormAction(async (prev, formData) => {
+  const { formAction: editBuyerAction } = useFormAction(async (prev, formData) => {
     const body = formDataToObject(formData)
     const res = await apiFetch(`/api/buyers/${showEdit.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
     if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to update') }

@@ -50,7 +50,7 @@ export default function Farmers() {
     }
   }, [selectedId, items])
 
-  const [, searchAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: searchAction } = useFormAction(async (_prev, formData) => {
     const q = formData.get('search') || ''
     setSearch(q)
     setPage(1)
@@ -68,7 +68,7 @@ export default function Farmers() {
     [sortField]
   )
 
-  const [, createAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: createAction } = useFormAction(async (_prev, formData) => {
     const body = formDataToObject(formData)
     const res = await apiFetch('/api/farmers/', { method: 'POST', body: JSON.stringify(body) })
     if (!res.ok) {
@@ -80,7 +80,7 @@ export default function Farmers() {
     refetch()
   }, {})
 
-  const [, editAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: editAction } = useFormAction(async (_prev, formData) => {
     const body = formDataToObject(formData)
     const res = await apiFetch(`/api/farmers/${showEdit.id}/`, {
       method: 'PATCH',

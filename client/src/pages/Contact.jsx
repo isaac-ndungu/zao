@@ -60,7 +60,7 @@ const FAQS = [
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false)
 
-  const [, contactAction] = useFormAction(async (prev, formData) => {
+  const { formAction: contactAction } = useFormAction(async (prev, formData) => {
     const name = formData.get('name')
     const email = formData.get('email')
     const subject = formData.get('subject')

@@ -21,7 +21,7 @@ export default function FarmerProfile() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
 
-  const [, saveAction] = useFormAction(async (prev, formData) => {
+  const { formAction: saveAction } = useFormAction(async (prev, formData) => {
     const res = await apiFetch('/api/farmers/me/', {
       method: 'PATCH',
       body: JSON.stringify(formDataToObject(formData)),

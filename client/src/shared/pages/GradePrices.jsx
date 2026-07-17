@@ -31,7 +31,7 @@ export default function GradePrices() {
     setShowForm(true)
   }
 
-  const [, priceAction] = useFormAction(async (prev, formData) => {
+  const { formAction: priceAction } = useFormAction(async (prev, formData) => {
     const body = formDataToObject(formData)
     const url = editing ? `/api/grade-prices/${editing.id}/` : '/api/grade-prices/'
     const method = editing ? 'PATCH' : 'POST'

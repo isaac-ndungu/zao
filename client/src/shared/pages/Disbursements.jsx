@@ -213,7 +213,7 @@ export default function Disbursements() {
     finally { setCsvSaving(false) }
   }
 
-  const [, initiateAction] = useFormAction(async (prev, formData) => {
+  const { formAction: initiateAction } = useFormAction(async (prev, formData) => {
     const cycleId = formData.get('payment_cycle')
     const res = await apiFetch('/api/disbursements/initiate/', {
       method: 'POST',

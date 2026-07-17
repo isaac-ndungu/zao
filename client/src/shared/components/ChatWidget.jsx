@@ -72,7 +72,7 @@ export default function ChatWidget({ onClose }) {
     } finally { setSending(false) }
   }
 
-  const [, chatAction] = useFormAction(async (prev, formData) => {
+  const { formAction: chatAction } = useFormAction(async (prev, formData) => {
     const msg = formData.get('message')
     await handleSend(msg)
     formRef.current?.reset()

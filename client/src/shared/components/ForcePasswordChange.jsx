@@ -6,7 +6,7 @@ import { useFormAction, formDataToObject, SubmitButton } from '../hooks/useFormA
 export default function ForcePasswordChange({ onComplete }) {
   const { changePassword, logout } = useAuth()
 
-  const [, changeAction] = useFormAction(async (prev, formData) => {
+  const { formAction: changeAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     if (data.new_password !== data.confirm_password) {
       throw new Error('Passwords do not match.')

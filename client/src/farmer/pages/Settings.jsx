@@ -22,7 +22,7 @@ export default function FarmerSettings() {
     showToast({ type: 'success', message: l === 'sw' ? 'Lugha imebadilishwa' : t('languageChanged') })
   }
 
-  const [, changePasswordAction] = useFormAction(async (prev, formData) => {
+  const { formAction: changePasswordAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     if (data.new_password !== data.confirm_password) {
       throw new Error(t('passwordsMismatch'))

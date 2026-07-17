@@ -97,7 +97,7 @@ export default function Deliveries() {
     }
   }
 
-  const [, createAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: createAction } = useFormAction(async (_prev, formData) => {
     const body = formDataToObject(formData)
     if (body.farmer_id) body.farmer = body.farmer_id
     const res = await apiFetch('/api/deliveries/', { method: 'POST', body: JSON.stringify(body) })
@@ -119,7 +119,7 @@ export default function Deliveries() {
     setShowEdit(delivery)
   }
 
-  const [, editAction] = useFormAction(async (_prev, formData) => {
+  const { formAction: editAction } = useFormAction(async (_prev, formData) => {
     const body = formDataToObject(formData)
     if (!body.quantity_kg) delete body.quantity_kg
     if (!body.volume_litres) delete body.volume_litres

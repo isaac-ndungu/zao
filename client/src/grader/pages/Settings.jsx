@@ -10,7 +10,7 @@ export default function GraderSettings() {
   const { showToast } = useToast()
   const [editing, setEditing] = useState(false)
 
-  const [, profileAction] = useFormAction(async (prev, formData) => {
+  const { formAction: profileAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     const res = await apiFetch('/api/users/me/', { method: 'PATCH', body: JSON.stringify(data) })
     if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Failed to update') }
@@ -19,7 +19,7 @@ export default function GraderSettings() {
     return {}
   }, {})
 
-  const [, passwordAction] = useFormAction(async (prev, formData) => {
+  const { formAction: passwordAction } = useFormAction(async (prev, formData) => {
     const data = formDataToObject(formData)
     if (data.new_password !== data.confirm_password) {
       showToast({ type: 'error', message: 'Passwords do not match.' })
