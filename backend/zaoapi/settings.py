@@ -19,6 +19,8 @@ from urllib.parse import urlparse
 from decouple import config
 from celery.schedules import crontab
 
+COLLECTSTATIC = os.environ.get("COLLECTSTATIC") == "1"
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config("SECRET_KEY")
+if COLLECTSTATIC:
+    SECRET_KEY = config("SECRET_KEY", default="collectstatic-dummy-key")
+else:
+    SECRET_KEY = config("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
@@ -107,7 +112,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY")
+if COLLECTSTATIC:
+    FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY", default="collectstatic-dummy-key")
+else:
+    FIELD_ENCRYPTION_KEY = config("FIELD_ENCRYPTION_KEY")
 
 # OpenRouteService proxy
 ORS_API_KEY = config("ORS_API_KEY", default="")
@@ -193,32 +201,40 @@ WSGI_APPLICATION = 'zaoapi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASE_URL = config('DATABASE_URL', default=None)
-if not DATABASE_URL:
-    DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{name}".format(
-        user=config('DATABASE_USER'),
-        password=config('DATABASE_PASSWORD'),
-        host=config('DATABASE_HOST'),
-        port=config('DATABASE_PORT'),
-        name=config('DATABASE_NAME'),
-    )
+if COLLECTSTATIC:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+else:
+    DATABASE_URL = config('DATABASE_URL', default=None)
+    if not DATABASE_URL:
+        DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{name}".format(
+            user=config('DATABASE_USER'),
+            password=config('DATABASE_PASSWORD'),
+            host=config('DATABASE_HOST'),
+            port=config('DATABASE_PORT'),
+            name=config('DATABASE_NAME'),
+        )
 
-url = urlparse(DATABASE_URL)
-hostname = url.hostname
-db_config = {
-    'ENGINE': 'zaoapi.db_pool',
-    'NAME': url.path[1:],
-    'USER': url.username,
-    'PASSWORD': url.password,
-    'HOST': hostname,
-    'PORT': url.port,
-    'CONN_MAX_AGE': 600,
-    'CONN_HEALTH_CHECKS': False,
-    'OPTIONS': {},
-}
-if url.query:
-    db_config['OPTIONS'] = dict(param.split('=', 1) for param in url.query.split('&'))
-DATABASES = {'default': db_config}
+    url = urlparse(DATABASE_URL)
+    hostname = url.hostname
+    db_config = {
+        'ENGINE': 'zaoapi.db_pool',
+        'NAME': url.path[1:],
+        'USER': url.username,
+        'PASSWORD': url.password,
+        'HOST': hostname,
+        'PORT': url.port,
+        'CONN_MAX_AGE': 600,
+        'CONN_HEALTH_CHECKS': False,
+        'OPTIONS': {},
+    }
+    if url.query:
+        db_config['OPTIONS'] = dict(param.split('=', 1) for param in url.query.split('&'))
+    DATABASES = {'default': db_config}
 
 
 # Database backups
