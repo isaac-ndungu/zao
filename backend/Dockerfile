@@ -36,6 +36,7 @@ RUN chmod +x entrypoint.sh
 ENV COLLECTSTATIC=1
 ENV DJANGO_SETTINGS_MODULE=zaoapi.settings
 RUN python manage.py collectstatic --noinput
+ENV COLLECTSTATIC=
 
 EXPOSE 8000
 
