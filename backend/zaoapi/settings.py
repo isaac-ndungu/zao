@@ -586,6 +586,5 @@ if SENTRY_DSN:
         environment=ENVIRONMENT,
         traces_sample_rate=0.1,
         send_default_pii=False,
-        enable_logs=True,
         before_send=_scrub_pii,
     )
