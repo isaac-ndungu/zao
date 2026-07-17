@@ -1,6 +1,38 @@
 from rest_framework import serializers
 
-from .models import Notification
+from .models import ContactMessage, Notification
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['id', 'name', 'email', 'subject', 'message']
+        read_only_fields = ['id']
+
+    def validate_name(self, value):
+        value = value.strip()
+        if len(value) < 2:
+            raise serializers.ValidationError('Name must be at least 2 characters.')
+        return value
+
+    def validate_subject(self, value):
+        value = value.strip()
+        if len(value) < 2:
+            raise serializers.ValidationError('Subject must be at least 2 characters.')
+        return value
+
+    def validate_message(self, value):
+        value = value.strip()
+        if len(value) < 10:
+            raise serializers.ValidationError('Message must be at least 10 characters.')
+        return value
+
+
+class ContactMessageAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = ['id', 'name', 'email', 'subject', 'message', 'is_read', 'created_at']
+        read_only_fields = ['id', 'name', 'email', 'subject', 'message', 'created_at']
 
 
 class NotificationListSerializer(serializers.ModelSerializer):

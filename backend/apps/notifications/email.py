@@ -248,6 +248,55 @@ def send_stuck_payments_alert(recipient_emails: list[str], txns: list, frontend_
     )
 
 
+def send_contact_message_to_admin(contact) -> dict:
+    from django.conf import settings as django_settings
+
+    contact_email = getattr(django_settings, 'CONTACT_EMAIL', 'support@zao.ag')
+
+    content_html = f'''
+        <p style="margin: 0 0 12px; font-size: 15px; color: #424242; line-height: 1.6;">
+          A new contact message has been submitted through the website.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 16px 0; background-color: #f5f5f5; border-radius: 8px; overflow: hidden;">
+          <tr>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #eeeeee;">
+              <span style="font-size: 12px; color: #9e9e9e; text-transform: uppercase; letter-spacing: 0.5px;">From</span>
+            </td>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #eeeeee;">
+              <span style="font-size: 14px; color: #212121; font-weight: 500;">{contact.name} &lt;{contact.email}&gt;</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #eeeeee;">
+              <span style="font-size: 12px; color: #9e9e9e; text-transform: uppercase; letter-spacing: 0.5px;">Subject</span>
+            </td>
+            <td style="padding: 12px 16px; border-bottom: 1px solid #eeeeee;">
+              <span style="font-size: 14px; color: #212121; font-weight: 500;">{contact.subject}</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px;">
+              <span style="font-size: 12px; color: #9e9e9e; text-transform: uppercase; letter-spacing: 0.5px;">Message</span>
+            </td>
+            <td style="padding: 12px 16px;">
+              <span style="font-size: 14px; color: #212121; font-weight: 500; white-space: pre-wrap;">{contact.message}</span>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 0; font-size: 13px; color: #757575; line-height: 1.6;">
+          You can reply directly to this email to respond to {contact.name}.
+        </p>
+    '''
+
+    return send_email(
+        subject=f'[Zao Contact] {contact.subject}',
+        heading='New Contact Message',
+        content_html=content_html,
+        to_email=[contact_email],
+        from_email=f'Zao Website <{contact.email}>',
+    )
+
+
 def send_export_failed(task, error: str, frontend_url: str) -> dict:
     return send_email(
         subject='Zao Analytics Export Failed',

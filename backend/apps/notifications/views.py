@@ -6,12 +6,16 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet
+from rest_framework.mixins import CreateModelMixin
 
-from .models import Notification
-from .serializers import NotificationListSerializer, NotificationDetailSerializer
+from .models import ContactMessage, Notification
+from .serializers import ContactMessageSerializer, ContactMessageAdminSerializer, NotificationListSerializer, NotificationDetailSerializer
+from .email import send_contact_message_to_admin
 from .ussd import handle_ussd
 
 logger = logging.getLogger(__name__)
@@ -97,3 +101,45 @@ class NotificationLogViewSet(ReadOnlyModelViewSet):
         if farmer:
             return qs.filter(recipient=farmer)
         return qs.filter(cooperative_id=self.request.cooperative_id)
+
+
+@extend_schema(
+    summary="Submit a contact message",
+    description="Public endpoint for the website contact form. Sends an email to the admin and stores the message.",
+    tags=["Contact"],
+)
+class ContactMessageViewSet(CreateModelMixin, GenericViewSet):
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageSerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        contact = serializer.save()
+        send_contact_message_to_admin(contact)
+        return Response(
+            {'detail': 'Your message has been sent successfully.'},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(
+    summary="Contact messages (admin)",
+    description="Read-only view of all contact form submissions for admins.",
+    tags=["Contact"],
+)
+class ContactMessageAdminViewSet(ReadOnlyModelViewSet):
+    queryset = ContactMessage.objects.all()
+    serializer_class = ContactMessageAdminSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = ['name', 'email', 'subject', 'message']
+    ordering_fields = ['created_at', 'is_read']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return self.queryset
+        return self.queryset.none()

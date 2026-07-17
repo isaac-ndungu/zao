@@ -385,6 +385,8 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Zao <noreply@example.com>')
 
+CONTACT_EMAIL = config('CONTACT_EMAIL', default='support@zao.ag')
+
 USE_I18N = True
 
 USE_TZ = True

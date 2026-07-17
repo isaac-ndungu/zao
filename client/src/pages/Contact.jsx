@@ -10,6 +10,10 @@ import {
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { useFormAction } from '../shared/hooks/useFormAction'
+import { createApiClient } from '../shared/api/client'
+
+const publicClient = createApiClient()
+const { apiFetch } = publicClient
 
 const CONTACT_INFO = [
   {
@@ -60,13 +64,23 @@ const FAQS = [
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false)
 
-  const { formAction: contactAction } = useFormAction(async (prev, formData) => {
+  const { state, formAction: contactAction, isPending } = useFormAction(async (prev, formData) => {
     const name = formData.get('name')
     const email = formData.get('email')
     const subject = formData.get('subject')
     const message = formData.get('message')
-    const mailtoLink = `mailto:support@zao.ag?subject=${encodeURIComponent(`[Zao Contact] ${subject}`)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`
-    window.location.href = mailtoLink
+
+    const res = await apiFetch('/api/contact/', {
+      method: 'POST',
+      requireAuth: false,
+      body: JSON.stringify({ name, email, subject, message }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || err.message || 'Failed to send message. Please try again.')
+    }
+
     setSubmitted(true)
     return { success: true }
   }, {})
@@ -124,9 +138,9 @@ export default function Contact() {
             {submitted ? (
                 <div className="text-center py-12">
                   <HiOutlineCheckCircle className="w-16 h-16 text-primary mx-auto mb-4" aria-hidden="true" />
-                  <p className="font-headline-sm text-headline-sm text-primary mb-2">Message Ready to Send</p>
+                  <p className="font-headline-sm text-headline-sm text-primary mb-2">Message Sent</p>
                 <p className="font-body-md text-body-md text-on-surface-variant mb-6">
-                  Your default email client will open with the message pre-filled. Just click send.
+                  Your message has been sent to our team. We'll get back to you as soon as possible.
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
@@ -137,6 +151,11 @@ export default function Contact() {
               </div>
             ) : (
               <form action={contactAction} className="space-y-5">
+                {state?.error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-body-md">
+                    {state.error}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="contact-name" className="block text-label-md font-bold text-on-surface mb-1.5">Your Name *</label>
@@ -185,10 +204,15 @@ export default function Contact() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary/90 transition-colors active:scale-[0.98]"
+                  disabled={isPending}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-lg font-bold hover:bg-primary/90 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <HiOutlinePaperAirplane className="w-5 h-5" aria-hidden="true" />
-                  Send Message
+                  {isPending ? (
+                    <span className="inline-block animate-spin h-5 w-5 border-2 border-on-primary/30 border-t-on-primary rounded-full" />
+                  ) : (
+                    <HiOutlinePaperAirplane className="w-5 h-5" aria-hidden="true" />
+                  )}
+                  {isPending ? 'Sending...' : 'Send Message'}
                 </button>
               </form>
             )}

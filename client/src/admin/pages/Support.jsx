@@ -1,3 +1,8 @@
+function resolveUrl(path) {
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '')
+  return path.startsWith('/') ? `${base}${path}` : path
+}
+
 export default function Support() {
   const faqs = [
     { q: 'How do I create a new user?', a: 'Navigate to the User Management page via the search bar. Click the "Invite User" button and fill in the required details.' },
@@ -40,7 +45,7 @@ export default function Support() {
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">mail</span>
             Email Support
           </a>
-          <a href="/api/docs/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
+          <a href={resolveUrl('/api/docs/')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 border border-outline-variant text-on-surface-variant rounded-lg text-label-md font-bold hover:bg-surface-container transition-colors">
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">description</span>
             View Docs
           </a>

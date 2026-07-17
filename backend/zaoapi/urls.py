@@ -18,7 +18,6 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from rest_framework.permissions import IsAdminUser
 from apps.base.health import health_check, health_ping
 from apps.base.views.global_search import GlobalSearchView
 from apps.disbursement.callbacks import mpesa_result_callback, mpesa_timeout_callback
@@ -30,9 +29,9 @@ urlpatterns = [
     # Infrastructure (unversioned)
     path('api/health/', health_check, name='health-check'),
     path('api/health/ping/', health_ping, name='health-ping'),
-    path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAdminUser]), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[IsAdminUser]), name='swagger-ui'),
-    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[IsAdminUser]), name='redoc'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('api/search/', GlobalSearchView.as_view(), name='global-search'),
 
     # External webhooks (unversioned — URLs registered in third-party developer portals)
