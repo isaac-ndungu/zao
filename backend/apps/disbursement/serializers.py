@@ -26,19 +26,25 @@ class DisbursementTransactionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    def _get_membership(self, obj):
+        cache_key = f'_membership_{obj.farmer_id}'
+        cached = self.context.get(cache_key)
+        if cached is None and cache_key not in self.context:
+            cached = obj.farmer.memberships.filter(
+                cooperative_id=obj.cooperative_id
+            ).first()
+            self.context[cache_key] = cached
+        return cached
+
     def get_farmer_name(self, obj):
         return f'{obj.farmer.first_name} {obj.farmer.last_name}'
 
     def get_member_number(self, obj):
-        membership = obj.farmer.memberships.filter(
-            cooperative_id=obj.cooperative_id
-        ).first()
+        membership = self._get_membership(obj)
         return membership.member_number if membership else ''
 
     def get_mpesa_number(self, obj):
-        membership = obj.farmer.memberships.filter(
-            cooperative_id=obj.cooperative_id
-        ).first()
+        membership = self._get_membership(obj)
         return membership.mpesa_number if membership else ''
 
 

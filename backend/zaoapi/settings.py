@@ -213,7 +213,7 @@ db_config = {
     'HOST': hostname,
     'PORT': url.port,
     'CONN_MAX_AGE': 600,
-    'CONN_HEALTH_CHECKS': True,
+    'CONN_HEALTH_CHECKS': False,
     'OPTIONS': {},
 }
 if url.query:

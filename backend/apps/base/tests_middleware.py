@@ -263,13 +263,14 @@ class TestLegalAcceptanceMiddleware:
         response = mw(request)
         assert response.status_code == 200
 
-    @patch('apps.legal.models.LegalDocument')
     @patch('apps.legal.models.LegalAcceptance')
-    def test_blocks_user_with_pending_legal_docs(self, MockAcceptance, MockDocument):
+    @patch('apps.legal.models.LegalDocument')
+    def test_blocks_user_with_pending_legal_docs(self, MockDocument, MockAcceptance):
         user = UserFactory(role=UserRole.MANAGER)
         request = make_request(user=user)
 
-        MockDocument.objects.filter().annotate().filter.return_value.exists.return_value = True
+        MockDocument.objects.filter.return_value.values_list.return_value = [uuid.uuid4()]
+        MockAcceptance.objects.filter.return_value.count.return_value = 0
 
         mw = LegalAcceptanceMiddleware(simple_view)
         response = mw(request)
@@ -277,13 +278,14 @@ class TestLegalAcceptanceMiddleware:
         data = json.loads(response.content)
         assert data['requires_legal_acceptance'] is True
 
-    @patch('apps.legal.models.LegalDocument')
     @patch('apps.legal.models.LegalAcceptance')
-    def test_passes_user_with_all_legal_docs_accepted(self, MockAcceptance, MockDocument):
+    @patch('apps.legal.models.LegalDocument')
+    def test_passes_user_with_all_legal_docs_accepted(self, MockDocument, MockAcceptance):
         user = UserFactory(role=UserRole.MANAGER)
         request = make_request(user=user)
 
-        MockDocument.objects.filter().annotate().filter.return_value.exists.return_value = False
+        MockDocument.objects.filter.return_value.values_list.return_value = [uuid.uuid4()]
+        MockAcceptance.objects.filter.return_value.count.return_value = 1
 
         mw = LegalAcceptanceMiddleware(simple_view)
         response = mw(request)

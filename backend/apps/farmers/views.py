@@ -61,7 +61,7 @@ def _create_farmer_user(farmer, cooperative_id):
 )
 class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'farmers.csv'
-    queryset = Farmer.objects.all().select_related('cooperative', 'user')
+    queryset = Farmer.objects.all().select_related('cooperative', 'user').prefetch_related('memberships')
     pagination_class = FarmerPagination
     filter_backends = [OrderingFilter]
     ordering_fields = [
@@ -199,10 +199,11 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         cooperative_id = request.cooperative_id
+        base_qs = Farmer.objects.prefetch_related('memberships').select_related('cooperative')
         farmers = Farmer.objects.none()
         if phone:
             phone_clean = phone.lstrip('+')
-            farmers = Farmer.objects.filter(
+            farmers = base_qs.filter(
                 memberships__cooperative_id=cooperative_id,
                 memberships__is_active=True,
                 phone_number__endswith=phone_clean,
@@ -210,18 +211,18 @@ class FarmerViewSet(CsvExportMixin, CooperativeScopedViewSet):
         elif name:
             parts = name.split()
             if len(parts) == 1:
-                farmers = Farmer.objects.filter(
+                farmers = base_qs.filter(
                     memberships__cooperative_id=cooperative_id,
                     memberships__is_active=True,
                     first_name__icontains=parts[0]
-                ) | Farmer.objects.filter(
+                ) | base_qs.filter(
                     memberships__cooperative_id=cooperative_id,
                     memberships__is_active=True,
                     last_name__icontains=parts[0]
                 )
                 farmers = farmers.distinct()
             else:
-                farmers = Farmer.objects.filter(
+                farmers = base_qs.filter(
                     memberships__cooperative_id=cooperative_id,
                     memberships__is_active=True,
                     first_name__icontains=parts[0],

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class DeliveryViewSet(CsvExportMixin, CooperativeScopedViewSet):
     csv_filename = 'deliveries.csv'
-    queryset = Delivery.objects.all().select_related('farmer', 'grader', 'cooperative')
+    queryset = Delivery.objects.all().select_related('farmer', 'grader', 'cooperative', 'route_stop__route')
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = [
         'batch_id', 'farmer__first_name', 'farmer__last_name',

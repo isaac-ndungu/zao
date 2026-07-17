@@ -2,7 +2,6 @@ import uuid
 import logging
 
 from django.conf import settings
-from django.db.models import Exists, OuterRef
 from django.http import JsonResponse
 from django.utils import timezone
 
@@ -122,30 +121,37 @@ class TenantMiddleware:
             user_role = getattr(request.user, 'role', None)
             if user_role == 'farmer':
                 coop_id = request.META.get('HTTP_X_COOPERATIVE_ID', '')
-                if coop_id:
-                    farmer = getattr(request.user, 'farmer_profile', None)
-                    if farmer and farmer.memberships.filter(
-                        cooperative_id=coop_id, is_active=True
-                    ).exists():
-                        request.cooperative_id = coop_id
+                farmer = getattr(request.user, 'farmer_profile', None)
+                if farmer:
+                    if coop_id:
+                        membership = farmer.memberships.filter(
+                            cooperative_id=coop_id, is_active=True
+                        ).select_related('cooperative').first()
+                        if membership:
+                            request.cooperative_id = coop_id
+                            request.primary_membership = membership
+                        else:
+                            request.cooperative_id = getattr(request.user, 'cooperative_id', None)
+                            request.primary_membership = None
                     else:
-                        request.cooperative_id = getattr(request.user, 'cooperative_id', None)
-                else:
-                    farmer = getattr(request.user, 'farmer_profile', None)
-                    if farmer:
                         active_memberships = list(
                             farmer.memberships.filter(is_active=True)
                         )
                         if len(active_memberships) == 1:
                             request.cooperative_id = active_memberships[0].cooperative_id
+                            request.primary_membership = active_memberships[0]
                         else:
                             request.cooperative_id = getattr(request.user, 'cooperative_id', None)
-                    else:
-                        request.cooperative_id = getattr(request.user, 'cooperative_id', None)
+                            request.primary_membership = active_memberships[0] if active_memberships else None
+                else:
+                    request.cooperative_id = getattr(request.user, 'cooperative_id', None)
+                    request.primary_membership = None
             else:
                 request.cooperative_id = getattr(request.user, 'cooperative_id', None)
+                request.primary_membership = None
         else:
             request.cooperative_id = None
+            request.primary_membership = None
         return self.get_response(request)
 
 
@@ -176,30 +182,25 @@ class LegalAcceptanceMiddleware:
             if not any(path.startswith(p) for p in self.SAFE_PATHS):
                 from apps.legal.models import LegalDocument, LegalAcceptance
 
-                # Phase 2 simplification: with the partial UniqueConstraint
-                # in place, at most one active row exists per slug, so
-                # ``document=OuterRef('pk')`` is sufficient to mark a doc as
-                # accepted for this user. (Previously, ``version=OuterRef(
-                # 'version')`` caused users to be re-prompted for v1 after
-                # v2 was published even though v2 implies v1 acceptance.)
-                has_pending = LegalDocument.objects.filter(
-                    is_active=True,
-                    requires_acceptance=True,
-                    published_at__lte=timezone.now(),
-                ).annotate(
-                    has_accepted=Exists(
-                        LegalAcceptance.objects.filter(
-                            user=request.user,
-                            document=OuterRef('pk'),
-                        )
-                    ),
-                ).filter(has_accepted=False).exists()
+                required_ids = list(
+                    LegalDocument.objects.filter(
+                        is_active=True,
+                        requires_acceptance=True,
+                        published_at__lte=timezone.now(),
+                    ).values_list('pk', flat=True)
+                )
 
-                if has_pending:
-                    return JsonResponse(
-                        {'requires_legal_acceptance': True},
-                        status=403,
-                    )
+                if required_ids:
+                    accepted_count = LegalAcceptance.objects.filter(
+                        user=request.user,
+                        document_id__in=required_ids,
+                    ).count()
+
+                    if accepted_count < len(required_ids):
+                        return JsonResponse(
+                            {'requires_legal_acceptance': True},
+                            status=403,
+                        )
         return self.get_response(request)
 
 
