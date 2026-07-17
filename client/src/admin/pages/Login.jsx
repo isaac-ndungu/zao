@@ -7,13 +7,14 @@ import PasswordInput from '../../shared/components/PasswordInput'
 import { apiFetch } from '../api/client'
 
 function loadGisScript() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (window.google?.accounts) return resolve()
     const s = document.createElement('script')
     s.src = 'https://accounts.google.com/gsi/client'
     s.async = true
     s.defer = true
     s.onload = resolve
+    s.onerror = () => reject(new Error('Failed to load Google Identity Services script.'))
     document.head.appendChild(s)
   })
 }
@@ -43,11 +44,11 @@ export default function Login() {
   }, [isAuthenticated, auth.role, navigate])
 
   useEffect(() => {
-    loadGisScript().catch(() => {
-      console.error('Google Identity Services script failed to load.')
-    }).then(() => {
-      setGisReady(true)
-    })
+    loadGisScript()
+      .then(() => setGisReady(true))
+      .catch(() => {
+        console.warn('Google Sign-In unavailable: failed to load Google Identity Services script.')
+      })
   }, [])
 
   const handleGoogleCredential = useCallback(async (credential) => {

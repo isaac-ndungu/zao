@@ -34,6 +34,7 @@ RUN chmod +x entrypoint.sh
 # collectstatic only needs SECRET_KEY + DJANGO_SETTINGS_MODULE to run;
 # the real SECRET_KEY is provided at runtime via environment variable.
 ENV SECRET_KEY=build-time-dummy-key-for-collectstatic
+ENV FIELD_ENCRYPTION_KEY=build-time-dummy-encryption-key
 ENV DJANGO_SETTINGS_MODULE=zaoapi.settings
 RUN python manage.py collectstatic --noinput
 
