@@ -68,8 +68,15 @@ class LegalDocumentAdminSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = [
             'id', 'created_at', 'updated_at',
-            'slug', 'is_active', 'requires_acceptance', 'published_at',
+            'is_active', 'published_at',
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            for field_name in ('slug', 'requires_acceptance'):
+                if field_name in self.fields:
+                    self.fields[field_name].read_only = True
 
 
 class LegalAcceptanceAdminSerializer(serializers.ModelSerializer):

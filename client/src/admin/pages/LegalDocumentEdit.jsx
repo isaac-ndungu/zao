@@ -77,7 +77,7 @@ export default function LegalDocumentEdit() {
     <div className="max-w-3xl mx-auto">
       <header className="mb-6">
         <button onClick={() => navigate('/admin/legal')} className="text-primary text-body-md hover:underline mb-2" aria-label="Back to legal documents"><span aria-hidden="true">←</span> Back to Legal Documents</button>
-        <h2 className="text-3xl font-bold text-on-surface">{isNew ? 'New legal document' : `Edit: ${existing?.title || slug}`}</h2>
+        <h2 className="text-3xl font-bold text-on-surface">{isNew ? 'New legal document' : `Edit: ${existing?.title || existing?.slug || ''}`}</h2>
         {!isNew && existing && (
           <p className="text-sm text-on-surface-variant mt-1">
             Editing v{existing.version}. Use <strong>Publish new version</strong> to make changes visible to users while preserving version history.
@@ -98,14 +98,32 @@ export default function LegalDocumentEdit() {
         </div>
         <div>
           <label htmlFor="legal-slug" className="block text-label-md text-on-surface-variant mb-1">Slug</label>
-          <input
-            id="legal-slug"
-            name="slug"
-            defaultValue={existing?.slug || ''}
-            required
-            placeholder="e.g. privacy-policy, terms-of-service"
-            className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
-          />
+          {isNew ? (
+            <select
+              id="legal-slug"
+              name="slug"
+              defaultValue={existing?.slug || ''}
+              required
+              className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container"
+            >
+              <option value="" disabled>Select a slug…</option>
+              <option value="privacy-policy">privacy-policy</option>
+              <option value="terms-of-service">terms-of-service</option>
+              <option value="cookie-policy">cookie-policy</option>
+              <option value="data-processing-addendum">data-processing-addendum</option>
+              <option value="acceptable-use-policy">acceptable-use-policy</option>
+              <option value="refund-policy">refund-policy</option>
+              <option value="community-guidelines">community-guidelines</option>
+            </select>
+          ) : (
+            <input
+              id="legal-slug"
+              name="slug"
+              value={existing?.slug || ''}
+              readOnly
+              className="w-full px-3 py-2 border border-outline-variant rounded-lg text-body-md bg-surface-container text-on-surface-variant cursor-not-allowed"
+            />
+          )}
         </div>
         <div>
           <label htmlFor="legal-content" className="block text-label-md text-on-surface-variant mb-1">Content (Markdown)</label>
@@ -160,7 +178,7 @@ export default function LegalDocumentEdit() {
       <ConfirmModal
         open={showPublishConfirm}
         title="Publish new version"
-        message={`This will create version v${(existing?.version || 0) + 1} of "${existing?.title || slug}" and mark it active. Users will see this new version going forward; the current version (v${existing?.version || 0}) remains in the system as part of the version history.`}
+        message={`This will create version v${(existing?.version || 0) + 1} of "${existing?.title || existing?.slug || ''}" and mark it active. Users will see this new version going forward; the current version (v${existing?.version || 0}) remains in the system as part of the version history.`}
         confirmLabel={`Publish v${(existing?.version || 0) + 1}`}
         loading={publishing}
         onConfirm={performPublish}
